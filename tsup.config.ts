@@ -1,6 +1,6 @@
 import { defineConfig } from "tsup";
 
-const external = ["react", "react-dom"];
+const external = ["react", "react-dom", "query-string"];
 
 const common = {
   external,
