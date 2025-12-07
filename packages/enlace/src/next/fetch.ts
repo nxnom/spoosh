@@ -6,11 +6,9 @@ import {
   type HttpMethod,
   type RequestOptions,
 } from "enlace-core";
-import type {
-  NextEnlaceOptions,
-  NextFetchOptions,
-  NextRequestOptionsBase,
-} from "./types";
+import type { NextEnlaceOptions, NextRequestOptionsBase } from "./types";
+
+type NextFetchOptions = Pick<NextRequestOptionsBase, "tags" | "revalidate">;
 
 function generateTags(path: string[]): string[] {
   return path.map((_, i) => path.slice(0, i + 1).join("/"));
@@ -36,7 +34,6 @@ export async function executeNextFetch<TData, TError>(
 
   const isGet = method === "GET";
   const autoTags = generateTags(path);
-  const nextOptions = requestOptions?.next;
 
   const fetchOptions: RequestInit & { next?: NextFetchOptions } = {
     ...restOptions,
@@ -48,13 +45,13 @@ export async function executeNextFetch<TData, TError>(
   }
 
   if (isGet) {
-    const tags = nextOptions?.tags ?? (autoGenerateTags ? autoTags : undefined);
+    const tags = requestOptions?.tags ?? (autoGenerateTags ? autoTags : undefined);
     const nextFetchOptions: NextFetchOptions = {};
     if (tags) {
       nextFetchOptions.tags = tags;
     }
-    if (nextOptions?.revalidate !== undefined) {
-      nextFetchOptions.revalidate = nextOptions.revalidate;
+    if (requestOptions?.revalidate !== undefined) {
+      nextFetchOptions.revalidate = requestOptions.revalidate;
     }
     fetchOptions.next = nextFetchOptions;
   }

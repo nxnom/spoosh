@@ -1,13 +1,5 @@
 import type { EnlaceOptions } from "enlace-core";
 
-export type NextFetchOptions = {
-  /** Time in seconds to revalidate, or false to disable */
-  revalidate?: number | false;
-
-  /** Cache tags for on-demand revalidation */
-  tags?: string[];
-};
-
 /**
  * Handler function called after successful mutations to trigger server-side revalidation.
  * @param tags - Cache tags to revalidate
@@ -49,16 +41,21 @@ export type NextEnlaceOptions = EnlaceOptions & {
 
 /** Per-request options for Next.js fetch */
 export type NextRequestOptionsBase = {
-  next?: NextFetchOptions;
-  /** 
+  /** Cache tags for Next.js fetch caching */
+  tags?: string[];
+
+  /** Time in seconds to revalidate, or false to disable */
+  revalidate?: number | false;
+
+  /**
    * Cache tags to revalidate after mutation *overrides auto-generated tags*
    * This doesn't do anything on the client by itself - it's passed to the revalidator handler.
    * You must implement the revalidation logic in the revalidator.
    * */
   revalidateTags?: string[];
 
-  /** 
-   * URL paths to revalidate after mutation 
+  /**
+   * URL paths to revalidate after mutation
    * This doesn't do anything on the client by itself - it's passed to the revalidator handler.
    * You must implement the revalidation logic in the revalidator.
    * */
