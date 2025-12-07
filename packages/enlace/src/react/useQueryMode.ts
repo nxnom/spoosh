@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect } from "react";
 import type { EnlaceResponse } from "enlace-core";
 import type {
   ApiClient,
@@ -10,14 +10,13 @@ import type {
 import { HTTP_METHODS } from "./types";
 import { generateTags } from "../utils/generateTags";
 import { onRevalidate } from "./revalidator";
-
-function createQueryKey(tracked: TrackedCall): string {
-  return JSON.stringify({
-    path: tracked.path,
-    method: tracked.method,
-    options: tracked.options,
-  });
-}
+import {
+  createQueryKey,
+  getCache,
+  setCache,
+  subscribeCache,
+  isStale,
+} from "./cache";
 
 export type TrackingResult = {
   trackedCall: TrackedCall | null;
@@ -54,69 +53,134 @@ export function createTrackingProxy<TSchema>(
   return createProxy() as ApiClient<TSchema>;
 }
 
+export type QueryModeOptions = {
+  autoGenerateTags: boolean;
+  staleTime: number;
+};
+
 export function useQueryMode<TSchema, TData, TError>(
   api: ApiClient<TSchema>,
   trackedCall: TrackedCall,
-  autoGenerateTags: boolean
+  options: QueryModeOptions
 ): UseEnlaceQueryResult<TData, TError> {
-  const [state, setState] = useState<HookState>({
-    loading: true,
-    ok: undefined,
-    data: undefined,
-    error: undefined,
-  });
-
+  const { autoGenerateTags, staleTime } = options;
   const queryKey = createQueryKey(trackedCall);
-  const prevKeyRef = useRef<string | null>(null);
-  const isFetchingRef = useRef(false);
 
-  const options = trackedCall.options as ReactRequestOptionsBase | undefined;
+  const requestOptions = trackedCall.options as
+    | ReactRequestOptionsBase
+    | undefined;
   const queryTags =
-    options?.tags ?? (autoGenerateTags ? generateTags(trackedCall.path) : []);
-  const queryTagsKey = JSON.stringify(queryTags);
+    requestOptions?.tags ??
+    (autoGenerateTags ? generateTags(trackedCall.path) : []);
 
-  const fetchData = useCallback(() => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
+  const getInitialState = (): HookState => {
+    const cached = getCache<TData, TError>(queryKey);
+    const hasCachedData = cached?.data !== undefined;
+    const isFetching = !!cached?.promise;
+    const needsFetch = !hasCachedData || isStale(queryKey, staleTime);
+    return {
+      loading: !hasCachedData && (isFetching || needsFetch),
+      fetching: isFetching || needsFetch,
+      ok: cached?.ok,
+      data: cached?.data,
+      error: cached?.error,
+    };
+  };
 
-    setState((s) => ({ ...s, loading: true }));
+  const getCachedState = (): HookState => {
+    const cached = getCache<TData, TError>(queryKey);
+    const hasCachedData = cached?.data !== undefined;
+    const isFetching = !!cached?.promise;
+    return {
+      loading: !hasCachedData && isFetching,
+      fetching: isFetching,
+      ok: cached?.ok,
+      data: cached?.data,
+      error: cached?.error,
+    };
+  };
 
-    let current: unknown = api;
-    for (const segment of trackedCall.path) {
-      current = (current as Record<string, unknown>)[segment];
-    }
-    const method = (current as Record<string, unknown>)[trackedCall.method] as (
-      opts?: unknown
-    ) => Promise<EnlaceResponse<unknown, unknown>>;
+  const [state, setState] = useState<HookState>(getInitialState);
 
-    method(trackedCall.options).then((res) => {
-      isFetchingRef.current = false;
-      setState({
-        loading: false,
-        ok: res.ok,
-        data: res.ok ? res.data : undefined,
-        error: res.ok ? undefined : res.error,
-      });
-    });
-  }, [api, trackedCall]);
+  const mountedRef = useRef(true);
+  const fetchRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    if (prevKeyRef.current === queryKey) return;
-    prevKeyRef.current = queryKey;
-    fetchData();
-  }, [queryKey, fetchData]);
+    mountedRef.current = true;
+
+    setState(getInitialState());
+
+    const unsubscribe = subscribeCache(queryKey, () => {
+      if (mountedRef.current) {
+        setState(getCachedState());
+      }
+    });
+
+    const doFetch = () => {
+      const cached = getCache<TData, TError>(queryKey);
+
+      if (cached?.promise) {
+        return;
+      }
+
+      setState((s) => ({
+        ...s,
+        loading: s.data === undefined,
+        fetching: true,
+      }));
+
+      let current: unknown = api;
+      for (const segment of trackedCall.path) {
+        current = (current as Record<string, unknown>)[segment];
+      }
+      const method = (current as Record<string, unknown>)[trackedCall.method] as (
+        opts?: unknown
+      ) => Promise<EnlaceResponse<TData, TError>>;
+
+      const fetchPromise = method(trackedCall.options).then((res) => {
+        if (mountedRef.current) {
+          setCache<TData, TError>(queryKey, {
+            data: res.ok ? res.data : undefined,
+            error: res.ok ? undefined : res.error,
+            ok: res.ok,
+            timestamp: Date.now(),
+            tags: queryTags,
+          });
+        }
+      });
+
+      setCache<TData, TError>(queryKey, {
+        promise: fetchPromise,
+        tags: queryTags,
+      });
+    };
+
+    fetchRef.current = doFetch;
+
+    const cached = getCache<TData, TError>(queryKey);
+    if (cached?.data !== undefined && !isStale(queryKey, staleTime)) {
+      setState(getCachedState());
+    } else {
+      doFetch();
+    }
+
+    return () => {
+      mountedRef.current = false;
+      fetchRef.current = null;
+      unsubscribe();
+    };
+  }, [queryKey]);
 
   useEffect(() => {
     if (queryTags.length === 0) return;
 
     return onRevalidate((invalidatedTags) => {
       const hasMatch = invalidatedTags.some((tag) => queryTags.includes(tag));
-      if (hasMatch) {
-        prevKeyRef.current = null;
-        fetchData();
+      if (hasMatch && mountedRef.current && fetchRef.current) {
+        fetchRef.current();
       }
     });
-  }, [queryTagsKey, fetchData]);
+  }, [JSON.stringify(queryTags)]);
 
   return state as UseEnlaceQueryResult<TData, TError>;
 }

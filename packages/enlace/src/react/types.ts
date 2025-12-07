@@ -35,6 +35,7 @@ export type WildcardSelectorFn<TMethod> = (api: WildcardClient<ReactRequestOptio
 
 export type HookState = {
   loading: boolean;
+  fetching: boolean;
   ok: boolean | undefined;
   data: unknown;
   error: unknown;
@@ -64,25 +65,15 @@ type HookResponseState<TData, TError> =
   | { ok: true; data: TData; error: undefined }
   | { ok: false; data: undefined; error: TError };
 
-/** Result when hook is called without selector (manual mode) */
-export type UseEnlaceManualResult<TSchema, TData = unknown, TError = unknown> = {
-  client: ApiClient<TSchema>;
-  loading: boolean;
-} & HookResponseState<TData, TError>;
-
-/** Result when hook is called without selector (manual mode) - wildcard version */
-export type UseWildcardManualResult<TData = unknown, TError = unknown> = {
-  client: WildcardClient<ReactRequestOptionsBase>;
-  loading: boolean;
-} & HookResponseState<TData, TError>;
-
 /** Result when hook is called with query function (auto-fetch mode) */
 export type UseEnlaceQueryResult<TData, TError> = {
   loading: boolean;
+  fetching: boolean;
 } & HookResponseState<TData, TError>;
 
 /** Result when hook is called with method selector (trigger mode) */
 export type UseEnlaceSelectorResult<TMethod> = {
   trigger: TMethod;
   loading: boolean;
+  fetching: boolean;
 } & HookResponseState<ExtractData<TMethod>, ExtractError<TMethod>>;

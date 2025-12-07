@@ -18,6 +18,7 @@ export function useSelectorMode<
 ): UseEnlaceSelectorResult<TMethod> {
   const [state, setState] = useState<HookState>({
     loading: false,
+    fetching: false,
     ok: undefined,
     data: undefined,
     error: undefined,
@@ -34,10 +35,11 @@ export function useSelectorMode<
 
   if (!triggerRef.current) {
     triggerRef.current = (async (...args: unknown[]) => {
-      setState((s) => ({ ...s, loading: true }));
+      setState((s) => ({ ...s, loading: s.data === undefined, fetching: true }));
       const res = await methodRef.current(...args);
       setState({
         loading: false,
+        fetching: false,
         ok: res.ok,
         data: res.ok ? res.data : undefined,
         error: res.ok ? undefined : res.error,

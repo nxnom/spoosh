@@ -9,14 +9,11 @@ import type {
   QueryFn,
   ReactRequestOptionsBase,
   SelectorFn,
-  UseEnlaceManualResult,
   UseEnlaceQueryResult,
   UseEnlaceSelectorResult,
-  UseWildcardManualResult,
   WildcardQueryFn,
   WildcardSelectorFn,
 } from "./types";
-import { useManualMode } from "./useManualMode";
 import { useQueryMode, createTrackingProxy, type TrackingResult } from "./useQueryMode";
 import { useSelectorMode } from "./useSelectorMode";
 
@@ -26,10 +23,12 @@ export type EnlaceHookOptions = {
 
   /** Auto-revalidate generated tags after successful mutations. @default true */
   autoRevalidateTags?: boolean;
+
+  /** Time in ms before cached data is considered stale. @default 0 (always stale) */
+  staleTime?: number;
 };
 
 type WildcardHook = {
-  <TData = unknown, TError = unknown>(): UseWildcardManualResult<TData, TError>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for method type inference
   <TMethod extends (...args: any[]) => Promise<EnlaceResponse<unknown, unknown>>>(
     selector: WildcardSelectorFn<TMethod>
@@ -38,7 +37,6 @@ type WildcardHook = {
 };
 
 type TypedHook<TSchema> = {
-  <TData = unknown, TError = unknown>(): UseEnlaceManualResult<TSchema, TData, TError>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for method type inference
   <TMethod extends (...args: any[]) => Promise<EnlaceResponse<unknown, unknown>>>(
     selector: SelectorFn<TSchema, TMethod>
@@ -59,9 +57,6 @@ type TypedHook<TSchema> = {
  * // Selector mode - typed trigger for lazy calls
  * const { trigger, loading, data, error } = useAPI((api) => api.posts.delete);
  * onClick={() => trigger({ body: { id: 1 } })}
- *
- * // Manual mode - typed client with optional data/error types
- * const { client, loading, data, ok, error } = useAPI<Post[], ApiError>();
  */
 export function createEnlaceHook(
   baseUrl: string,
@@ -79,25 +74,16 @@ export function createEnlaceHook<TSchema = unknown>(
   hookOptions: EnlaceHookOptions = {}
 ): WildcardHook | TypedHook<TSchema> {
   const api = createEnlace<TSchema>(baseUrl, defaultOptions);
-  const { autoGenerateTags = true, autoRevalidateTags = true } = hookOptions;
+  const { autoGenerateTags = true, autoRevalidateTags = true, staleTime = 0 } = hookOptions;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for method type inference
   function useEnlaceHook<TData, TError, TMethod extends (...args: any[]) => Promise<EnlaceResponse<unknown, unknown>>>(
-    selectorOrQuery?:
+    selectorOrQuery:
       | SelectorFn<TSchema, TMethod>
       | QueryFn<TSchema, TData, TError>
       | WildcardSelectorFn<TMethod>
       | WildcardQueryFn<TData, TError>
-  ):
-    | UseEnlaceManualResult<TSchema, TData, TError>
-    | UseWildcardManualResult<TData, TError>
-    | UseEnlaceSelectorResult<TMethod>
-    | UseEnlaceQueryResult<TData, TError> {
-    // Manual mode - no selector provided
-    if (!selectorOrQuery) {
-      return useManualMode(api as ApiClient<TSchema>) as UseEnlaceManualResult<TSchema, TData, TError>;
-    }
-
+  ): UseEnlaceSelectorResult<TMethod> | UseEnlaceQueryResult<TData, TError> {
     // Use tracking proxy to capture path/method/options without executing
     let trackingResult: TrackingResult = {
       trackedCall: null,
@@ -129,7 +115,7 @@ export function createEnlaceHook<TSchema = unknown>(
     return useQueryMode<TSchema, TData, TError>(
       api as ApiClient<TSchema>,
       trackingResult.trackedCall!,
-      autoGenerateTags
+      { autoGenerateTags, staleTime }
     );
   }
 
