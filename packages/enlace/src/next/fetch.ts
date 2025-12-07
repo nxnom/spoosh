@@ -26,7 +26,7 @@ export async function executeNextFetch<TData, TError>(
   const {
     autoGenerateTags = true,
     autoRevalidateTags = true,
-    revalidate,
+    revalidator,
     headers: defaultHeaders,
     ...restOptions
   } = defaultOptions;
@@ -81,11 +81,11 @@ export async function executeNextFetch<TData, TError>(
   const isJson = contentType?.includes("application/json");
 
   if (response.ok) {
-    if (!isGet) {
+    if (!isGet && !requestOptions?.skipRevalidator) {
       const revalidateTags = requestOptions?.revalidateTags ?? (autoRevalidateTags ? autoTags : []);
       const revalidatePaths = requestOptions?.revalidatePaths ?? [];
       if (revalidateTags.length || revalidatePaths.length) {
-        revalidate?.(revalidateTags, revalidatePaths);
+        revalidator?.(revalidateTags, revalidatePaths);
       }
     }
 

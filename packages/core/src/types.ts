@@ -8,6 +8,7 @@ export type EnlaceResponse<TData, TError> =
 
 export type EnlaceOptions = Omit<RequestInit, "method" | "body">;
 
+/** Function type for custom fetch implementations */
 export type FetchExecutor<
   TOptions = EnlaceOptions,
   TRequestOptions = RequestOptions<unknown>,
@@ -19,10 +20,15 @@ export type FetchExecutor<
   requestOptions?: TRequestOptions
 ) => Promise<EnlaceResponse<TData, TError>>;
 
+/** Per-request options */
 export type RequestOptions<TBody = never> = {
+  /** Request body - automatically JSON stringified if object/array */
   body?: TBody;
+  /** Query parameters appended to URL */
   query?: Record<string, string | number | boolean | undefined>;
+  /** Request headers - merged with default headers */
   headers?: HeadersInit;
+  /** Cache mode for the request */
   cache?: RequestCache;
 };
 
@@ -32,6 +38,17 @@ export type MethodDefinition = {
   body?: unknown;
 };
 
+/**
+ * Helper to define an endpoint with proper typing.
+ * @example
+ * type MyApi = {
+ *   posts: {
+ *     $get: Endpoint<Post[], ApiError>;
+ *     $post: Endpoint<Post, ApiError, CreatePost>;
+ *     _: { $get: Endpoint<Post, NotFoundError> };
+ *   };
+ * };
+ */
 export type Endpoint<TData, TError, TBody = never> = [TBody] extends [never]
   ? { data: TData; error: TError }
   : { data: TData; error: TError; body: TBody };
@@ -130,6 +147,7 @@ type DynamicAccess<TSchema, TRequestOptionsBase = object> =
 
 type MethodNameKeys = "get" | "post" | "put" | "patch" | "delete";
 
+/** Typed API client based on schema definition */
 export type EnlaceClient<TSchema, TRequestOptionsBase = object> = HttpMethods<
   TSchema,
   TRequestOptionsBase
@@ -144,6 +162,7 @@ type WildcardMethodFn<TRequestOptionsBase = object> = (
   options?: RequestOptions<unknown> & TRequestOptionsBase
 ) => Promise<EnlaceResponse<unknown, unknown>>;
 
+/** Untyped API client - allows any path access when no schema is provided */
 export type WildcardClient<TRequestOptionsBase = object> = {
   get: WildcardMethodFn<TRequestOptionsBase>;
   post: WildcardMethodFn<TRequestOptionsBase>;
