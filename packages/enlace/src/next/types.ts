@@ -3,6 +3,7 @@ import type { EnlaceOptions } from "enlace-core";
 export type NextFetchOptions = {
   /** Time in seconds to revalidate, or false to disable */
   revalidate?: number | false;
+
   /** Cache tags for on-demand revalidation */
   tags?: string[];
 };
@@ -22,13 +23,15 @@ export type NextEnlaceOptions = EnlaceOptions & {
    * Auto-generate cache tags from URL path for GET requests.
    * e.g., `/posts/1` generates tags `['posts', 'posts/1']`
    * @default true
-   */
+   * */
   autoGenerateTags?: boolean;
+
   /**
    * Auto-revalidate generated tags after successful mutations (POST/PUT/PATCH/DELETE).
    * @default true
-   */
+   * */
   autoRevalidateTags?: boolean;
+
   /**
    * Handler called after successful mutations to trigger server-side revalidation.
    * Receives auto-generated or manually specified tags and paths.
@@ -40,7 +43,7 @@ export type NextEnlaceOptions = EnlaceOptions & {
    *  },
    * });
    * ```
-   */
+   * */
   revalidator?: RevalidateHandler;
 };
 
@@ -53,18 +56,20 @@ export type NextRequestOptionsBase = {
    * You must implement the revalidation logic in the revalidator.
    * */
   revalidateTags?: string[];
+
   /** 
    * URL paths to revalidate after mutation 
    * This doesn't do anything on the client by itself - it's passed to the revalidator handler.
    * You must implement the revalidation logic in the revalidator.
    * */
   revalidatePaths?: string[];
+
   /**
    * Skip server-side revalidation for this request.
    * Useful when autoRevalidateTags is enabled but you want to opt-out for specific mutations.
    * You can still pass empty [] to revalidateTags to skip triggering revalidation.
    * But this flag can be used if you want to revalidate client-side and skip server-side entirely.
    * Eg. you don't fetch any data on server component and you might want to skip the overhead of revalidation.
-   */
+   * */
   skipRevalidator?: boolean;
 };
