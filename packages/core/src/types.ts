@@ -24,10 +24,13 @@ export type FetchExecutor<
 export type RequestOptions<TBody = never> = {
   /** Request body - automatically JSON stringified if object/array */
   body?: TBody;
+
   /** Query parameters appended to URL */
   query?: Record<string, string | number | boolean | undefined>;
+
   /** Request headers - merged with default headers */
   headers?: HeadersInit;
+
   /** Cache mode for the request */
   cache?: RequestCache;
 };
@@ -158,18 +161,16 @@ export type EnlaceClient<TSchema, TRequestOptionsBase = object> = HttpMethods<
       : K]: EnlaceClient<TSchema[K], TRequestOptionsBase>;
   };
 
-type WildcardMethodFn<TRequestOptionsBase = object> = (
-  options?: RequestOptions<unknown> & TRequestOptionsBase
-) => Promise<EnlaceResponse<unknown, unknown>>;
-
 /** Untyped API client - allows any path access when no schema is provided */
 export type WildcardClient<TRequestOptionsBase = object> = {
-  get: WildcardMethodFn<TRequestOptionsBase>;
-  post: WildcardMethodFn<TRequestOptionsBase>;
-  put: WildcardMethodFn<TRequestOptionsBase>;
-  patch: WildcardMethodFn<TRequestOptionsBase>;
-  delete: WildcardMethodFn<TRequestOptionsBase>;
-} & {
+  (options?: RequestOptions<unknown> & TRequestOptionsBase): Promise<
+    EnlaceResponse<unknown, unknown>
+  >;
+  get: WildcardClient<TRequestOptionsBase>;
+  post: WildcardClient<TRequestOptionsBase>;
+  put: WildcardClient<TRequestOptionsBase>;
+  patch: WildcardClient<TRequestOptionsBase>;
+  delete: WildcardClient<TRequestOptionsBase>;
   [key: string]: WildcardClient<TRequestOptionsBase>;
   [key: number]: WildcardClient<TRequestOptionsBase>;
 };

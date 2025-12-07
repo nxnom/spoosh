@@ -1,2 +1,2 @@
-export * from "./useEnlace";
+export * from "./createEnlaceHook";
 export * from "./types";
