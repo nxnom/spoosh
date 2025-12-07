@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useReducer, useEffect } from "react";
 import type { EnlaceResponse } from "enlace-core";
 import type {
   ApiClient,
@@ -7,6 +7,7 @@ import type {
   TrackedCall,
   UseEnlaceQueryResult,
 } from "./types";
+import { hookReducer } from "./reducer";
 import { HTTP_METHODS } from "./types";
 import { generateTags } from "../utils/generateTags";
 import { onRevalidate } from "./revalidator";
@@ -100,7 +101,7 @@ export function useQueryMode<TSchema, TData, TError>(
     };
   };
 
-  const [state, setState] = useState<HookState>(getInitialState);
+  const [state, dispatch] = useReducer(hookReducer, null, getInitialState);
 
   const mountedRef = useRef(true);
   const fetchRef = useRef<(() => void) | null>(null);
@@ -108,11 +109,11 @@ export function useQueryMode<TSchema, TData, TError>(
   useEffect(() => {
     mountedRef.current = true;
 
-    setState(getInitialState());
+    dispatch({ type: "RESET", state: getInitialState() });
 
     const unsubscribe = subscribeCache(queryKey, () => {
       if (mountedRef.current) {
-        setState(getCachedState());
+        dispatch({ type: "SYNC_CACHE", state: getCachedState() });
       }
     });
 
@@ -123,11 +124,7 @@ export function useQueryMode<TSchema, TData, TError>(
         return;
       }
 
-      setState((s) => ({
-        ...s,
-        loading: s.data === undefined,
-        fetching: true,
-      }));
+      dispatch({ type: "FETCH_START" });
 
       let current: unknown = api;
       for (const segment of trackedCall.path) {
@@ -159,7 +156,7 @@ export function useQueryMode<TSchema, TData, TError>(
 
     const cached = getCache<TData, TError>(queryKey);
     if (cached?.data !== undefined && !isStale(queryKey, staleTime)) {
-      setState(getCachedState());
+      dispatch({ type: "SYNC_CACHE", state: getCachedState() });
     } else {
       doFetch();
     }

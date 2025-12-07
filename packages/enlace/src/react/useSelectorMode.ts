@@ -1,10 +1,7 @@
-import { useRef, useState } from "react";
+import { useRef, useReducer } from "react";
 import type { EnlaceResponse } from "enlace-core";
-import type {
-  HookState,
-  ReactRequestOptionsBase,
-  UseEnlaceSelectorResult,
-} from "./types";
+import type { ReactRequestOptionsBase, UseEnlaceSelectorResult } from "./types";
+import { hookReducer, initialState } from "./reducer";
 import { generateTags } from "../utils/generateTags";
 import { invalidateTags } from "./revalidator";
 
@@ -16,13 +13,7 @@ export function useSelectorMode<
   path: string[],
   autoRevalidateTags: boolean
 ): UseEnlaceSelectorResult<TMethod> {
-  const [state, setState] = useState<HookState>({
-    loading: false,
-    fetching: false,
-    ok: undefined,
-    data: undefined,
-    error: undefined,
-  });
+  const [state, dispatch] = useReducer(hookReducer, initialState);
 
   const methodRef = useRef(method);
   const triggerRef = useRef<TMethod | null>(null);
@@ -35,17 +26,12 @@ export function useSelectorMode<
 
   if (!triggerRef.current) {
     triggerRef.current = (async (...args: unknown[]) => {
-      setState((s) => ({ ...s, loading: s.data === undefined, fetching: true }));
+      dispatch({ type: "FETCH_START" });
       const res = await methodRef.current(...args);
-      setState({
-        loading: false,
-        fetching: false,
-        ok: res.ok,
-        data: res.ok ? res.data : undefined,
-        error: res.ok ? undefined : res.error,
-      });
 
       if (res.ok) {
+        dispatch({ type: "FETCH_SUCCESS", data: res.data });
+
         const options = args[0] as ReactRequestOptionsBase | undefined;
         const tagsToInvalidate =
           options?.revalidateTags ??
@@ -54,6 +40,8 @@ export function useSelectorMode<
         if (tagsToInvalidate.length > 0) {
           invalidateTags(tagsToInvalidate);
         }
+      } else {
+        dispatch({ type: "FETCH_ERROR", error: res.error });
       }
 
       return res;
