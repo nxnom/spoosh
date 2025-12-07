@@ -45,37 +45,31 @@ type ExtractData<T> = T extends (...args: any[]) => Promise<EnlaceResponse<infer
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for conditional type inference
 type ExtractError<T> = T extends (...args: any[]) => Promise<EnlaceResponse<unknown, infer E>> ? E : never;
 
+/** Discriminated union for hook response state - enables type narrowing on ok check */
+type HookResponseState<TData, TError> =
+  | { ok: undefined; data: undefined; error: undefined }
+  | { ok: true; data: TData; error: undefined }
+  | { ok: false; data: undefined; error: TError };
+
 /** Result when hook is called without selector (manual mode) */
 export type UseEnlaceManualResult<TSchema, TData = unknown, TError = unknown> = {
   client: ApiClient<TSchema>;
   loading: boolean;
-  ok: boolean | undefined;
-  data: TData | undefined;
-  error: TError | undefined;
-};
+} & HookResponseState<TData, TError>;
 
 /** Result when hook is called without selector (manual mode) - wildcard version */
 export type UseWildcardManualResult<TData = unknown, TError = unknown> = {
   client: WildcardClient<object>;
   loading: boolean;
-  ok: boolean | undefined;
-  data: TData | undefined;
-  error: TError | undefined;
-};
+} & HookResponseState<TData, TError>;
 
 /** Result when hook is called with query function (auto-fetch mode) */
 export type UseEnlaceQueryResult<TData, TError> = {
   loading: boolean;
-  ok: boolean | undefined;
-  data: TData | undefined;
-  error: TError | undefined;
-};
+} & HookResponseState<TData, TError>;
 
 /** Result when hook is called with method selector (trigger mode) */
 export type UseEnlaceSelectorResult<TMethod> = {
   trigger: TMethod;
   loading: boolean;
-  ok: boolean | undefined;
-  data: ExtractData<TMethod> | undefined;
-  error: ExtractError<TMethod> | undefined;
-};
+} & HookResponseState<ExtractData<TMethod>, ExtractError<TMethod>>;
