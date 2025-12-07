@@ -8,6 +8,7 @@ import type {
   QueryFn,
   SelectorFn,
   TrackedCall,
+  UseEnlaceQueryOptions,
   UseEnlaceQueryResult,
   UseEnlaceSelectorResult,
 } from "../react/types";
@@ -39,7 +40,8 @@ type NextEnlaceHook<TSchema> = {
   ): UseEnlaceSelectorResult<TMethod>;
 
   <TData, TError>(
-    queryFn: NextQueryFn<TSchema, TData, TError>
+    queryFn: NextQueryFn<TSchema, TData, TError>,
+    options?: UseEnlaceQueryOptions
   ): UseEnlaceQueryResult<TData, TError>;
 };
 
@@ -86,14 +88,17 @@ export function createEnlaceHook<TSchema = unknown>(
   >(
     selectorOrQuery:
       | NextSelectorFn<TSchema, TMethod>
-      | NextQueryFn<TSchema, TData, TError>
+      | NextQueryFn<TSchema, TData, TError>,
+    queryOptions?: UseEnlaceQueryOptions
   ): UseEnlaceSelectorResult<TMethod> | UseEnlaceQueryResult<TData, TError> {
     let trackedCall: TrackedCall | null = null;
     let selectorPath: string[] | null = null;
+    let selectorMethod: string | null = null;
 
     const trackingProxy = createTrackingProxy<TSchema>((result) => {
       trackedCall = result.trackedCall;
       selectorPath = result.selectorPath;
+      selectorMethod = result.selectorMethod;
     });
 
     const result = (
@@ -104,19 +109,21 @@ export function createEnlaceHook<TSchema = unknown>(
       const actualResult = (
         selectorOrQuery as (api: NextApiClient<TSchema>) => unknown
       )(api as NextApiClient<TSchema>);
-      return useSelectorMode<TMethod>(
-        actualResult as (
+      return useSelectorMode<TMethod>({
+        method: actualResult as (
           ...args: unknown[]
         ) => Promise<EnlaceResponse<unknown, unknown>>,
-        selectorPath ?? [],
-        autoRevalidateTags
-      );
+        api,
+        path: selectorPath ?? [],
+        methodName: selectorMethod ?? "",
+        autoRevalidateTags,
+      });
     }
 
     return useQueryMode<TSchema, TData, TError>(
       api as unknown as import("../react/types").ApiClient<TSchema>,
       trackedCall!,
-      { autoGenerateTags, staleTime }
+      { autoGenerateTags, staleTime, enabled: queryOptions?.enabled ?? true }
     );
   }
 

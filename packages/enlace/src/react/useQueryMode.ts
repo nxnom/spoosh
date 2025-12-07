@@ -18,9 +18,28 @@ import {
   isStale,
 } from "./cache";
 
+function resolvePath(
+  path: string[],
+  pathParams: Record<string, string | number> | undefined
+): string[] {
+  if (!pathParams) return path;
+  return path.map((segment) => {
+    if (segment.startsWith(":")) {
+      const paramName = segment.slice(1);
+      const value = pathParams[paramName];
+      if (value === undefined) {
+        throw new Error(`Missing path parameter: ${paramName}`);
+      }
+      return String(value);
+    }
+    return segment;
+  });
+}
+
 export type QueryModeOptions = {
   autoGenerateTags: boolean;
   staleTime: number;
+  enabled: boolean;
 };
 
 export function useQueryMode<TSchema, TData, TError>(
@@ -28,15 +47,16 @@ export function useQueryMode<TSchema, TData, TError>(
   trackedCall: TrackedCall,
   options: QueryModeOptions
 ): UseEnlaceQueryResult<TData, TError> {
-  const { autoGenerateTags, staleTime } = options;
+  const { autoGenerateTags, staleTime, enabled } = options;
   const queryKey = createQueryKey(trackedCall);
 
   const requestOptions = trackedCall.options as
     | ReactRequestOptionsBase
     | undefined;
+  const resolvedPath = resolvePath(trackedCall.path, requestOptions?.pathParams);
   const queryTags =
     requestOptions?.tags ??
-    (autoGenerateTags ? generateTags(trackedCall.path) : []);
+    (autoGenerateTags ? generateTags(resolvedPath) : []);
 
   const getCacheState = (includeNeedsFetch = false): HookState => {
     const cached = getCache<TData, TError>(queryKey);
@@ -60,6 +80,16 @@ export function useQueryMode<TSchema, TData, TError>(
   useEffect(() => {
     mountedRef.current = true;
 
+    if (!enabled) {
+      dispatch({
+        type: "RESET",
+        state: { loading: false, fetching: false, ok: undefined, data: undefined, error: undefined },
+      });
+      return () => {
+        mountedRef.current = false;
+      };
+    }
+
     dispatch({ type: "RESET", state: getCacheState(true) });
 
     const unsubscribe = subscribeCache(queryKey, () => {
@@ -78,7 +108,7 @@ export function useQueryMode<TSchema, TData, TError>(
       dispatch({ type: "FETCH_START" });
 
       let current: unknown = api;
-      for (const segment of trackedCall.path) {
+      for (const segment of resolvedPath) {
         current = (current as Record<string, unknown>)[segment];
       }
       const method = (current as Record<string, unknown>)[trackedCall.method] as (
@@ -117,7 +147,7 @@ export function useQueryMode<TSchema, TData, TError>(
       fetchRef.current = null;
       unsubscribe();
     };
-  }, [queryKey]);
+  }, [queryKey, enabled]);
 
   useEffect(() => {
     if (queryTags.length === 0) return;

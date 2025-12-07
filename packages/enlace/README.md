@@ -117,6 +117,34 @@ function Posts({ page, limit }: { page: number; limit: number }) {
 - Returns cached data while revalidating
 - **Request deduplication** — identical requests from multiple components trigger only one fetch
 
+### Conditional Fetching
+
+Skip fetching with the `enabled` option:
+
+```typescript
+function ProductForm({ id }: { id: string | "new" }) {
+  // Skip fetching when creating a new product
+  const { data, loading } = useAPI(
+    (api) => api.products[id].get(),
+    { enabled: id !== "new" }
+  );
+
+  if (id === "new") return <CreateProductForm />;
+  if (loading) return <div>Loading...</div>;
+  return <EditProductForm product={data} />;
+}
+```
+
+```typescript
+// Also useful when waiting for a dependency
+function UserPosts({ userId }: { userId: string | undefined }) {
+  const { data } = useAPI(
+    (api) => api.users[userId!].posts.get(),
+    { enabled: userId !== undefined }
+  );
+}
+```
+
 ```typescript
 function Post({ id }: { id: number }) {
   // Automatically re-fetches when `id` or query values change
@@ -184,6 +212,56 @@ function CreatePost() {
 
   return <button onClick={() => handleSubmit("New Post")}>Create</button>;
 }
+```
+
+### Dynamic Path Parameters
+
+Use `:paramName` syntax for dynamic IDs passed at trigger time:
+
+```typescript
+function PostList({ posts }: { posts: Post[] }) {
+  // Define once with :id placeholder
+  const { trigger, loading } = useAPI((api) => api.posts[":id"].delete);
+
+  const handleDelete = (postId: number) => {
+    // Pass the actual ID when triggering
+    trigger({ pathParams: { id: postId } });
+  };
+
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>
+          {post.title}
+          <button onClick={() => handleDelete(post.id)} disabled={loading}>
+            Delete
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+**Multiple path parameters:**
+
+```typescript
+const { trigger } = useAPI((api) => api.users[":userId"].posts[":postId"].delete);
+
+trigger({ pathParams: { userId: "1", postId: "42" } });
+// → DELETE /users/1/posts/42
+```
+
+**With request body:**
+
+```typescript
+const { trigger } = useAPI((api) => api.products[":id"].patch);
+
+trigger({
+  pathParams: { id: "123" },
+  body: { name: "Updated Product" },
+});
+// → PATCH /products/123 with body
 ```
 
 ## Caching & Auto-Revalidation
@@ -288,6 +366,15 @@ const useAPI = createEnlaceHook<ApiSchema>(
 ### Query Mode
 
 ```typescript
+// Basic usage
+const result = useAPI((api) => api.posts.get());
+
+// With options
+const result = useAPI(
+  (api) => api.posts.get(),
+  { enabled: true }  // Skip fetching when false
+);
+
 type UseEnlaceQueryResult<TData, TError> = {
   loading: boolean;   // No cached data and fetching
   fetching: boolean;  // Request in progress
@@ -307,6 +394,18 @@ type UseEnlaceSelectorResult<TMethod> = {
   ok: boolean | undefined;
   data: TData | undefined;
   error: TError | undefined;
+};
+```
+
+### Request Options
+
+```typescript
+type RequestOptions = {
+  query?: Record<string, unknown>;        // Query parameters
+  body?: TBody;                           // Request body
+  tags?: string[];                        // Cache tags (GET only)
+  revalidateTags?: string[];              // Tags to invalidate after mutation
+  pathParams?: Record<string, string | number>;  // Dynamic path parameters
 };
 ```
 

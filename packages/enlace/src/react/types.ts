@@ -15,6 +15,25 @@ export type ReactRequestOptionsBase = {
 
   /** Tags to invalidate after mutation (triggers refetch in matching queries) */
   revalidateTags?: string[];
+
+  /**
+   * Path parameters for dynamic URL segments.
+   * Used to replace :paramName placeholders in the URL path.
+   * @example
+   * // With path api.products[':id'].delete
+   * trigger({ pathParams: { id: '123' } }) // → DELETE /products/123
+   */
+  pathParams?: Record<string, string | number>;
+};
+
+/** Options for query mode hooks */
+export type UseEnlaceQueryOptions = {
+  /**
+   * Whether the query should execute.
+   * Set to false to skip fetching (useful when ID is "new" or undefined).
+   * @default true
+   */
+  enabled?: boolean;
 };
 
 // ============================================================================

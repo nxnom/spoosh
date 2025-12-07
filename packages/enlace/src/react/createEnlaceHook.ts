@@ -7,6 +7,7 @@ import type {
   ApiClient,
   QueryFn,
   SelectorFn,
+  UseEnlaceQueryOptions,
   UseEnlaceQueryResult,
   UseEnlaceSelectorResult,
 } from "./types";
@@ -40,7 +41,8 @@ type EnlaceHook<TSchema> = {
   ): UseEnlaceSelectorResult<TMethod>;
 
   <TData, TError>(
-    queryFn: QueryFn<TSchema, TData, TError>
+    queryFn: QueryFn<TSchema, TData, TError>,
+    options?: UseEnlaceQueryOptions
   ): UseEnlaceQueryResult<TData, TError>;
 };
 
@@ -80,7 +82,8 @@ export function createEnlaceHook<TSchema = unknown>(
   >(
     selectorOrQuery:
       | SelectorFn<TSchema, TMethod>
-      | QueryFn<TSchema, TData, TError>
+      | QueryFn<TSchema, TData, TError>,
+    queryOptions?: UseEnlaceQueryOptions
   ): UseEnlaceSelectorResult<TMethod> | UseEnlaceQueryResult<TData, TError> {
     let trackingResult: TrackingResult = {
       trackedCall: null,
@@ -99,19 +102,21 @@ export function createEnlaceHook<TSchema = unknown>(
       const actualResult = (
         selectorOrQuery as (api: ApiClient<TSchema>) => unknown
       )(api as ApiClient<TSchema>);
-      return useSelectorMode<TMethod>(
-        actualResult as (
+      return useSelectorMode<TMethod>({
+        method: actualResult as (
           ...args: unknown[]
         ) => Promise<EnlaceResponse<unknown, unknown>>,
-        trackingResult.selectorPath ?? [],
-        autoRevalidateTags
-      );
+        api,
+        path: trackingResult.selectorPath ?? [],
+        methodName: trackingResult.selectorMethod ?? "",
+        autoRevalidateTags,
+      });
     }
 
     return useQueryMode<TSchema, TData, TError>(
       api as ApiClient<TSchema>,
       trackingResult.trackedCall!,
-      { autoGenerateTags, staleTime }
+      { autoGenerateTags, staleTime, enabled: queryOptions?.enabled ?? true }
     );
   }
 
