@@ -1,6 +1,11 @@
 import { useRef, useState, useEffect } from "react";
 import type { EnlaceResponse } from "enlace-core";
-import type { ApiClient, HookState, TrackedCall, UseEnlaceQueryResult } from "./types";
+import type {
+  ApiClient,
+  HookState,
+  TrackedCall,
+  UseEnlaceQueryResult,
+} from "./types";
 import { HTTP_METHODS } from "./types";
 
 function createQueryKey(tracked: TrackedCall): string {
@@ -35,7 +40,7 @@ export function useQueryMode<TSchema, TData, TError>(
   trackedCall: TrackedCall
 ): UseEnlaceQueryResult<TData, TError> {
   const [state, setState] = useState<HookState>({
-    loading: false,
+    loading: true,
     ok: undefined,
     data: undefined,
     error: undefined,
