@@ -1,4 +1,5 @@
 import type { TrackedCall } from "./types";
+import { sortObjectKeys } from "../utils/sortObjectKeys";
 
 export type CacheEntry<TData = unknown, TError = unknown> = {
   data: TData | undefined;
@@ -11,21 +12,6 @@ export type CacheEntry<TData = unknown, TError = unknown> = {
 };
 
 const cache = new Map<string, CacheEntry>();
-
-function sortObjectKeys(obj: unknown): unknown {
-  if (obj === null || typeof obj !== "object") return obj;
-  if (Array.isArray(obj)) return obj.map(sortObjectKeys);
-
-  return Object.keys(obj as Record<string, unknown>)
-    .sort()
-    .reduce(
-      (sorted, key) => {
-        sorted[key] = sortObjectKeys((obj as Record<string, unknown>)[key]);
-        return sorted;
-      },
-      {} as Record<string, unknown>
-    );
-}
 
 export function createQueryKey(tracked: TrackedCall): string {
   return JSON.stringify(

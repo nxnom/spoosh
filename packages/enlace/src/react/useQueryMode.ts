@@ -38,11 +38,11 @@ export function useQueryMode<TSchema, TData, TError>(
     requestOptions?.tags ??
     (autoGenerateTags ? generateTags(trackedCall.path) : []);
 
-  const getInitialState = (): HookState => {
+  const getCacheState = (includeNeedsFetch = false): HookState => {
     const cached = getCache<TData, TError>(queryKey);
     const hasCachedData = cached?.data !== undefined;
     const isFetching = !!cached?.promise;
-    const needsFetch = !hasCachedData || isStale(queryKey, staleTime);
+    const needsFetch = includeNeedsFetch && (!hasCachedData || isStale(queryKey, staleTime));
     return {
       loading: !hasCachedData && (isFetching || needsFetch),
       fetching: isFetching || needsFetch,
@@ -52,20 +52,7 @@ export function useQueryMode<TSchema, TData, TError>(
     };
   };
 
-  const getCachedState = (): HookState => {
-    const cached = getCache<TData, TError>(queryKey);
-    const hasCachedData = cached?.data !== undefined;
-    const isFetching = !!cached?.promise;
-    return {
-      loading: !hasCachedData && isFetching,
-      fetching: isFetching,
-      ok: cached?.ok,
-      data: cached?.data,
-      error: cached?.error,
-    };
-  };
-
-  const [state, dispatch] = useReducer(hookReducer, null, getInitialState);
+  const [state, dispatch] = useReducer(hookReducer, null, () => getCacheState(true));
 
   const mountedRef = useRef(true);
   const fetchRef = useRef<(() => void) | null>(null);
@@ -73,11 +60,11 @@ export function useQueryMode<TSchema, TData, TError>(
   useEffect(() => {
     mountedRef.current = true;
 
-    dispatch({ type: "RESET", state: getInitialState() });
+    dispatch({ type: "RESET", state: getCacheState(true) });
 
     const unsubscribe = subscribeCache(queryKey, () => {
       if (mountedRef.current) {
-        dispatch({ type: "SYNC_CACHE", state: getCachedState() });
+        dispatch({ type: "SYNC_CACHE", state: getCacheState() });
       }
     });
 
@@ -120,7 +107,7 @@ export function useQueryMode<TSchema, TData, TError>(
 
     const cached = getCache<TData, TError>(queryKey);
     if (cached?.data !== undefined && !isStale(queryKey, staleTime)) {
-      dispatch({ type: "SYNC_CACHE", state: getCachedState() });
+      dispatch({ type: "SYNC_CACHE", state: getCacheState() });
     } else {
       doFetch();
     }
