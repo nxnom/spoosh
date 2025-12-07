@@ -8,7 +8,6 @@ import type {
   UseEnlaceQueryResult,
 } from "./types";
 import { hookReducer } from "./reducer";
-import { HTTP_METHODS } from "./types";
 import { generateTags } from "../utils/generateTags";
 import { onRevalidate } from "./revalidator";
 import {
@@ -18,41 +17,6 @@ import {
   subscribeCache,
   isStale,
 } from "./cache";
-
-export type TrackingResult = {
-  trackedCall: TrackedCall | null;
-  selectorPath: string[] | null;
-  selectorMethod: string | null;
-};
-
-export function createTrackingProxy<TSchema>(
-  onTrack: (result: TrackingResult) => void
-): ApiClient<TSchema> {
-  const createProxy = (path: string[] = []): unknown => {
-    return new Proxy(() => {}, {
-      get(_, prop: string) {
-        if (HTTP_METHODS.includes(prop as (typeof HTTP_METHODS)[number])) {
-          const methodFn = (options?: unknown) => {
-            onTrack({
-              trackedCall: { path, method: prop, options },
-              selectorPath: null,
-              selectorMethod: null,
-            });
-            return Promise.resolve({ ok: true, data: undefined });
-          };
-          onTrack({
-            trackedCall: null,
-            selectorPath: path,
-            selectorMethod: prop,
-          });
-          return methodFn;
-        }
-        return createProxy([...path, prop]);
-      },
-    });
-  };
-  return createProxy() as ApiClient<TSchema>;
-}
 
 export type QueryModeOptions = {
   autoGenerateTags: boolean;

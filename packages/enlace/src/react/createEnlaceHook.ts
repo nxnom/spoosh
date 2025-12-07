@@ -14,7 +14,8 @@ import type {
   WildcardQueryFn,
   WildcardSelectorFn,
 } from "./types";
-import { useQueryMode, createTrackingProxy, type TrackingResult } from "./useQueryMode";
+import { useQueryMode } from "./useQueryMode";
+import { createTrackingProxy, type TrackingResult } from "./trackingProxy";
 import { useSelectorMode } from "./useSelectorMode";
 
 export type EnlaceHookOptions = {
