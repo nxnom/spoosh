@@ -15,11 +15,11 @@ import { createEnlaceHook, Endpoint } from "enlace";
 
 type ApiSchema = {
   posts: {
-    $get: Endpoint<Post[]>;
+    $get: Endpoint<Post[], ApiError>;
     $post: Endpoint<Post, ApiError, CreatePost>;
     _: {
-      $get: Endpoint<Post>;
-      $delete: Endpoint<void>;
+      $get: Endpoint<Post, ApiError>;
+      $delete: Endpoint<void, ApiError>;
     };
   };
 };
@@ -52,14 +52,14 @@ import { Endpoint } from "enlace";
 
 type ApiSchema = {
   users: {
-    $get: Endpoint<User[]>;           // GET /users
-    $post: Endpoint<User>;            // POST /users
-    _: {                              // /users/:id
-      $get: Endpoint<User>;           // GET /users/:id
-      $put: Endpoint<User>;           // PUT /users/:id
-      $delete: Endpoint<void>;        // DELETE /users/:id
+    $get: Endpoint<User[], ApiError>;           // GET /users
+    $post: Endpoint<User, ApiError>;            // POST /users
+    _: {                                        // /users/:id
+      $get: Endpoint<User, ApiError>;           // GET /users/:id
+      $put: Endpoint<User, ApiError>;           // PUT /users/:id
+      $delete: Endpoint<void, ApiError>;        // DELETE /users/:id
       profile: {
-        $get: Endpoint<Profile>;      // GET /users/:id/profile
+        $get: Endpoint<Profile, ApiError>;      // GET /users/:id/profile
       };
     };
   };
@@ -74,16 +74,16 @@ api.users[123].profile.get(); // GET /users/123/profile
 ### Endpoint Type
 
 ```typescript
-type Endpoint<TData, TError = unknown, TBody = never> = {
+type Endpoint<TData, TError, TBody = never> = {
   data: TData;    // Response data type
-  error: TError;  // Error response type
-  body: TBody;    // Request body type
+  error: TError;  // Error response type (required)
+  body: TBody;    // Request body type (optional)
 };
 
 // Examples
-type GetUsers = Endpoint<User[]>;                      // GET, no body
+type GetUsers = Endpoint<User[], ApiError>;                   // GET, no body
 type CreateUser = Endpoint<User, ApiError, CreateUserInput>;  // POST with body
-type DeleteUser = Endpoint<void, NotFoundError>;       // DELETE, no response data
+type DeleteUser = Endpoint<void, NotFoundError>;              // DELETE, no response data
 ```
 
 ## React Hooks
@@ -115,12 +115,41 @@ function Posts({ page, limit }: { page: number; limit: number }) {
 - Auto-fetches on mount
 - Re-fetches when dependencies change (no deps array needed!)
 - Returns cached data while revalidating
+- **Request deduplication** — identical requests from multiple components trigger only one fetch
 
 ```typescript
 function Post({ id }: { id: number }) {
   // Automatically re-fetches when `id` or query values change
   const { data } = useAPI((api) => api.posts[id].get({ query: { include: "author" } }));
   return <div>{data?.title}</div>;
+}
+```
+
+### Request Deduplication
+
+Multiple components requesting the same data will share a single network request:
+
+```typescript
+// Both components render at the same time
+function PostTitle({ id }: { id: number }) {
+  const { data } = useAPI((api) => api.posts[id].get());
+  return <h1>{data?.title}</h1>;
+}
+
+function PostBody({ id }: { id: number }) {
+  const { data } = useAPI((api) => api.posts[id].get());
+  return <p>{data?.body}</p>;
+}
+
+// Only ONE fetch request is made to GET /posts/123
+// Both components share the same cached result
+function PostPage() {
+  return (
+    <>
+      <PostTitle id={123} />
+      <PostBody id={123} />
+    </>
+  );
 }
 ```
 

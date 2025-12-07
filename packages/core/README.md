@@ -35,16 +35,16 @@ import { createEnlace, Endpoint } from "enlace-core";
 
 type ApiSchema = {
   users: {
-    $get: Endpoint<User[]>;
+    $get: Endpoint<User[], ApiError>;
     $post: Endpoint<User, ApiError, CreateUser>;
     _: {
       $get: Endpoint<User, NotFoundError>;
       $put: Endpoint<User, ApiError, UpdateUser>;
-      $delete: Endpoint<void>;
+      $delete: Endpoint<void, ApiError>;
     };
   };
   posts: {
-    $get: Endpoint<Post[]>;
+    $get: Endpoint<Post[], ApiError>;
   };
 };
 
@@ -64,12 +64,12 @@ const newUser = await api.users.post({ body: { name: "John" } });
 ```typescript
 type Schema = {
   users: {
-    $get: Endpoint<User[]>;           // GET /users
-    $post: Endpoint<User>;            // POST /users
-    _: {                              // /users/:id
-      $get: Endpoint<User>;           // GET /users/:id
+    $get: Endpoint<User[], ApiError>;           // GET /users
+    $post: Endpoint<User, ApiError>;            // POST /users
+    _: {                                        // /users/:id
+      $get: Endpoint<User, ApiError>;           // GET /users/:id
       profile: {
-        $get: Endpoint<Profile>;      // GET /users/:id/profile
+        $get: Endpoint<Profile, ApiError>;      // GET /users/:id/profile
       };
     };
   };
@@ -108,12 +108,12 @@ type EnlaceOptions = {
 };
 ```
 
-### `Endpoint<TData, TError?, TBody?>`
+### `Endpoint<TData, TError, TBody?>`
 
 Type helper for defining endpoints:
 
 ```typescript
-type Endpoint<TData, TError = unknown, TBody = never> = {
+type Endpoint<TData, TError, TBody = never> = {
   data: TData;
   error: TError;
   body: TBody;

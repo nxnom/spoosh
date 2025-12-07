@@ -10,7 +10,6 @@ A type-safe API client for React and Next.js with built-in caching and automatic
 - **Proxy-Based API** — Fluent interface: `api.users[id].posts.get()`
 - **React Hooks** — SWR-style caching with automatic dependency tracking
 - **Next.js Integration** — ISR, cache tags, and server-side revalidation
-- **Zero Dependencies** — Core package has minimal dependencies
 
 ## Packages
 
@@ -37,11 +36,11 @@ import { createEnlaceHook } from "enlace";
 // Define your API schema
 type ApiSchema = {
   posts: {
-    $get: Endpoint<Post[]>;
+    $get: Endpoint<Post[], ApiError>;
     $post: Endpoint<Post, ApiError, CreatePost>;
     _: {
-      $get: Endpoint<Post>;
-      $delete: Endpoint<void>;
+      $get: Endpoint<Post, ApiError>;
+      $delete: Endpoint<void, ApiError>;
     };
   };
 };
