@@ -361,6 +361,43 @@ const useAPI = createEnlaceHook<ApiSchema>(
 );
 ```
 
+### Async Headers
+
+Headers can be provided as a static value, sync function, or async function. This is useful when you need to fetch headers dynamically (e.g., auth tokens from async storage):
+
+```typescript
+// Static headers
+const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com", {
+  headers: { Authorization: "Bearer token" },
+});
+
+// Sync function
+const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com", {
+  headers: () => ({ Authorization: `Bearer ${getToken()}` }),
+});
+
+// Async function
+const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com", {
+  headers: async () => {
+    const token = await getTokenFromStorage();
+    return { Authorization: `Bearer ${token}` };
+  },
+});
+```
+
+This also works for per-request headers:
+
+```typescript
+const { data } = useAPI((api) =>
+  api.posts.get({
+    headers: async () => {
+      const token = await refreshToken();
+      return { Authorization: `Bearer ${token}` };
+    },
+  })
+);
+```
+
 ## Return Types
 
 ### Query Mode
@@ -403,6 +440,7 @@ type UseEnlaceSelectorResult<TMethod> = {
 type RequestOptions = {
   query?: Record<string, unknown>;        // Query parameters
   body?: TBody;                           // Request body
+  headers?: HeadersInit | (() => HeadersInit | Promise<HeadersInit>);  // Request headers
   tags?: string[];                        // Cache tags (GET only)
   revalidateTags?: string[];              // Tags to invalidate after mutation
   pathParams?: Record<string, string | number>;  // Dynamic path parameters

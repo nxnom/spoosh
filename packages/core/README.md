@@ -102,10 +102,45 @@ const api = createEnlace<ApiSchema>("https://api.example.com", {
 **Options:**
 ```typescript
 type EnlaceOptions = {
-  headers?: HeadersInit;
+  headers?: HeadersInit | (() => HeadersInit | Promise<HeadersInit>);
   cache?: RequestCache;
   // ...other fetch options
 };
+```
+
+### Async Headers
+
+Headers can be provided as a static value, sync function, or async function. This is useful when you need to fetch headers dynamically (e.g., auth tokens from async storage):
+
+```typescript
+// Static headers
+const api = createEnlace("https://api.example.com", {
+  headers: { Authorization: "Bearer token" },
+});
+
+// Sync function
+const api = createEnlace("https://api.example.com", {
+  headers: () => ({ Authorization: `Bearer ${getToken()}` }),
+});
+
+// Async function
+const api = createEnlace("https://api.example.com", {
+  headers: async () => {
+    const token = await getTokenFromStorage();
+    return { Authorization: `Bearer ${token}` };
+  },
+});
+```
+
+This also works for per-request headers:
+
+```typescript
+api.users.get({
+  headers: async () => {
+    const token = await refreshToken();
+    return { Authorization: `Bearer ${token}` };
+  },
+});
 ```
 
 ### `Endpoint<TData, TError, TBody?>`
@@ -136,7 +171,7 @@ api.users.post({
 **Available options:**
 - `body` — Request body (auto-serialized to JSON for objects/arrays)
 - `query` — Query parameters (auto-serialized)
-- `headers` — Request headers (merged with defaults)
+- `headers` — Request headers (merged with defaults). Can be `HeadersInit` or `() => HeadersInit | Promise<HeadersInit>`
 - `cache` — Cache mode
 
 ### Response Type
