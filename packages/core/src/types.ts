@@ -3,9 +3,8 @@ export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 export type SchemaMethod = "$get" | "$post" | "$put" | "$patch" | "$delete";
 
 export type EnlaceResponse<TData, TError> =
-  | { ok: true; status: number; data: TData; headers: Headers; error?: never }
-  | { ok: false; status: number; data?: never; headers: Headers; error: TError }
-  | { ok: false; status: 0; data?: never; headers: null; error: Error };
+  | { ok: true; status: number; data: TData; headers?: Headers; error?: never }
+  | { ok: false; status: number; data?: never; headers?: Headers; error: TError }; // prettier-ignore
 
 export type HeadersInitOrGetter =
   | HeadersInit
@@ -18,22 +17,20 @@ export type EnlaceOptions = Omit<RequestInit, "method" | "body" | "headers"> & {
 export type EnlaceCallbackPayload<T> = {
   status: number;
   data: T;
-  headers: Headers;
+  headers?: Headers;
 };
 
-export type EnlaceNetworkError = {
-  status: 0;
-  error: Error;
-  headers: null;
+export type EnlaceErrorCallbackPayload<T> = {
+  status: number;
+  error: T;
+  headers?: Headers;
 };
-
-export type EnlaceErrorCallbackPayload<T> =
-  | { status: number; error: T; headers: Headers }
-  | EnlaceNetworkError;
 
 export type EnlaceCallbacks = {
   onSuccess?: ((payload: EnlaceCallbackPayload<unknown>) => void) | undefined;
-  onError?: ((payload: EnlaceErrorCallbackPayload<unknown>) => void) | undefined;
+  onError?:
+  | ((payload: EnlaceErrorCallbackPayload<unknown>) => void)
+  | undefined;
 };
 
 /** Function type for custom fetch implementations */
@@ -88,8 +85,8 @@ type ExtractMethodDef<TSchema, TMethod extends SchemaMethod> = TSchema extends {
   [K in TMethod]: infer M;
 }
   ? M extends MethodDefinition
-    ? M
-    : never
+  ? M
+  : never
   : never;
 
 type ExtractData<TSchema, TMethod extends SchemaMethod> =
@@ -113,34 +110,34 @@ type MethodFn<
   TRequestOptionsBase = object,
 > =
   HasMethod<TSchema, TMethod> extends true
-    ? ExtractBody<TSchema, TMethod> extends never
-      ? (
-          options?: RequestOptions<never> & TRequestOptionsBase
-        ) => Promise<
-          EnlaceResponse<
-            ExtractData<TSchema, TMethod>,
-            ExtractError<TSchema, TMethod>
-          >
-        >
-      : (
-          options: RequestOptions<ExtractBody<TSchema, TMethod>> &
-            TRequestOptionsBase
-        ) => Promise<
-          EnlaceResponse<
-            ExtractData<TSchema, TMethod>,
-            ExtractError<TSchema, TMethod>
-          >
-        >
-    : never;
+  ? ExtractBody<TSchema, TMethod> extends never
+  ? (
+    options?: RequestOptions<never> & TRequestOptionsBase
+  ) => Promise<
+    EnlaceResponse<
+      ExtractData<TSchema, TMethod>,
+      ExtractError<TSchema, TMethod>
+    >
+  >
+  : (
+    options: RequestOptions<ExtractBody<TSchema, TMethod>> &
+      TRequestOptionsBase
+  ) => Promise<
+    EnlaceResponse<
+      ExtractData<TSchema, TMethod>,
+      ExtractError<TSchema, TMethod>
+    >
+  >
+  : never;
 
 type IsSpecialKey<K> = K extends SchemaMethod | "_" ? true : false;
 
 type StaticPathKeys<TSchema> = {
   [K in keyof TSchema as IsSpecialKey<K> extends true
-    ? never
-    : K extends string
-      ? K
-      : never]: TSchema[K];
+  ? never
+  : K extends string
+  ? K
+  : never]: TSchema[K];
 };
 
 type ExtractDynamicSchema<TSchema> = TSchema extends { _: infer D } ? D : never;
@@ -164,17 +161,17 @@ type HttpMethods<TSchema, TRequestOptionsBase = object> = {
 
 type DynamicAccess<TSchema, TRequestOptionsBase = object> =
   ExtractDynamicSchema<TSchema> extends never
-    ? object
-    : {
-        [key: string]: EnlaceClient<
-          ExtractDynamicSchema<TSchema>,
-          TRequestOptionsBase
-        >;
-        [key: number]: EnlaceClient<
-          ExtractDynamicSchema<TSchema>,
-          TRequestOptionsBase
-        >;
-      };
+  ? object
+  : {
+    [key: string]: EnlaceClient<
+      ExtractDynamicSchema<TSchema>,
+      TRequestOptionsBase
+    >;
+    [key: number]: EnlaceClient<
+      ExtractDynamicSchema<TSchema>,
+      TRequestOptionsBase
+    >;
+  };
 
 type MethodNameKeys = "get" | "post" | "put" | "patch" | "delete";
 
@@ -184,16 +181,16 @@ export type EnlaceClient<TSchema, TRequestOptionsBase = object> = HttpMethods<
   TRequestOptionsBase
 > &
   DynamicAccess<TSchema, TRequestOptionsBase> & {
-    [K in keyof StaticPathKeys<TSchema> as K extends MethodNameKeys
-      ? never
-      : K]: EnlaceClient<TSchema[K], TRequestOptionsBase>;
-  };
+  [K in keyof StaticPathKeys<TSchema> as K extends MethodNameKeys
+  ? never
+  : K]: EnlaceClient<TSchema[K], TRequestOptionsBase>;
+};
 
 /** Untyped API client - allows any path access when no schema is provided */
 export type WildcardClient<TRequestOptionsBase = object> = {
-  (options?: RequestOptions<unknown> & TRequestOptionsBase): Promise<
-    EnlaceResponse<unknown, unknown>
-  >;
+  (
+    options?: RequestOptions<unknown> & TRequestOptionsBase
+  ): Promise<EnlaceResponse<unknown, unknown>>;
   get: WildcardClient<TRequestOptionsBase>;
   post: WildcardClient<TRequestOptionsBase>;
   put: WildcardClient<TRequestOptionsBase>;
