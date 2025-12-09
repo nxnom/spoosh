@@ -7,7 +7,13 @@ export type EnlaceResponse<TData, TError> =
   | { ok: false; status: number; data?: never; headers: Headers; error: TError }
   | { ok: false; status: 0; data?: never; headers: null; error: Error };
 
-export type EnlaceOptions = Omit<RequestInit, "method" | "body">;
+export type HeadersInitOrGetter =
+  | HeadersInit
+  | (() => HeadersInit | Promise<HeadersInit>);
+
+export type EnlaceOptions = Omit<RequestInit, "method" | "body" | "headers"> & {
+  headers?: HeadersInitOrGetter;
+};
 
 export type EnlaceCallbackPayload<T> = {
   status: number;
@@ -50,8 +56,8 @@ export type RequestOptions<TBody = never> = {
   /** Query parameters appended to URL */
   query?: Record<string, string | number | boolean | undefined>;
 
-  /** Request headers - merged with default headers */
-  headers?: HeadersInit;
+  /** Request headers - merged with default headers. Can be HeadersInit or async function returning HeadersInit */
+  headers?: HeadersInitOrGetter;
 
   /** Cache mode for the request */
   cache?: RequestCache;

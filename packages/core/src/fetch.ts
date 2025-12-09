@@ -14,11 +14,12 @@ export async function executeFetch<TData, TError>(
   defaultOptions: EnlaceOptions & EnlaceCallbacks,
   requestOptions?: RequestOptions<unknown>
 ): Promise<EnlaceResponse<TData, TError>> {
-  const { onSuccess, onError, ...fetchDefaults } = defaultOptions;
+  const { onSuccess, onError, headers: defaultHeaders, ...fetchDefaults } =
+    defaultOptions;
 
   const url = buildUrl(baseUrl, path, requestOptions?.query);
 
-  let headers = mergeHeaders(fetchDefaults.headers, requestOptions?.headers);
+  let headers = await mergeHeaders(defaultHeaders, requestOptions?.headers);
 
   const fetchOptions: RequestInit = { ...fetchDefaults, method };
 
@@ -31,7 +32,7 @@ export async function executeFetch<TData, TError>(
   if (requestOptions?.body !== undefined) {
     if (isJsonBody(requestOptions.body)) {
       fetchOptions.body = JSON.stringify(requestOptions.body);
-      headers = mergeHeaders(headers, { "Content-Type": "application/json" });
+      headers = await mergeHeaders(headers, { "Content-Type": "application/json" });
       if (headers) {
         fetchOptions.headers = headers;
       }
