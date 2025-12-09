@@ -1,7 +1,15 @@
 export { type EnlaceOptions, type EnlaceCallbacks } from "enlace-core";
-import type { EnlaceCallbacks } from "enlace-core";
-import type { EnlaceHookOptions } from "../react/createEnlaceHook";
-import type { ReactRequestOptionsBase } from "../react/types";
+import type { EnlaceCallbacks, EnlaceResponse } from "enlace-core";
+import type {
+  ApiClient,
+  EnlaceHookOptions,
+  QueryFn,
+  ReactRequestOptionsBase,
+  SelectorFn,
+  UseEnlaceQueryOptions,
+  UseEnlaceQueryResult,
+  UseEnlaceSelectorResult,
+} from "../react/types";
 
 /**
  * Handler function called after successful mutations to trigger server-side revalidation.
@@ -56,4 +64,40 @@ export type NextRequestOptionsBase = ReactRequestOptionsBase & {
    * Eg. you don't fetch any data on server component and you might want to skip the overhead of revalidation.
    */
   skipRevalidator?: boolean;
+};
+
+// ============================================================================
+// Next.js Hook Types
+// ============================================================================
+
+export type NextApiClient<TSchema> = ApiClient<TSchema, NextRequestOptionsBase>;
+
+export type NextQueryFn<TSchema, TData, TError> = QueryFn<
+  TSchema,
+  TData,
+  TError,
+  NextRequestOptionsBase
+>;
+
+export type NextSelectorFn<TSchema, TMethod> = SelectorFn<
+  TSchema,
+  TMethod,
+  NextRequestOptionsBase
+>;
+
+/** Hook type returned by Next.js createEnlaceHook */
+export type NextEnlaceHook<TSchema> = {
+  <
+    TMethod extends (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for method type inference
+      ...args: any[]
+    ) => Promise<EnlaceResponse<unknown, unknown>>,
+  >(
+    selector: NextSelectorFn<TSchema, TMethod>
+  ): UseEnlaceSelectorResult<TMethod>;
+
+  <TData, TError>(
+    queryFn: NextQueryFn<TSchema, TData, TError>,
+    options?: UseEnlaceQueryOptions
+  ): UseEnlaceQueryResult<TData, TError>;
 };

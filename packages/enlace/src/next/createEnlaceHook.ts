@@ -2,11 +2,14 @@
 
 import type { EnlaceOptions, EnlaceResponse } from "enlace-core";
 import { createEnlace } from "./index";
-import type { NextHookOptions, NextRequestOptionsBase } from "./types";
 import type {
-  ApiClient,
-  QueryFn,
-  SelectorFn,
+  NextApiClient,
+  NextEnlaceHook,
+  NextHookOptions,
+  NextQueryFn,
+  NextSelectorFn,
+} from "./types";
+import type {
   TrackedCall,
   UseEnlaceQueryOptions,
   UseEnlaceQueryResult,
@@ -15,35 +18,6 @@ import type {
 import { useQueryMode } from "../react/useQueryMode";
 import { useSelectorMode } from "../react/useSelectorMode";
 import { createTrackingProxy } from "../react/trackingProxy";
-
-type NextApiClient<TSchema> = ApiClient<TSchema, NextRequestOptionsBase>;
-type NextQueryFn<TSchema, TData, TError> = QueryFn<
-  TSchema,
-  TData,
-  TError,
-  NextRequestOptionsBase
->;
-type NextSelectorFn<TSchema, TMethod> = SelectorFn<
-  TSchema,
-  TMethod,
-  NextRequestOptionsBase
->;
-
-type NextEnlaceHook<TSchema> = {
-  <
-    TMethod extends (
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for method type inference
-      ...args: any[]
-    ) => Promise<EnlaceResponse<unknown, unknown>>,
-  >(
-    selector: NextSelectorFn<TSchema, TMethod>
-  ): UseEnlaceSelectorResult<TMethod>;
-
-  <TData, TError>(
-    queryFn: NextQueryFn<TSchema, TData, TError>,
-    options?: UseEnlaceQueryOptions
-  ): UseEnlaceQueryResult<TData, TError>;
-};
 
 /**
  * Creates a React hook for making API calls in Next.js Client Components.
