@@ -11,7 +11,8 @@ npm install enlace
 ## Quick Start
 
 ```typescript
-import { createEnlaceHook, Endpoint } from "enlace";
+import { createEnlaceHookReact } from "enlace/hook";
+import { Endpoint } from "enlace";
 
 type ApiSchema = {
   posts: {
@@ -24,7 +25,7 @@ type ApiSchema = {
   };
 };
 
-const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com");
+const useAPI = createEnlaceHookReact<ApiSchema>("https://api.example.com");
 ```
 
 ## Schema Conventions
@@ -33,13 +34,13 @@ Defining a schema is **recommended** for full type safety, but **optional**. You
 
 ```typescript
 // Without schema (untyped, but still works!)
-const useAPI = createEnlaceHook("https://api.example.com");
+const useAPI = createEnlaceHookReact("https://api.example.com");
 const { data } = useAPI((api) => api.any.path.you.want.get());
 ```
 
 ```typescript
 // With schema (recommended for type safety)
-const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com");
+const useAPI = createEnlaceHookReact<ApiSchema>("https://api.example.com");
 ```
 
 ### Schema Structure
@@ -310,7 +311,7 @@ trigger({ body: { title: "New" } });
 Control how long cached data is considered fresh:
 
 ```typescript
-const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com", {}, {
+const useAPI = createEnlaceHookReact<ApiSchema>("https://api.example.com", {}, {
   staleTime: 5000, // 5 seconds
 });
 ```
@@ -337,7 +338,7 @@ trigger({
 ### Disable Auto-Revalidation
 
 ```typescript
-const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com", {}, {
+const useAPI = createEnlaceHookReact<ApiSchema>("https://api.example.com", {}, {
   autoGenerateTags: false,     // Disable auto tag generation
   autoRevalidateTags: false,   // Disable auto revalidation
 });
@@ -346,7 +347,7 @@ const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com", {}, {
 ## Hook Options
 
 ```typescript
-const useAPI = createEnlaceHook<ApiSchema>(
+const useAPI = createEnlaceHookReact<ApiSchema>(
   "https://api.example.com",
   {
     // Default fetch options
@@ -367,17 +368,17 @@ Headers can be provided as a static value, sync function, or async function. Thi
 
 ```typescript
 // Static headers
-const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com", {
+const useAPI = createEnlaceHookReact<ApiSchema>("https://api.example.com", {
   headers: { Authorization: "Bearer token" },
 });
 
 // Sync function
-const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com", {
+const useAPI = createEnlaceHookReact<ApiSchema>("https://api.example.com", {
   headers: () => ({ Authorization: `Bearer ${getToken()}` }),
 });
 
 // Async function
-const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com", {
+const useAPI = createEnlaceHookReact<ApiSchema>("https://api.example.com", {
   headers: async () => {
     const token = await getTokenFromStorage();
     return { Authorization: `Bearer ${token}` };
@@ -403,7 +404,7 @@ const { data } = useAPI((api) =>
 You can set up global `onSuccess` and `onError` callbacks that are called for every request:
 
 ```typescript
-const useAPI = createEnlaceHook<ApiSchema>(
+const useAPI = createEnlaceHookReact<ApiSchema>(
   "https://api.example.com",
   {
     headers: { Authorization: "Bearer token" },
@@ -502,12 +503,12 @@ type RequestOptions = {
 
 ### Server Components
 
-Use `createEnlace` from `enlace/next` for server components:
+Use `createEnlaceNext` from `enlace` for server components:
 
 ```typescript
-import { createEnlace } from "enlace/next";
+import { createEnlaceNext } from "enlace";
 
-const api = createEnlace<ApiSchema>("https://api.example.com", {}, {
+const api = createEnlaceNext<ApiSchema>("https://api.example.com", {}, {
   autoGenerateTags: true,
 });
 
@@ -522,14 +523,14 @@ export default async function Page() {
 
 ### Client Components
 
-Use `createEnlaceHook` from `enlace/next/hook` for client components:
+Use `createEnlaceHookNext` from `enlace/hook` for client components:
 
 ```typescript
 "use client";
 
-import { createEnlaceHook } from "enlace/next/hook";
+import { createEnlaceHookNext } from "enlace/hook";
 
-const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com");
+const useAPI = createEnlaceHookNext<ApiSchema>("https://api.example.com");
 ```
 
 ### Server-Side Revalidation
@@ -554,10 +555,10 @@ export async function revalidateAction(tags: string[], paths: string[]) {
 
 ```typescript
 // useAPI.ts
-import { createEnlaceHook } from "enlace/next/hook";
+import { createEnlaceHookNext } from "enlace/hook";
 import { revalidateAction } from "./actions";
 
-const useAPI = createEnlaceHook<ApiSchema>("/api", {}, {
+const useAPI = createEnlaceHookNext<ApiSchema>("/api", {}, {
   revalidator: revalidateAction,
 });
 ```
@@ -596,16 +597,20 @@ Works with Next.js API routes:
 
 ```typescript
 // Client component calling /api/posts
-const useAPI = createEnlaceHook<ApiSchema>("/api");
+const useAPI = createEnlaceHookNext<ApiSchema>("/api");
 ```
 
 ---
 
 ## API Reference
 
-### `createEnlaceHook<TSchema>(baseUrl, options?, hookOptions?)`
+### `createEnlaceHookReact<TSchema>(baseUrl, options?, hookOptions?)`
 
 Creates a React hook for making API calls.
+
+### `createEnlaceHookNext<TSchema>(baseUrl, options?, hookOptions?)`
+
+Creates a Next.js hook with server revalidation support.
 
 **Parameters:**
 - `baseUrl` — Base URL for requests

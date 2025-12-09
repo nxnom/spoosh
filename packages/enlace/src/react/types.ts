@@ -123,7 +123,7 @@ export type UseEnlaceSelectorResult<TMethod> = {
 // Hook Factory Types
 // ============================================================================
 
-/** Options for createEnlaceHook factory */
+/** Options for createEnlaceHookReact factory */
 export type EnlaceHookOptions = {
   /**
    * Auto-generate cache tags from URL path for GET requests.
@@ -145,7 +145,7 @@ export type EnlaceHookOptions = {
   onError?: (payload: EnlaceErrorCallbackPayload<unknown>) => void;
 };
 
-/** Hook type returned by createEnlaceHook */
+/** Hook type returned by createEnlaceHookReact */
 export type EnlaceHook<TSchema> = {
   <
     TMethod extends (

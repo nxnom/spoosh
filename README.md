@@ -31,7 +31,7 @@ npm install enlace-core
 ### Basic Usage
 
 ```typescript
-import { createEnlaceHook } from "enlace";
+import { createEnlaceHookReact } from "enlace/hook";
 
 // Define your API schema
 type ApiSchema = {
@@ -46,7 +46,7 @@ type ApiSchema = {
 };
 
 // Create a hook
-const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com");
+const useAPI = createEnlaceHookReact<ApiSchema>("https://api.example.com");
 
 // Use in components
 function Posts() {
@@ -93,10 +93,10 @@ export async function revalidateAction(tags: string[]) {
 
 ```typescript
 // useAPI.ts
-import { createEnlaceHook } from "enlace/next/hook";
+import { createEnlaceHookNext } from "enlace/hook";
 import { revalidateAction } from "./actions";
 
-const useAPI = createEnlaceHook<ApiSchema>("https://api.example.com", {}, {
+const useAPI = createEnlaceHookNext<ApiSchema>("https://api.example.com", {}, {
   revalidator: revalidateAction,
 });
 ```

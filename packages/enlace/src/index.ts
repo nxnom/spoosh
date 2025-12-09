@@ -1,2 +1,3 @@
 export * from "enlace-core";
-export * from "./react";
+export { createEnlaceNext } from "./next";
+export type { NextOptions, NextRequestOptionsBase } from "./next/types";

@@ -1,7 +1,7 @@
 "use client";
 
 import type { EnlaceOptions, EnlaceResponse } from "enlace-core";
-import { createEnlace } from "./index";
+import { createEnlaceNext } from "./index";
 import type {
   NextApiClient,
   NextEnlaceHook,
@@ -24,7 +24,7 @@ import { createTrackingProxy } from "../react/trackingProxy";
  * Uses Next.js-specific features like revalidator for server-side cache invalidation.
  *
  * @example
- * const useAPI = createEnlaceHook<ApiSchema>('https://api.com', {}, {
+ * const useAPI = createEnlaceHookNext<ApiSchema>('https://api.com', {}, {
  *   revalidator: (tags) => revalidateTagsAction(tags),
  *   staleTime: 5000,
  * });
@@ -35,7 +35,7 @@ import { createTrackingProxy } from "../react/trackingProxy";
  * // Selector mode - trigger for mutations
  * const { trigger } = useAPI((api) => api.posts.delete);
  */
-export function createEnlaceHook<TSchema = unknown>(
+export function createEnlaceHookNext<TSchema = unknown>(
   baseUrl: string,
   defaultOptions: EnlaceOptions = {},
   hookOptions: NextHookOptions = {}
@@ -46,7 +46,7 @@ export function createEnlaceHook<TSchema = unknown>(
     staleTime = 0,
     ...nextOptions
   } = hookOptions;
-  const api = createEnlace<TSchema>(baseUrl, defaultOptions, {
+  const api = createEnlaceNext<TSchema>(baseUrl, defaultOptions, {
     autoGenerateTags,
     autoRevalidateTags,
     ...nextOptions,

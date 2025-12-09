@@ -1,6 +1,6 @@
 {
   "name": "enlace",
-  "version": "0.0.1-beta.5",
+  "version": "0.0.1-beta.6",
   "license": "MIT",
   "files": ["dist"],
   "exports": {
@@ -9,15 +9,10 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
-    "./next": {
-      "types": "./dist/next/index.d.ts",
-      "import": "./dist/next/index.mjs",
-      "require": "./dist/next/index.js"
-    },
-    "./next/hook": {
-      "types": "./dist/next/hook/index.d.ts",
-      "import": "./dist/next/hook/index.mjs",
-      "require": "./dist/next/hook/index.js"
+    "./hook": {
+      "types": "./dist/hook/index.d.ts",
+      "import": "./dist/hook/index.mjs",
+      "require": "./dist/hook/index.js"
     }
   },
   "scripts": {

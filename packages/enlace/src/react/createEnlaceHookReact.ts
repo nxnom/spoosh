@@ -18,7 +18,7 @@ import { useSelectorMode } from "./useSelectorMode";
  * Called at module level to create a reusable hook.
  *
  * @example
- * const useAPI = createEnlaceHook<ApiSchema>('https://api.com');
+ * const useAPI = createEnlaceHookReact<ApiSchema>('https://api.com');
  *
  * // Query mode - auto-fetch (auto-tracks changes, no deps array needed)
  * const { loading, data, error } = useAPI((api) => api.posts.get({ query: { userId } }));
@@ -27,7 +27,7 @@ import { useSelectorMode } from "./useSelectorMode";
  * const { trigger, loading, data, error } = useAPI((api) => api.posts.delete);
  * onClick={() => trigger({ body: { id: 1 } })}
  */
-export function createEnlaceHook<TSchema = unknown>(
+export function createEnlaceHookReact<TSchema = unknown>(
   baseUrl: string,
   defaultOptions: EnlaceOptions = {},
   hookOptions: EnlaceHookOptions = {}

@@ -7,7 +7,7 @@ import {
 import { executeNextFetch } from "./fetch";
 import type { NextOptions, NextRequestOptionsBase } from "./types";
 
-export function createEnlace<TSchema = unknown>(
+export function createEnlaceNext<TSchema = unknown>(
   baseUrl: string,
   defaultOptions: EnlaceOptions | null = {},
   nextOptions: NextOptions = {}
@@ -25,5 +25,4 @@ export function createEnlace<TSchema = unknown>(
     : EnlaceClient<TSchema, NextRequestOptionsBase>;
 }
 
-export * from "enlace-core";
 export * from "./types";
