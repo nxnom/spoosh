@@ -305,6 +305,15 @@ api.posts.get({
 // GET /posts?page=1&limit=10&active=true
 ```
 
+## OpenAPI Generation
+
+Generate OpenAPI 3.0 specs from your TypeScript schema using [`enlace-openapi`](../openapi/README.md):
+
+```bash
+npm install enlace-openapi
+enlace-openapi --schema ./types/APISchema.ts --output ./openapi.json
+```
+
 ## License
 
 MIT
