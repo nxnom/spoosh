@@ -66,6 +66,8 @@ export type MethodDefinition = {
   body?: unknown;
 };
 
+declare const EndpointBrand: unique symbol;
+
 /**
  * Helper to define an endpoint with proper typing.
  * @example
@@ -79,29 +81,30 @@ export type MethodDefinition = {
  *   };
  * };
  */
-export type Endpoint<TData, TBody = never, TError = never> = [TBody] extends [never]
-  ? [TError] extends [never]
-    ? { data: TData }
-    : { data: TData; error: TError }
-  : [TError] extends [never]
-    ? { data: TData; body: TBody }
-    : { data: TData; error: TError; body: TBody };
+export type Endpoint<TData, TBody = never, TError = never> =
+  { [EndpointBrand]: true } & (
+    [TBody] extends [never]
+      ? [TError] extends [never]
+        ? { data: TData }
+        : { data: TData; error: TError }
+      : [TError] extends [never]
+        ? { data: TData; body: TBody }
+        : { data: TData; error: TError; body: TBody }
+  );
 
 /**
  * Normalizes endpoint definitions to standard MethodDefinition format.
- * Handles:
- * - Direct type: Post[] → { data: Post[], error: TDefaultError }
- * - Endpoint without error: { data: D } or { data: D, body: B } → adds TDefaultError
- * - Endpoint with error: { data: D, error: E } → keeps explicit error
+ * Only extracts data/body/error from branded Endpoint types.
+ * Non-Endpoint types pass through as-is (the whole type becomes the data type).
  */
 type NormalizeEndpoint<T, TDefaultError> =
-  T extends { data: infer D; error: infer E; body: infer B }
+  T extends { [EndpointBrand]: true; data: infer D; error: infer E; body: infer B }
     ? { data: D; error: E; body: B }
-  : T extends { data: infer D; error: infer E }
+  : T extends { [EndpointBrand]: true; data: infer D; error: infer E }
     ? { data: D; error: E }
-  : T extends { data: infer D; body: infer B }
+  : T extends { [EndpointBrand]: true; data: infer D; body: infer B }
     ? { data: D; error: TDefaultError; body: B }
-  : T extends { data: infer D }
+  : T extends { [EndpointBrand]: true; data: infer D }
     ? { data: D; error: TDefaultError }
   : { data: T; error: TDefaultError };
 
