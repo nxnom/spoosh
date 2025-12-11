@@ -135,19 +135,123 @@ This generates:
 }
 ```
 
-## Endpoint Type
+## Endpoint Types
 
-The `Endpoint` type accepts three generic parameters:
+### `Endpoint<TData, TBody?, TError?>`
 
-```typescript
-Endpoint<TData, TBody?, TError?>
-```
+For endpoints with JSON body:
 
 | Parameter | Description |
 |-----------|-------------|
 | `TData` | Response data type (required) |
 | `TBody` | Request body type (optional) |
 | `TError` | Error response type (optional) |
+
+### `EndpointWithQuery<TData, TQuery, TError?>`
+
+For endpoints with typed query parameters:
+
+```typescript
+import { EndpointWithQuery } from "enlace-core";
+
+type ApiSchema = {
+  users: {
+    $get: EndpointWithQuery<User[], { page: number; limit: number; search?: string }>;
+  };
+};
+```
+
+Generated OpenAPI:
+
+```json
+{
+  "/users": {
+    "get": {
+      "parameters": [
+        { "name": "page", "in": "query", "required": true, "schema": { "type": "number" } },
+        { "name": "limit", "in": "query", "required": true, "schema": { "type": "number" } },
+        { "name": "search", "in": "query", "required": false, "schema": { "type": "string" } }
+      ],
+      "responses": { "200": { "..." } }
+    }
+  }
+}
+```
+
+### `EndpointWithFormData<TData, TFormData, TError?>`
+
+For file upload endpoints (multipart/form-data):
+
+```typescript
+import { EndpointWithFormData } from "enlace-core";
+
+type ApiSchema = {
+  uploads: {
+    $post: EndpointWithFormData<Upload, { file: Blob | File; name: string }>;
+  };
+};
+```
+
+Generated OpenAPI:
+
+```json
+{
+  "/uploads": {
+    "post": {
+      "requestBody": {
+        "required": true,
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "file": { "type": "string", "format": "binary" },
+                "name": { "type": "string" }
+              },
+              "required": ["file", "name"]
+            }
+          }
+        }
+      },
+      "responses": { "200": { "..." } }
+    }
+  }
+}
+```
+
+### `EndpointFull<T>`
+
+Object-style for complex endpoints with multiple options:
+
+```typescript
+import { EndpointFull } from "enlace-core";
+
+type ApiSchema = {
+  products: {
+    $post: EndpointFull<{
+      data: Product;
+      body: CreateProduct;
+      query: { categoryId: string };
+      error: ValidationError;
+    }>;
+  };
+  files: {
+    $post: EndpointFull<{
+      data: FileUpload;
+      formData: { file: File; description: string };
+      query: { folder: string };
+    }>;
+  };
+};
+```
+
+| Property | Description | OpenAPI Mapping |
+|----------|-------------|-----------------|
+| `data` | Response data type | `responses.200.content` |
+| `body` | JSON request body | `requestBody` with `application/json` |
+| `query` | Query parameters | `parameters` with `in: "query"` |
+| `formData` | FormData fields | `requestBody` with `multipart/form-data` |
+| `error` | Error response type | `responses.400.content` |
 
 ## Path Parameters
 

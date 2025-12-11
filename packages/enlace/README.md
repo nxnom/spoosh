@@ -85,37 +85,108 @@ api.users[123].get(); // GET /users/123
 api.users[123].profile.get(); // GET /users/123/profile
 ```
 
-### Endpoint Type
+### Endpoint Types
 
-The `Endpoint` type helper lets you define response data, request body, and optionally override the error type:
+The `Endpoint` type helpers let you define response data, request body, query params, formData, and error types.
 
-```typescript
-// Signature: Endpoint<TData, TBody?, TError?>
-type Endpoint<TData, TBody = never, TError = never>;
-```
+#### `Endpoint<TData, TBody?, TError?>`
 
-**Three ways to define endpoints:**
+For endpoints with JSON body:
 
 ```typescript
+import { Endpoint } from "enlace";
+
 type ApiSchema = {
   posts: {
-    // 1. Direct type (simplest) - just the data type
-    //    Error comes from global default
-    $get: Post[];
+    $get: Post[];                                   // Direct type (simplest)
+    $post: Endpoint<Post, CreatePost>;              // Data + Body
+    $put: Endpoint<Post, UpdatePost, ValidationError>; // Data + Body + Error
+    $delete: void;                                  // void response
+    $patch: Endpoint<Post, never, NotFoundError>;   // Custom error without body
+  };
+};
+```
 
-    // 2. Endpoint with body - Endpoint<Data, Body>
-    //    Error comes from global default
-    $post: Endpoint<Post, CreatePost>;
+#### `EndpointWithQuery<TData, TQuery, TError?>`
 
-    // 3. Endpoint with custom error - Endpoint<Data, Body, Error>
-    //    Overrides global error type for this endpoint
-    $put: Endpoint<Post, UpdatePost, ValidationError>;
+For endpoints with typed query parameters:
 
-    // void response - use void directly
-    $delete: void;
+```typescript
+import { EndpointWithQuery } from "enlace";
 
-    // Custom error without body - use `never` for body
-    $patch: Endpoint<Post, never, NotFoundError>;
+type ApiSchema = {
+  users: {
+    $get: EndpointWithQuery<User[], { page: number; limit: number; search?: string }>;
+  };
+  posts: {
+    $get: EndpointWithQuery<Post[], { status: "draft" | "published" }, ApiError>;
+  };
+};
+
+// Usage - query params are fully typed
+const { data } = useAPI((api) => api.users.get({ query: { page: 1, limit: 10 } }));
+// api.users.get({ query: { foo: "bar" } }); // ✗ Error: 'foo' does not exist
+```
+
+#### `EndpointWithFormData<TData, TFormData, TError?>`
+
+For file uploads (multipart/form-data):
+
+```typescript
+import { EndpointWithFormData } from "enlace";
+
+type ApiSchema = {
+  uploads: {
+    $post: EndpointWithFormData<Upload, { file: Blob | File; name: string }>;
+  };
+  avatars: {
+    $post: EndpointWithFormData<Avatar, { image: File }, UploadError>;
+  };
+};
+
+// Usage - formData is automatically converted to FormData
+const { trigger } = useAPI((api) => api.uploads.post);
+trigger({
+  formData: {
+    file: selectedFile,        // File object
+    name: "document.pdf",      // String - converted automatically
+  }
+});
+// → Sends as multipart/form-data
+```
+
+**FormData conversion rules:**
+
+| Type | Conversion |
+|------|------------|
+| `File` / `Blob` | Appended directly |
+| `string` / `number` / `boolean` | Converted to string |
+| `object` (nested) | JSON stringified |
+| `array` of primitives | Each item appended separately |
+| `array` of files | Each file appended with same key |
+
+#### `EndpointFull<T>`
+
+Object-style for complex endpoints:
+
+```typescript
+import { EndpointFull } from "enlace";
+
+type ApiSchema = {
+  products: {
+    $post: EndpointFull<{
+      data: Product;
+      body: CreateProduct;
+      query: { categoryId: string };
+      error: ValidationError;
+    }>;
+  };
+  files: {
+    $post: EndpointFull<{
+      data: FileUpload;
+      formData: { file: File; description: string };
+      query: { folder: string };
+    }>;
   };
 };
 ```
@@ -541,8 +612,9 @@ type UseEnlaceSelectorResult<TMethod> = {
 
 ```typescript
 type RequestOptions = {
-  query?: Record<string, unknown>; // Query parameters
-  body?: TBody; // Request body
+  query?: TQuery; // Query parameters (typed when using EndpointWithQuery/EndpointFull)
+  body?: TBody; // Request body (JSON)
+  formData?: TFormData; // FormData fields (auto-converted, for file uploads)
   headers?: HeadersInit | (() => HeadersInit | Promise<HeadersInit>); // Request headers
   tags?: string[]; // Cache tags (GET only)
   revalidateTags?: string[]; // Tags to invalidate after mutation
@@ -710,7 +782,10 @@ type EnlaceHookOptions = {
 
 ### Re-exports from enlace-core
 
-- `Endpoint` — Type helper for schema definition
+- `Endpoint` — Type helper for endpoints with JSON body
+- `EndpointWithQuery` — Type helper for endpoints with typed query params
+- `EndpointWithFormData` — Type helper for file upload endpoints
+- `EndpointFull` — Object-style type helper for complex endpoints
 - `EnlaceResponse` — Response type
 - `EnlaceOptions` — Fetch options type
 

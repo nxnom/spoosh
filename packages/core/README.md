@@ -203,7 +203,7 @@ type EnlaceErrorCallbackPayload<T> =
 
 ### `Endpoint<TData, TBody?, TError?>`
 
-Type helper for defining endpoints:
+Type helper for defining endpoints with JSON body:
 
 ```typescript
 // Signature: Endpoint<TData, TBody?, TError?>
@@ -226,6 +226,114 @@ type ApiSchema = {
 const api = createEnlace<ApiSchema, ApiError>("https://api.example.com");
 ```
 
+### `EndpointWithQuery<TData, TQuery, TError?>`
+
+Type helper for endpoints with typed query parameters:
+
+```typescript
+import { EndpointWithQuery } from "enlace-core";
+
+type ApiSchema = {
+  users: {
+    $get: EndpointWithQuery<User[], { page: number; limit: number; search?: string }>;
+  };
+  posts: {
+    $get: EndpointWithQuery<Post[], { status: "draft" | "published" }, ApiError>;
+  };
+};
+
+// Usage - query params are fully typed
+api.users.get({ query: { page: 1, limit: 10 } });
+api.users.get({ query: { page: 1, limit: 10, search: "john" } });
+// api.users.get({ query: { foo: "bar" } }); // ✗ Error: 'foo' does not exist
+```
+
+### `EndpointWithFormData<TData, TFormData, TError?>`
+
+Type helper for endpoints with file uploads (multipart/form-data):
+
+```typescript
+import { EndpointWithFormData } from "enlace-core";
+
+type ApiSchema = {
+  uploads: {
+    $post: EndpointWithFormData<Upload, { file: Blob | File; name: string }>;
+  };
+  avatars: {
+    $post: EndpointWithFormData<Avatar, { image: File }, UploadError>;
+  };
+};
+
+// Usage - formData is automatically converted to FormData
+api.uploads.post({
+  formData: {
+    file: selectedFile,        // File object
+    name: "document.pdf",      // String - converted automatically
+  }
+});
+// → Sends as multipart/form-data
+```
+
+**FormData conversion rules:**
+
+| Type | Conversion |
+|------|------------|
+| `File` / `Blob` | Appended directly |
+| `string` / `number` / `boolean` | Converted to string |
+| `object` (nested) | JSON stringified |
+| `array` of primitives | Each item appended separately |
+| `array` of files | Each file appended with same key |
+| `null` / `undefined` | Skipped |
+
+### `EndpointFull<T>`
+
+Object-style type helper for complex endpoints with multiple options:
+
+```typescript
+import { EndpointFull } from "enlace-core";
+
+type ApiSchema = {
+  products: {
+    $post: EndpointFull<{
+      data: Product;
+      body: CreateProduct;
+      query: { categoryId: string };
+      error: ValidationError;
+    }>;
+  };
+  search: {
+    $get: EndpointFull<{
+      data: SearchResult[];
+      query: { q: string; page?: number; limit?: number };
+    }>;
+  };
+  files: {
+    $post: EndpointFull<{
+      data: FileUpload;
+      formData: { file: File; description: string };
+      query: { folder: string };
+      error: UploadError;
+    }>;
+  };
+};
+
+// Usage
+api.products.post({
+  body: { name: "Widget" },
+  query: { categoryId: "electronics" }
+});
+```
+
+**Available properties:**
+
+| Property | Description |
+|----------|-------------|
+| `data` | Response data type (required) |
+| `body` | JSON request body type |
+| `query` | Query parameters type |
+| `formData` | FormData fields type (for file uploads) |
+| `error` | Error response type |
+
 ### Request Options
 
 Per-request options:
@@ -237,11 +345,17 @@ api.users.post({
   headers: { "X-Custom": "value" },
   cache: "no-store",
 });
+
+// FormData request
+api.uploads.post({
+  formData: { file: selectedFile, name: "document.pdf" },
+});
 ```
 
 **Available options:**
 - `body` — Request body (auto-serialized to JSON for objects/arrays)
-- `query` — Query parameters (auto-serialized)
+- `query` — Query parameters (auto-serialized). Typed when using `EndpointWithQuery` or `EndpointFull`
+- `formData` — FormData fields (auto-converted to native FormData). Use with `EndpointWithFormData` or `EndpointFull`
 - `headers` — Request headers (merged with defaults). Can be `HeadersInit` or `() => HeadersInit | Promise<HeadersInit>`
 - `cache` — Cache mode
 
