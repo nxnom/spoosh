@@ -27,11 +27,11 @@ import { useSelectorMode } from "./useSelectorMode";
  * const { trigger, loading, data, error } = useAPI((api) => api.posts.delete);
  * onClick={() => trigger({ body: { id: 1 } })}
  */
-export function createEnlaceHookReact<TSchema = unknown>(
+export function createEnlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
   baseUrl: string,
   defaultOptions: EnlaceOptions = {},
   hookOptions: EnlaceHookOptions = {}
-): EnlaceHook<TSchema> {
+): EnlaceHook<TSchema, TDefaultError> {
   const {
     autoGenerateTags = true,
     autoRevalidateTags = true,
@@ -39,7 +39,7 @@ export function createEnlaceHookReact<TSchema = unknown>(
     onSuccess,
     onError,
   } = hookOptions;
-  const api = createEnlace<TSchema>(baseUrl, defaultOptions, { onSuccess, onError });
+  const api = createEnlace<TSchema, TDefaultError>(baseUrl, defaultOptions, { onSuccess, onError });
 
   function useEnlaceHook<
     TData,
@@ -50,8 +50,8 @@ export function createEnlaceHookReact<TSchema = unknown>(
     ) => Promise<EnlaceResponse<unknown, unknown>>,
   >(
     selectorOrQuery:
-      | SelectorFn<TSchema, TMethod>
-      | QueryFn<TSchema, TData, TError>,
+      | SelectorFn<TSchema, TMethod, TDefaultError>
+      | QueryFn<TSchema, TData, TError, TDefaultError>,
     queryOptions?: UseEnlaceQueryOptions
   ): UseEnlaceSelectorResult<TMethod> | UseEnlaceQueryResult<TData, TError> {
     let trackingResult: TrackingResult = {
@@ -63,14 +63,14 @@ export function createEnlaceHookReact<TSchema = unknown>(
       trackingResult = result;
     });
 
-    const result = (selectorOrQuery as (api: ApiClient<TSchema>) => unknown)(
-      trackingProxy as ApiClient<TSchema>
+    const result = (selectorOrQuery as (api: ApiClient<TSchema, TDefaultError>) => unknown)(
+      trackingProxy as ApiClient<TSchema, TDefaultError>
     );
 
     if (typeof result === "function") {
       const actualResult = (
-        selectorOrQuery as (api: ApiClient<TSchema>) => unknown
-      )(api as ApiClient<TSchema>);
+        selectorOrQuery as (api: ApiClient<TSchema, TDefaultError>) => unknown
+      )(api as ApiClient<TSchema, TDefaultError>);
       return useSelectorMode<TMethod>({
         method: actualResult as (
           ...args: unknown[]
@@ -83,11 +83,11 @@ export function createEnlaceHookReact<TSchema = unknown>(
     }
 
     return useQueryMode<TSchema, TData, TError>(
-      api as ApiClient<TSchema>,
+      api as ApiClient<TSchema, TDefaultError>,
       trackingResult.trackedCall!,
       { autoGenerateTags, staleTime, enabled: queryOptions?.enabled ?? true }
     );
   }
 
-  return useEnlaceHook as EnlaceHook<TSchema>;
+  return useEnlaceHook as EnlaceHook<TSchema, TDefaultError>;
 }

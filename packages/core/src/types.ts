@@ -71,35 +71,56 @@ export type MethodDefinition = {
  * @example
  * type MyApi = {
  *   posts: {
- *     $get: Endpoint<Post[], ApiError>;
- *     $post: Endpoint<Post, ApiError, CreatePost>;
- *     _: { $get: Endpoint<Post, NotFoundError> };
+ *     $get: Post[];  // Direct type - simplest (error from global default)
+ *     $post: Endpoint<Post, CreatePost>;  // Data + Body (error from global default)
+ *     $put: Endpoint<Post, UpdatePost, CustomError>;  // Data + Body + Error
+ *     $delete: Endpoint<void>;  // Data only with Endpoint
+ *     _: { $get: Endpoint<Post, never, NotFoundError> };  // Data + explicit Error
  *   };
  * };
  */
-export type Endpoint<TData, TError, TBody = never> = [TBody] extends [never]
-  ? { data: TData; error: TError }
-  : { data: TData; error: TError; body: TBody };
+export type Endpoint<TData, TBody = never, TError = never> = [TBody] extends [never]
+  ? [TError] extends [never]
+    ? { data: TData }
+    : { data: TData; error: TError }
+  : [TError] extends [never]
+    ? { data: TData; body: TBody }
+    : { data: TData; error: TError; body: TBody };
 
-type ExtractMethodDef<TSchema, TMethod extends SchemaMethod> = TSchema extends {
-  [K in TMethod]: infer M;
-}
-  ? M extends MethodDefinition
-  ? M
-  : never
-  : never;
+/**
+ * Normalizes endpoint definitions to standard MethodDefinition format.
+ * Handles:
+ * - Direct type: Post[] → { data: Post[], error: TDefaultError }
+ * - Endpoint without error: { data: D } or { data: D, body: B } → adds TDefaultError
+ * - Endpoint with error: { data: D, error: E } → keeps explicit error
+ */
+type NormalizeEndpoint<T, TDefaultError> =
+  T extends { data: infer D; error: infer E; body: infer B }
+    ? { data: D; error: E; body: B }
+  : T extends { data: infer D; error: infer E }
+    ? { data: D; error: E }
+  : T extends { data: infer D; body: infer B }
+    ? { data: D; error: TDefaultError; body: B }
+  : T extends { data: infer D }
+    ? { data: D; error: TDefaultError }
+  : { data: T; error: TDefaultError };
 
-type ExtractData<TSchema, TMethod extends SchemaMethod> =
-  ExtractMethodDef<TSchema, TMethod> extends { data: infer D } ? D : never;
+type ExtractMethodDef<TSchema, TMethod extends SchemaMethod, TDefaultError = unknown> =
+  TSchema extends { [K in TMethod]: infer M }
+    ? NormalizeEndpoint<M, TDefaultError>
+    : never;
 
-type ExtractError<TSchema, TMethod extends SchemaMethod> =
-  ExtractMethodDef<TSchema, TMethod> extends { error: infer E } ? E : never;
+type ExtractData<TSchema, TMethod extends SchemaMethod, TDefaultError = unknown> =
+  ExtractMethodDef<TSchema, TMethod, TDefaultError> extends { data: infer D } ? D : never;
 
-type ExtractBody<TSchema, TMethod extends SchemaMethod> =
-  ExtractMethodDef<TSchema, TMethod> extends { body: infer B } ? B : never;
+type ExtractError<TSchema, TMethod extends SchemaMethod, TDefaultError = unknown> =
+  ExtractMethodDef<TSchema, TMethod, TDefaultError> extends { error: infer E } ? E : TDefaultError;
+
+type ExtractBody<TSchema, TMethod extends SchemaMethod, TDefaultError = unknown> =
+  ExtractMethodDef<TSchema, TMethod, TDefaultError> extends { body: infer B } ? B : never;
 
 type HasMethod<TSchema, TMethod extends SchemaMethod> = TSchema extends {
-  [K in TMethod]: MethodDefinition;
+  [K in TMethod]: unknown;
 }
   ? true
   : false;
@@ -107,25 +128,26 @@ type HasMethod<TSchema, TMethod extends SchemaMethod> = TSchema extends {
 type MethodFn<
   TSchema,
   TMethod extends SchemaMethod,
+  TDefaultError = unknown,
   TRequestOptionsBase = object,
 > =
   HasMethod<TSchema, TMethod> extends true
-  ? ExtractBody<TSchema, TMethod> extends never
+  ? ExtractBody<TSchema, TMethod, TDefaultError> extends never
   ? (
     options?: RequestOptions<never> & TRequestOptionsBase
   ) => Promise<
     EnlaceResponse<
-      ExtractData<TSchema, TMethod>,
-      ExtractError<TSchema, TMethod>
+      ExtractData<TSchema, TMethod, TDefaultError>,
+      ExtractError<TSchema, TMethod, TDefaultError>
     >
   >
   : (
-    options: RequestOptions<ExtractBody<TSchema, TMethod>> &
+    options: RequestOptions<ExtractBody<TSchema, TMethod, TDefaultError>> &
       TRequestOptionsBase
   ) => Promise<
     EnlaceResponse<
-      ExtractData<TSchema, TMethod>,
-      ExtractError<TSchema, TMethod>
+      ExtractData<TSchema, TMethod, TDefaultError>,
+      ExtractError<TSchema, TMethod, TDefaultError>
     >
   >
   : never;
@@ -146,29 +168,32 @@ type MethodOrPath<
   TSchema,
   TMethodName extends string,
   TSchemaMethod extends SchemaMethod,
+  TDefaultError = unknown,
   TRequestOptionsBase = object,
 > = TMethodName extends keyof TSchema
-  ? EnlaceClient<TSchema[TMethodName], TRequestOptionsBase>
-  : MethodFn<TSchema, TSchemaMethod, TRequestOptionsBase>;
+  ? EnlaceClient<TSchema[TMethodName], TDefaultError, TRequestOptionsBase>
+  : MethodFn<TSchema, TSchemaMethod, TDefaultError, TRequestOptionsBase>;
 
-type HttpMethods<TSchema, TRequestOptionsBase = object> = {
-  get: MethodOrPath<TSchema, "get", "$get", TRequestOptionsBase>;
-  post: MethodOrPath<TSchema, "post", "$post", TRequestOptionsBase>;
-  put: MethodOrPath<TSchema, "put", "$put", TRequestOptionsBase>;
-  patch: MethodOrPath<TSchema, "patch", "$patch", TRequestOptionsBase>;
-  delete: MethodOrPath<TSchema, "delete", "$delete", TRequestOptionsBase>;
+type HttpMethods<TSchema, TDefaultError = unknown, TRequestOptionsBase = object> = {
+  get: MethodOrPath<TSchema, "get", "$get", TDefaultError, TRequestOptionsBase>;
+  post: MethodOrPath<TSchema, "post", "$post", TDefaultError, TRequestOptionsBase>;
+  put: MethodOrPath<TSchema, "put", "$put", TDefaultError, TRequestOptionsBase>;
+  patch: MethodOrPath<TSchema, "patch", "$patch", TDefaultError, TRequestOptionsBase>;
+  delete: MethodOrPath<TSchema, "delete", "$delete", TDefaultError, TRequestOptionsBase>;
 };
 
-type DynamicAccess<TSchema, TRequestOptionsBase = object> =
+type DynamicAccess<TSchema, TDefaultError = unknown, TRequestOptionsBase = object> =
   ExtractDynamicSchema<TSchema> extends never
   ? object
   : {
     [key: string]: EnlaceClient<
       ExtractDynamicSchema<TSchema>,
+      TDefaultError,
       TRequestOptionsBase
     >;
     [key: number]: EnlaceClient<
       ExtractDynamicSchema<TSchema>,
+      TDefaultError,
       TRequestOptionsBase
     >;
   };
@@ -176,15 +201,13 @@ type DynamicAccess<TSchema, TRequestOptionsBase = object> =
 type MethodNameKeys = "get" | "post" | "put" | "patch" | "delete";
 
 /** Typed API client based on schema definition */
-export type EnlaceClient<TSchema, TRequestOptionsBase = object> = HttpMethods<
-  TSchema,
-  TRequestOptionsBase
-> &
-  DynamicAccess<TSchema, TRequestOptionsBase> & {
-  [K in keyof StaticPathKeys<TSchema> as K extends MethodNameKeys
-  ? never
-  : K]: EnlaceClient<TSchema[K], TRequestOptionsBase>;
-};
+export type EnlaceClient<TSchema, TDefaultError = unknown, TRequestOptionsBase = object> =
+  HttpMethods<TSchema, TDefaultError, TRequestOptionsBase> &
+  DynamicAccess<TSchema, TDefaultError, TRequestOptionsBase> & {
+    [K in keyof StaticPathKeys<TSchema> as K extends MethodNameKeys
+      ? never
+      : K]: EnlaceClient<TSchema[K], TDefaultError, TRequestOptionsBase>;
+  };
 
 /** Untyped API client - allows any path access when no schema is provided */
 export type WildcardClient<TRequestOptionsBase = object> = {

@@ -32,21 +32,26 @@ npm install enlace-core
 
 ```typescript
 import { createEnlaceHookReact } from "enlace/hook";
+import { Endpoint } from "enlace";
 
-// Define your API schema
+// Define your API error type
+type ApiError = { message: string; code: number };
+
+// Define your API schema (simplified syntax!)
 type ApiSchema = {
   posts: {
-    $get: Endpoint<Post[], ApiError>;
-    $post: Endpoint<Post, ApiError, CreatePost>;
+    $get: Post[];                                   // Simple: just data type
+    $post: Endpoint<Post, CreatePost>;              // Data + Body
+    $put: Endpoint<Post, UpdatePost, CustomError>;  // Data + Body + Custom Error
     _: {
-      $get: Endpoint<Post, ApiError>;
-      $delete: Endpoint<void, ApiError>;
+      $get: Post;                                   // Simple: just data type
+      $delete: void;                                // void response
     };
   };
 };
 
-// Create a hook
-const useAPI = createEnlaceHookReact<ApiSchema>("https://api.example.com");
+// Create a hook with global error type
+const useAPI = createEnlaceHookReact<ApiSchema, ApiError>("https://api.example.com");
 
 // Use in components
 function Posts() {
@@ -96,7 +101,7 @@ export async function revalidateAction(tags: string[]) {
 import { createEnlaceHookNext } from "enlace/hook";
 import { revalidateAction } from "./actions";
 
-const useAPI = createEnlaceHookNext<ApiSchema>("https://api.example.com", {}, {
+const useAPI = createEnlaceHookNext<ApiSchema, ApiError>("https://api.example.com", {}, {
   revalidator: revalidateAction,
 });
 ```

@@ -70,34 +70,37 @@ export type NextRequestOptionsBase = ReactRequestOptionsBase & {
 // Next.js Hook Types
 // ============================================================================
 
-export type NextApiClient<TSchema> = ApiClient<TSchema, NextRequestOptionsBase>;
+export type NextApiClient<TSchema, TDefaultError = unknown> =
+  ApiClient<TSchema, TDefaultError, NextRequestOptionsBase>;
 
-export type NextQueryFn<TSchema, TData, TError> = QueryFn<
+export type NextQueryFn<TSchema, TData, TError, TDefaultError = unknown> = QueryFn<
   TSchema,
   TData,
   TError,
+  TDefaultError,
   NextRequestOptionsBase
 >;
 
-export type NextSelectorFn<TSchema, TMethod> = SelectorFn<
+export type NextSelectorFn<TSchema, TMethod, TDefaultError = unknown> = SelectorFn<
   TSchema,
   TMethod,
+  TDefaultError,
   NextRequestOptionsBase
 >;
 
 /** Hook type returned by createEnlaceHookNext */
-export type NextEnlaceHook<TSchema> = {
+export type NextEnlaceHook<TSchema, TDefaultError = unknown> = {
   <
     TMethod extends (
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for method type inference
       ...args: any[]
     ) => Promise<EnlaceResponse<unknown, unknown>>,
   >(
-    selector: NextSelectorFn<TSchema, TMethod>
+    selector: NextSelectorFn<TSchema, TMethod, TDefaultError>
   ): UseEnlaceSelectorResult<TMethod>;
 
   <TData, TError>(
-    queryFn: NextQueryFn<TSchema, TData, TError>,
+    queryFn: NextQueryFn<TSchema, TData, TError, TDefaultError>,
     options?: UseEnlaceQueryOptions
   ): UseEnlaceQueryResult<TData, TError>;
 };

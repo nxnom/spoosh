@@ -35,18 +35,18 @@ import { createTrackingProxy } from "../react/trackingProxy";
  * // Selector mode - trigger for mutations
  * const { trigger } = useAPI((api) => api.posts.delete);
  */
-export function createEnlaceHookNext<TSchema = unknown>(
+export function createEnlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
   baseUrl: string,
   defaultOptions: EnlaceOptions = {},
   hookOptions: NextHookOptions = {}
-): NextEnlaceHook<TSchema> {
+): NextEnlaceHook<TSchema, TDefaultError> {
   const {
     autoGenerateTags = true,
     autoRevalidateTags = true,
     staleTime = 0,
     ...nextOptions
   } = hookOptions;
-  const api = createEnlaceNext<TSchema>(baseUrl, defaultOptions, {
+  const api = createEnlaceNext<TSchema, TDefaultError>(baseUrl, defaultOptions, {
     autoGenerateTags,
     autoRevalidateTags,
     ...nextOptions,
@@ -61,8 +61,8 @@ export function createEnlaceHookNext<TSchema = unknown>(
     ) => Promise<EnlaceResponse<unknown, unknown>>,
   >(
     selectorOrQuery:
-      | NextSelectorFn<TSchema, TMethod>
-      | NextQueryFn<TSchema, TData, TError>,
+      | NextSelectorFn<TSchema, TMethod, TDefaultError>
+      | NextQueryFn<TSchema, TData, TError, TDefaultError>,
     queryOptions?: UseEnlaceQueryOptions
   ): UseEnlaceSelectorResult<TMethod> | UseEnlaceQueryResult<TData, TError> {
     let trackedCall: TrackedCall | null = null;
@@ -76,13 +76,13 @@ export function createEnlaceHookNext<TSchema = unknown>(
     });
 
     const result = (
-      selectorOrQuery as (api: NextApiClient<TSchema>) => unknown
-    )(trackingProxy as NextApiClient<TSchema>);
+      selectorOrQuery as (api: NextApiClient<TSchema, TDefaultError>) => unknown
+    )(trackingProxy as NextApiClient<TSchema, TDefaultError>);
 
     if (typeof result === "function") {
       const actualResult = (
-        selectorOrQuery as (api: NextApiClient<TSchema>) => unknown
-      )(api as NextApiClient<TSchema>);
+        selectorOrQuery as (api: NextApiClient<TSchema, TDefaultError>) => unknown
+      )(api as NextApiClient<TSchema, TDefaultError>);
       return useSelectorMode<TMethod>({
         method: actualResult as (
           ...args: unknown[]
@@ -95,11 +95,11 @@ export function createEnlaceHookNext<TSchema = unknown>(
     }
 
     return useQueryMode<TSchema, TData, TError>(
-      api as unknown as import("../react/types").ApiClient<TSchema>,
+      api as unknown as import("../react/types").ApiClient<TSchema, TDefaultError>,
       trackedCall!,
       { autoGenerateTags, staleTime, enabled: queryOptions?.enabled ?? true }
     );
   }
 
-  return useEnlaceHook as NextEnlaceHook<TSchema>;
+  return useEnlaceHook as NextEnlaceHook<TSchema, TDefaultError>;
 }

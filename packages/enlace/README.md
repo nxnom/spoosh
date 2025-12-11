@@ -14,18 +14,25 @@ npm install enlace
 import { createEnlaceHookReact } from "enlace/hook";
 import { Endpoint } from "enlace";
 
+// Define your API error type
+type ApiError = { message: string; code: number };
+
 type ApiSchema = {
   posts: {
-    $get: Endpoint<Post[], ApiError>;
-    $post: Endpoint<Post, ApiError, CreatePost>;
+    $get: Post[]; // Simple: just data type
+    $post: Endpoint<Post, CreatePost>; // Data + Body
+    $put: Endpoint<Post, UpdatePost, CustomError>; // Data + Body + Custom Error
     _: {
-      $get: Endpoint<Post, ApiError>;
-      $delete: Endpoint<void, ApiError>;
+      $get: Post; // Simple: just data type
+      $delete: void; // Simple: void response
     };
   };
 };
 
-const useAPI = createEnlaceHookReact<ApiSchema>("https://api.example.com");
+// Pass global error type as second generic
+const useAPI = createEnlaceHookReact<ApiSchema, ApiError>(
+  "https://api.example.com"
+);
 ```
 
 ## Schema Conventions
@@ -51,40 +58,77 @@ const useAPI = createEnlaceHookReact<ApiSchema>("https://api.example.com");
 ```typescript
 import { Endpoint } from "enlace";
 
+type ApiError = { message: string };
+
 type ApiSchema = {
   users: {
-    $get: Endpoint<User[], ApiError>;           // GET /users
-    $post: Endpoint<User, ApiError>;            // POST /users
-    _: {                                        // /users/:id
-      $get: Endpoint<User, ApiError>;           // GET /users/:id
-      $put: Endpoint<User, ApiError>;           // PUT /users/:id
-      $delete: Endpoint<void, ApiError>;        // DELETE /users/:id
+    $get: User[]; // GET /users (simple)
+    $post: Endpoint<User, CreateUser>; // POST /users with body
+    _: {
+      // /users/:id
+      $get: User; // GET /users/:id (simple)
+      $put: Endpoint<User, UpdateUser>; // PUT /users/:id with body
+      $delete: void; // DELETE /users/:id (void response)
       profile: {
-        $get: Endpoint<Profile, ApiError>;      // GET /users/:id/profile
+        $get: Profile; // GET /users/:id/profile (simple)
       };
     };
   };
 };
 
+// Pass global error type - applies to all endpoints
+const api = createEnlace<ApiSchema, ApiError>("https://api.example.com");
+
 // Usage
-api.users.get();              // GET /users
-api.users[123].get();         // GET /users/123
+api.users.get(); // GET /users
+api.users[123].get(); // GET /users/123
 api.users[123].profile.get(); // GET /users/123/profile
 ```
 
 ### Endpoint Type
 
-```typescript
-type Endpoint<TData, TError, TBody = never> = {
-  data: TData;    // Response data type
-  error: TError;  // Error response type (required)
-  body: TBody;    // Request body type (optional)
-};
+The `Endpoint` type helper lets you define response data, request body, and optionally override the error type:
 
-// Examples
-type GetUsers = Endpoint<User[], ApiError>;                   // GET, no body
-type CreateUser = Endpoint<User, ApiError, CreateUserInput>;  // POST with body
-type DeleteUser = Endpoint<void, NotFoundError>;              // DELETE, no response data
+```typescript
+// Signature: Endpoint<TData, TBody?, TError?>
+type Endpoint<TData, TBody = never, TError = never>;
+```
+
+**Three ways to define endpoints:**
+
+```typescript
+type ApiSchema = {
+  posts: {
+    // 1. Direct type (simplest) - just the data type
+    //    Error comes from global default
+    $get: Post[];
+
+    // 2. Endpoint with body - Endpoint<Data, Body>
+    //    Error comes from global default
+    $post: Endpoint<Post, CreatePost>;
+
+    // 3. Endpoint with custom error - Endpoint<Data, Body, Error>
+    //    Overrides global error type for this endpoint
+    $put: Endpoint<Post, UpdatePost, ValidationError>;
+
+    // void response - use void directly
+    $delete: void;
+
+    // Custom error without body - use `never` for body
+    $patch: Endpoint<Post, never, NotFoundError>;
+  };
+};
+```
+
+**Global error type:**
+
+```typescript
+type ApiError = { message: string; code: number };
+
+// Second generic sets default error type for all endpoints
+const api = createEnlace<ApiSchema, ApiError>("https://api.example.com");
+// const useAPI = createEnlaceHookReact<ApiSchema, ApiError>("...");
+// const useAPI = createEnlaceHookNext<ApiSchema, ApiError>("...");
 ```
 
 ## React Hooks
@@ -113,6 +157,7 @@ function Posts({ page, limit }: { page: number; limit: number }) {
 ```
 
 **Features:**
+
 - Auto-fetches on mount
 - Re-fetches when dependencies change (no deps array needed!)
 - Returns cached data while revalidating
@@ -139,10 +184,9 @@ function ProductForm({ id }: { id: string | "new" }) {
 ```typescript
 // Also useful when waiting for a dependency
 function UserPosts({ userId }: { userId: string | undefined }) {
-  const { data } = useAPI(
-    (api) => api.users[userId!].posts.get(),
-    { enabled: userId !== undefined }
-  );
+  const { data } = useAPI((api) => api.users[userId!].posts.get(), {
+    enabled: userId !== undefined,
+  });
 }
 ```
 
@@ -247,7 +291,9 @@ function PostList({ posts }: { posts: Post[] }) {
 **Multiple path parameters:**
 
 ```typescript
-const { trigger } = useAPI((api) => api.users[":userId"].posts[":postId"].delete);
+const { trigger } = useAPI(
+  (api) => api.users[":userId"].posts[":postId"].delete
+);
 
 trigger({ pathParams: { userId: "1", postId: "42" } });
 // → DELETE /users/1/posts/42
@@ -311,9 +357,13 @@ trigger({ body: { title: "New" } });
 Control how long cached data is considered fresh:
 
 ```typescript
-const useAPI = createEnlaceHookReact<ApiSchema>("https://api.example.com", {}, {
-  staleTime: 5000, // 5 seconds
-});
+const useAPI = createEnlaceHookReact<ApiSchema>(
+  "https://api.example.com",
+  {},
+  {
+    staleTime: 5000, // 5 seconds
+  }
+);
 ```
 
 - `staleTime: 0` (default) — Always revalidate on mount
@@ -338,10 +388,14 @@ trigger({
 ### Disable Auto-Revalidation
 
 ```typescript
-const useAPI = createEnlaceHookReact<ApiSchema>("https://api.example.com", {}, {
-  autoGenerateTags: false,     // Disable auto tag generation
-  autoRevalidateTags: false,   // Disable auto revalidation
-});
+const useAPI = createEnlaceHookReact<ApiSchema>(
+  "https://api.example.com",
+  {},
+  {
+    autoGenerateTags: false, // Disable auto tag generation
+    autoRevalidateTags: false, // Disable auto revalidation
+  }
+);
 ```
 
 ## Hook Options
@@ -355,9 +409,9 @@ const useAPI = createEnlaceHookReact<ApiSchema>(
   },
   {
     // Hook options
-    autoGenerateTags: true,    // Auto-generate cache tags from URL
-    autoRevalidateTags: true,  // Auto-revalidate after mutations
-    staleTime: 0,              // Cache freshness duration (ms)
+    autoGenerateTags: true, // Auto-generate cache tags from URL
+    autoRevalidateTags: true, // Auto-revalidate after mutations
+    staleTime: 0, // Cache freshness duration (ms)
   }
 );
 ```
@@ -438,11 +492,12 @@ type EnlaceCallbackPayload<T> = {
 
 // onError payload (HTTP error or network error)
 type EnlaceErrorCallbackPayload<T> =
-  | { status: number; error: T; headers: Headers }  // HTTP error
-  | { status: 0; error: Error; headers: null };     // Network error
+  | { status: number; error: T; headers: Headers } // HTTP error
+  | { status: 0; error: Error; headers: null }; // Network error
 ```
 
 **Use cases:**
+
 - Global error logging/reporting
 - Toast notifications for all API errors
 - Authentication refresh on 401 errors
@@ -459,12 +514,12 @@ const result = useAPI((api) => api.posts.get());
 // With options
 const result = useAPI(
   (api) => api.posts.get(),
-  { enabled: true }  // Skip fetching when false
+  { enabled: true } // Skip fetching when false
 );
 
 type UseEnlaceQueryResult<TData, TError> = {
-  loading: boolean;   // No cached data and fetching
-  fetching: boolean;  // Request in progress
+  loading: boolean; // No cached data and fetching
+  fetching: boolean; // Request in progress
   ok: boolean | undefined;
   data: TData | undefined;
   error: TError | undefined;
@@ -475,7 +530,7 @@ type UseEnlaceQueryResult<TData, TError> = {
 
 ```typescript
 type UseEnlaceSelectorResult<TMethod> = {
-  trigger: TMethod;   // Function to trigger the request
+  trigger: TMethod; // Function to trigger the request
   loading: boolean;
   fetching: boolean;
   ok: boolean | undefined;
@@ -488,12 +543,12 @@ type UseEnlaceSelectorResult<TMethod> = {
 
 ```typescript
 type RequestOptions = {
-  query?: Record<string, unknown>;        // Query parameters
-  body?: TBody;                           // Request body
-  headers?: HeadersInit | (() => HeadersInit | Promise<HeadersInit>);  // Request headers
-  tags?: string[];                        // Cache tags (GET only)
-  revalidateTags?: string[];              // Tags to invalidate after mutation
-  pathParams?: Record<string, string | number>;  // Dynamic path parameters
+  query?: Record<string, unknown>; // Query parameters
+  body?: TBody; // Request body
+  headers?: HeadersInit | (() => HeadersInit | Promise<HeadersInit>); // Request headers
+  tags?: string[]; // Cache tags (GET only)
+  revalidateTags?: string[]; // Tags to invalidate after mutation
+  pathParams?: Record<string, string | number>; // Dynamic path parameters
 };
 ```
 
@@ -508,7 +563,9 @@ Use `createEnlaceNext` from `enlace` for server components:
 ```typescript
 import { createEnlaceNext } from "enlace";
 
-const api = createEnlaceNext<ApiSchema>("https://api.example.com", {}, {
+type ApiError = { message: string };
+
+const api = createEnlaceNext<ApiSchema, ApiError>("https://api.example.com", {}, {
   autoGenerateTags: true,
 });
 
@@ -530,7 +587,11 @@ Use `createEnlaceHookNext` from `enlace/hook` for client components:
 
 import { createEnlaceHookNext } from "enlace/hook";
 
-const useAPI = createEnlaceHookNext<ApiSchema>("https://api.example.com");
+type ApiError = { message: string };
+
+const useAPI = createEnlaceHookNext<ApiSchema, ApiError>(
+  "https://api.example.com"
+);
 ```
 
 ### Server-Side Revalidation
@@ -558,9 +619,15 @@ export async function revalidateAction(tags: string[], paths: string[]) {
 import { createEnlaceHookNext } from "enlace/hook";
 import { revalidateAction } from "./actions";
 
-const useAPI = createEnlaceHookNext<ApiSchema>("/api", {}, {
-  revalidator: revalidateAction,
-});
+type ApiError = { message: string };
+
+const useAPI = createEnlaceHookNext<ApiSchema, ApiError>(
+  "/api",
+  {},
+  {
+    revalidator: revalidateAction,
+  }
+);
 ```
 
 **In components:**
@@ -572,8 +639,8 @@ function CreatePost() {
   const handleCreate = () => {
     trigger({
       body: { title: "New Post" },
-      revalidateTags: ["posts"],      // Passed to revalidator
-      revalidatePaths: ["/posts"],    // Passed to revalidator
+      revalidateTags: ["posts"], // Passed to revalidator
+      revalidatePaths: ["/posts"], // Passed to revalidator
     });
   };
 }
@@ -583,11 +650,11 @@ function CreatePost() {
 
 ```typescript
 api.posts.get({
-  tags: ["posts"],           // Next.js cache tags
-  revalidate: 60,            // ISR revalidation (seconds)
+  tags: ["posts"], // Next.js cache tags
+  revalidate: 60, // ISR revalidation (seconds)
   revalidateTags: ["posts"], // Tags to invalidate after mutation
-  revalidatePaths: ["/"],    // Paths to revalidate after mutation
-  skipRevalidator: false,    // Skip server-side revalidation
+  revalidatePaths: ["/"], // Paths to revalidate after mutation
+  skipRevalidator: false, // Skip server-side revalidation
 });
 ```
 
@@ -597,32 +664,47 @@ Works with Next.js API routes:
 
 ```typescript
 // Client component calling /api/posts
-const useAPI = createEnlaceHookNext<ApiSchema>("/api");
+const useAPI = createEnlaceHookNext<ApiSchema, ApiError>("/api");
 ```
 
 ---
 
 ## API Reference
 
-### `createEnlaceHookReact<TSchema>(baseUrl, options?, hookOptions?)`
+### `createEnlaceHookReact<TSchema, TDefaultError>(baseUrl, options?, hookOptions?)`
 
 Creates a React hook for making API calls.
 
-### `createEnlaceHookNext<TSchema>(baseUrl, options?, hookOptions?)`
+### `createEnlaceHookNext<TSchema, TDefaultError>(baseUrl, options?, hookOptions?)`
 
 Creates a Next.js hook with server revalidation support.
 
-**Parameters:**
+### `createEnlace<TSchema, TDefaultError>(baseUrl, options?, callbacks?)`
+
+Creates a typed API client (non-hook, for direct calls or server components).
+
+### `createEnlaceNext<TSchema, TDefaultError>(baseUrl, options?, nextOptions?)`
+
+Creates a Next.js typed API client with caching support.
+
+**Generic Parameters:**
+
+- `TSchema` — API schema type defining endpoints
+- `TDefaultError` — Default error type for all endpoints (default: `unknown`)
+
+**Function Parameters:**
+
 - `baseUrl` — Base URL for requests
 - `options` — Default fetch options (headers, cache, etc.)
-- `hookOptions` — Hook configuration
+- `hookOptions` / `callbacks` / `nextOptions` — Additional configuration
 
 **Hook Options:**
+
 ```typescript
 type EnlaceHookOptions = {
-  autoGenerateTags?: boolean;    // default: true
-  autoRevalidateTags?: boolean;  // default: true
-  staleTime?: number;            // default: 0
+  autoGenerateTags?: boolean; // default: true
+  autoRevalidateTags?: boolean; // default: true
+  staleTime?: number; // default: 0
   onSuccess?: (payload: EnlaceCallbackPayload<unknown>) => void;
   onError?: (payload: EnlaceErrorCallbackPayload<unknown>) => void;
 };

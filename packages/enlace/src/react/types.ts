@@ -48,22 +48,29 @@ export type UseEnlaceQueryOptions = {
 
 export type ApiClient<
   TSchema,
+  TDefaultError = unknown,
   TOptions = ReactRequestOptionsBase,
 > = unknown extends TSchema
   ? WildcardClient<TOptions>
-  : EnlaceClient<TSchema, TOptions>;
+  : EnlaceClient<TSchema, TDefaultError, TOptions>;
 
 export type QueryFn<
   TSchema,
   TData,
   TError,
+  TDefaultError = unknown,
   TOptions = ReactRequestOptionsBase,
 > = (
-  api: ApiClient<TSchema, TOptions>
+  api: ApiClient<TSchema, TDefaultError, TOptions>
 ) => Promise<EnlaceResponse<TData, TError>>;
 
-export type SelectorFn<TSchema, TMethod, TOptions = ReactRequestOptionsBase> = (
-  api: ApiClient<TSchema, TOptions>
+export type SelectorFn<
+  TSchema,
+  TMethod,
+  TDefaultError = unknown,
+  TOptions = ReactRequestOptionsBase
+> = (
+  api: ApiClient<TSchema, TDefaultError, TOptions>
 ) => TMethod;
 
 export type HookState = {
@@ -146,18 +153,18 @@ export type EnlaceHookOptions = {
 };
 
 /** Hook type returned by createEnlaceHookReact */
-export type EnlaceHook<TSchema> = {
+export type EnlaceHook<TSchema, TDefaultError = unknown> = {
   <
     TMethod extends (
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for method type inference
       ...args: any[]
     ) => Promise<EnlaceResponse<unknown, unknown>>,
   >(
-    selector: SelectorFn<TSchema, TMethod>
+    selector: SelectorFn<TSchema, TMethod, TDefaultError>
   ): UseEnlaceSelectorResult<TMethod>;
 
   <TData, TError>(
-    queryFn: QueryFn<TSchema, TData, TError>,
+    queryFn: QueryFn<TSchema, TData, TError, TDefaultError>,
     options?: UseEnlaceQueryOptions
   ): UseEnlaceQueryResult<TData, TError>;
 };

@@ -33,22 +33,27 @@ Define your API schema for full type safety:
 ```typescript
 import { createEnlace, Endpoint } from "enlace-core";
 
+// Define your API error type
+type ApiError = { message: string; code: number };
+
 type ApiSchema = {
   users: {
-    $get: Endpoint<User[], ApiError>;
-    $post: Endpoint<User, ApiError, CreateUser>;
+    $get: User[];                               // Simple: just data type
+    $post: Endpoint<User, CreateUser>;          // Data + Body
     _: {
-      $get: Endpoint<User, NotFoundError>;
-      $put: Endpoint<User, ApiError, UpdateUser>;
-      $delete: Endpoint<void, ApiError>;
+      $get: User;                               // Simple: just data type
+      $put: Endpoint<User, UpdateUser>;         // Data + Body
+      $delete: void;                            // void response
     };
   };
   posts: {
-    $get: Endpoint<Post[], ApiError>;
+    $get: Post[];
+    $post: Endpoint<Post, CreatePost, CustomError>;  // Custom error override
   };
 };
 
-const api = createEnlace<ApiSchema>("https://api.example.com");
+// Pass global error type as second generic
+const api = createEnlace<ApiSchema, ApiError>("https://api.example.com");
 
 // Fully typed!
 const users = await api.users.get();
@@ -64,12 +69,13 @@ const newUser = await api.users.post({ body: { name: "John" } });
 ```typescript
 type Schema = {
   users: {
-    $get: Endpoint<User[], ApiError>;           // GET /users
-    $post: Endpoint<User, ApiError>;            // POST /users
+    $get: User[];                               // GET /users
+    $post: Endpoint<User, CreateUser>;          // POST /users with body
     _: {                                        // /users/:id
-      $get: Endpoint<User, ApiError>;           // GET /users/:id
+      $get: User;                               // GET /users/:id
+      $delete: void;                            // DELETE /users/:id
       profile: {
-        $get: Endpoint<Profile, ApiError>;      // GET /users/:id/profile
+        $get: Profile;                          // GET /users/:id/profile
       };
     };
   };
@@ -83,21 +89,28 @@ api.users[123].profile.get(); // GET /users/123/profile
 
 ## API Reference
 
-### `createEnlace<TSchema>(baseUrl, options?)`
+### `createEnlace<TSchema, TDefaultError>(baseUrl, options?, callbacks?)`
 
 Creates a type-safe API client.
 
 ```typescript
-const api = createEnlace<ApiSchema>("https://api.example.com", {
+type ApiError = { message: string };
+
+const api = createEnlace<ApiSchema, ApiError>("https://api.example.com", {
   headers: {
     Authorization: "Bearer token",
   },
 });
 ```
 
-**Parameters:**
+**Generic Parameters:**
+- `TSchema` — API schema type defining endpoints
+- `TDefaultError` — Default error type for all endpoints (default: `unknown`)
+
+**Function Parameters:**
 - `baseUrl` — Base URL for all requests (supports relative paths in browser)
 - `options` — Default options for all requests
+- `callbacks` — Global callbacks (`onSuccess`, `onError`)
 
 **Options:**
 ```typescript
@@ -188,16 +201,29 @@ type EnlaceErrorCallbackPayload<T> =
 - Authentication refresh on 401 errors
 - Analytics tracking
 
-### `Endpoint<TData, TError, TBody?>`
+### `Endpoint<TData, TBody?, TError?>`
 
 Type helper for defining endpoints:
 
 ```typescript
-type Endpoint<TData, TError, TBody = never> = {
-  data: TData;
-  error: TError;
-  body: TBody;
+// Signature: Endpoint<TData, TBody?, TError?>
+type Endpoint<TData, TBody = never, TError = never>;
+```
+
+**Three ways to define endpoints:**
+
+```typescript
+type ApiSchema = {
+  posts: {
+    $get: Post[];                                   // Direct type (simplest)
+    $post: Endpoint<Post, CreatePost>;              // Data + Body
+    $put: Endpoint<Post, UpdatePost, CustomError>;  // Data + Body + Custom Error
+    $delete: void;                                  // void response
+  };
 };
+
+// Global error type applies to all endpoints without explicit error
+const api = createEnlace<ApiSchema, ApiError>("https://api.example.com");
 ```
 
 ### Request Options

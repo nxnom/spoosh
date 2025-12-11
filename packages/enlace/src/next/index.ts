@@ -7,13 +7,13 @@ import {
 import { executeNextFetch } from "./fetch";
 import type { NextOptions, NextRequestOptionsBase } from "./types";
 
-export function createEnlaceNext<TSchema = unknown>(
+export function createEnlaceNext<TSchema = unknown, TDefaultError = unknown>(
   baseUrl: string,
   defaultOptions: EnlaceOptions | null = {},
   nextOptions: NextOptions = {}
 ): unknown extends TSchema
   ? WildcardClient<NextRequestOptionsBase>
-  : EnlaceClient<TSchema, NextRequestOptionsBase> {
+  : EnlaceClient<TSchema, TDefaultError, NextRequestOptionsBase> {
   const combinedOptions = { ...defaultOptions, ...nextOptions };
   return createProxyHandler(
     baseUrl,
@@ -22,7 +22,7 @@ export function createEnlaceNext<TSchema = unknown>(
     executeNextFetch
   ) as unknown extends TSchema
     ? WildcardClient<NextRequestOptionsBase>
-    : EnlaceClient<TSchema, NextRequestOptionsBase>;
+    : EnlaceClient<TSchema, TDefaultError, NextRequestOptionsBase>;
 }
 
 export * from "./types";
