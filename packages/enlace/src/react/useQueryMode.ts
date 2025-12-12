@@ -20,13 +20,13 @@ import {
 
 function resolvePath(
   path: string[],
-  pathParams: Record<string, string | number> | undefined
+  params: Record<string, string | number> | undefined
 ): string[] {
-  if (!pathParams) return path;
+  if (!params) return path;
   return path.map((segment) => {
     if (segment.startsWith(":")) {
       const paramName = segment.slice(1);
-      const value = pathParams[paramName];
+      const value = params[paramName];
       if (value === undefined) {
         throw new Error(`Missing path parameter: ${paramName}`);
       }
@@ -53,10 +53,7 @@ export function useQueryMode<TSchema, TData, TError>(
   const requestOptions = trackedCall.options as
     | ReactRequestOptionsBase
     | undefined;
-  const resolvedPath = resolvePath(
-    trackedCall.path,
-    requestOptions?.pathParams
-  );
+  const resolvedPath = resolvePath(trackedCall.path, requestOptions?.params);
   const queryTags =
     requestOptions?.tags ??
     (autoGenerateTags ? generateTags(resolvedPath) : []);

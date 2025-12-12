@@ -27,9 +27,9 @@ export type ReactRequestOptionsBase = {
    * Used to replace :paramName placeholders in the URL path.
    * @example
    * // With path api.products[':id'].delete
-   * trigger({ pathParams: { id: '123' } }) // → DELETE /products/123
+   * trigger({ params: { id: '123' } }) // → DELETE /products/123
    */
-  pathParams?: Record<string, string | number>;
+  params?: Record<string, string | number>;
 };
 
 /** Options for query mode hooks */

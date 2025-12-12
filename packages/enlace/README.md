@@ -341,7 +341,7 @@ function PostList({ posts }: { posts: Post[] }) {
 
   const handleDelete = (postId: number) => {
     // Pass the actual ID when triggering
-    trigger({ pathParams: { id: postId } });
+    trigger({ params: { id: postId } });
   };
 
   return (
@@ -366,7 +366,7 @@ const { trigger } = useAPI(
   (api) => api.users[":userId"].posts[":postId"].delete
 );
 
-trigger({ pathParams: { userId: "1", postId: "42" } });
+trigger({ params: { userId: "1", postId: "42" } });
 // → DELETE /users/1/posts/42
 ```
 
@@ -376,7 +376,7 @@ trigger({ pathParams: { userId: "1", postId: "42" } });
 const { trigger } = useAPI((api) => api.products[":id"].patch);
 
 trigger({
-  pathParams: { id: "123" },
+  params: { id: "123" },
   body: { name: "Updated Product" },
 });
 // → PATCH /products/123 with body
@@ -618,7 +618,7 @@ type RequestOptions = {
   headers?: HeadersInit | (() => HeadersInit | Promise<HeadersInit>); // Request headers
   tags?: string[]; // Cache tags (GET only)
   revalidateTags?: string[]; // Tags to invalidate after mutation
-  pathParams?: Record<string, string | number>; // Dynamic path parameters
+  params?: Record<string, string | number>; // Dynamic path parameters
 };
 ```
 
