@@ -35,7 +35,10 @@ import { createTrackingProxy } from "../react/trackingProxy";
  * // Selector mode - trigger for mutations
  * const { trigger } = useAPI((api) => api.posts.delete);
  */
-export function createEnlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
+export function createEnlaceHookNext<
+  TSchema = unknown,
+  TDefaultError = unknown,
+>(
   baseUrl: string,
   defaultOptions: EnlaceOptions = {},
   hookOptions: NextHookOptions = {}
@@ -46,11 +49,15 @@ export function createEnlaceHookNext<TSchema = unknown, TDefaultError = unknown>
     staleTime = 0,
     ...nextOptions
   } = hookOptions;
-  const api = createEnlaceNext<TSchema, TDefaultError>(baseUrl, defaultOptions, {
-    autoGenerateTags,
-    autoRevalidateTags,
-    ...nextOptions,
-  });
+  const api = createEnlaceNext<TSchema, TDefaultError>(
+    baseUrl,
+    defaultOptions,
+    {
+      autoGenerateTags,
+      autoRevalidateTags,
+      ...nextOptions,
+    }
+  );
 
   function useEnlaceHook<
     TData,
@@ -81,8 +88,11 @@ export function createEnlaceHookNext<TSchema = unknown, TDefaultError = unknown>
 
     if (typeof result === "function") {
       const actualResult = (
-        selectorOrQuery as (api: NextApiClient<TSchema, TDefaultError>) => unknown
+        selectorOrQuery as (
+          api: NextApiClient<TSchema, TDefaultError>
+        ) => unknown
       )(api as NextApiClient<TSchema, TDefaultError>);
+
       return useSelectorMode<TMethod>({
         method: actualResult as (
           ...args: unknown[]
@@ -94,9 +104,19 @@ export function createEnlaceHookNext<TSchema = unknown, TDefaultError = unknown>
       });
     }
 
+    if (!trackedCall) {
+      throw new Error(
+        "useAPI query mode requires calling an HTTP method (get, post, etc.). " +
+          "Did you mean to use selector mode? Example: useAPI((api) => api.posts.get())"
+      );
+    }
+
     return useQueryMode<TSchema, TData, TError>(
-      api as unknown as import("../react/types").ApiClient<TSchema, TDefaultError>,
-      trackedCall!,
+      api as unknown as import("../react/types").ApiClient<
+        TSchema,
+        TDefaultError
+      >,
+      trackedCall,
       { autoGenerateTags, staleTime, enabled: queryOptions?.enabled ?? true }
     );
   }

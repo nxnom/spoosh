@@ -1,4 +1,8 @@
-import { createEnlace, type EnlaceOptions, type EnlaceResponse } from "enlace-core";
+import {
+  createEnlace,
+  type EnlaceOptions,
+  type EnlaceResponse,
+} from "enlace-core";
 import type {
   ApiClient,
   EnlaceHook,
@@ -27,7 +31,10 @@ import { useSelectorMode } from "./useSelectorMode";
  * const { trigger, loading, data, error } = useAPI((api) => api.posts.delete);
  * onClick={() => trigger({ body: { id: 1 } })}
  */
-export function createEnlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
+export function createEnlaceHookReact<
+  TSchema = unknown,
+  TDefaultError = unknown,
+>(
   baseUrl: string,
   defaultOptions: EnlaceOptions = {},
   hookOptions: EnlaceHookOptions = {}
@@ -39,7 +46,10 @@ export function createEnlaceHookReact<TSchema = unknown, TDefaultError = unknown
     onSuccess,
     onError,
   } = hookOptions;
-  const api = createEnlace<TSchema, TDefaultError>(baseUrl, defaultOptions, { onSuccess, onError });
+  const api = createEnlace<TSchema, TDefaultError>(baseUrl, defaultOptions, {
+    onSuccess,
+    onError,
+  });
 
   function useEnlaceHook<
     TData,
@@ -63,9 +73,9 @@ export function createEnlaceHookReact<TSchema = unknown, TDefaultError = unknown
       trackingResult = result;
     });
 
-    const result = (selectorOrQuery as (api: ApiClient<TSchema, TDefaultError>) => unknown)(
-      trackingProxy as ApiClient<TSchema, TDefaultError>
-    );
+    const result = (
+      selectorOrQuery as (api: ApiClient<TSchema, TDefaultError>) => unknown
+    )(trackingProxy as ApiClient<TSchema, TDefaultError>);
 
     if (typeof result === "function") {
       const actualResult = (
@@ -82,9 +92,16 @@ export function createEnlaceHookReact<TSchema = unknown, TDefaultError = unknown
       });
     }
 
+    if (!trackingResult.trackedCall) {
+      throw new Error(
+        "useAPI query mode requires calling an HTTP method (get, post, etc.). " +
+          "Did you mean to use selector mode? Example: useAPI((api) => api.posts.get())"
+      );
+    }
+
     return useQueryMode<TSchema, TData, TError>(
       api as ApiClient<TSchema, TDefaultError>,
-      trackingResult.trackedCall!,
+      trackingResult.trackedCall,
       { autoGenerateTags, staleTime, enabled: queryOptions?.enabled ?? true }
     );
   }
