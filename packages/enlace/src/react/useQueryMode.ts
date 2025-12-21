@@ -111,24 +111,20 @@ export function useQueryMode<TSchema, TData, TError>(
 
       const fetchPromise = method(trackedCall.options)
         .then((res) => {
-          if (mountedRef.current) {
-            setCache<TData, TError>(queryKey, {
-              data: res.error ? undefined : res.data,
-              error: res.error,
-              timestamp: Date.now(),
-              tags: queryTags,
-            });
-          }
+          setCache<TData, TError>(queryKey, {
+            data: res.error ? undefined : res.data,
+            error: res.error,
+            timestamp: Date.now(),
+            tags: queryTags,
+          });
         })
         .catch((err: TError) => {
-          if (mountedRef.current) {
-            setCache<TData, TError>(queryKey, {
-              data: undefined,
-              error: err,
-              timestamp: Date.now(),
-              tags: queryTags,
-            });
-          }
+          setCache<TData, TError>(queryKey, {
+            data: undefined,
+            error: err,
+            timestamp: Date.now(),
+            tags: queryTags,
+          });
         });
 
       setCache<TData, TError>(queryKey, {
