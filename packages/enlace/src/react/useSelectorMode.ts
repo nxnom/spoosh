@@ -57,7 +57,7 @@ export function useSelectorMode<
 
   if (!triggerRef.current) {
     triggerRef.current = (async (...args: unknown[]) => {
-      dispatch({ type: "FETCH_START" });
+      dispatch({ type: "MUTATION_START" });
 
       const options = args[0] as ReactRequestOptionsBase | undefined;
       const resolvedPath = resolvePath(pathRef.current, options?.params);

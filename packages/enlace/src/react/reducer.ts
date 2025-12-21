@@ -3,6 +3,7 @@ import type { HookState } from "./types";
 export type HookAction =
   | { type: "RESET"; state?: HookState }
   | { type: "FETCH_START" }
+  | { type: "MUTATION_START" }
   | { type: "FETCH_SUCCESS"; data: unknown }
   | { type: "FETCH_ERROR"; error: unknown }
   | { type: "SYNC_CACHE"; state: HookState };
@@ -23,6 +24,14 @@ export function hookReducer(state: HookState, action: HookAction): HookState {
       return {
         ...state,
         loading: state.data === undefined,
+        fetching: true,
+        error: undefined,
+      };
+
+    case "MUTATION_START":
+      return {
+        ...state,
+        loading: true,
         fetching: true,
         error: undefined,
       };
