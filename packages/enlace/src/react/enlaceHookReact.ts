@@ -1,5 +1,5 @@
 import {
-  createEnlace,
+  enlace,
   type EnlaceOptions,
   type EnlaceResponse,
 } from "enlace-core";
@@ -22,7 +22,7 @@ import { useSelectorMode } from "./useSelectorMode";
  * Called at module level to create a reusable hook.
  *
  * @example
- * const useAPI = createEnlaceHookReact<ApiSchema>('https://api.com');
+ * const useAPI = enlaceHookReact<ApiSchema>('https://api.com');
  *
  * // Query mode - auto-fetch (auto-tracks changes, no deps array needed)
  * const { loading, data, error } = useAPI((api) => api.posts.get({ query: { userId } }));
@@ -31,7 +31,7 @@ import { useSelectorMode } from "./useSelectorMode";
  * const { trigger, loading, data, error } = useAPI((api) => api.posts.delete);
  * onClick={() => trigger({ body: { id: 1 } })}
  */
-export function createEnlaceHookReact<
+export function enlaceHookReact<
   TSchema = unknown,
   TDefaultError = unknown,
 >(
@@ -46,7 +46,7 @@ export function createEnlaceHookReact<
     onSuccess,
     onError,
   } = hookOptions;
-  const api = createEnlace<TSchema, TDefaultError>(baseUrl, defaultOptions, {
+  const api = enlace<TSchema, TDefaultError>(baseUrl, defaultOptions, {
     onSuccess,
     onError,
   });

@@ -13,9 +13,9 @@ npm install enlace-core
 ### Basic Setup
 
 ```typescript
-import { createEnlace } from "enlace-core";
+import { enlace } from "enlace-core";
 
-const api = createEnlace("https://api.example.com");
+const api = enlace("https://api.example.com");
 
 // Make requests
 const response = await api.users.get();
@@ -31,7 +31,7 @@ console.log(response.data); // data is typed as non-undefined here
 Define your API schema for full type safety:
 
 ```typescript
-import { createEnlace, Endpoint } from "enlace-core";
+import { enlace, Endpoint } from "enlace-core";
 
 // Define your API error type
 type ApiError = { message: string; code: number };
@@ -53,7 +53,7 @@ type ApiSchema = {
 };
 
 // Pass global error type as second generic
-const api = createEnlace<ApiSchema, ApiError>("https://api.example.com");
+const api = enlace<ApiSchema, ApiError>("https://api.example.com");
 
 // Fully typed!
 const users = await api.users.get();
@@ -89,14 +89,14 @@ api.users[123].profile.get(); // GET /users/123/profile
 
 ## API Reference
 
-### `createEnlace<TSchema, TDefaultError>(baseUrl, options?, callbacks?)`
+### `enlace<TSchema, TDefaultError>(baseUrl, options?, callbacks?)`
 
 Creates a type-safe API client.
 
 ```typescript
 type ApiError = { message: string };
 
-const api = createEnlace<ApiSchema, ApiError>("https://api.example.com", {
+const api = enlace<ApiSchema, ApiError>("https://api.example.com", {
   headers: {
     Authorization: "Bearer token",
   },
@@ -127,17 +127,17 @@ Headers can be provided as a static value, sync function, or async function. Thi
 
 ```typescript
 // Static headers
-const api = createEnlace("https://api.example.com", {
+const api = enlace("https://api.example.com", {
   headers: { Authorization: "Bearer token" },
 });
 
 // Sync function
-const api = createEnlace("https://api.example.com", {
+const api = enlace("https://api.example.com", {
   headers: () => ({ Authorization: `Bearer ${getToken()}` }),
 });
 
 // Async function
-const api = createEnlace("https://api.example.com", {
+const api = enlace("https://api.example.com", {
   headers: async () => {
     const token = await getTokenFromStorage();
     return { Authorization: `Bearer ${token}` };
@@ -161,7 +161,7 @@ api.users.get({
 You can set up global `onSuccess` and `onError` callbacks that are called for every request:
 
 ```typescript
-const api = createEnlace<ApiSchema>("https://api.example.com", {
+const api = enlace<ApiSchema>("https://api.example.com", {
   headers: { Authorization: "Bearer token" },
 }, {
   onSuccess: (payload) => {
@@ -223,7 +223,7 @@ type ApiSchema = {
 };
 
 // Global error type applies to all endpoints without explicit error
-const api = createEnlace<ApiSchema, ApiError>("https://api.example.com");
+const api = enlace<ApiSchema, ApiError>("https://api.example.com");
 ```
 
 ### `EndpointWithQuery<TData, TQuery, TError?>`
@@ -390,7 +390,7 @@ console.log(response.data);
 In browser environments, relative URLs are automatically resolved:
 
 ```typescript
-const api = createEnlace("/api");
+const api = enlace("/api");
 // Resolves to: http://localhost:3000/api/...
 ```
 

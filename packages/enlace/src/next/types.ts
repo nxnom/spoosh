@@ -21,7 +21,7 @@ export type ServerRevalidateHandler = (
   paths: string[]
 ) => void | Promise<void>;
 
-/** Next.js-specific options (third argument for createEnlaceNext) */
+/** Next.js-specific options (third argument for enlaceNext) */
 export type NextOptions = Pick<
   EnlaceHookOptions,
   "autoGenerateTags" | "autoRevalidateTags"
@@ -32,7 +32,7 @@ export type NextOptions = Pick<
      * Receives auto-generated or manually specified tags and paths.
      * @example
      * ```ts
-     * createEnlaceNext("http://localhost:3000/api/", {}, {
+     * enlaceNext("http://localhost:3000/api/", {}, {
      *   serverRevalidator: (tags, paths) => revalidateServerAction(tags, paths)
      * });
      * ```
@@ -48,7 +48,7 @@ export type NextOptions = Pick<
     skipServerRevalidation?: boolean;
   };
 
-/** Next.js hook options (third argument for createEnlaceHookNext) - extends React's EnlaceHookOptions */
+/** Next.js hook options (third argument for enlaceHookNext) - extends React's EnlaceHookOptions */
 export type NextHookOptions = EnlaceHookOptions &
   Pick<NextOptions, "serverRevalidator" | "skipServerRevalidation">;
 
@@ -94,7 +94,7 @@ export type NextSelectorFn<TSchema, TMethod, TDefaultError = unknown> = Selector
   NextRequestOptionsBase
 >;
 
-/** Hook type returned by createEnlaceHookNext */
+/** Hook type returned by enlaceHookNext */
 export type NextEnlaceHook<TSchema, TDefaultError = unknown> = {
   <
     TMethod extends (

@@ -32,7 +32,7 @@ npm install enlace-core
 ### Basic Usage
 
 ```typescript
-import { createEnlaceHookReact } from "enlace/hook";
+import { enlaceHookReact } from "enlace/hook";
 import { Endpoint } from "enlace";
 
 // Define your API error type
@@ -52,7 +52,7 @@ type ApiSchema = {
 };
 
 // Create a hook with global error type
-const useAPI = createEnlaceHookReact<ApiSchema, ApiError>("https://api.example.com");
+const useAPI = enlaceHookReact<ApiSchema, ApiError>("https://api.example.com");
 
 // Use in components
 function Posts() {
@@ -99,11 +99,11 @@ export async function revalidateAction(tags: string[]) {
 
 ```typescript
 // useAPI.ts
-import { createEnlaceHookNext } from "enlace/hook";
+import { enlaceHookNext } from "enlace/hook";
 import { revalidateAction } from "./actions";
 
-const useAPI = createEnlaceHookNext<ApiSchema, ApiError>("https://api.example.com", {}, {
-  revalidator: revalidateAction,
+const useAPI = enlaceHookNext<ApiSchema, ApiError>("https://api.example.com", {}, {
+  serverRevalidator: revalidateAction,
 });
 ```
 

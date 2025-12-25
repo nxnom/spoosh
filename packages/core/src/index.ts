@@ -6,7 +6,7 @@ import type {
   WildcardClient,
 } from "./types";
 
-export function createEnlace<TSchema = unknown, TDefaultError = unknown>(
+export function enlace<TSchema = unknown, TDefaultError = unknown>(
   baseUrl: string,
   defaultOptions: EnlaceOptions | null = {},
   enlaceOptions: EnlaceCallbacks = {}

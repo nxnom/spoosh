@@ -7,7 +7,7 @@ import {
 import { executeNextFetch } from "./fetch";
 import type { NextOptions, NextRequestOptionsBase } from "./types";
 
-export function createEnlaceNext<TSchema = unknown, TDefaultError = unknown>(
+export function enlaceNext<TSchema = unknown, TDefaultError = unknown>(
   baseUrl: string,
   defaultOptions: EnlaceOptions | null = {},
   nextOptions: NextOptions = {}
