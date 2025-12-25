@@ -70,7 +70,7 @@ export function createEnlaceHookNext<
     selectorOrQuery:
       | NextSelectorFn<TSchema, TMethod, TDefaultError>
       | NextQueryFn<TSchema, TData, TError, TDefaultError>,
-    queryOptions?: UseEnlaceQueryOptions
+    queryOptions?: UseEnlaceQueryOptions<TData, TError>
   ): UseEnlaceSelectorResult<TMethod> | UseEnlaceQueryResult<TData, TError> {
     let trackedCall: TrackedCall | null = null;
     let selectorPath: string[] | null = null;
@@ -117,7 +117,12 @@ export function createEnlaceHookNext<
         TDefaultError
       >,
       trackedCall,
-      { autoGenerateTags, staleTime, enabled: queryOptions?.enabled ?? true }
+      {
+        autoGenerateTags,
+        staleTime,
+        enabled: queryOptions?.enabled ?? true,
+        pollingInterval: queryOptions?.pollingInterval,
+      }
     );
   }
 

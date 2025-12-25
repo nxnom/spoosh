@@ -107,6 +107,6 @@ export type NextEnlaceHook<TSchema, TDefaultError = unknown> = {
 
   <TData, TError>(
     queryFn: NextQueryFn<TSchema, TData, TError, TDefaultError>,
-    options?: UseEnlaceQueryOptions
+    options?: UseEnlaceQueryOptions<TData, TError>
   ): UseEnlaceQueryResult<TData, TError>;
 };

@@ -3,6 +3,7 @@ import type { EnlaceResponse } from "enlace-core";
 import type {
   ApiClient,
   HookState,
+  PollingInterval,
   ReactRequestOptionsBase,
   TrackedCall,
   UseEnlaceQueryResult,
@@ -36,18 +37,19 @@ function resolvePath(
   });
 }
 
-export type QueryModeOptions = {
+export type QueryModeOptions<TData = unknown, TError = unknown> = {
   autoGenerateTags: boolean;
   staleTime: number;
   enabled: boolean;
+  pollingInterval: PollingInterval<TData, TError> | undefined;
 };
 
 export function useQueryMode<TSchema, TData, TError>(
   api: ApiClient<TSchema>,
   trackedCall: TrackedCall,
-  options: QueryModeOptions
+  options: QueryModeOptions<TData, TError>
 ): UseEnlaceQueryResult<TData, TError> {
-  const { autoGenerateTags, staleTime, enabled } = options;
+  const { autoGenerateTags, staleTime, enabled, pollingInterval } = options;
   const queryKey = createQueryKey(trackedCall);
 
   const requestOptions = trackedCall.options as
@@ -78,18 +80,55 @@ export function useQueryMode<TSchema, TData, TError>(
 
   const mountedRef = useRef(true);
   const fetchRef = useRef<(() => void) | null>(null);
+  const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollingIntervalRef = useRef(pollingInterval);
+  pollingIntervalRef.current = pollingInterval;
 
   useEffect(() => {
     mountedRef.current = true;
 
     if (!enabled) {
       dispatch({ type: "RESET" });
+
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+        pollingTimeoutRef.current = null;
+      }
+
       return () => {
         mountedRef.current = false;
       };
     }
 
     dispatch({ type: "RESET", state: getCacheState(true) });
+
+    const scheduleNextPoll = () => {
+      const currentPollingInterval = pollingIntervalRef.current;
+
+      if (!mountedRef.current || !enabled || currentPollingInterval === undefined) {
+        return;
+      }
+
+      const cached = getCache<TData, TError>(queryKey);
+      const interval =
+        typeof currentPollingInterval === "function"
+          ? currentPollingInterval(cached?.data, cached?.error)
+          : currentPollingInterval;
+
+      if (interval === false || interval <= 0) {
+        return;
+      }
+
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+      }
+
+      pollingTimeoutRef.current = setTimeout(() => {
+        if (mountedRef.current && enabled && fetchRef.current) {
+          fetchRef.current();
+        }
+      }, interval);
+    };
 
     const doFetch = () => {
       const cached = getCache<TData, TError>(queryKey);
@@ -125,6 +164,9 @@ export function useQueryMode<TSchema, TData, TError>(
             timestamp: Date.now(),
             tags: queryTags,
           });
+        })
+        .finally(() => {
+          scheduleNextPoll();
         });
 
       setCache<TData, TError>(queryKey, {
@@ -138,6 +180,7 @@ export function useQueryMode<TSchema, TData, TError>(
     const cached = getCache<TData, TError>(queryKey);
     if (cached?.data !== undefined && !isStale(queryKey, staleTime)) {
       dispatch({ type: "SYNC_CACHE", state: getCacheState() });
+      scheduleNextPoll();
     } else {
       doFetch();
     }
@@ -151,6 +194,12 @@ export function useQueryMode<TSchema, TData, TError>(
     return () => {
       mountedRef.current = false;
       fetchRef.current = null;
+
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+        pollingTimeoutRef.current = null;
+      }
+
       unsubscribe();
     };
   }, [queryKey, enabled]);

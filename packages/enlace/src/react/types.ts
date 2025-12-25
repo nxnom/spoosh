@@ -32,14 +32,49 @@ export type ReactRequestOptionsBase = {
   params?: Record<string, string | number>;
 };
 
+/** Polling interval value: milliseconds to wait, or false to stop polling */
+export type PollingIntervalValue = number | false;
+
+/** Function that determines polling interval based on current data/error state */
+export type PollingIntervalFn<TData, TError> = (
+  data: TData | undefined,
+  error: TError | undefined
+) => PollingIntervalValue;
+
+/** Polling interval option: static value or dynamic function */
+export type PollingInterval<TData = unknown, TError = unknown> =
+  | PollingIntervalValue
+  | PollingIntervalFn<TData, TError>;
+
 /** Options for query mode hooks */
-export type UseEnlaceQueryOptions = {
+export type UseEnlaceQueryOptions<TData = unknown, TError = unknown> = {
   /**
    * Whether the query should execute.
    * Set to false to skip fetching (useful when ID is "new" or undefined).
    * @default true
    */
   enabled?: boolean;
+
+  /**
+   * Polling interval in milliseconds, or a function that returns the interval.
+   * When set, the query will refetch after this interval AFTER the previous request completes.
+   * Uses sequential polling (setTimeout after fetch completes), not interval-based.
+   *
+   * Can be:
+   * - `number`: Fixed interval in milliseconds
+   * - `false`: Disable polling
+   * - `(data, error) => number | false`: Dynamic interval based on response
+   *
+   * @example
+   * // Fixed interval
+   * { pollingInterval: 5000 }
+   *
+   * // Conditional polling based on data
+   * { pollingInterval: (order) => order?.status === 'pending' ? 2000 : false }
+   *
+   * @default undefined (no polling)
+   */
+  pollingInterval?: PollingInterval<TData, TError>;
 };
 
 // ============================================================================
@@ -163,6 +198,6 @@ export type EnlaceHook<TSchema, TDefaultError = unknown> = {
 
   <TData, TError>(
     queryFn: QueryFn<TSchema, TData, TError, TDefaultError>,
-    options?: UseEnlaceQueryOptions
+    options?: UseEnlaceQueryOptions<TData, TError>
   ): UseEnlaceQueryResult<TData, TError>;
 };

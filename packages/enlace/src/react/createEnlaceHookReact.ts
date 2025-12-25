@@ -62,7 +62,7 @@ export function createEnlaceHookReact<
     selectorOrQuery:
       | SelectorFn<TSchema, TMethod, TDefaultError>
       | QueryFn<TSchema, TData, TError, TDefaultError>,
-    queryOptions?: UseEnlaceQueryOptions
+    queryOptions?: UseEnlaceQueryOptions<TData, TError>
   ): UseEnlaceSelectorResult<TMethod> | UseEnlaceQueryResult<TData, TError> {
     let trackingResult: TrackingResult = {
       trackedCall: null,
@@ -102,7 +102,12 @@ export function createEnlaceHookReact<
     return useQueryMode<TSchema, TData, TError>(
       api as ApiClient<TSchema, TDefaultError>,
       trackingResult.trackedCall,
-      { autoGenerateTags, staleTime, enabled: queryOptions?.enabled ?? true }
+      {
+        autoGenerateTags,
+        staleTime,
+        enabled: queryOptions?.enabled ?? true,
+        pollingInterval: queryOptions?.pollingInterval,
+      }
     );
   }
 

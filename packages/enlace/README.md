@@ -269,6 +269,74 @@ function Post({ id }: { id: number }) {
 }
 ```
 
+### Polling
+
+Automatically refetch data at intervals using the `pollingInterval` option. Polling uses sequential timing — the interval starts counting **after** the previous request completes, preventing request pile-up:
+
+```typescript
+function Notifications() {
+  const { data } = useAPI(
+    (api) => api.notifications.get(),
+    { pollingInterval: 5000 } // Refetch every 5 seconds after previous request completes
+  );
+
+  return <NotificationList notifications={data} />;
+}
+```
+
+**Behavior:**
+
+- Polling starts after the initial fetch completes
+- Next poll is scheduled only after the current request finishes (success or error)
+- Continues polling even on errors (retry behavior)
+- Stops when component unmounts or `enabled` becomes `false`
+- Resets when component remounts
+
+**Dynamic polling with function:**
+
+Use a function to conditionally poll based on the response data or error:
+
+```typescript
+function OrderStatus({ orderId }: { orderId: string }) {
+  const { data } = useAPI(
+    (api) => api.orders[orderId].get(),
+    {
+      // Poll every 2s while pending, stop when completed
+      pollingInterval: (order) => order?.status === "pending" ? 2000 : false,
+    }
+  );
+
+  return <div>Status: {data?.status}</div>;
+}
+```
+
+The function receives `(data, error)` and should return:
+- `number`: Interval in milliseconds
+- `false`: Stop polling
+
+```typescript
+// Poll faster when there's an error (retry), slower otherwise
+{ pollingInterval: (data, error) => error ? 1000 : 10000 }
+
+// Stop polling once data meets a condition
+{ pollingInterval: (order) => order?.status === "completed" ? false : 3000 }
+```
+
+**Combined with conditional fetching:**
+
+```typescript
+function OrderStatus({ orderId }: { orderId: string | undefined }) {
+  const { data } = useAPI(
+    (api) => api.orders[orderId!].get(),
+    {
+      enabled: !!orderId,
+      pollingInterval: 10000, // Poll every 10 seconds
+    }
+  );
+  // Polling only runs when orderId is defined
+}
+```
+
 ### Request Deduplication
 
 Multiple components requesting the same data will share a single network request:
@@ -585,7 +653,18 @@ const result = useAPI((api) => api.posts.get());
 // With options
 const result = useAPI(
   (api) => api.posts.get(),
-  { enabled: true } // Skip fetching when false
+  {
+    enabled: true,        // Skip fetching when false
+    pollingInterval: 5000 // Refetch every 5s after previous request completes
+  }
+);
+
+// With dynamic polling
+const result = useAPI(
+  (api) => api.orders[id].get(),
+  {
+    pollingInterval: (order) => order?.status === "pending" ? 2000 : false
+  }
 );
 
 type UseEnlaceQueryResult<TData, TError> = {
@@ -605,6 +684,18 @@ type UseEnlaceSelectorResult<TMethod> = {
   fetching: boolean;
   data: TData | undefined;
   error: TError | undefined;
+};
+```
+
+### Query Options
+
+```typescript
+type UseEnlaceQueryOptions<TData, TError> = {
+  enabled?: boolean; // Skip fetching when false (default: true)
+  pollingInterval?: // Refetch interval after request completes
+    | number // Fixed interval in ms
+    | false // Disable polling
+    | ((data: TData | undefined, error: TError | undefined) => number | false); // Dynamic
 };
 ```
 
