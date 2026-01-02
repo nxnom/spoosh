@@ -1,10 +1,13 @@
 import ts from "typescript";
 import type { JSONSchema } from "./types.js";
 
+const MAX_DEPTH = 50;
+
 export type SchemaContext = {
   checker: ts.TypeChecker;
   schemas: Map<string, JSONSchema>;
-  visitedTypes: Set<ts.Type>;
+  visitedTypes: Set<string>;
+  depth: number;
 };
 
 export function createSchemaContext(checker: ts.TypeChecker): SchemaContext {
@@ -12,6 +15,7 @@ export function createSchemaContext(checker: ts.TypeChecker): SchemaContext {
     checker,
     schemas: new Map(),
     visitedTypes: new Set(),
+    depth: 0,
   };
 }
 
@@ -19,6 +23,10 @@ export function typeToSchema(
   type: ts.Type,
   ctx: SchemaContext
 ): JSONSchema {
+  if (ctx.depth > MAX_DEPTH) {
+    return {};
+  }
+
   const { checker } = ctx;
 
   if (type.flags & ts.TypeFlags.String) {
@@ -69,7 +77,7 @@ export function typeToSchema(
     const hasNull = type.types.some((t) => t.flags & ts.TypeFlags.Null);
 
     if (nonNullTypes.length === 1 && hasNull) {
-      const schema = typeToSchema(nonNullTypes[0]!, ctx);
+      const schema = typeToSchema(nonNullTypes[0]!, { ...ctx, depth: ctx.depth + 1 });
       return { ...schema, nullable: true };
     }
 
@@ -87,13 +95,14 @@ export function typeToSchema(
       };
     }
 
+    const nextCtx = { ...ctx, depth: ctx.depth + 1 };
     return {
-      oneOf: nonNullTypes.map((t) => typeToSchema(t, ctx)),
+      oneOf: nonNullTypes.map((t) => typeToSchema(t, nextCtx)),
     };
   }
 
   if (type.isIntersection()) {
-    return intersectionTypeToSchema(type, ctx);
+    return intersectionTypeToSchema(type, { ...ctx, depth: ctx.depth + 1 });
   }
 
   if (checker.isArrayType(type)) {
@@ -101,7 +110,7 @@ export function typeToSchema(
     if (typeArgs?.[0]) {
       return {
         type: "array",
-        items: typeToSchema(typeArgs[0], ctx),
+        items: typeToSchema(typeArgs[0], { ...ctx, depth: ctx.depth + 1 }),
       };
     }
     return { type: "array" };
@@ -121,21 +130,21 @@ export function typeToSchema(
       typeName !== "Array" &&
       !typeName.startsWith("__")
     ) {
-      if (ctx.visitedTypes.has(type)) {
+      if (ctx.visitedTypes.has(typeName)) {
         return { $ref: `#/components/schemas/${typeName}` };
       }
 
       if (!ctx.schemas.has(typeName)) {
-        ctx.visitedTypes.add(type);
-        const schema = objectTypeToSchema(type, ctx);
+        ctx.visitedTypes.add(typeName);
+        const schema = objectTypeToSchema(type, { ...ctx, depth: ctx.depth + 1 });
         ctx.schemas.set(typeName, schema);
-        ctx.visitedTypes.delete(type);
+        ctx.visitedTypes.delete(typeName);
       }
 
       return { $ref: `#/components/schemas/${typeName}` };
     }
 
-    return objectTypeToSchema(type, ctx);
+    return objectTypeToSchema(type, { ...ctx, depth: ctx.depth + 1 });
   }
 
   return {};
@@ -145,7 +154,6 @@ function objectTypeToSchema(type: ts.Type, ctx: SchemaContext): JSONSchema {
   const { checker } = ctx;
   const properties: Record<string, JSONSchema> = {};
   const required: string[] = [];
-
   const props = type.getProperties();
 
   for (const prop of props) {
@@ -153,7 +161,7 @@ function objectTypeToSchema(type: ts.Type, ctx: SchemaContext): JSONSchema {
     const propType = checker.getTypeOfSymbol(prop);
     const isOptional = prop.flags & ts.SymbolFlags.Optional;
 
-    properties[propName] = typeToSchema(propType, ctx);
+    properties[propName] = typeToSchema(propType, { ...ctx, depth: ctx.depth + 1 });
 
     if (!isOptional) {
       required.push(propName);
@@ -182,6 +190,7 @@ function intersectionTypeToSchema(
 
   for (const t of type.types) {
     const props = t.getProperties();
+
     for (const prop of props) {
       const propName = prop.getName();
       if (propName.startsWith("__")) continue;
@@ -189,7 +198,7 @@ function intersectionTypeToSchema(
       const propType = checker.getTypeOfSymbol(prop);
       const isOptional = prop.flags & ts.SymbolFlags.Optional;
 
-      properties[propName] = typeToSchema(propType, ctx);
+      properties[propName] = typeToSchema(propType, { ...ctx, depth: ctx.depth + 1 });
 
       if (!isOptional && !required.includes(propName)) {
         required.push(propName);
