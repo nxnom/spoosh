@@ -64,6 +64,11 @@ export type OpenAPIPathItem = {
   parameters?: OpenAPIParameter[];
 };
 
+export type OpenAPITag = {
+  name: string;
+  description?: string;
+};
+
 export type OpenAPISpec = {
   openapi: "3.0.0";
   info: {
@@ -72,6 +77,7 @@ export type OpenAPISpec = {
     description?: string;
   };
   servers?: { url: string; description?: string }[];
+  tags?: OpenAPITag[];
   paths: Record<string, OpenAPIPathItem>;
   components?: {
     schemas?: Record<string, JSONSchema>;

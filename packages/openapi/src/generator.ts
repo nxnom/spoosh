@@ -2,6 +2,7 @@ import type {
   OpenAPISpec,
   OpenAPIPathItem,
   OpenAPIOperation,
+  OpenAPITag,
   ParsedEndpoint,
   JSONSchema,
 } from "./types.js";
@@ -21,6 +22,7 @@ export function generateOpenAPISpec(
   const { title = "API", version = "1.0.0", description, baseUrl } = options;
 
   const paths: Record<string, OpenAPIPathItem> = {};
+  const tagSet = new Set<string>();
 
   for (const endpoint of endpoints) {
     if (!paths[endpoint.path]) {
@@ -28,7 +30,12 @@ export function generateOpenAPISpec(
     }
 
     const pathItem = paths[endpoint.path]!;
-    const operation = createOperation(endpoint);
+    const tag = getTagFromPath(endpoint.path);
+    const operation = createOperation(endpoint, tag);
+
+    if (tag) {
+      tagSet.add(tag);
+    }
 
     pathItem[endpoint.method] = operation;
 
@@ -41,6 +48,8 @@ export function generateOpenAPISpec(
       }));
     }
   }
+
+  const tags: OpenAPITag[] = [...tagSet].sort().map((name) => ({ name }));
 
   const spec: OpenAPISpec = {
     openapi: "3.0.0",
@@ -59,6 +68,10 @@ export function generateOpenAPISpec(
     spec.servers = [{ url: baseUrl }];
   }
 
+  if (tags.length > 0) {
+    spec.tags = tags;
+  }
+
   if (schemas.size > 0) {
     spec.components = {
       schemas: Object.fromEntries(schemas),
@@ -68,7 +81,18 @@ export function generateOpenAPISpec(
   return spec;
 }
 
-function createOperation(endpoint: ParsedEndpoint): OpenAPIOperation {
+function getTagFromPath(path: string): string | undefined {
+  const segments = path.split("/").filter(Boolean);
+  const firstSegment = segments[0];
+
+  if (!firstSegment || firstSegment.startsWith("{")) {
+    return undefined;
+  }
+
+  return firstSegment;
+}
+
+function createOperation(endpoint: ParsedEndpoint, tag?: string): OpenAPIOperation {
   const operation: OpenAPIOperation = {
     responses: {
       "200": {
@@ -76,6 +100,10 @@ function createOperation(endpoint: ParsedEndpoint): OpenAPIOperation {
       },
     },
   };
+
+  if (tag) {
+    operation.tags = [tag];
+  }
 
   if (hasContent(endpoint.responseSchema)) {
     operation.responses["200"]!.content = {
