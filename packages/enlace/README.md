@@ -42,7 +42,7 @@ Defining a schema is **recommended** for full type safety, but **optional**. You
 ```typescript
 // Without schema (untyped, but still works!)
 const useAPI = enlaceHookReact("https://api.example.com");
-const { data } = useAPI((api) => api.any.path.you.want.get());
+const { data } = useAPI((api) => api.any.path.you.want.$get());
 ```
 
 ```typescript
@@ -80,9 +80,9 @@ type ApiSchema = {
 const api = enlace<ApiSchema, ApiError>("https://api.example.com");
 
 // Usage
-api.users.get(); // GET /users
-api.users[123].get(); // GET /users/123
-api.users[123].profile.get(); // GET /users/123/profile
+api.users.$get(); // GET /users
+api.users[123].$get(); // GET /users/123
+api.users[123].profile.$get(); // GET /users/123/profile
 ```
 
 ### Endpoint Types
@@ -124,8 +124,8 @@ type ApiSchema = {
 };
 
 // Usage - query params are fully typed
-const { data } = useAPI((api) => api.users.get({ query: { page: 1, limit: 10 } }));
-// api.users.get({ query: { foo: "bar" } }); // ✗ Error: 'foo' does not exist
+const { data } = useAPI((api) => api.users.$get({ query: { page: 1, limit: 10 } }));
+// api.users.$get({ query: { foo: "bar" } }); // ✗ Error: 'foo' does not exist
 ```
 
 #### `EndpointWithFormData<TData, TFormData, TError?>`
@@ -145,7 +145,7 @@ type ApiSchema = {
 };
 
 // Usage - formData is automatically converted to FormData
-const { trigger } = useAPI((api) => api.uploads.post);
+const { trigger } = useAPI((api) => api.uploads.$post);
 trigger({
   formData: {
     file: selectedFile,        // File object
@@ -211,7 +211,7 @@ For GET requests that fetch data automatically:
 ```typescript
 function Posts({ page, limit }: { page: number; limit: number }) {
   const { data, loading, error } = useAPI((api) =>
-    api.posts.get({ query: { page, limit, published: true } })
+    api.posts.$get({ query: { page, limit, published: true } })
   );
 
   if (loading) return <div>Loading...</div>;
@@ -242,7 +242,7 @@ Skip fetching with the `enabled` option:
 function ProductForm({ id }: { id: string | "new" }) {
   // Skip fetching when creating a new product
   const { data, loading } = useAPI(
-    (api) => api.products[id].get(),
+    (api) => api.products[id].$get(),
     { enabled: id !== "new" }
   );
 
@@ -255,7 +255,7 @@ function ProductForm({ id }: { id: string | "new" }) {
 ```typescript
 // Also useful when waiting for a dependency
 function UserPosts({ userId }: { userId: string | undefined }) {
-  const { data } = useAPI((api) => api.users[userId!].posts.get(), {
+  const { data } = useAPI((api) => api.users[userId!].posts.$get(), {
     enabled: userId !== undefined,
   });
 }
@@ -264,7 +264,7 @@ function UserPosts({ userId }: { userId: string | undefined }) {
 ```typescript
 function Post({ id }: { id: number }) {
   // Automatically re-fetches when `id` or query values change
-  const { data } = useAPI((api) => api.posts[id].get({ query: { include: "author" } }));
+  const { data } = useAPI((api) => api.posts[id].$get({ query: { include: "author" } }));
   return <div>{data?.title}</div>;
 }
 ```
@@ -276,7 +276,7 @@ Automatically refetch data at intervals using the `pollingInterval` option. Poll
 ```typescript
 function Notifications() {
   const { data } = useAPI(
-    (api) => api.notifications.get(),
+    (api) => api.notifications.$get(),
     { pollingInterval: 5000 } // Refetch every 5 seconds after previous request completes
   );
 
@@ -299,7 +299,7 @@ Use a function to conditionally poll based on the response data or error:
 ```typescript
 function OrderStatus({ orderId }: { orderId: string }) {
   const { data } = useAPI(
-    (api) => api.orders[orderId].get(),
+    (api) => api.orders[orderId].$get(),
     {
       // Poll every 2s while pending, stop when completed
       pollingInterval: (order) => order?.status === "pending" ? 2000 : false,
@@ -327,7 +327,7 @@ The function receives `(data, error)` and should return:
 ```typescript
 function OrderStatus({ orderId }: { orderId: string | undefined }) {
   const { data } = useAPI(
-    (api) => api.orders[orderId!].get(),
+    (api) => api.orders[orderId!].$get(),
     {
       enabled: !!orderId,
       pollingInterval: 10000, // Poll every 10 seconds
@@ -344,12 +344,12 @@ Multiple components requesting the same data will share a single network request
 ```typescript
 // Both components render at the same time
 function PostTitle({ id }: { id: number }) {
-  const { data } = useAPI((api) => api.posts[id].get());
+  const { data } = useAPI((api) => api.posts[id].$get());
   return <h1>{data?.title}</h1>;
 }
 
 function PostBody({ id }: { id: number }) {
-  const { data } = useAPI((api) => api.posts[id].get());
+  const { data } = useAPI((api) => api.posts[id].$get());
   return <p>{data?.body}</p>;
 }
 
@@ -371,7 +371,7 @@ For mutations or lazy-loaded requests:
 
 ```typescript
 function DeleteButton({ id }: { id: number }) {
-  const { trigger, loading } = useAPI((api) => api.posts[id].delete);
+  const { trigger, loading } = useAPI((api) => api.posts[id].$delete);
 
   return (
     <button onClick={() => trigger()} disabled={loading}>
@@ -385,7 +385,7 @@ function DeleteButton({ id }: { id: number }) {
 
 ```typescript
 function CreatePost() {
-  const { trigger, loading, data } = useAPI((api) => api.posts.post);
+  const { trigger, loading, data } = useAPI((api) => api.posts.$post);
 
   const handleSubmit = async (title: string) => {
     const result = await trigger({ body: { title } });
@@ -405,7 +405,7 @@ Use `:paramName` syntax for dynamic IDs passed at trigger time:
 ```typescript
 function PostList({ posts }: { posts: Post[] }) {
   // Define once with :id placeholder
-  const { trigger, loading } = useAPI((api) => api.posts[":id"].delete);
+  const { trigger, loading } = useAPI((api) => api.posts[":id"].$delete);
 
   const handleDelete = (postId: number) => {
     // Pass the actual ID when triggering
@@ -431,7 +431,7 @@ function PostList({ posts }: { posts: Post[] }) {
 
 ```typescript
 const { trigger } = useAPI(
-  (api) => api.users[":userId"].posts[":postId"].delete
+  (api) => api.users[":userId"].posts[":postId"].$delete
 );
 
 trigger({ params: { userId: "1", postId: "42" } });
@@ -441,7 +441,7 @@ trigger({ params: { userId: "1", postId: "42" } });
 **With request body:**
 
 ```typescript
-const { trigger } = useAPI((api) => api.products[":id"].patch);
+const { trigger } = useAPI((api) => api.products[":id"].$patch);
 
 trigger({
   params: { id: "123" },
@@ -465,7 +465,7 @@ trigger({
 **Mutations automatically revalidate matching tags:**
 
 ```typescript
-const { trigger } = useAPI((api) => api.posts.post);
+const { trigger } = useAPI((api) => api.posts.$post);
 
 // POST /posts automatically revalidates 'posts' tag
 // All queries with 'posts' tag will refetch!
@@ -482,10 +482,10 @@ This means in most cases, **you don't need to specify any tags manually**. The c
 
 ```typescript
 // Component A: fetches posts (cached with tag 'posts')
-const { data } = useAPI((api) => api.posts.get());
+const { data } = useAPI((api) => api.posts.$get());
 
 // Component B: creates a post
-const { trigger } = useAPI((api) => api.posts.post);
+const { trigger } = useAPI((api) => api.posts.$post);
 trigger({ body: { title: "New" } });
 // → Automatically revalidates 'posts' tag
 // → Component A refetches automatically!
@@ -515,7 +515,7 @@ Override auto-generated tags when needed:
 
 ```typescript
 // Custom cache tags
-const { data } = useAPI((api) => api.posts.get({ tags: ["my-custom-tag"] }));
+const { data } = useAPI((api) => api.posts.$get({ tags: ["my-custom-tag"] }));
 
 // Custom revalidation tags
 trigger({
@@ -583,7 +583,7 @@ This also works for per-request headers:
 
 ```typescript
 const { data } = useAPI((api) =>
-  api.posts.get({
+  api.posts.$get({
     headers: async () => {
       const token = await refreshToken();
       return { Authorization: `Bearer ${token}` };
@@ -648,11 +648,11 @@ type EnlaceErrorCallbackPayload<T> =
 
 ```typescript
 // Basic usage
-const result = useAPI((api) => api.posts.get());
+const result = useAPI((api) => api.posts.$get());
 
 // With options
 const result = useAPI(
-  (api) => api.posts.get(),
+  (api) => api.posts.$get(),
   {
     enabled: true,        // Skip fetching when false
     pollingInterval: 5000 // Refetch every 5s after previous request completes
@@ -661,7 +661,7 @@ const result = useAPI(
 
 // With dynamic polling
 const result = useAPI(
-  (api) => api.orders[id].get(),
+  (api) => api.orders[id].$get(),
   {
     pollingInterval: (order) => order?.status === "pending" ? 2000 : false
   }
@@ -731,7 +731,7 @@ const api = enlaceNext<ApiSchema, ApiError>("https://api.example.com", {}, {
 });
 
 export default async function Page() {
-  const { data } = await api.posts.get({
+  const { data } = await api.posts.$get({
     revalidate: 60, // ISR: revalidate every 60 seconds
   });
 
@@ -795,7 +795,7 @@ const useAPI = enlaceHookNext<ApiSchema, ApiError>(
 
 ```typescript
 function CreatePost() {
-  const { trigger } = useAPI((api) => api.posts.post);
+  const { trigger } = useAPI((api) => api.posts.$post);
 
   const handleCreate = () => {
     trigger({
@@ -843,7 +843,7 @@ await trigger({ body: data, serverRevalidate: true });
 ### Next.js Request Options
 
 ```typescript
-api.posts.get({
+api.posts.$get({
   tags: ["posts"], // Next.js cache tags
   revalidate: 60, // ISR revalidation (seconds)
   revalidateTags: ["posts"], // Tags to invalidate after mutation

@@ -18,7 +18,7 @@ import { enlace } from "enlace-core";
 const api = enlace("https://api.example.com");
 
 // Make requests
-const response = await api.users.get();
+const response = await api.users.$get();
 if (response.error) {
   console.error(response.error);
   return;
@@ -56,9 +56,9 @@ type ApiSchema = {
 const api = enlace<ApiSchema, ApiError>("https://api.example.com");
 
 // Fully typed!
-const users = await api.users.get();
-const user = await api.users[123].get();
-const newUser = await api.users.post({ body: { name: "John" } });
+const users = await api.users.$get();
+const user = await api.users[123].$get();
+const newUser = await api.users.$post({ body: { name: "John" } });
 ```
 
 ### Schema Conventions
@@ -82,9 +82,9 @@ type Schema = {
 };
 
 // Usage
-api.users.get();              // GET /users
-api.users[123].get();         // GET /users/123
-api.users[123].profile.get(); // GET /users/123/profile
+api.users.$get();              // GET /users
+api.users[123].$get();         // GET /users/123
+api.users[123].profile.$get(); // GET /users/123/profile
 ```
 
 ## API Reference
@@ -148,7 +148,7 @@ const api = enlace("https://api.example.com", {
 This also works for per-request headers:
 
 ```typescript
-api.users.get({
+api.users.$get({
   headers: async () => {
     const token = await refreshToken();
     return { Authorization: `Bearer ${token}` };
@@ -243,9 +243,9 @@ type ApiSchema = {
 };
 
 // Usage - query params are fully typed
-api.users.get({ query: { page: 1, limit: 10 } });
-api.users.get({ query: { page: 1, limit: 10, search: "john" } });
-// api.users.get({ query: { foo: "bar" } }); // ✗ Error: 'foo' does not exist
+api.users.$get({ query: { page: 1, limit: 10 } });
+api.users.$get({ query: { page: 1, limit: 10, search: "john" } });
+// api.users.$get({ query: { foo: "bar" } }); // ✗ Error: 'foo' does not exist
 ```
 
 ### `EndpointWithFormData<TData, TFormData, TError?>`
@@ -265,7 +265,7 @@ type ApiSchema = {
 };
 
 // Usage - formData is automatically converted to FormData
-api.uploads.post({
+api.uploads.$post({
   formData: {
     file: selectedFile,        // File object
     name: "document.pdf",      // String - converted automatically
@@ -318,7 +318,7 @@ type ApiSchema = {
 };
 
 // Usage
-api.products.post({
+api.products.$post({
   body: { name: "Widget" },
   query: { categoryId: "electronics" }
 });
@@ -339,7 +339,7 @@ api.products.post({
 Per-request options:
 
 ```typescript
-api.users.post({
+api.users.$post({
   body: { name: "John" },
   query: { include: "profile" },
   headers: { "X-Custom": "value" },
@@ -347,7 +347,7 @@ api.users.post({
 });
 
 // FormData request
-api.uploads.post({
+api.uploads.$post({
   formData: { file: selectedFile, name: "document.pdf" },
 });
 ```
@@ -372,7 +372,7 @@ type EnlaceResponse<TData, TError> =
 **Usage with type narrowing:**
 
 ```typescript
-const response = await api.users.get();
+const response = await api.users.$get();
 
 if (response.error) {
   // response.error is typed as ApiError
@@ -399,7 +399,7 @@ const api = enlace("/api");
 Objects and arrays are automatically JSON-serialized:
 
 ```typescript
-api.users.post({
+api.users.$post({
   body: { name: "John" }, // Automatically JSON.stringify'd
 });
 ```
@@ -409,7 +409,7 @@ api.users.post({
 Query parameters are automatically serialized:
 
 ```typescript
-api.posts.get({
+api.posts.$get({
   query: {
     page: 1,
     limit: 10,

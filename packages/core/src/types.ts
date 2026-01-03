@@ -290,41 +290,14 @@ type StaticPathKeys<TSchema> = {
 
 type ExtractDynamicSchema<TSchema> = TSchema extends { _: infer D } ? D : never;
 
-type MethodOrPath<
-  TSchema,
-  TMethodName extends string,
-  TSchemaMethod extends SchemaMethod,
-  TDefaultError = unknown,
-  TRequestOptionsBase = object,
-> = TMethodName extends keyof TSchema
-  ? EnlaceClient<TSchema[TMethodName], TDefaultError, TRequestOptionsBase>
-  : MethodFn<TSchema, TSchemaMethod, TDefaultError, TRequestOptionsBase>;
-
 type HttpMethods<
   TSchema,
   TDefaultError = unknown,
   TRequestOptionsBase = object,
 > = {
-  get: MethodOrPath<TSchema, "get", "$get", TDefaultError, TRequestOptionsBase>;
-  post: MethodOrPath<
+  [K in SchemaMethod as K extends keyof TSchema ? K : never]: MethodFn<
     TSchema,
-    "post",
-    "$post",
-    TDefaultError,
-    TRequestOptionsBase
-  >;
-  put: MethodOrPath<TSchema, "put", "$put", TDefaultError, TRequestOptionsBase>;
-  patch: MethodOrPath<
-    TSchema,
-    "patch",
-    "$patch",
-    TDefaultError,
-    TRequestOptionsBase
-  >;
-  delete: MethodOrPath<
-    TSchema,
-    "delete",
-    "$delete",
+    K,
     TDefaultError,
     TRequestOptionsBase
   >;
@@ -350,7 +323,12 @@ type DynamicAccess<
         >;
       };
 
-type MethodNameKeys = "get" | "post" | "put" | "patch" | "delete";
+type MethodNameKeys = SchemaMethod;
+
+type DynamicKey<TSchema, TDefaultError, TRequestOptionsBase> =
+  TSchema extends { _: infer D }
+    ? { _: EnlaceClient<D, TDefaultError, TRequestOptionsBase> }
+    : object;
 
 /** Typed API client based on schema definition */
 export type EnlaceClient<
@@ -358,7 +336,8 @@ export type EnlaceClient<
   TDefaultError = unknown,
   TRequestOptionsBase = object,
 > = HttpMethods<TSchema, TDefaultError, TRequestOptionsBase> &
-  DynamicAccess<TSchema, TDefaultError, TRequestOptionsBase> & {
+  DynamicAccess<TSchema, TDefaultError, TRequestOptionsBase> &
+  DynamicKey<TSchema, TDefaultError, TRequestOptionsBase> & {
     [K in keyof StaticPathKeys<TSchema> as K extends MethodNameKeys
       ? never
       : K]: EnlaceClient<TSchema[K], TDefaultError, TRequestOptionsBase>;
@@ -369,11 +348,11 @@ export type WildcardClient<TRequestOptionsBase = object> = {
   (
     options?: RequestOptions<unknown> & TRequestOptionsBase
   ): Promise<EnlaceResponse<unknown, unknown>>;
-  get: WildcardClient<TRequestOptionsBase>;
-  post: WildcardClient<TRequestOptionsBase>;
-  put: WildcardClient<TRequestOptionsBase>;
-  patch: WildcardClient<TRequestOptionsBase>;
-  delete: WildcardClient<TRequestOptionsBase>;
+  $get: WildcardClient<TRequestOptionsBase>;
+  $post: WildcardClient<TRequestOptionsBase>;
+  $put: WildcardClient<TRequestOptionsBase>;
+  $patch: WildcardClient<TRequestOptionsBase>;
+  $delete: WildcardClient<TRequestOptionsBase>;
   [key: string]: WildcardClient<TRequestOptionsBase>;
   [key: number]: WildcardClient<TRequestOptionsBase>;
 };

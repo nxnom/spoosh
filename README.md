@@ -7,7 +7,7 @@ A type-safe API client for React and Next.js with built-in caching and automatic
 ## Features
 
 - **Type-Safe** — Full TypeScript support with schema-driven API clients
-- **Proxy-Based API** — Fluent interface: `api.users[id].posts.get()`
+- **Proxy-Based API** — Fluent interface: `api.users[id].posts.$get()`
 - **React Hooks** — SWR-style caching with automatic dependency tracking
 - **Next.js Integration** — ISR, cache tags, and server-side revalidation
 
@@ -56,7 +56,7 @@ const useAPI = enlaceHookReact<ApiSchema, ApiError>("https://api.example.com");
 
 // Use in components
 function Posts() {
-  const { data, loading, error } = useAPI((api) => api.posts.get());
+  const { data, loading, error } = useAPI((api) => api.posts.$get());
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -75,10 +75,10 @@ function Posts() {
 // POST /posts → auto-revalidates 'posts' tag
 
 // Queries automatically use generated tags for caching
-const { data } = useAPI((api) => api.posts[123].get());
+const { data } = useAPI((api) => api.posts[123].$get());
 
 // Mutations automatically revalidate matching tags
-const { trigger } = useAPI((api) => api.posts.post);
+const { trigger } = useAPI((api) => api.posts.$post);
 trigger({ body: { title: "New" } }); // Auto-revalidates 'posts'
 ```
 

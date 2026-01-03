@@ -25,10 +25,10 @@ import { useSelectorMode } from "./useSelectorMode";
  * const useAPI = enlaceHookReact<ApiSchema>('https://api.com');
  *
  * // Query mode - auto-fetch (auto-tracks changes, no deps array needed)
- * const { loading, data, error } = useAPI((api) => api.posts.get({ query: { userId } }));
+ * const { loading, data, error } = useAPI((api) => api.posts.$get({ query: { userId } }));
  *
  * // Selector mode - typed trigger for lazy calls
- * const { trigger, loading, data, error } = useAPI((api) => api.posts.delete);
+ * const { trigger, loading, data, error } = useAPI((api) => api.posts.$delete);
  * onClick={() => trigger({ body: { id: 1 } })}
  */
 export function enlaceHookReact<
@@ -94,8 +94,8 @@ export function enlaceHookReact<
 
     if (!trackingResult.trackedCall) {
       throw new Error(
-        "useAPI query mode requires calling an HTTP method (get, post, etc.). " +
-          "Did you mean to use selector mode? Example: useAPI((api) => api.posts.get())"
+        "useAPI query mode requires calling an HTTP method ($get, $post, etc.). " +
+          "Did you mean to use selector mode? Example: useAPI((api) => api.posts.$get())"
       );
     }
 

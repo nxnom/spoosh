@@ -30,10 +30,10 @@ import { createTrackingProxy } from "../react/trackingProxy";
  * });
  *
  * // Query mode - auto-fetch
- * const { loading, data, error } = useAPI((api) => api.posts.get());
+ * const { loading, data, error } = useAPI((api) => api.posts.$get());
  *
  * // Selector mode - trigger for mutations
- * const { trigger } = useAPI((api) => api.posts.delete);
+ * const { trigger } = useAPI((api) => api.posts.$delete);
  */
 export function enlaceHookNext<
   TSchema = unknown,
@@ -106,8 +106,8 @@ export function enlaceHookNext<
 
     if (!trackedCall) {
       throw new Error(
-        "useAPI query mode requires calling an HTTP method (get, post, etc.). " +
-          "Did you mean to use selector mode? Example: useAPI((api) => api.posts.get())"
+        "useAPI query mode requires calling an HTTP method ($get, $post, etc.). " +
+          "Did you mean to use selector mode? Example: useAPI((api) => api.posts.$get())"
       );
     }
 
