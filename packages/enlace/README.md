@@ -30,9 +30,7 @@ type ApiSchema = {
 };
 
 // Pass global error type as second generic
-const useAPI = enlaceHookReact<ApiSchema, ApiError>(
-  "https://api.example.com"
-);
+const useAPI = enlaceHookReact<ApiSchema, ApiError>("https://api.example.com");
 ```
 
 ## Schema Conventions
@@ -98,11 +96,11 @@ import { Endpoint } from "enlace";
 
 type ApiSchema = {
   posts: {
-    $get: Post[];                                   // Direct type (simplest)
-    $post: Endpoint<Post, CreatePost>;              // Data + Body
+    $get: Post[]; // Direct type (simplest)
+    $post: Endpoint<Post, CreatePost>; // Data + Body
     $put: Endpoint<Post, UpdatePost, ValidationError>; // Data + Body + Error
-    $delete: void;                                  // void response
-    $patch: Endpoint<Post, never, NotFoundError>;   // Custom error without body
+    $delete: void; // void response
+    $patch: Endpoint<Post, never, NotFoundError>; // Custom error without body
   };
 };
 ```
@@ -116,15 +114,24 @@ import { EndpointWithQuery } from "enlace";
 
 type ApiSchema = {
   users: {
-    $get: EndpointWithQuery<User[], { page: number; limit: number; search?: string }>;
+    $get: EndpointWithQuery<
+      User[],
+      { page: number; limit: number; search?: string }
+    >;
   };
   posts: {
-    $get: EndpointWithQuery<Post[], { status: "draft" | "published" }, ApiError>;
+    $get: EndpointWithQuery<
+      Post[],
+      { status: "draft" | "published" },
+      ApiError
+    >;
   };
 };
 
 // Usage - query params are fully typed
-const { data } = useAPI((api) => api.users.$get({ query: { page: 1, limit: 10 } }));
+const { data } = useAPI((api) =>
+  api.users.$get({ query: { page: 1, limit: 10 } })
+);
 // api.users.$get({ query: { foo: "bar" } }); // ✗ Error: 'foo' does not exist
 ```
 
@@ -148,22 +155,22 @@ type ApiSchema = {
 const { trigger } = useAPI((api) => api.uploads.$post);
 trigger({
   formData: {
-    file: selectedFile,        // File object
-    name: "document.pdf",      // String - converted automatically
-  }
+    file: selectedFile, // File object
+    name: "document.pdf", // String - converted automatically
+  },
 });
 // → Sends as multipart/form-data
 ```
 
 **FormData conversion rules:**
 
-| Type | Conversion |
-|------|------------|
-| `File` / `Blob` | Appended directly |
-| `string` / `number` / `boolean` | Converted to string |
-| `object` (nested) | JSON stringified |
-| `array` of primitives | Each item appended separately |
-| `array` of files | Each file appended with same key |
+| Type                            | Conversion                       |
+| ------------------------------- | -------------------------------- |
+| `File` / `Blob`                 | Appended directly                |
+| `string` / `number` / `boolean` | Converted to string              |
+| `object` (nested)               | JSON stringified                 |
+| `array` of primitives           | Each item appended separately    |
+| `array` of files                | Each file appended with same key |
 
 #### `EndpointFull<T>`
 
@@ -311,28 +318,30 @@ function OrderStatus({ orderId }: { orderId: string }) {
 ```
 
 The function receives `(data, error)` and should return:
+
 - `number`: Interval in milliseconds
 - `false`: Stop polling
 
 ```typescript
 // Poll faster when there's an error (retry), slower otherwise
-{ pollingInterval: (data, error) => error ? 1000 : 10000 }
+{
+  pollingInterval: (data, error) => (error ? 1000 : 10000);
+}
 
 // Stop polling once data meets a condition
-{ pollingInterval: (order) => order?.status === "completed" ? false : 3000 }
+{
+  pollingInterval: (order) => (order?.status === "completed" ? false : 3000);
+}
 ```
 
 **Combined with conditional fetching:**
 
 ```typescript
 function OrderStatus({ orderId }: { orderId: string | undefined }) {
-  const { data } = useAPI(
-    (api) => api.orders[orderId!].$get(),
-    {
-      enabled: !!orderId,
-      pollingInterval: 10000, // Poll every 10 seconds
-    }
-  );
+  const { data } = useAPI((api) => api.orders[orderId!].$get(), {
+    enabled: !!orderId,
+    pollingInterval: 10000, // Poll every 10 seconds
+  });
   // Polling only runs when orderId is defined
 }
 ```
@@ -651,21 +660,15 @@ type EnlaceErrorCallbackPayload<T> =
 const result = useAPI((api) => api.posts.$get());
 
 // With options
-const result = useAPI(
-  (api) => api.posts.$get(),
-  {
-    enabled: true,        // Skip fetching when false
-    pollingInterval: 5000 // Refetch every 5s after previous request completes
-  }
-);
+const result = useAPI((api) => api.posts.$get(), {
+  enabled: true, // Skip fetching when false
+  pollingInterval: 5000, // Refetch every 5s after previous request completes
+});
 
 // With dynamic polling
-const result = useAPI(
-  (api) => api.orders[id].$get(),
-  {
-    pollingInterval: (order) => order?.status === "pending" ? 2000 : false
-  }
-);
+const result = useAPI((api) => api.orders[id].$get(), {
+  pollingInterval: (order) => (order?.status === "pending" ? 2000 : false),
+});
 
 type UseEnlaceQueryResult<TData, TError> = {
   loading: boolean; // No cached data and fetching
@@ -750,9 +753,7 @@ import { enlaceHookNext } from "enlace/hook";
 
 type ApiError = { message: string };
 
-const useAPI = enlaceHookNext<ApiSchema, ApiError>(
-  "https://api.example.com"
-);
+const useAPI = enlaceHookNext<ApiSchema, ApiError>("https://api.example.com");
 ```
 
 ### Server-Side Revalidation
@@ -920,6 +921,28 @@ Generate OpenAPI 3.0 specs from your TypeScript schema using [`enlace-openapi`](
 ```bash
 npm install enlace-openapi
 enlace-openapi --schema ./types/APISchema.ts --output ./openapi.json
+```
+
+## Framework Adapters
+
+### Hono
+
+Use [`enlace-hono`](../hono/README.md) to automatically generate Enlace schemas from your Hono app:
+
+```typescript
+import { Hono } from "hono";
+import type { HonoToEnlace } from "enlace-hono";
+
+const app = new Hono()
+  .basePath("/api")
+  .get("/posts", (c) => c.json([{ id: 1, title: "Hello" }]))
+  .get("/posts/:id", (c) => c.json({ id: c.req.param("id") }));
+
+// Auto-generate schema from Hono types
+type ApiSchema = HonoToEnlace<typeof app>;
+
+// Use with Enlace
+const client = enlace<ApiSchema["api"]>("http://localhost:3000/api");
 ```
 
 ## License

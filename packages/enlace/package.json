@@ -1,6 +1,6 @@
 {
   "name": "enlace",
-  "version": "0.0.1-beta.15",
+  "version": "0.0.1-beta.16",
   "license": "MIT",
   "files": ["dist"],
   "exports": {

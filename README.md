@@ -18,6 +18,7 @@ A type-safe API client for React and Next.js with built-in caching and automatic
 | [`enlace-core`](./packages/core) | Core fetch wrapper and type-safe API client |
 | [`enlace`](./packages/enlace) | React hooks and Next.js integration |
 | [`enlace-openapi`](./packages/openapi) | Generate OpenAPI specs from TypeScript schema |
+| [`enlace-hono`](./packages/hono) | Type adapter for Hono framework |
 
 ## Quick Start
 
@@ -112,6 +113,7 @@ const useAPI = enlaceHookNext<ApiSchema, ApiError>("https://api.example.com", {}
 - [enlace-core](./packages/core/README.md) — Core API client documentation
 - [enlace](./packages/enlace/README.md) — React hooks and Next.js documentation
 - [enlace-openapi](./packages/openapi/README.md) — OpenAPI generator documentation
+- [enlace-hono](./packages/hono/README.md) — Hono type adapter documentation
 
 ## License
 
