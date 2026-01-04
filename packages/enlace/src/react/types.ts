@@ -121,7 +121,7 @@ export type TrackedCall = {
   options: unknown;
 };
 
-export const HTTP_METHODS = ["get", "post", "put", "patch", "delete"] as const;
+export const HTTP_METHODS = ["$get", "$post", "$put", "$patch", "$delete"] as const;
 
 // ============================================================================
 // Public Result Types
