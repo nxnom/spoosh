@@ -4,6 +4,7 @@ import type {
   EnlaceClient,
   EnlaceErrorCallbackPayload,
   EnlaceResponse,
+  MethodOptionsMap,
   RetryConfig,
   WildcardClient,
 } from "enlace-core";
@@ -13,16 +14,15 @@ import type {
 // ============================================================================
 
 /**
- * Per-request options for React hooks.
+ * Query-only request options (GET requests).
  * Extends CoreRequestOptionsBase which provides conditional params support.
- * The params option is only available when accessing dynamic URL segments (via _ or index access).
  */
-export type ReactRequestOptionsBase = CoreRequestOptionsBase & {
+export type QueryRequestOptions = CoreRequestOptionsBase & {
   /**
    * Cache tags for caching (GET requests only)
    * This will auto generate tags from the URL path if not provided and autoGenerateTags is enabled.
    * But can be manually specified to override auto-generation.
-   * */
+   */
   tags?: string[];
 
   /**
@@ -33,7 +33,13 @@ export type ReactRequestOptionsBase = CoreRequestOptionsBase & {
    * // If autoGenerateTags produces ['posts'], final tags: ['posts', 'custom-tag']
    */
   additionalTags?: string[];
+};
 
+/**
+ * Mutation-only request options (POST, PUT, PATCH, DELETE).
+ * Extends CoreRequestOptionsBase which provides conditional params support.
+ */
+export type MutationRequestOptions = CoreRequestOptionsBase & {
   /** Tags to invalidate after mutation (triggers refetch in matching queries) */
   revalidateTags?: string[];
 
@@ -46,6 +52,16 @@ export type ReactRequestOptionsBase = CoreRequestOptionsBase & {
    */
   additionalRevalidateTags?: string[];
 };
+
+/** Maps HTTP methods to their respective option types */
+export type ReactOptionsMap = MethodOptionsMap<
+  QueryRequestOptions,
+  MutationRequestOptions
+>;
+
+/** @deprecated Use QueryRequestOptions or MutationRequestOptions instead */
+export type ReactRequestOptionsBase = QueryRequestOptions &
+  MutationRequestOptions;
 
 /** Runtime request options that includes all possible properties */
 export type AnyReactRequestOptions = ReactRequestOptionsBase & {
@@ -116,27 +132,27 @@ export type UseEnlaceQueryOptions<TData = unknown, TError = unknown> = {
 export type ApiClient<
   TSchema,
   TDefaultError = unknown,
-  TOptions = ReactRequestOptionsBase,
+  TOptionsMap = ReactOptionsMap,
 > = unknown extends TSchema
-  ? WildcardClient<TOptions>
-  : EnlaceClient<TSchema, TDefaultError, TOptions>;
+  ? WildcardClient<TOptionsMap>
+  : EnlaceClient<TSchema, TDefaultError, TOptionsMap>;
 
 export type QueryFn<
   TSchema,
   TData,
   TError,
   TDefaultError = unknown,
-  TOptions = ReactRequestOptionsBase,
+  TOptionsMap = ReactOptionsMap,
 > = (
-  api: ApiClient<TSchema, TDefaultError, TOptions>
+  api: ApiClient<TSchema, TDefaultError, TOptionsMap>
 ) => Promise<EnlaceResponse<TData, TError>>;
 
 export type SelectorFn<
   TSchema,
   TMethod,
   TDefaultError = unknown,
-  TOptions = ReactRequestOptionsBase,
-> = (api: ApiClient<TSchema, TDefaultError, TOptions>) => TMethod;
+  TOptionsMap = ReactOptionsMap,
+> = (api: ApiClient<TSchema, TDefaultError, TOptionsMap>) => TMethod;
 
 export type HookState = {
   loading: boolean;

@@ -119,6 +119,29 @@ export type CoreRequestOptionsBase = {
   __hasDynamicParams?: DynamicParamsOption;
 };
 
+/**
+ * Maps HTTP methods to their respective options types.
+ * Used to provide different autocomplete options for query vs mutation methods.
+ */
+export type MethodOptionsMap<
+  TQueryOptions = object,
+  TMutationOptions = object,
+> = {
+  $get: TQueryOptions;
+  $post: TMutationOptions;
+  $put: TMutationOptions;
+  $patch: TMutationOptions;
+  $delete: TMutationOptions;
+};
+
+/** Extract options type for a specific method from the options map */
+type ExtractMethodOptions<TOptionsMap, TMethod extends SchemaMethod> =
+  TOptionsMap extends MethodOptionsMap<infer TQuery, infer TMutation>
+    ? TMethod extends "$get"
+      ? TQuery
+      : TMutation
+    : TOptionsMap;
+
 /** Function type for custom fetch implementations */
 export type FetchExecutor<
   TOptions = EnlaceOptions,
@@ -323,7 +346,7 @@ type MethodFn<
   TSchema,
   TMethod extends SchemaMethod,
   TDefaultError = unknown,
-  TRequestOptionsBase = object,
+  TOptionsMap = object,
   THasDynamicSegment extends boolean = false,
 > =
   HasMethod<TSchema, TMethod> extends true
@@ -334,7 +357,10 @@ type MethodFn<
             ExtractQuery<TSchema, TMethod, TDefaultError>,
             ExtractFormData<TSchema, TMethod, TDefaultError>
           > &
-            ComputeRequestOptions<TRequestOptionsBase, THasDynamicSegment>
+            ComputeRequestOptions<
+              ExtractMethodOptions<TOptionsMap, TMethod>,
+              THasDynamicSegment
+            >
         ) => Promise<
           EnlaceResponse<
             ExtractData<TSchema, TMethod, TDefaultError>,
@@ -347,7 +373,10 @@ type MethodFn<
             ExtractQuery<TSchema, TMethod, TDefaultError>,
             never
           > &
-            ComputeRequestOptions<TRequestOptionsBase, THasDynamicSegment>
+            ComputeRequestOptions<
+              ExtractMethodOptions<TOptionsMap, TMethod>,
+              THasDynamicSegment
+            >
         ) => Promise<
           EnlaceResponse<
             ExtractData<TSchema, TMethod, TDefaultError>,
@@ -371,68 +400,59 @@ type ExtractDynamicSchema<TSchema> = TSchema extends { _: infer D } ? D : never;
 type HttpMethods<
   TSchema,
   TDefaultError = unknown,
-  TRequestOptionsBase = object,
+  TOptionsMap = object,
   THasDynamicSegment extends boolean = false,
 > = {
   [K in SchemaMethod as K extends keyof TSchema ? K : never]: MethodFn<
     TSchema,
     K,
     TDefaultError,
-    TRequestOptionsBase,
+    TOptionsMap,
     THasDynamicSegment
   >;
 };
 
-type DynamicAccess<
-  TSchema,
-  TDefaultError = unknown,
-  TRequestOptionsBase = object,
-> =
+type DynamicAccess<TSchema, TDefaultError = unknown, TOptionsMap = object> =
   ExtractDynamicSchema<TSchema> extends never
     ? object
     : {
         [key: string]: EnlaceClient<
           ExtractDynamicSchema<TSchema>,
           TDefaultError,
-          TRequestOptionsBase,
+          TOptionsMap,
           true
         >;
         [key: number]: EnlaceClient<
           ExtractDynamicSchema<TSchema>,
           TDefaultError,
-          TRequestOptionsBase,
+          TOptionsMap,
           true
         >;
       };
 
 type MethodNameKeys = SchemaMethod;
 
-type DynamicKey<TSchema, TDefaultError, TRequestOptionsBase> = TSchema extends {
+type DynamicKey<TSchema, TDefaultError, TOptionsMap> = TSchema extends {
   _: infer D;
 }
-  ? { _: EnlaceClient<D, TDefaultError, TRequestOptionsBase, true> }
+  ? { _: EnlaceClient<D, TDefaultError, TOptionsMap, true> }
   : object;
 
 /** Typed API client based on schema definition */
 export type EnlaceClient<
   TSchema,
   TDefaultError = unknown,
-  TRequestOptionsBase = object,
+  TOptionsMap = object,
   THasDynamicSegment extends boolean = false,
-> = HttpMethods<
-  TSchema,
-  TDefaultError,
-  TRequestOptionsBase,
-  THasDynamicSegment
-> &
-  DynamicAccess<TSchema, TDefaultError, TRequestOptionsBase> &
-  DynamicKey<TSchema, TDefaultError, TRequestOptionsBase> & {
+> = HttpMethods<TSchema, TDefaultError, TOptionsMap, THasDynamicSegment> &
+  DynamicAccess<TSchema, TDefaultError, TOptionsMap> &
+  DynamicKey<TSchema, TDefaultError, TOptionsMap> & {
     [K in keyof StaticPathKeys<TSchema> as K extends MethodNameKeys
       ? never
       : K]: EnlaceClient<
       TSchema[K],
       TDefaultError,
-      TRequestOptionsBase,
+      TOptionsMap,
       THasDynamicSegment
     >;
   };

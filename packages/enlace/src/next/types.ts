@@ -1,10 +1,15 @@
 export { type EnlaceOptions, type EnlaceCallbacks } from "enlace-core";
-import type { EnlaceCallbacks, EnlaceResponse } from "enlace-core";
+import type {
+  EnlaceCallbacks,
+  EnlaceResponse,
+  MethodOptionsMap,
+} from "enlace-core";
 import type {
   ApiClient,
   EnlaceHookOptions,
+  MutationRequestOptions,
   QueryFn,
-  ReactRequestOptionsBase,
+  QueryRequestOptions,
   SelectorFn,
   UseEnlaceQueryOptions,
   UseEnlaceQueryResult,
@@ -52,11 +57,14 @@ export type NextOptions = Pick<
 export type NextHookOptions = EnlaceHookOptions &
   Pick<NextOptions, "serverRevalidator" | "skipServerRevalidation">;
 
-/** Per-request options for Next.js fetch - extends React's base options */
-export type NextRequestOptionsBase = ReactRequestOptionsBase & {
+/** Query-only request options for Next.js (GET requests) */
+export type NextQueryRequestOptions = QueryRequestOptions & {
   /** Time in seconds to revalidate, or false to disable */
   revalidate?: number | false;
+};
 
+/** Mutation-only request options for Next.js (POST, PUT, PATCH, DELETE) */
+export type NextMutationRequestOptions = MutationRequestOptions & {
   /**
    * URL paths to revalidate after mutation.
    * Passed to the serverRevalidator handler.
@@ -72,6 +80,16 @@ export type NextRequestOptionsBase = ReactRequestOptionsBase & {
   serverRevalidate?: boolean;
 };
 
+/** Maps HTTP methods to their respective option types for Next.js */
+export type NextOptionsMap = MethodOptionsMap<
+  NextQueryRequestOptions,
+  NextMutationRequestOptions
+>;
+
+/** @deprecated Use NextQueryRequestOptions or NextMutationRequestOptions instead */
+export type NextRequestOptionsBase = NextQueryRequestOptions &
+  NextMutationRequestOptions;
+
 // ============================================================================
 // Next.js Hook Types
 // ============================================================================
@@ -79,7 +97,7 @@ export type NextRequestOptionsBase = ReactRequestOptionsBase & {
 export type NextApiClient<TSchema, TDefaultError = unknown> = ApiClient<
   TSchema,
   TDefaultError,
-  NextRequestOptionsBase
+  NextOptionsMap
 >;
 
 export type NextQueryFn<
@@ -87,13 +105,13 @@ export type NextQueryFn<
   TData,
   TError,
   TDefaultError = unknown,
-> = QueryFn<TSchema, TData, TError, TDefaultError, NextRequestOptionsBase>;
+> = QueryFn<TSchema, TData, TError, TDefaultError, NextOptionsMap>;
 
 export type NextSelectorFn<
   TSchema,
   TMethod,
   TDefaultError = unknown,
-> = SelectorFn<TSchema, TMethod, TDefaultError, NextRequestOptionsBase>;
+> = SelectorFn<TSchema, TMethod, TDefaultError, NextOptionsMap>;
 
 /** Hook type returned by enlaceHookNext */
 export type NextEnlaceHook<TSchema, TDefaultError = unknown> = {
