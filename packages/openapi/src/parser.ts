@@ -1,7 +1,11 @@
 import ts from "typescript";
 import path from "path";
 import type { ParsedEndpoint, JSONSchema, OpenAPIParameter } from "./types.js";
-import { createSchemaContext, typeToSchema, type SchemaContext } from "./type-to-schema.js";
+import {
+  createSchemaContext,
+  typeToSchema,
+  type SchemaContext,
+} from "./type-to-schema.js";
 
 const HTTP_METHODS = ["$get", "$post", "$put", "$patch", "$delete"] as const;
 type HttpMethod = (typeof HTTP_METHODS)[number];
@@ -10,7 +14,9 @@ function isHttpMethod(key: string): key is HttpMethod {
   return HTTP_METHODS.includes(key as HttpMethod);
 }
 
-function methodKeyToHttp(key: HttpMethod): "get" | "post" | "put" | "patch" | "delete" {
+function methodKeyToHttp(
+  key: HttpMethod
+): "get" | "post" | "put" | "patch" | "delete" {
   return key.slice(1) as "get" | "post" | "put" | "patch" | "delete";
 }
 
@@ -26,7 +32,11 @@ export function parseSchema(
   const absolutePath = path.resolve(schemaFilePath);
   const schemaDir = path.dirname(absolutePath);
 
-  const configPath = ts.findConfigFile(schemaDir, ts.sys.fileExists, "tsconfig.json");
+  const configPath = ts.findConfigFile(
+    schemaDir,
+    ts.sys.fileExists,
+    "tsconfig.json"
+  );
   let compilerOptions: ts.CompilerOptions = {
     target: ts.ScriptTarget.ESNext,
     module: ts.ModuleKind.NodeNext,
@@ -57,7 +67,9 @@ export function parseSchema(
 
   const schemaType = findExportedType(sourceFile, typeName, checker);
   if (!schemaType) {
-    throw new Error(`Could not find exported type '${typeName}' in ${schemaFilePath}`);
+    throw new Error(
+      `Could not find exported type '${typeName}' in ${schemaFilePath}`
+    );
   }
 
   const ctx = createSchemaContext(checker);
@@ -114,7 +126,14 @@ function walkSchemaType(
     } else if (propName === "_") {
       const paramName = getParamNameFromPath(currentPath);
       const newPath = `${currentPath}/{${paramName}}`;
-      walkSchemaType(propType, newPath, [...pathParams, paramName], ctx, endpoints, checker);
+      walkSchemaType(
+        propType,
+        newPath,
+        [...pathParams, paramName],
+        ctx,
+        endpoints,
+        checker
+      );
     } else {
       const newPath = `${currentPath}/${propName}`;
       walkSchemaType(propType, newPath, pathParams, ctx, endpoints, checker);
@@ -238,14 +257,21 @@ function parseEndpointType(
     endpoint.queryParams = queryTypeToParams(queryType, ctx);
   }
 
-  if (errorType && !(errorType.flags & ts.TypeFlags.Never) && !(errorType.flags & ts.TypeFlags.Unknown)) {
+  if (
+    errorType &&
+    !(errorType.flags & ts.TypeFlags.Never) &&
+    !(errorType.flags & ts.TypeFlags.Unknown)
+  ) {
     endpoint.errorSchema = typeToSchema(errorType, ctx);
   }
 
   return endpoint;
 }
 
-function queryTypeToParams(queryType: ts.Type, ctx: SchemaContext): OpenAPIParameter[] {
+function queryTypeToParams(
+  queryType: ts.Type,
+  ctx: SchemaContext
+): OpenAPIParameter[] {
   const { checker } = ctx;
   const params: OpenAPIParameter[] = [];
 
@@ -266,7 +292,10 @@ function queryTypeToParams(queryType: ts.Type, ctx: SchemaContext): OpenAPIParam
   return params;
 }
 
-function formDataTypeToSchema(formDataType: ts.Type, ctx: SchemaContext): JSONSchema {
+function formDataTypeToSchema(
+  formDataType: ts.Type,
+  ctx: SchemaContext
+): JSONSchema {
   const { checker } = ctx;
   const properties: Record<string, JSONSchema> = {};
   const required: string[] = [];
@@ -281,7 +310,7 @@ function formDataTypeToSchema(formDataType: ts.Type, ctx: SchemaContext): JSONSc
     if (typeName.includes("File") || typeName.includes("Blob")) {
       properties[propName] = { type: "string", format: "binary" };
     } else if (propType.isUnion()) {
-      const hasFile = propType.types.some(t => {
+      const hasFile = propType.types.some((t) => {
         const name = checker.typeToString(t);
         return name.includes("File") || name.includes("Blob");
       });

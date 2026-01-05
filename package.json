@@ -7,6 +7,7 @@
     "dev": "pnpm -r --parallel dev",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
+    "format": "pnpm -r format",
     "publish:dry": "pnpm -r publish --dry-run --access public --no-git-checks",
     "publish:alpha": "pnpm -r publish --access public --tag alpha",
     "publish:beta": "pnpm -r publish --access public --tag beta",

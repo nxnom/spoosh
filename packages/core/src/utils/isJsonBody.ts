@@ -1,4 +1,6 @@
-export function isJsonBody(body: unknown): body is Record<string, unknown> | unknown[] {
+export function isJsonBody(
+  body: unknown
+): body is Record<string, unknown> | unknown[] {
   if (body === null || body === undefined) return false;
   if (body instanceof FormData) return false;
   if (body instanceof Blob) return false;

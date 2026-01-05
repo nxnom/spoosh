@@ -46,7 +46,9 @@ type BaseRequestOptions = {
 type BodyOption<TBody> = [TBody] extends [never] ? object : { body: TBody };
 
 /** Conditional query option - only exists when TQuery is not never */
-type QueryOption<TQuery> = [TQuery] extends [never] ? object : { query: TQuery };
+type QueryOption<TQuery> = [TQuery] extends [never]
+  ? object
+  : { query: TQuery };
 
 /** Conditional formData option - only exists when TFormData is not never */
 type FormDataOption<TFormData> = [TFormData] extends [never]
@@ -54,17 +56,44 @@ type FormDataOption<TFormData> = [TFormData] extends [never]
   : { formData: TFormData };
 
 /** Per-request options - properties only appear when their types are defined */
-export type RequestOptions<TBody = never, TQuery = never, TFormData = never> =
-  BaseRequestOptions &
-    BodyOption<TBody> &
-    QueryOption<TQuery> &
-    FormDataOption<TFormData>;
+export type RequestOptions<
+  TBody = never,
+  TQuery = never,
+  TFormData = never,
+> = BaseRequestOptions &
+  BodyOption<TBody> &
+  QueryOption<TQuery> &
+  FormDataOption<TFormData>;
 
 /** Runtime request options type - used internally for fetch execution */
 export type AnyRequestOptions = BaseRequestOptions & {
   body?: unknown;
   query?: Record<string, string | number | boolean | undefined>;
   formData?: Record<string, unknown>;
+};
+
+/**
+ * Params option - only available when accessing dynamic URL segments.
+ * Used internally by the type system to conditionally show params option.
+ */
+type DynamicParamsOption = {
+  /**
+   * Path parameters for dynamic URL segments.
+   * Used to replace :paramName placeholders in the URL path.
+   * @example
+   * // With path api.products[':id'].$get
+   * api.products[':id'].$get({ params: { id: '123' } }) // → GET /products/123
+   */
+  params?: Record<string, string | number>;
+};
+
+/**
+ * Core request options base with conditional params support.
+ * Framework packages (enlace) can extend this to add additional options.
+ */
+export type CoreRequestOptionsBase = {
+  /** @internal Used by type system to conditionally include params */
+  __hasDynamicParams?: DynamicParamsOption;
 };
 
 /** Function type for custom fetch implementations */
@@ -355,10 +384,11 @@ type DynamicAccess<
 
 type MethodNameKeys = SchemaMethod;
 
-type DynamicKey<TSchema, TDefaultError, TRequestOptionsBase> =
-  TSchema extends { _: infer D }
-    ? { _: EnlaceClient<D, TDefaultError, TRequestOptionsBase, true> }
-    : object;
+type DynamicKey<TSchema, TDefaultError, TRequestOptionsBase> = TSchema extends {
+  _: infer D;
+}
+  ? { _: EnlaceClient<D, TDefaultError, TRequestOptionsBase, true> }
+  : object;
 
 /** Typed API client based on schema definition */
 export type EnlaceClient<
@@ -366,12 +396,22 @@ export type EnlaceClient<
   TDefaultError = unknown,
   TRequestOptionsBase = object,
   THasDynamicSegment extends boolean = false,
-> = HttpMethods<TSchema, TDefaultError, TRequestOptionsBase, THasDynamicSegment> &
+> = HttpMethods<
+  TSchema,
+  TDefaultError,
+  TRequestOptionsBase,
+  THasDynamicSegment
+> &
   DynamicAccess<TSchema, TDefaultError, TRequestOptionsBase> &
   DynamicKey<TSchema, TDefaultError, TRequestOptionsBase> & {
     [K in keyof StaticPathKeys<TSchema> as K extends MethodNameKeys
       ? never
-      : K]: EnlaceClient<TSchema[K], TDefaultError, TRequestOptionsBase, THasDynamicSegment>;
+      : K]: EnlaceClient<
+      TSchema[K],
+      TDefaultError,
+      TRequestOptionsBase,
+      THasDynamicSegment
+    >;
   };
 
 /** Untyped API client - allows any path access when no schema is provided */

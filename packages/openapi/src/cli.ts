@@ -8,7 +8,10 @@ import { generateOpenAPISpec } from "./generator.js";
 program
   .name("enlace-openapi")
   .description("Generate OpenAPI spec from TypeScript API schema")
-  .requiredOption("-s, --schema <path>", "Path to TypeScript file containing the schema type")
+  .requiredOption(
+    "-s, --schema <path>",
+    "Path to TypeScript file containing the schema type"
+  )
   .option("-t, --type <name>", "Name of the schema type to use", "ApiSchema")
   .option("-o, --output <path>", "Output file path (default: stdout)")
   .option("--title <title>", "API title for OpenAPI info")

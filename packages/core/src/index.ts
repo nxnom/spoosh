@@ -1,5 +1,6 @@
 import { createProxyHandler } from "./proxy";
 import type {
+  CoreRequestOptionsBase,
   EnlaceCallbacks,
   EnlaceClient,
   EnlaceOptions,
@@ -10,11 +11,13 @@ export function enlace<TSchema = unknown, TDefaultError = unknown>(
   baseUrl: string,
   defaultOptions: EnlaceOptions | null = {},
   enlaceOptions: EnlaceCallbacks = {}
-): unknown extends TSchema ? WildcardClient : EnlaceClient<TSchema, TDefaultError> {
+): unknown extends TSchema
+  ? WildcardClient<CoreRequestOptionsBase>
+  : EnlaceClient<TSchema, TDefaultError, CoreRequestOptionsBase> {
   const combinedOptions = { ...defaultOptions, ...enlaceOptions };
   return createProxyHandler(baseUrl, combinedOptions) as unknown extends TSchema
-    ? WildcardClient
-    : EnlaceClient<TSchema, TDefaultError>;
+    ? WildcardClient<CoreRequestOptionsBase>
+    : EnlaceClient<TSchema, TDefaultError, CoreRequestOptionsBase>;
 }
 
 export * from "./types";

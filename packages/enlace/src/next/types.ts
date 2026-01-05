@@ -76,23 +76,24 @@ export type NextRequestOptionsBase = ReactRequestOptionsBase & {
 // Next.js Hook Types
 // ============================================================================
 
-export type NextApiClient<TSchema, TDefaultError = unknown> =
-  ApiClient<TSchema, TDefaultError, NextRequestOptionsBase>;
+export type NextApiClient<TSchema, TDefaultError = unknown> = ApiClient<
+  TSchema,
+  TDefaultError,
+  NextRequestOptionsBase
+>;
 
-export type NextQueryFn<TSchema, TData, TError, TDefaultError = unknown> = QueryFn<
+export type NextQueryFn<
   TSchema,
   TData,
   TError,
-  TDefaultError,
-  NextRequestOptionsBase
->;
+  TDefaultError = unknown,
+> = QueryFn<TSchema, TData, TError, TDefaultError, NextRequestOptionsBase>;
 
-export type NextSelectorFn<TSchema, TMethod, TDefaultError = unknown> = SelectorFn<
+export type NextSelectorFn<
   TSchema,
   TMethod,
-  TDefaultError,
-  NextRequestOptionsBase
->;
+  TDefaultError = unknown,
+> = SelectorFn<TSchema, TMethod, TDefaultError, NextRequestOptionsBase>;
 
 /** Hook type returned by enlaceHookNext */
 export type NextEnlaceHook<TSchema, TDefaultError = unknown> = {

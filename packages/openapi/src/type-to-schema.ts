@@ -19,10 +19,7 @@ export function createSchemaContext(checker: ts.TypeChecker): SchemaContext {
   };
 }
 
-export function typeToSchema(
-  type: ts.Type,
-  ctx: SchemaContext
-): JSONSchema {
+export function typeToSchema(type: ts.Type, ctx: SchemaContext): JSONSchema {
   if (ctx.depth > MAX_DEPTH) {
     return {};
   }
@@ -66,18 +63,23 @@ export function typeToSchema(
   }
 
   if (type.flags & ts.TypeFlags.BooleanLiteral) {
-    const intrinsicName = (type as unknown as { intrinsicName: string }).intrinsicName;
+    const intrinsicName = (type as unknown as { intrinsicName: string })
+      .intrinsicName;
     return { type: "boolean", const: intrinsicName === "true" };
   }
 
   if (type.isUnion()) {
     const nonNullTypes = type.types.filter(
-      (t) => !(t.flags & ts.TypeFlags.Null) && !(t.flags & ts.TypeFlags.Undefined)
+      (t) =>
+        !(t.flags & ts.TypeFlags.Null) && !(t.flags & ts.TypeFlags.Undefined)
     );
     const hasNull = type.types.some((t) => t.flags & ts.TypeFlags.Null);
 
     if (nonNullTypes.length === 1 && hasNull) {
-      const schema = typeToSchema(nonNullTypes[0]!, { ...ctx, depth: ctx.depth + 1 });
+      const schema = typeToSchema(nonNullTypes[0]!, {
+        ...ctx,
+        depth: ctx.depth + 1,
+      });
       return { ...schema, nullable: true };
     }
 
@@ -136,7 +138,10 @@ export function typeToSchema(
 
       if (!ctx.schemas.has(typeName)) {
         ctx.visitedTypes.add(typeName);
-        const schema = objectTypeToSchema(type, { ...ctx, depth: ctx.depth + 1 });
+        const schema = objectTypeToSchema(type, {
+          ...ctx,
+          depth: ctx.depth + 1,
+        });
         ctx.schemas.set(typeName, schema);
         ctx.visitedTypes.delete(typeName);
       }
@@ -161,7 +166,10 @@ function objectTypeToSchema(type: ts.Type, ctx: SchemaContext): JSONSchema {
     const propType = checker.getTypeOfSymbol(prop);
     const isOptional = prop.flags & ts.SymbolFlags.Optional;
 
-    properties[propName] = typeToSchema(propType, { ...ctx, depth: ctx.depth + 1 });
+    properties[propName] = typeToSchema(propType, {
+      ...ctx,
+      depth: ctx.depth + 1,
+    });
 
     if (!isOptional) {
       required.push(propName);
@@ -198,7 +206,10 @@ function intersectionTypeToSchema(
       const propType = checker.getTypeOfSymbol(prop);
       const isOptional = prop.flags & ts.SymbolFlags.Optional;
 
-      properties[propName] = typeToSchema(propType, { ...ctx, depth: ctx.depth + 1 });
+      properties[propName] = typeToSchema(propType, {
+        ...ctx,
+        depth: ctx.depth + 1,
+      });
 
       if (!isOptional && !required.includes(propName)) {
         required.push(propName);

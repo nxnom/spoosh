@@ -1,4 +1,5 @@
 import type {
+  CoreRequestOptionsBase,
   EnlaceCallbackPayload,
   EnlaceClient,
   EnlaceErrorCallbackPayload,
@@ -11,25 +12,11 @@ import type {
 // ============================================================================
 
 /**
- * Dynamic params option - only available when accessing dynamic URL segments.
- * Used internally by the type system to conditionally show params option.
- */
-type DynamicParamsOption = {
-  /**
-   * Path parameters for dynamic URL segments.
-   * Used to replace :paramName placeholders in the URL path.
-   * @example
-   * // With path api.products[':id'].delete
-   * trigger({ params: { id: '123' } }) // → DELETE /products/123
-   */
-  params?: Record<string, string | number>;
-};
-
-/**
  * Per-request options for React hooks.
+ * Extends CoreRequestOptionsBase which provides conditional params support.
  * The params option is only available when accessing dynamic URL segments (via _ or index access).
  */
-export type ReactRequestOptionsBase = {
+export type ReactRequestOptionsBase = CoreRequestOptionsBase & {
   /**
    * Cache tags for caching (GET requests only)
    * This will auto generate tags from the URL path if not provided and autoGenerateTags is enabled.
@@ -57,14 +44,12 @@ export type ReactRequestOptionsBase = {
    * // If autoRevalidateTags produces ['posts'], final tags: ['posts', 'other-tag']
    */
   additionalRevalidateTags?: string[];
-
-  /** @internal Used by type system to conditionally include params */
-  __hasDynamicParams?: DynamicParamsOption;
 };
 
 /** Runtime request options that includes all possible properties */
-export type AnyReactRequestOptions = ReactRequestOptionsBase &
-  DynamicParamsOption;
+export type AnyReactRequestOptions = ReactRequestOptionsBase & {
+  params?: Record<string, string | number>;
+};
 
 /** Polling interval value: milliseconds to wait, or false to stop polling */
 export type PollingIntervalValue = number | false;

@@ -29,6 +29,7 @@
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --max-warnings 0",
+    "format": "prettier --write 'src/**/*.ts'",
     "prepublishOnly": "npm run build && npm run typecheck && npm run lint"
   },
   "dependencies": {

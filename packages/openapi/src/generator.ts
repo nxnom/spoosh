@@ -92,7 +92,10 @@ function getTagFromPath(path: string): string | undefined {
   return firstSegment;
 }
 
-function createOperation(endpoint: ParsedEndpoint, tag?: string): OpenAPIOperation {
+function createOperation(
+  endpoint: ParsedEndpoint,
+  tag?: string
+): OpenAPIOperation {
   const operation: OpenAPIOperation = {
     responses: {
       "200": {

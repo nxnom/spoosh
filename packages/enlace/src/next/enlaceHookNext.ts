@@ -35,10 +35,7 @@ import { createTrackingProxy } from "../react/trackingProxy";
  * // Selector mode - trigger for mutations
  * const { trigger } = useAPI((api) => api.posts.$delete);
  */
-export function enlaceHookNext<
-  TSchema = unknown,
-  TDefaultError = unknown,
->(
+export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
   baseUrl: string,
   defaultOptions: EnlaceOptions = {},
   hookOptions: NextHookOptions = {}
@@ -49,15 +46,11 @@ export function enlaceHookNext<
     staleTime = 0,
     ...nextOptions
   } = hookOptions;
-  const api = enlaceNext<TSchema, TDefaultError>(
-    baseUrl,
-    defaultOptions,
-    {
-      autoGenerateTags,
-      autoRevalidateTags,
-      ...nextOptions,
-    }
-  );
+  const api = enlaceNext<TSchema, TDefaultError>(baseUrl, defaultOptions, {
+    autoGenerateTags,
+    autoRevalidateTags,
+    ...nextOptions,
+  });
 
   function useEnlaceHook<
     TData,

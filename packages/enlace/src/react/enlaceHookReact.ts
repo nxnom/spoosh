@@ -1,8 +1,4 @@
-import {
-  enlace,
-  type EnlaceOptions,
-  type EnlaceResponse,
-} from "enlace-core";
+import { enlace, type EnlaceOptions, type EnlaceResponse } from "enlace-core";
 import type {
   ApiClient,
   EnlaceHook,
@@ -31,10 +27,7 @@ import { useSelectorMode } from "./useSelectorMode";
  * const { trigger, loading, data, error } = useAPI((api) => api.posts.$delete);
  * onClick={() => trigger({ body: { id: 1 } })}
  */
-export function enlaceHookReact<
-  TSchema = unknown,
-  TDefaultError = unknown,
->(
+export function enlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
   baseUrl: string,
   defaultOptions: EnlaceOptions = {},
   hookOptions: EnlaceHookOptions = {}
