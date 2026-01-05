@@ -561,6 +561,26 @@ trigger({
 | Both | `['custom']` | `['extra']` | `['custom', 'extra']` |
 | Neither | - | - | `['posts']` (auto) |
 
+### Manual Tag Invalidation
+
+Use `invalidateTags` to manually trigger cache invalidation and refetch queries:
+
+```typescript
+import { invalidateTags } from "enlace/hook";
+
+// Invalidate all queries tagged with 'posts'
+invalidateTags(["posts"]);
+
+// Invalidate multiple tags
+invalidateTags(["posts", "users"]);
+```
+
+This is useful when you need to refresh data outside of the normal mutation flow, such as:
+
+- After receiving a WebSocket message
+- After a background sync
+- After external state changes
+
 ### Disable Auto-Revalidation
 
 ```typescript
