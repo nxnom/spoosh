@@ -1,4 +1,4 @@
-import { useRef, useReducer } from "react";
+import { useRef, useReducer, useCallback } from "react";
 import type { EnlaceResponse } from "enlace-core";
 import type { AnyReactRequestOptions, UseEnlaceSelectorResult } from "./types";
 import { hookReducer, initialState } from "./reducer";
@@ -33,13 +33,23 @@ export type SelectorModeConfig = {
   path: string[];
   methodName: string;
   autoRevalidateTags: boolean;
+  retry?: number | false;
+  retryDelay?: number;
 };
 
 export function useSelectorMode<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for method type inference
   TMethod extends (...args: any[]) => Promise<EnlaceResponse<unknown, unknown>>,
 >(config: SelectorModeConfig): UseEnlaceSelectorResult<TMethod> {
-  const { method, api, path, methodName, autoRevalidateTags } = config;
+  const {
+    method,
+    api,
+    path,
+    methodName,
+    autoRevalidateTags,
+    retry,
+    retryDelay,
+  } = config;
   const [state, dispatch] = useReducer(hookReducer, initialState);
 
   const methodRef = useRef(method);
@@ -55,11 +65,24 @@ export function useSelectorMode<
   methodNameRef.current = methodName;
   autoRevalidateRef.current = autoRevalidateTags;
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const abort = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+  }, []);
+
   if (!triggerRef.current) {
     triggerRef.current = (async (...args: unknown[]) => {
       dispatch({ type: "MUTATION_START" });
 
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
       const options = args[0] as AnyReactRequestOptions | undefined;
+      const optionsWithSignal = { retry, retryDelay, ...options, signal };
+      const argsWithSignal = [optionsWithSignal, ...args.slice(1)];
+
       const resolvedPath = resolvePath(pathRef.current, options?.params);
 
       let res: EnlaceResponse<unknown, unknown>;
@@ -72,9 +95,13 @@ export function useSelectorMode<
         const resolvedMethod = (current as Record<string, unknown>)[
           methodNameRef.current
         ] as (...args: unknown[]) => Promise<EnlaceResponse<unknown, unknown>>;
-        res = await resolvedMethod(...args);
+        res = await resolvedMethod(...argsWithSignal);
       } else {
-        res = await methodRef.current(...args);
+        res = await methodRef.current(...argsWithSignal);
+      }
+
+      if (res.aborted) {
+        return res;
       }
 
       if (!res.error) {
@@ -97,6 +124,7 @@ export function useSelectorMode<
 
   return {
     trigger: triggerRef.current,
+    abort,
     ...state,
   } as UseEnlaceSelectorResult<TMethod>;
 }

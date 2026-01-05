@@ -4,6 +4,7 @@ import type {
   EnlaceClient,
   EnlaceErrorCallbackPayload,
   EnlaceResponse,
+  RetryConfig,
   WildcardClient,
 } from "enlace-core";
 
@@ -94,6 +95,18 @@ export type UseEnlaceQueryOptions<TData = unknown, TError = unknown> = {
    * @default undefined (no polling)
    */
   pollingInterval?: PollingInterval<TData, TError>;
+
+  /**
+   * Number of retry attempts for network errors. Set to 0 or false to disable.
+   * @default 3
+   */
+  retry?: number | false;
+
+  /**
+   * Base delay in ms between retries. Uses exponential backoff.
+   * @default 1000
+   */
+  retryDelay?: number;
 };
 
 // ============================================================================
@@ -173,6 +186,8 @@ type HookResponseState<TData, TError> =
 export type UseEnlaceQueryResult<TData, TError> = {
   loading: boolean;
   fetching: boolean;
+  /** Abort the current in-flight request */
+  abort: () => void;
 } & HookResponseState<TData, TError>;
 
 /** Result when hook is called with method selector (trigger mode) */
@@ -180,6 +195,8 @@ export type UseEnlaceSelectorResult<TMethod> = {
   trigger: TMethod;
   loading: boolean;
   fetching: boolean;
+  /** Abort the current in-flight request */
+  abort: () => void;
 } & HookResponseState<ExtractData<TMethod>, ExtractError<TMethod>>;
 
 // ============================================================================
@@ -206,7 +223,7 @@ export type EnlaceHookOptions = {
 
   /** Callback called on error responses (HTTP errors or network failures) */
   onError?: (payload: EnlaceErrorCallbackPayload<unknown>) => void;
-};
+} & RetryConfig;
 
 /** Hook type returned by enlaceHookReact */
 export type EnlaceHook<TSchema, TDefaultError = unknown> = {

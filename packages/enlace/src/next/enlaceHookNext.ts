@@ -44,6 +44,8 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
     autoGenerateTags = true,
     autoRevalidateTags = true,
     staleTime = 0,
+    retry,
+    retryDelay,
     ...nextOptions
   } = hookOptions;
   const api = enlaceNext<TSchema, TDefaultError>(baseUrl, defaultOptions, {
@@ -94,6 +96,8 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
         path: selectorPath ?? [],
         methodName: selectorMethod ?? "",
         autoRevalidateTags,
+        retry,
+        retryDelay,
       });
     }
 
@@ -115,6 +119,8 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
         staleTime,
         enabled: queryOptions?.enabled ?? true,
         pollingInterval: queryOptions?.pollingInterval,
+        retry: queryOptions?.retry ?? retry,
+        retryDelay: queryOptions?.retryDelay ?? retryDelay,
       }
     );
   }

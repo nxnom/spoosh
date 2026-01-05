@@ -1,4 +1,4 @@
-import { useRef, useReducer, useEffect } from "react";
+import { useRef, useReducer, useEffect, useCallback } from "react";
 import type { EnlaceResponse } from "enlace-core";
 import type {
   AnyReactRequestOptions,
@@ -42,6 +42,8 @@ export type QueryModeOptions<TData = unknown, TError = unknown> = {
   staleTime: number;
   enabled: boolean;
   pollingInterval: PollingInterval<TData, TError> | undefined;
+  retry?: number | false;
+  retryDelay?: number;
 };
 
 export function useQueryMode<TSchema, TData, TError>(
@@ -49,7 +51,14 @@ export function useQueryMode<TSchema, TData, TError>(
   trackedCall: TrackedCall,
   options: QueryModeOptions<TData, TError>
 ): UseEnlaceQueryResult<TData, TError> {
-  const { autoGenerateTags, staleTime, enabled, pollingInterval } = options;
+  const {
+    autoGenerateTags,
+    staleTime,
+    enabled,
+    pollingInterval,
+    retry,
+    retryDelay,
+  } = options;
   const queryKey = createQueryKey(trackedCall);
 
   const requestOptions = trackedCall.options as
@@ -84,6 +93,12 @@ export function useQueryMode<TSchema, TData, TError>(
   const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollingIntervalRef = useRef(pollingInterval);
   pollingIntervalRef.current = pollingInterval;
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const abort = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -144,6 +159,9 @@ export function useQueryMode<TSchema, TData, TError>(
 
       dispatch({ type: "FETCH_START" });
 
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
       let current: unknown = api;
       for (const segment of resolvedPath) {
         current = (current as Record<string, unknown>)[segment];
@@ -153,8 +171,17 @@ export function useQueryMode<TSchema, TData, TError>(
         trackedCall.method
       ] as (opts?: unknown) => Promise<EnlaceResponse<TData, TError>>;
 
-      const fetchPromise = method(trackedCall.options)
+      const optionsWithSignal = {
+        retry,
+        retryDelay,
+        ...(trackedCall.options as object),
+        signal,
+      };
+
+      const fetchPromise = method(optionsWithSignal)
         .then((res) => {
+          if (res.aborted) return;
+
           setCache<TData, TError>(queryKey, {
             data: res.error ? undefined : res.data,
             error: res.error,
@@ -220,5 +247,5 @@ export function useQueryMode<TSchema, TData, TError>(
     });
   }, [JSON.stringify(queryTags)]);
 
-  return state as UseEnlaceQueryResult<TData, TError>;
+  return { ...state, abort } as UseEnlaceQueryResult<TData, TError>;
 }

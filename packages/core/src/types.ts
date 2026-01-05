@@ -3,8 +3,27 @@ export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 export type SchemaMethod = "$get" | "$post" | "$put" | "$patch" | "$delete";
 
 export type EnlaceResponse<TData, TError> =
-  | { status: number; data: TData; headers?: Headers; error?: undefined }
-  | { status: number; data?: undefined; headers?: Headers; error: TError };
+  | {
+      status: number;
+      data: TData;
+      headers?: Headers;
+      error?: undefined;
+      aborted?: false;
+    }
+  | {
+      status: number;
+      data?: undefined;
+      headers?: Headers;
+      error: TError;
+      aborted?: boolean;
+    };
+
+export type RetryConfig = {
+  /** Number of retry attempts for network errors. Set to 0 or false to disable. @default 3 */
+  retry?: number | false;
+  /** Base delay in ms between retries. Uses exponential backoff. @default 1000 */
+  retryDelay?: number;
+};
 
 export type HeadersInitOrGetter =
   | HeadersInit
@@ -40,6 +59,9 @@ type BaseRequestOptions = {
 
   /** Cache mode for the request */
   cache?: RequestCache;
+
+  /** AbortSignal for cancelling the request */
+  signal?: AbortSignal;
 };
 
 /** Conditional body option - only exists when TBody is not never */
@@ -70,7 +92,8 @@ export type AnyRequestOptions = BaseRequestOptions & {
   body?: unknown;
   query?: Record<string, string | number | boolean | undefined>;
   formData?: Record<string, unknown>;
-};
+  signal?: AbortSignal;
+} & Partial<RetryConfig>;
 
 /**
  * Params option - only available when accessing dynamic URL segments.

@@ -38,6 +38,8 @@ export function enlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
     staleTime = 0,
     onSuccess,
     onError,
+    retry,
+    retryDelay,
   } = hookOptions;
   const api = enlace<TSchema, TDefaultError>(baseUrl, defaultOptions, {
     onSuccess,
@@ -82,6 +84,8 @@ export function enlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
         path: trackingResult.selectorPath ?? [],
         methodName: trackingResult.selectorMethod ?? "",
         autoRevalidateTags,
+        retry,
+        retryDelay,
       });
     }
 
@@ -100,6 +104,8 @@ export function enlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
         staleTime,
         enabled: queryOptions?.enabled ?? true,
         pollingInterval: queryOptions?.pollingInterval,
+        retry: queryOptions?.retry ?? retry,
+        retryDelay: queryOptions?.retryDelay ?? retryDelay,
       }
     );
   }
