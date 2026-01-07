@@ -588,3 +588,251 @@ export type WildcardClient<TRequestOptionsBase = object> = {
   [key: string]: WildcardClient<TRequestOptionsBase>;
   [key: number]: WildcardClient<TRequestOptionsBase>;
 };
+
+// ============================================================================
+// Filtered Client Types (for Query/Mutation separation)
+// ============================================================================
+
+type QueryMethod = "$get";
+type MutationMethod = "$post" | "$put" | "$patch" | "$delete";
+
+/** Check if schema has any query methods (recursively) */
+type HasQueryMethods<TSchema> = TSchema extends object
+  ? "$get" extends keyof TSchema
+    ? true
+    : TSchema extends { _: infer D }
+      ? HasQueryMethods<D>
+      : {
+            [K in keyof TSchema]: K extends SchemaMethod | "_"
+              ? never
+              : HasQueryMethods<TSchema[K]>;
+          }[keyof TSchema] extends never
+        ? false
+        : true extends {
+              [K in keyof TSchema]: K extends SchemaMethod | "_"
+                ? never
+                : HasQueryMethods<TSchema[K]>;
+            }[keyof TSchema]
+          ? true
+          : false
+  : false;
+
+/** Check if schema has any mutation methods (recursively) */
+type HasMutationMethods<TSchema> = TSchema extends object
+  ? MutationMethod extends never
+    ? false
+    : Extract<keyof TSchema, MutationMethod> extends never
+      ? TSchema extends { _: infer D }
+        ? HasMutationMethods<D>
+        : {
+              [K in keyof TSchema]: K extends SchemaMethod | "_"
+                ? never
+                : HasMutationMethods<TSchema[K]>;
+            }[keyof TSchema] extends never
+          ? false
+          : true extends {
+                [K in keyof TSchema]: K extends SchemaMethod | "_"
+                  ? never
+                  : HasMutationMethods<TSchema[K]>;
+              }[keyof TSchema]
+            ? true
+            : false
+      : true
+  : false;
+
+/** HTTP methods filtered for query only (just $get) */
+type QueryHttpMethods<
+  TSchema,
+  TDefaultError = unknown,
+  TOptionsMap = object,
+  THasDynamicSegment extends boolean = false,
+  TRootSchema = TSchema,
+> = {
+  [K in QueryMethod as K extends keyof TSchema ? K : never]: MethodFn<
+    TSchema,
+    K,
+    TDefaultError,
+    TOptionsMap,
+    THasDynamicSegment,
+    TRootSchema
+  >;
+};
+
+/** HTTP methods filtered for mutations only */
+type MutationHttpMethods<
+  TSchema,
+  TDefaultError = unknown,
+  TOptionsMap = object,
+  THasDynamicSegment extends boolean = false,
+  TRootSchema = TSchema,
+> = {
+  [K in MutationMethod as K extends keyof TSchema ? K : never]: MethodFn<
+    TSchema,
+    K,
+    TDefaultError,
+    TOptionsMap,
+    THasDynamicSegment,
+    TRootSchema
+  >;
+};
+
+/** Dynamic access filtered for query only - only show if has query methods */
+type QueryDynamicAccess<
+  TSchema,
+  TDefaultError = unknown,
+  TOptionsMap = object,
+  TRootSchema = TSchema,
+> = TSchema extends { _: infer D }
+  ? HasQueryMethods<D> extends true
+    ? {
+        [key: string]: QueryOnlyClient<
+          D,
+          TDefaultError,
+          TOptionsMap,
+          true,
+          TRootSchema
+        >;
+        [key: number]: QueryOnlyClient<
+          D,
+          TDefaultError,
+          TOptionsMap,
+          true,
+          TRootSchema
+        >;
+      }
+    : object
+  : object;
+
+/** Dynamic access filtered for mutation only - only show if has mutation methods */
+type MutationDynamicAccess<
+  TSchema,
+  TDefaultError = unknown,
+  TOptionsMap = object,
+  TRootSchema = TSchema,
+> = TSchema extends { _: infer D }
+  ? HasMutationMethods<D> extends true
+    ? {
+        [key: string]: MutationOnlyClient<
+          D,
+          TDefaultError,
+          TOptionsMap,
+          true,
+          TRootSchema
+        >;
+        [key: number]: MutationOnlyClient<
+          D,
+          TDefaultError,
+          TOptionsMap,
+          true,
+          TRootSchema
+        >;
+      }
+    : object
+  : object;
+
+/** Dynamic key (_) for query only - only show if dynamic schema has query methods */
+type QueryDynamicKey<
+  TSchema,
+  TDefaultError,
+  TOptionsMap,
+  TRootSchema = TSchema,
+> = TSchema extends { _: infer D }
+  ? HasQueryMethods<D> extends true
+    ? { _: QueryOnlyClient<D, TDefaultError, TOptionsMap, true, TRootSchema> }
+    : object
+  : object;
+
+/** Dynamic key (_) for mutation only - only show if dynamic schema has mutation methods */
+type MutationDynamicKey<
+  TSchema,
+  TDefaultError,
+  TOptionsMap,
+  TRootSchema = TSchema,
+> = TSchema extends { _: infer D }
+  ? HasMutationMethods<D> extends true
+    ? {
+        _: MutationOnlyClient<D, TDefaultError, TOptionsMap, true, TRootSchema>;
+      }
+    : object
+  : object;
+
+/** Query-only client - only shows $get and paths leading to $get */
+export type QueryOnlyClient<
+  TSchema,
+  TDefaultError = unknown,
+  TOptionsMap = object,
+  THasDynamicSegment extends boolean = false,
+  TRootSchema = TSchema,
+> = QueryHttpMethods<
+  TSchema,
+  TDefaultError,
+  TOptionsMap,
+  THasDynamicSegment,
+  TRootSchema
+> &
+  QueryDynamicAccess<TSchema, TDefaultError, TOptionsMap, TRootSchema> &
+  QueryDynamicKey<TSchema, TDefaultError, TOptionsMap, TRootSchema> & {
+    [K in keyof StaticPathKeys<TSchema> as K extends MethodNameKeys
+      ? never
+      : HasQueryMethods<TSchema[K]> extends true
+        ? K
+        : never]: QueryOnlyClient<
+      TSchema[K],
+      TDefaultError,
+      TOptionsMap,
+      THasDynamicSegment,
+      TRootSchema
+    >;
+  };
+
+/** Mutation-only client - only shows $post/$put/$patch/$delete and paths leading to them */
+export type MutationOnlyClient<
+  TSchema,
+  TDefaultError = unknown,
+  TOptionsMap = object,
+  THasDynamicSegment extends boolean = false,
+  TRootSchema = TSchema,
+> = MutationHttpMethods<
+  TSchema,
+  TDefaultError,
+  TOptionsMap,
+  THasDynamicSegment,
+  TRootSchema
+> &
+  MutationDynamicAccess<TSchema, TDefaultError, TOptionsMap, TRootSchema> &
+  MutationDynamicKey<TSchema, TDefaultError, TOptionsMap, TRootSchema> & {
+    [K in keyof StaticPathKeys<TSchema> as K extends MethodNameKeys
+      ? never
+      : HasMutationMethods<TSchema[K]> extends true
+        ? K
+        : never]: MutationOnlyClient<
+      TSchema[K],
+      TDefaultError,
+      TOptionsMap,
+      THasDynamicSegment,
+      TRootSchema
+    >;
+  };
+
+/** Wildcard client for query only */
+export type WildcardQueryClient<TRequestOptionsBase = object> = {
+  (
+    options?: RequestOptions<unknown> & TRequestOptionsBase
+  ): Promise<EnlaceResponse<unknown, unknown>>;
+  $get: WildcardQueryClient<TRequestOptionsBase>;
+  [key: string]: WildcardQueryClient<TRequestOptionsBase>;
+  [key: number]: WildcardQueryClient<TRequestOptionsBase>;
+};
+
+/** Wildcard client for mutation only */
+export type WildcardMutationClient<TRequestOptionsBase = object> = {
+  (
+    options?: RequestOptions<unknown> & TRequestOptionsBase
+  ): Promise<EnlaceResponse<unknown, unknown>>;
+  $post: WildcardMutationClient<TRequestOptionsBase>;
+  $put: WildcardMutationClient<TRequestOptionsBase>;
+  $patch: WildcardMutationClient<TRequestOptionsBase>;
+  $delete: WildcardMutationClient<TRequestOptionsBase>;
+  [key: string]: WildcardMutationClient<TRequestOptionsBase>;
+  [key: number]: WildcardMutationClient<TRequestOptionsBase>;
+};

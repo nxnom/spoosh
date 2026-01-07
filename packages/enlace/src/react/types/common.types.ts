@@ -1,0 +1,109 @@
+import type {
+  EnlaceCallbackPayload,
+  EnlaceClient,
+  EnlaceErrorCallbackPayload,
+  EnlaceResponse,
+  MutationOnlyClient,
+  QueryOnlyClient,
+  RetryConfig,
+  WildcardClient,
+  WildcardMutationClient,
+  WildcardQueryClient,
+} from "enlace-core";
+import type { ReactOptionsMap } from "./request.types";
+
+export type ApiClient<
+  TSchema,
+  TDefaultError = unknown,
+  TOptionsMap = ReactOptionsMap,
+> = unknown extends TSchema
+  ? WildcardClient<TOptionsMap>
+  : EnlaceClient<TSchema, TDefaultError, TOptionsMap>;
+
+export type QueryApiClient<
+  TSchema,
+  TDefaultError = unknown,
+  TOptionsMap = ReactOptionsMap,
+> = unknown extends TSchema
+  ? WildcardQueryClient<TOptionsMap>
+  : QueryOnlyClient<TSchema, TDefaultError, TOptionsMap>;
+
+export type MutationApiClient<
+  TSchema,
+  TDefaultError = unknown,
+  TOptionsMap = ReactOptionsMap,
+> = unknown extends TSchema
+  ? WildcardMutationClient<TOptionsMap>
+  : MutationOnlyClient<TSchema, TDefaultError, TOptionsMap>;
+
+export type PollingIntervalValue = number | false;
+
+export type PollingIntervalFn<TData, TError> = (
+  data: TData | undefined,
+  error: TError | undefined
+) => PollingIntervalValue;
+
+export type PollingInterval<TData = unknown, TError = unknown> =
+  | PollingIntervalValue
+  | PollingIntervalFn<TData, TError>;
+
+export type EnlaceHookOptions = {
+  autoGenerateTags?: boolean;
+  autoRevalidateTags?: boolean;
+  staleTime?: number;
+  onSuccess?: (payload: EnlaceCallbackPayload<unknown>) => void;
+  onError?: (payload: EnlaceErrorCallbackPayload<unknown>) => void;
+} & RetryConfig;
+
+export type HookState = {
+  loading: boolean;
+  fetching: boolean;
+  data: unknown;
+  error: unknown;
+};
+
+export type TrackedCall = {
+  path: string[];
+  method: string;
+  options: unknown;
+};
+
+export const HTTP_METHODS = [
+  "$get",
+  "$post",
+  "$put",
+  "$patch",
+  "$delete",
+] as const;
+
+type HookResponseState<TData, TError> =
+  | { data: TData; error?: undefined }
+  | { data?: undefined; error: TError };
+
+export type UseEnlaceQueryResult<TData, TError> = {
+  loading: boolean;
+  fetching: boolean;
+  abort: () => void;
+  isOptimistic: boolean;
+} & HookResponseState<TData, TError>;
+
+export type ExtractData<T> = T extends (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ...args: any[]
+) => Promise<EnlaceResponse<infer D, unknown>>
+  ? D
+  : never;
+
+export type ExtractError<T> = T extends (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ...args: any[]
+) => Promise<EnlaceResponse<unknown, infer E>>
+  ? E
+  : never;
+
+export type UseEnlaceSelectorResult<TMethod> = {
+  trigger: TMethod;
+  loading: boolean;
+  fetching: boolean;
+  abort: () => void;
+} & HookResponseState<ExtractData<TMethod>, ExtractError<TMethod>>;

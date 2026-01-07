@@ -26,6 +26,7 @@ export function createTrackingProxy<TSchema>(
               selectorPath: null,
               selectorMethod: null,
             });
+
             return Promise.resolve({
               status: 200,
               data: undefined,
@@ -38,11 +39,14 @@ export function createTrackingProxy<TSchema>(
             selectorPath: path,
             selectorMethod: prop,
           });
+
           return methodFn;
         }
+
         return createProxy([...path, prop]);
       },
     });
   };
+
   return createProxy() as ApiClient<TSchema>;
 }

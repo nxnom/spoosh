@@ -1,38 +1,42 @@
 import { useRef, useReducer, useEffect, useCallback } from "react";
 import type { EnlaceResponse } from "enlace-core";
 import type {
-  AnyReactRequestOptions,
   ApiClient,
   HookState,
   PollingInterval,
   TrackedCall,
   UseEnlaceQueryResult,
-} from "./types";
-import { hookReducer } from "./reducer";
-import { generateTags } from "../utils/generateTags";
-import { onRevalidate } from "./revalidator";
+} from "../types";
+import type { AnyReactRequestOptions } from "../types";
+import { hookReducer } from "../reducer";
+import { generateTags } from "../../utils/generateTags";
+import { onRevalidate } from "../revalidator";
 import {
   createQueryKey,
   getCache,
   setCache,
   subscribeCache,
   isStale,
-} from "./cache";
+} from "../cache";
 
 function resolvePath(
   path: string[],
   params: Record<string, string | number> | undefined
 ): string[] {
   if (!params) return path;
+
   return path.map((segment) => {
     if (segment.startsWith(":")) {
       const paramName = segment.slice(1);
       const value = params[paramName];
+
       if (value === undefined) {
         throw new Error(`Missing path parameter: ${paramName}`);
       }
+
       return String(value);
     }
+
     return segment;
   });
 }
@@ -46,7 +50,7 @@ export type QueryModeOptions<TData = unknown, TError = unknown> = {
   retryDelay?: number;
 };
 
-export function useQueryMode<TSchema, TData, TError>(
+export function useAPIQueryImpl<TSchema, TData, TError>(
   api: ApiClient<TSchema>,
   trackedCall: TrackedCall,
   options: QueryModeOptions<TData, TError>
@@ -78,6 +82,7 @@ export function useQueryMode<TSchema, TData, TError>(
     const isFetching = !!cached?.promise;
     const stale = isStale(queryKey, staleTime);
     const needsFetch = includeNeedsFetch && (!hasCachedData || stale);
+
     return {
       loading: !hasCachedData && (isFetching || needsFetch),
       fetching: isFetching || needsFetch,
@@ -244,6 +249,7 @@ export function useQueryMode<TSchema, TData, TError>(
 
     return onRevalidate((invalidatedTags) => {
       const hasMatch = invalidatedTags.some((tag) => queryTags.includes(tag));
+
       if (hasMatch && mountedRef.current && fetchRef.current) {
         fetchRef.current();
       }

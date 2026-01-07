@@ -1,36 +1,40 @@
 import { useRef, useReducer, useCallback } from "react";
 import type { EnlaceResponse, ResolvedCacheConfig } from "enlace-core";
-import type { AnyReactRequestOptions, UseEnlaceSelectorResult } from "./types";
-import { hookReducer, initialState } from "./reducer";
-import { generateTags } from "../utils/generateTags";
-import { invalidateTags } from "./revalidator";
+import type { AnyReactRequestOptions, UseEnlaceSelectorResult } from "../types";
+import { hookReducer, initialState } from "../reducer";
+import { generateTags } from "../../utils/generateTags";
+import { invalidateTags } from "../revalidator";
 import {
   setCacheOptimistic,
   confirmOptimistic,
   rollbackOptimistic,
   updateCacheByTags,
-} from "./cache";
+} from "../cache";
 import {
   createTrackingProxy,
   SELECTOR_PATH_KEY,
   type MethodWithPath,
-} from "./trackingProxy";
-import { cache } from "./optimistic";
+} from "../trackingProxy";
+import { cache } from "../optimistic";
 
 function resolvePath(
   path: string[],
   params: Record<string, string | number> | undefined
 ): string[] {
   if (!params) return path;
+
   return path.map((segment) => {
     if (segment.startsWith(":")) {
       const paramName = segment.slice(1);
       const value = params[paramName];
+
       if (value === undefined) {
         throw new Error(`Missing path parameter: ${paramName}`);
       }
+
       return String(value);
     }
+
     return segment;
   });
 }
@@ -40,15 +44,17 @@ function hasPathParams(path: string[]): boolean {
 }
 
 function extractTagsFromMethod(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Runtime type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   method: (...args: any[]) => Promise<EnlaceResponse<unknown, unknown>>
 ): string[] {
   const path = (method as unknown as MethodWithPath)[SELECTOR_PATH_KEY];
+
   if (!path) return [];
+
   return generateTags(path);
 }
 
-export type SelectorModeConfig = {
+export type MutationModeConfig = {
   method: (...args: unknown[]) => Promise<EnlaceResponse<unknown, unknown>>;
   api: unknown;
   path: string[];
@@ -66,10 +72,10 @@ function normalizeOptimisticConfigs(
   return Array.isArray(result) ? result : [result];
 }
 
-export function useSelectorMode<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for method type inference
+export function useAPIMutationImpl<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TMethod extends (...args: any[]) => Promise<EnlaceResponse<unknown, unknown>>,
->(config: SelectorModeConfig): UseEnlaceSelectorResult<TMethod> {
+>(config: MutationModeConfig): UseEnlaceSelectorResult<TMethod> {
   const {
     method,
     api,
@@ -135,9 +141,11 @@ export function useSelectorMode<
 
       for (const cfg of immediateUpdates) {
         const tags = extractTagsFromMethod(cfg.for);
+
         if (!cfg.refetch) {
           tags.forEach((t) => immediateTagsSet.add(t));
         }
+
         const keys = setCacheOptimistic(tags, cfg.updater);
         affectedKeysByConfig.set(cfg, keys);
       }

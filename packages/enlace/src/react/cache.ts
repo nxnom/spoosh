@@ -35,10 +35,12 @@ export function setCache<TData, TError>(
   entry: Partial<CacheEntry<TData, TError>>
 ): void {
   const existing = cache.get(key);
+
   if (existing) {
     if ("data" in entry || "error" in entry) {
       delete existing.promise;
     }
+
     Object.assign(existing, entry);
     existing.subscribers.forEach((cb) => cb());
   } else {
@@ -55,6 +57,7 @@ export function setCache<TData, TError>(
 
 export function subscribeCache(key: string, callback: () => void): () => void {
   let entry = cache.get(key);
+
   if (!entry) {
     cache.set(key, {
       data: undefined,
@@ -65,7 +68,9 @@ export function subscribeCache(key: string, callback: () => void): () => void {
     });
     entry = cache.get(key)!;
   }
+
   entry.subscribers.add(callback);
+
   return () => {
     entry.subscribers.delete(callback);
   };
@@ -73,7 +78,9 @@ export function subscribeCache(key: string, callback: () => void): () => void {
 
 export function isStale(key: string, staleTime: number): boolean {
   const entry = cache.get(key);
+
   if (!entry) return true;
+
   return Date.now() - entry.timestamp > staleTime;
 }
 
@@ -88,6 +95,7 @@ export function clearCache(key?: string): void {
 export function clearCacheByTags(tags: string[]): void {
   cache.forEach((entry) => {
     const hasMatch = entry.tags.some((tag) => tags.includes(tag));
+
     if (hasMatch) {
       entry.timestamp = 0;
       delete entry.promise;
@@ -101,10 +109,12 @@ export function getCacheByTags<TData>(
 ): CacheEntry<TData> | undefined {
   for (const entry of cache.values()) {
     const hasMatch = entry.tags.some((tag) => tags.includes(tag));
+
     if (hasMatch && entry.data !== undefined) {
       return entry as CacheEntry<TData>;
     }
   }
+
   return undefined;
 }
 
@@ -116,6 +126,7 @@ export function setCacheOptimistic<TData>(
 
   cache.forEach((entry, key) => {
     const hasMatch = entry.tags.some((tag) => tags.includes(tag));
+
     if (hasMatch && entry.data !== undefined) {
       entry.previousData = entry.data;
       entry.data = updater(entry.data as TData);
@@ -131,6 +142,7 @@ export function setCacheOptimistic<TData>(
 export function confirmOptimistic(keys: string[]): void {
   keys.forEach((key) => {
     const entry = cache.get(key);
+
     if (entry) {
       delete entry.isOptimistic;
       delete entry.previousData;
@@ -141,6 +153,7 @@ export function confirmOptimistic(keys: string[]): void {
 export function rollbackOptimistic(keys: string[]): void {
   keys.forEach((key) => {
     const entry = cache.get(key);
+
     if (entry && entry.previousData !== undefined) {
       entry.data = entry.previousData;
       delete entry.isOptimistic;
@@ -157,6 +170,7 @@ export function updateCacheByTags<TData, TResponse>(
 ): void {
   cache.forEach((entry) => {
     const hasMatch = entry.tags.some((tag) => tags.includes(tag));
+
     if (hasMatch && entry.data !== undefined) {
       entry.data = updater(entry.data as TData, response);
       entry.timestamp = Date.now();
