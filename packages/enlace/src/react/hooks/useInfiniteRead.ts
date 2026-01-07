@@ -1,5 +1,5 @@
 import { useRef, useReducer, useEffect, useCallback } from "react";
-import type { EnlaceResponse } from "enlace-core";
+import { generateTags, type EnlaceResponse } from "enlace-core";
 import type {
   ApiClient,
   TrackedCall,
@@ -15,7 +15,6 @@ import {
   initialInfiniteState,
   type InfiniteHookState,
 } from "../reducer";
-import { generateTags } from "../../utils/generateTags";
 import { onRevalidate } from "../revalidator";
 import {
   createInfiniteQueryKey,

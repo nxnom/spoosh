@@ -1,6 +1,6 @@
 # enlace
 
-Type-safe API client with React hooks and Next.js integration.
+Type-safe API client with React hooks.
 
 ## Installation
 
@@ -8,10 +8,12 @@ Type-safe API client with React hooks and Next.js integration.
 npm install enlace
 ```
 
+> **For Next.js projects**, use [`enlace-next`](../next/README.md) instead for server revalidation support.
+
 ## Quick Start
 
 ```typescript
-import { enlaceHookReact } from "enlace/hook";
+import { enlaceHooks } from "enlace/hook";
 import { Endpoint } from "enlace";
 
 // Define your API error type
@@ -29,8 +31,10 @@ type ApiSchema = {
   };
 };
 
-// Pass global error type as second generic
-const useAPI = enlaceHookReact<ApiSchema, ApiError>("https://api.example.com");
+// Create hooks
+const { useRead, useWrite, useInfiniteRead } = enlaceHooks<ApiSchema, ApiError>(
+  "https://api.example.com"
+);
 ```
 
 ## Schema Conventions
@@ -39,13 +43,13 @@ Defining a schema is **recommended** for full type safety, but **optional**. You
 
 ```typescript
 // Without schema (untyped, but still works!)
-const useAPI = enlaceHookReact("https://api.example.com");
-const { data } = useAPI((api) => api.any.path.you.want.$get());
+const { useRead } = enlaceHooks("https://api.example.com");
+const { data } = useRead((api) => api.any.path.you.want.$get());
 ```
 
 ```typescript
 // With schema (recommended for type safety)
-const useAPI = enlaceHookReact<ApiSchema>("https://api.example.com");
+const { useRead } = enlaceHooks<ApiSchema>("https://api.example.com");
 ```
 
 ### Schema Structure
@@ -211,13 +215,13 @@ const api = enlace<ApiSchema, ApiError>("https://api.example.com");
 
 ## React Hooks
 
-### Query Mode (Auto-Fetch)
+### useRead (Auto-Fetch)
 
 For GET requests that fetch data automatically:
 
 ```typescript
 function Posts({ page, limit }: { page: number; limit: number }) {
-  const { data, loading, error } = useAPI((api) =>
+  const { data, loading, error } = useRead((api) =>
     api.posts.$get({ query: { page, limit, published: true } })
   );
 
@@ -248,7 +252,7 @@ Skip fetching with the `enabled` option:
 ```typescript
 function ProductForm({ id }: { id: string | "new" }) {
   // Skip fetching when creating a new product
-  const { data, loading } = useAPI(
+  const { data, loading } = useRead(
     (api) => api.products[id].$get(),
     { enabled: id !== "new" }
   );
@@ -262,7 +266,7 @@ function ProductForm({ id }: { id: string | "new" }) {
 ```typescript
 // Also useful when waiting for a dependency
 function UserPosts({ userId }: { userId: string | undefined }) {
-  const { data } = useAPI((api) => api.users[userId!].posts.$get(), {
+  const { data } = useRead((api) => api.users[userId!].posts.$get(), {
     enabled: userId !== undefined,
   });
 }
@@ -271,7 +275,7 @@ function UserPosts({ userId }: { userId: string | undefined }) {
 ```typescript
 function Post({ id }: { id: number }) {
   // Automatically re-fetches when `id` or query values change
-  const { data } = useAPI((api) => api.posts[id].$get({ query: { include: "author" } }));
+  const { data } = useRead((api) => api.posts[id].$get({ query: { include: "author" } }));
   return <div>{data?.title}</div>;
 }
 ```
@@ -282,7 +286,7 @@ Automatically refetch data at intervals using the `pollingInterval` option. Poll
 
 ```typescript
 function Notifications() {
-  const { data } = useAPI(
+  const { data } = useRead(
     (api) => api.notifications.$get(),
     { pollingInterval: 5000 } // Refetch every 5 seconds after previous request completes
   );
@@ -305,7 +309,7 @@ Use a function to conditionally poll based on the response data or error:
 
 ```typescript
 function OrderStatus({ orderId }: { orderId: string }) {
-  const { data } = useAPI(
+  const { data } = useRead(
     (api) => api.orders[orderId].$get(),
     {
       // Poll every 2s while pending, stop when completed
@@ -338,7 +342,7 @@ The function receives `(data, error)` and should return:
 
 ```typescript
 function OrderStatus({ orderId }: { orderId: string | undefined }) {
-  const { data } = useAPI((api) => api.orders[orderId!].$get(), {
+  const { data } = useRead((api) => api.orders[orderId!].$get(), {
     enabled: !!orderId,
     pollingInterval: 10000, // Poll every 10 seconds
   });
@@ -353,12 +357,12 @@ Multiple components requesting the same data will share a single network request
 ```typescript
 // Both components render at the same time
 function PostTitle({ id }: { id: number }) {
-  const { data } = useAPI((api) => api.posts[id].$get());
+  const { data } = useRead((api) => api.posts[id].$get());
   return <h1>{data?.title}</h1>;
 }
 
 function PostBody({ id }: { id: number }) {
-  const { data } = useAPI((api) => api.posts[id].$get());
+  const { data } = useRead((api) => api.posts[id].$get());
   return <p>{data?.body}</p>;
 }
 
@@ -374,13 +378,13 @@ function PostPage() {
 }
 ```
 
-### Selector Mode (Manual Trigger)
+### useWrite (Manual Trigger)
 
 For mutations or lazy-loaded requests:
 
 ```typescript
 function DeleteButton({ id }: { id: number }) {
-  const { trigger, loading } = useAPI((api) => api.posts[id].$delete);
+  const { trigger, loading } = useWrite((api) => api.posts[id].$delete);
 
   return (
     <button onClick={() => trigger()} disabled={loading}>
@@ -394,7 +398,7 @@ function DeleteButton({ id }: { id: number }) {
 
 ```typescript
 function CreatePost() {
-  const { trigger, loading, data } = useAPI((api) => api.posts.$post);
+  const { trigger, loading, data } = useWrite((api) => api.posts.$post);
 
   const handleSubmit = async (title: string) => {
     const result = await trigger({ body: { title } });
@@ -414,7 +418,7 @@ Use `:paramName` syntax for dynamic IDs passed at trigger time:
 ```typescript
 function PostList({ posts }: { posts: Post[] }) {
   // Define once with :id placeholder
-  const { trigger, loading } = useAPI((api) => api.posts[":id"].$delete);
+  const { trigger, loading } = useWrite((api) => api.posts[":id"].$delete);
 
   const handleDelete = (postId: number) => {
     // Pass the actual ID when triggering
@@ -439,7 +443,7 @@ function PostList({ posts }: { posts: Post[] }) {
 **Multiple path parameters:**
 
 ```typescript
-const { trigger } = useAPI(
+const { trigger } = useWrite(
   (api) => api.users[":userId"].posts[":postId"].$delete
 );
 
@@ -450,7 +454,7 @@ trigger({ params: { userId: "1", postId: "42" } });
 **With request body:**
 
 ```typescript
-const { trigger } = useAPI((api) => api.products[":id"].$patch);
+const { trigger } = useWrite((api) => api.products[":id"].$patch);
 
 trigger({
   params: { id: "123" },
@@ -465,7 +469,7 @@ Update the UI instantly before the server responds, with automatic rollback on e
 
 ```typescript
 function DeletePost({ id }: { id: number }) {
-  const { trigger } = useAPI((api) => api.posts[":id"].$delete);
+  const { trigger } = useWrite((api) => api.posts[":id"].$delete);
 
   const handleDelete = () => {
     trigger({
@@ -488,7 +492,7 @@ And you don't want to wait the query to refetch to show it in the list.
 
 ```typescript
 function CreatePost() {
-  const { trigger } = useAPI((api) => api.posts.$post);
+  const { trigger } = useWrite((api) => api.posts.$post);
 
   const handleCreate = async () => {
     await trigger({
@@ -539,7 +543,7 @@ trigger({
 Configure automatic retry for failed requests:
 
 ```typescript
-const useAPI = enlaceHookReact<ApiSchema>(
+const { useRead } = enlaceHooks<ApiSchema>(
   "https://api.example.com",
   {},
   {
@@ -552,7 +556,7 @@ const useAPI = enlaceHookReact<ApiSchema>(
 **Per-query retry:**
 
 ```typescript
-const { data } = useAPI((api) => api.posts.$get(), {
+const { data } = useRead((api) => api.posts.$get(), {
   retry: 5, // Override for this query
   retryDelay: 500, // Faster retry
 });
@@ -561,7 +565,7 @@ const { data } = useAPI((api) => api.posts.$get(), {
 **Disable retry:**
 
 ```typescript
-const { data } = useAPI((api) => api.posts.$get(), { retry: false });
+const { data } = useRead((api) => api.posts.$get(), { retry: false });
 ```
 
 Retry uses exponential backoff: 1s → 2s → 4s → 8s...
@@ -572,7 +576,7 @@ Cancel in-flight requests using the `abort` function:
 
 ```typescript
 function SearchPosts() {
-  const { data, loading, abort } = useAPI((api) =>
+  const { data, loading, abort } = useRead((api) =>
     api.posts.$get({ query: { search: debouncedQuery } })
   );
 
@@ -587,11 +591,11 @@ function SearchPosts() {
 }
 ```
 
-**In selector mode:**
+**In useWrite:**
 
 ```typescript
 function UploadFile() {
-  const { trigger, loading, abort } = useAPI((api) => api.files.$post);
+  const { trigger, loading, abort } = useWrite((api) => api.files.$post);
 
   const handleUpload = () => {
     trigger({ formData: { file: selectedFile } });
@@ -627,7 +631,7 @@ function UploadFile() {
 **Mutations automatically revalidate matching tags:**
 
 ```typescript
-const { trigger } = useAPI((api) => api.posts.$post);
+const { trigger } = useWrite((api) => api.posts.$post);
 
 // POST /posts automatically revalidates 'posts' tag
 // All queries with 'posts' tag will refetch!
@@ -644,10 +648,10 @@ This means in most cases, **you don't need to specify any tags manually**. The c
 
 ```typescript
 // Component A: fetches posts (cached with tag 'posts')
-const { data } = useAPI((api) => api.posts.$get());
+const { data } = useRead((api) => api.posts.$get());
 
 // Component B: creates a post
-const { trigger } = useAPI((api) => api.posts.$post);
+const { trigger } = useWrite((api) => api.posts.$post);
 trigger({ body: { title: "New" } });
 // → Automatically revalidates 'posts' tag
 // → Component A refetches automatically!
@@ -658,7 +662,7 @@ trigger({ body: { title: "New" } });
 Control how long cached data is considered fresh:
 
 ```typescript
-const useAPI = enlaceHookReact<ApiSchema>(
+const { useRead } = enlaceHooks<ApiSchema>(
   "https://api.example.com",
   {},
   {
@@ -677,7 +681,7 @@ Override auto-generated tags when needed:
 
 ```typescript
 // Custom cache tags (replaces auto-generated)
-const { data } = useAPI((api) => api.posts.$get({ tags: ["my-custom-tag"] }));
+const { data } = useRead((api) => api.posts.$get({ tags: ["my-custom-tag"] }));
 
 // Custom revalidation tags (replaces auto-generated)
 trigger({
@@ -692,7 +696,7 @@ Use `additionalTags` and `additionalRevalidateTags` to **merge** with auto-gener
 
 ```typescript
 // Extend cache tags (merges with auto-generated)
-const { data } = useAPI((api) =>
+const { data } = useRead((api) =>
   api.posts.$get({ additionalTags: ["custom-tag"] })
 );
 // If autoGenerateTags produces ['posts'], final tags: ['posts', 'custom-tag']
@@ -737,7 +741,7 @@ This is useful when you need to refresh data outside of the normal mutation flow
 ### Disable Auto-Revalidation
 
 ```typescript
-const useAPI = enlaceHookReact<ApiSchema>(
+const { useRead } = enlaceHooks<ApiSchema>(
   "https://api.example.com",
   {},
   {
@@ -750,7 +754,7 @@ const useAPI = enlaceHookReact<ApiSchema>(
 ## Hook Options
 
 ```typescript
-const useAPI = enlaceHookReact<ApiSchema>(
+const { useRead, useWrite } = enlaceHooks<ApiSchema>(
   "https://api.example.com",
   {
     // Default fetch options
@@ -771,17 +775,17 @@ Headers can be provided as a static value, sync function, or async function. Thi
 
 ```typescript
 // Static headers
-const useAPI = enlaceHookReact<ApiSchema>("https://api.example.com", {
+const { useRead } = enlaceHooks<ApiSchema>("https://api.example.com", {
   headers: { Authorization: "Bearer token" },
 });
 
 // Sync function
-const useAPI = enlaceHookReact<ApiSchema>("https://api.example.com", {
+const { useRead } = enlaceHooks<ApiSchema>("https://api.example.com", {
   headers: () => ({ Authorization: `Bearer ${getToken()}` }),
 });
 
 // Async function
-const useAPI = enlaceHookReact<ApiSchema>("https://api.example.com", {
+const { useRead } = enlaceHooks<ApiSchema>("https://api.example.com", {
   headers: async () => {
     const token = await getTokenFromStorage();
     return { Authorization: `Bearer ${token}` };
@@ -792,7 +796,7 @@ const useAPI = enlaceHookReact<ApiSchema>("https://api.example.com", {
 This also works for per-request headers:
 
 ```typescript
-const { data } = useAPI((api) =>
+const { data } = useRead((api) =>
   api.posts.$get({
     headers: async () => {
       const token = await refreshToken();
@@ -807,7 +811,7 @@ const { data } = useAPI((api) =>
 You can set up global `onSuccess` and `onError` callbacks that are called for every request:
 
 ```typescript
-const useAPI = enlaceHookReact<ApiSchema>(
+const { useRead, useWrite } = enlaceHooks<ApiSchema>(
   "https://api.example.com",
   {
     headers: { Authorization: "Bearer token" },
@@ -854,24 +858,24 @@ type EnlaceErrorCallbackPayload<T> =
 
 ## Return Types
 
-### Query Mode
+### useRead
 
 ```typescript
 // Basic usage
-const result = useAPI((api) => api.posts.$get());
+const result = useRead((api) => api.posts.$get());
 
 // With options
-const result = useAPI((api) => api.posts.$get(), {
+const result = useRead((api) => api.posts.$get(), {
   enabled: true, // Skip fetching when false
   pollingInterval: 5000, // Refetch every 5s after previous request completes
 });
 
 // With dynamic polling
-const result = useAPI((api) => api.orders[id].$get(), {
+const result = useRead((api) => api.orders[id].$get(), {
   pollingInterval: (order) => (order?.status === "pending" ? 2000 : false),
 });
 
-type UseEnlaceQueryResult<TData, TError> = {
+type UseEnlaceReadResult<TData, TError> = {
   loading: boolean; // No cached data and fetching
   fetching: boolean; // Request in progress
   data: TData | undefined;
@@ -881,10 +885,10 @@ type UseEnlaceQueryResult<TData, TError> = {
 };
 ```
 
-### Selector Mode
+### useWrite
 
 ```typescript
-type UseEnlaceSelectorResult<TMethod> = {
+type UseEnlaceWriteResult<TMethod> = {
   trigger: TMethod; // Function to trigger the request
   loading: boolean;
   fetching: boolean;
@@ -894,10 +898,10 @@ type UseEnlaceSelectorResult<TMethod> = {
 };
 ```
 
-### Query Options
+### Read Options
 
 ```typescript
-type UseEnlaceQueryOptions<TData, TError> = {
+type UseEnlaceReadOptions<TData, TError> = {
   enabled?: boolean; // Skip fetching when false (default: true)
   pollingInterval?: // Refetch interval after request completes
     | number // Fixed interval in ms
@@ -925,169 +929,15 @@ type RequestOptions = {
 
 ---
 
-## Next.js Integration
-
-### Server Components
-
-Use `enlaceNext` from `enlace` for server components:
-
-```typescript
-import { enlaceNext } from "enlace";
-
-type ApiError = { message: string };
-
-const api = enlaceNext<ApiSchema, ApiError>("https://api.example.com", {}, {
-  autoGenerateTags: true,
-});
-
-export default async function Page() {
-  const { data } = await api.posts.$get({
-    revalidate: 60, // ISR: revalidate every 60 seconds
-  });
-
-  return <PostList posts={data} />;
-}
-```
-
-### Client Components
-
-Use `enlaceHookNext` from `enlace/hook` for client components:
-
-```typescript
-"use client";
-
-import { enlaceHookNext } from "enlace/hook";
-
-type ApiError = { message: string };
-
-const useAPI = enlaceHookNext<ApiSchema, ApiError>("https://api.example.com");
-```
-
-### Server-Side Revalidation
-
-Trigger Next.js cache revalidation after mutations:
-
-```typescript
-// actions.ts
-"use server";
-
-import { revalidateTag, revalidatePath } from "next/cache";
-
-export async function revalidateAction(tags: string[], paths: string[]) {
-  for (const tag of tags) {
-    revalidateTag(tag);
-  }
-  for (const path of paths) {
-    revalidatePath(path);
-  }
-}
-```
-
-```typescript
-// useAPI.ts
-import { enlaceHookNext } from "enlace/hook";
-import { revalidateAction } from "./actions";
-
-type ApiError = { message: string };
-
-const useAPI = enlaceHookNext<ApiSchema, ApiError>(
-  "/api",
-  {},
-  {
-    serverRevalidator: revalidateAction,
-  }
-);
-```
-
-**In components:**
-
-```typescript
-function CreatePost() {
-  const { trigger } = useAPI((api) => api.posts.$post);
-
-  const handleCreate = () => {
-    trigger({
-      body: { title: "New Post" },
-      revalidateTags: ["posts"], // Passed to serverRevalidator
-      revalidatePaths: ["/posts"], // Passed to serverRevalidator
-    });
-  };
-}
-```
-
-### CSR-Heavy Projects
-
-For projects that primarily use client-side rendering with minimal SSR, you can disable server-side revalidation by default:
-
-```typescript
-const useAPI = enlaceHookNext<ApiSchema, ApiError>(
-  "/api",
-  {},
-  {
-    serverRevalidator: revalidateAction,
-    skipServerRevalidation: true, // Disable server revalidation by default
-  }
-);
-
-// Mutations won't trigger server revalidation by default
-await trigger({ body: { title: "New Post" } });
-
-// Opt-in to server revalidation when needed
-await trigger({ body: { title: "New Post" }, serverRevalidate: true });
-```
-
-### Per-Request Server Revalidation Control
-
-Override the global setting for individual requests:
-
-```typescript
-// Skip server revalidation for this request
-await trigger({ body: data, serverRevalidate: false });
-
-// Force server revalidation for this request
-await trigger({ body: data, serverRevalidate: true });
-```
-
-### Next.js Request Options
-
-```typescript
-api.posts.$get({
-  tags: ["posts"], // Next.js cache tags
-  revalidate: 60, // ISR revalidation (seconds)
-  revalidateTags: ["posts"], // Tags to invalidate after mutation
-  revalidatePaths: ["/"], // Paths to revalidate after mutation
-  serverRevalidate: true, // Control server-side revalidation per-request
-});
-```
-
-### Relative URLs
-
-Works with Next.js API routes:
-
-```typescript
-// Client component calling /api/posts
-const useAPI = enlaceHookNext<ApiSchema, ApiError>("/api");
-```
-
----
-
 ## API Reference
 
-### `enlaceHookReact<TSchema, TDefaultError>(baseUrl, options?, hookOptions?)`
+### `enlaceHooks<TSchema, TDefaultError>(baseUrl, options?, hookOptions?)`
 
-Creates a React hook for making API calls.
-
-### `enlaceHookNext<TSchema, TDefaultError>(baseUrl, options?, hookOptions?)`
-
-Creates a Next.js hook with server revalidation support.
+Creates React hooks for making API calls. Returns `{ useRead, useWrite, useInfiniteRead }`.
 
 ### `enlace<TSchema, TDefaultError>(baseUrl, options?, callbacks?)`
 
-Creates a typed API client (non-hook, for direct calls or server components).
-
-### `enlaceNext<TSchema, TDefaultError>(baseUrl, options?, nextOptions?)`
-
-Creates a Next.js typed API client with caching support.
+Creates a typed API client (non-hook, for direct calls).
 
 **Generic Parameters:**
 

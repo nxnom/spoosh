@@ -1,24 +1,7 @@
-import { enlace, type EnlaceOptions, type EnlaceResponse } from "enlace-core";
-import type {
-  ApiClient,
-  EnlaceHookOptions,
-  EnlaceHooks,
-  ReadFn,
-  WriteSelectorFn,
-  UseEnlaceReadOptions,
-  UseEnlaceReadResult,
-  UseEnlaceWriteResult,
-  InfiniteReadFn,
-  UseEnlaceInfiniteReadOptions,
-  UseEnlaceInfiniteReadResult,
-} from "./types";
-import { useReadImpl, type ReadModeOptions } from "./hooks/useRead";
-import { useWriteImpl } from "./hooks/useWrite";
-import {
-  useInfiniteReadImpl,
-  type InfiniteReadModeOptions,
-} from "./hooks/useInfiniteRead";
-import { createTrackingProxy, type TrackingResult } from "./trackingProxy";
+import { enlace, type EnlaceOptions } from "enlace-core";
+import type { ApiClient, EnlaceHookOptions, EnlaceHooks } from "./types";
+import type { ReactOptionsMap } from "./types/request.types";
+import { createHooksFactory } from "./createHooksFactory";
 
 /**
  * Creates React hooks for making API calls.
@@ -48,7 +31,7 @@ export function enlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
   baseUrl: string,
   defaultOptions: EnlaceOptions = {},
   hookOptions: EnlaceHookOptions = {}
-): EnlaceHooks<TSchema, TDefaultError> {
+): EnlaceHooks<TSchema, TDefaultError, ReactOptionsMap> {
   const {
     autoGenerateTags = true,
     autoRevalidateTags = true,
@@ -66,135 +49,14 @@ export function enlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
     middlewares,
   });
 
-  function useRead<TData, TError>(
-    readFn: ReadFn<TSchema, TData, TError, TDefaultError>,
-    readOptions?: UseEnlaceReadOptions<TData, TError>
-  ): UseEnlaceReadResult<TData, TError> {
-    let trackingResult: TrackingResult = {
-      trackedCall: null,
-      selectorPath: null,
-      selectorMethod: null,
-    };
-
-    const trackingProxy = createTrackingProxy<TSchema>((result) => {
-      trackingResult = result;
-    });
-
-    (readFn as (api: ApiClient<TSchema, TDefaultError>) => unknown)(
-      trackingProxy as ApiClient<TSchema, TDefaultError>
-    );
-
-    if (!trackingResult.trackedCall) {
-      throw new Error(
-        "useRead requires calling an HTTP method ($get). " +
-          "Example: useRead((api) => api.posts.$get())"
-      );
-    }
-
-    const options: ReadModeOptions<TData, TError> = {
+  return createHooksFactory<TSchema, TDefaultError, ReactOptionsMap>(
+    api as ApiClient<TSchema, TDefaultError, ReactOptionsMap>,
+    {
       autoGenerateTags,
-      staleTime,
-      enabled: readOptions?.enabled ?? true,
-      pollingInterval: readOptions?.pollingInterval,
-      retry: readOptions?.retry ?? retry,
-      retryDelay: readOptions?.retryDelay ?? retryDelay,
-    };
-
-    return useReadImpl<TSchema, TData, TError>(
-      api as ApiClient<TSchema, TDefaultError>,
-      trackingResult.trackedCall,
-      options
-    );
-  }
-
-  function useWrite<
-    TMethod extends (
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...args: any[]
-    ) => Promise<EnlaceResponse<unknown, unknown>>,
-  >(
-    selectorFn: WriteSelectorFn<TSchema, TMethod, TDefaultError>
-  ): UseEnlaceWriteResult<TMethod> {
-    let trackingResult: TrackingResult = {
-      trackedCall: null,
-      selectorPath: null,
-      selectorMethod: null,
-    };
-
-    const trackingProxy = createTrackingProxy<TSchema>((result) => {
-      trackingResult = result;
-    });
-
-    (selectorFn as (api: ApiClient<TSchema, TDefaultError>) => unknown)(
-      trackingProxy as ApiClient<TSchema, TDefaultError>
-    );
-
-    const actualMethod = (
-      selectorFn as (api: ApiClient<TSchema, TDefaultError>) => unknown
-    )(api as ApiClient<TSchema, TDefaultError>);
-
-    return useWriteImpl<TMethod>({
-      method: actualMethod as (
-        ...args: unknown[]
-      ) => Promise<EnlaceResponse<unknown, unknown>>,
-      api,
-      path: trackingResult.selectorPath ?? [],
-      methodName: trackingResult.selectorMethod ?? "",
       autoRevalidateTags,
+      staleTime,
       retry,
       retryDelay,
-    });
-  }
-
-  function useInfiniteRead<
-    TData,
-    TError,
-    TItem = TData extends Array<infer U> ? U : TData,
-    TRequest = unknown,
-  >(
-    readFn: InfiniteReadFn<TSchema, TDefaultError>,
-    readOptions: UseEnlaceInfiniteReadOptions<TData, TItem, TRequest>
-  ): UseEnlaceInfiniteReadResult<TData, TError, TItem> {
-    let trackingResult: TrackingResult = {
-      trackedCall: null,
-      selectorPath: null,
-      selectorMethod: null,
-    };
-
-    const trackingProxy = createTrackingProxy<TSchema>((result) => {
-      trackingResult = result;
-    });
-
-    (readFn as (api: ApiClient<TSchema, TDefaultError>) => unknown)(
-      trackingProxy as ApiClient<TSchema, TDefaultError>
-    );
-
-    if (!trackingResult.trackedCall) {
-      throw new Error(
-        "useInfiniteRead requires calling an HTTP method ($get, $post, etc). " +
-          "Example: useInfiniteRead((api) => api.posts.$get({ query: { limit: 10 } }), options)"
-      );
     }
-
-    const options = {
-      autoGenerateTags,
-      staleTime,
-      ...readOptions,
-      enabled: readOptions.enabled ?? true,
-      retry: readOptions.retry ?? retry,
-      retryDelay: readOptions.retryDelay ?? retryDelay,
-    };
-
-    return useInfiniteReadImpl<TSchema, TData, TError, TItem>(
-      api as ApiClient<TSchema, TDefaultError>,
-      trackingResult.trackedCall,
-      options as unknown as InfiniteReadModeOptions<TData, TItem>
-    );
-  }
-
-  return {
-    useRead,
-    useWrite,
-    useInfiniteRead,
-  } as EnlaceHooks<TSchema, TDefaultError>;
+  );
 }

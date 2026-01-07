@@ -1,80 +1,41 @@
-"use client";
-
-import type { EnlaceOptions, EnlaceResponse } from "enlace-core";
-import { enlaceNext } from "./index";
+import type { EnlaceResponse } from "enlace-core";
 import type {
-  NextApiClient,
-  NextEnlaceHooks,
-  NextHookOptions,
-  NextReadFn,
-  NextWriteSelectorFn,
-  NextInfiniteReadFn,
-} from "./types";
-import type {
+  ApiClient,
+  EnlaceHooks,
+  ReadFn,
+  WriteSelectorFn,
   UseEnlaceReadOptions,
   UseEnlaceReadResult,
   UseEnlaceWriteResult,
+  InfiniteReadFn,
   UseEnlaceInfiniteReadOptions,
   UseEnlaceInfiniteReadResult,
-} from "../react/types";
-import { useReadImpl, type ReadModeOptions } from "../react/hooks/useRead";
-import { useWriteImpl } from "../react/hooks/useWrite";
+} from "./types";
+import { useReadImpl, type ReadModeOptions } from "./hooks/useRead";
+import { useWriteImpl } from "./hooks/useWrite";
 import {
   useInfiniteReadImpl,
   type InfiniteReadModeOptions,
-} from "../react/hooks/useInfiniteRead";
-import {
-  createTrackingProxy,
-  type TrackingResult,
-} from "../react/trackingProxy";
+} from "./hooks/useInfiniteRead";
+import { createTrackingProxy, type TrackingResult } from "./trackingProxy";
 
-/**
- * Creates React hooks for making API calls in Next.js Client Components.
- * Returns { useRead, useWrite, useInfiniteRead }.
- *
- * @example
- * const { useRead, useWrite, useInfiniteRead } = enlaceHookNext<ApiSchema>('https://api.com', {}, {
- *   serverRevalidator: (tags) => revalidateTagsAction(tags),
- * });
- *
- * // Read - auto-fetch GET requests
- * const { loading, data, error } = useRead((api) => api.posts.$get());
- *
- * // Write - trigger-based mutations
- * const { trigger } = useWrite((api) => api.posts.$delete);
- *
- * // Infinite Read - paginated data with fetchNext/fetchPrev
- * const { data, fetchNext, canFetchNext } = useInfiniteRead(
- *   (api) => api.posts.$get({ query: { limit: 10 } }),
- *   {
- *     canFetchNext: ({ response }) => response?.hasMore ?? false,
- *     nextPageRequest: ({ response }) => ({ query: { cursor: response?.nextCursor } }),
- *     merger: (allResponses) => allResponses.flatMap(r => r.items),
- *   }
- * );
- */
-export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
-  baseUrl: string,
-  defaultOptions: EnlaceOptions = {},
-  hookOptions: NextHookOptions = {}
-): NextEnlaceHooks<TSchema, TDefaultError> {
-  const {
-    autoGenerateTags = true,
-    autoRevalidateTags = true,
-    staleTime = 0,
-    retry,
-    retryDelay,
-    ...nextOptions
-  } = hookOptions;
+export type HookFactoryConfig = {
+  autoGenerateTags: boolean;
+  autoRevalidateTags: boolean;
+  staleTime: number;
+  retry?: number | false;
+  retryDelay?: number;
+};
 
-  const api = enlaceNext<TSchema, TDefaultError>(baseUrl, defaultOptions, {
-    autoGenerateTags,
-    autoRevalidateTags,
-    ...nextOptions,
-  });
+export function createHooksFactory<TSchema, TDefaultError, TOptionsMap>(
+  api: ApiClient<TSchema, TDefaultError, TOptionsMap>,
+  config: HookFactoryConfig
+): EnlaceHooks<TSchema, TDefaultError, TOptionsMap> {
+  const { autoGenerateTags, autoRevalidateTags, staleTime, retry, retryDelay } =
+    config;
 
   function useRead<TData, TError>(
-    readFn: NextReadFn<TSchema, TData, TError, TDefaultError>,
+    readFn: ReadFn<TSchema, TData, TError, TDefaultError, TOptionsMap>,
     readOptions?: UseEnlaceReadOptions<TData, TError>
   ): UseEnlaceReadResult<TData, TError> {
     let trackingResult: TrackingResult = {
@@ -87,9 +48,9 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
       trackingResult = result;
     });
 
-    (readFn as (api: NextApiClient<TSchema, TDefaultError>) => unknown)(
-      trackingProxy as NextApiClient<TSchema, TDefaultError>
-    );
+    (
+      readFn as (api: ApiClient<TSchema, TDefaultError, TOptionsMap>) => unknown
+    )(trackingProxy as ApiClient<TSchema, TDefaultError, TOptionsMap>);
 
     if (!trackingResult.trackedCall) {
       throw new Error(
@@ -108,10 +69,7 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
     };
 
     return useReadImpl<TSchema, TData, TError>(
-      api as unknown as import("../react/types").ApiClient<
-        TSchema,
-        TDefaultError
-      >,
+      api as ApiClient<TSchema, TDefaultError>,
       trackingResult.trackedCall,
       options
     );
@@ -123,7 +81,7 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
       ...args: any[]
     ) => Promise<EnlaceResponse<unknown, unknown>>,
   >(
-    selectorFn: NextWriteSelectorFn<TSchema, TMethod, TDefaultError>
+    selectorFn: WriteSelectorFn<TSchema, TMethod, TDefaultError, TOptionsMap>
   ): UseEnlaceWriteResult<TMethod> {
     let trackingResult: TrackingResult = {
       trackedCall: null,
@@ -135,13 +93,17 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
       trackingResult = result;
     });
 
-    (selectorFn as (api: NextApiClient<TSchema, TDefaultError>) => unknown)(
-      trackingProxy as NextApiClient<TSchema, TDefaultError>
-    );
+    (
+      selectorFn as (
+        api: ApiClient<TSchema, TDefaultError, TOptionsMap>
+      ) => unknown
+    )(trackingProxy as ApiClient<TSchema, TDefaultError, TOptionsMap>);
 
     const actualMethod = (
-      selectorFn as (api: NextApiClient<TSchema, TDefaultError>) => unknown
-    )(api as NextApiClient<TSchema, TDefaultError>);
+      selectorFn as (
+        api: ApiClient<TSchema, TDefaultError, TOptionsMap>
+      ) => unknown
+    )(api as ApiClient<TSchema, TDefaultError, TOptionsMap>);
 
     return useWriteImpl<TMethod>({
       method: actualMethod as (
@@ -162,7 +124,7 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
     TItem = TData extends Array<infer U> ? U : TData,
     TRequest = unknown,
   >(
-    readFn: NextInfiniteReadFn<TSchema, TDefaultError>,
+    readFn: InfiniteReadFn<TSchema, TDefaultError, TOptionsMap>,
     readOptions: UseEnlaceInfiniteReadOptions<TData, TItem, TRequest>
   ): UseEnlaceInfiniteReadResult<TData, TError, TItem> {
     let trackingResult: TrackingResult = {
@@ -175,9 +137,9 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
       trackingResult = result;
     });
 
-    (readFn as (api: NextApiClient<TSchema, TDefaultError>) => unknown)(
-      trackingProxy as NextApiClient<TSchema, TDefaultError>
-    );
+    (
+      readFn as (api: ApiClient<TSchema, TDefaultError, TOptionsMap>) => unknown
+    )(trackingProxy as ApiClient<TSchema, TDefaultError, TOptionsMap>);
 
     if (!trackingResult.trackedCall) {
       throw new Error(
@@ -196,10 +158,7 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
     };
 
     return useInfiniteReadImpl<TSchema, TData, TError, TItem>(
-      api as unknown as import("../react/types").ApiClient<
-        TSchema,
-        TDefaultError
-      >,
+      api as ApiClient<TSchema, TDefaultError>,
       trackingResult.trackedCall,
       options as unknown as InfiniteReadModeOptions<TData, TItem>
     );
@@ -209,5 +168,5 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
     useRead,
     useWrite,
     useInfiniteRead,
-  } as NextEnlaceHooks<TSchema, TDefaultError>;
+  } as EnlaceHooks<TSchema, TDefaultError, TOptionsMap>;
 }

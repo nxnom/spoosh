@@ -1,6 +1,6 @@
 # Enlace
 
-> **Enlace** (Spanish: /enˈla.se/) — *link, connection, bond*
+> **Enlace** (Spanish: /enˈla.se/) — _link, connection, bond_
 
 The missing link between your API schema and your UI.
 
@@ -12,8 +12,8 @@ Enlace takes a different approach to data fetching. Instead of treating API call
 
 ```typescript
 // Your API structure IS your code structure
-api.users[userId].posts.$get()
-api.teams[teamId].members[memberId].$delete()
+api.users[userId].posts.$get();
+api.teams[teamId].members[memberId].$delete();
 ```
 
 No route strings. No path templates. No runtime typos. Just types, all the way down.
@@ -30,18 +30,22 @@ No route strings. No path templates. No runtime typos. Just types, all the way d
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| [`enlace-core`](./packages/core) | Core fetch wrapper and type-safe API client |
-| [`enlace`](./packages/enlace) | React hooks and Next.js integration |
+| Package                                | Description                                   |
+| -------------------------------------- | --------------------------------------------- |
+| [`enlace-core`](./packages/core)       | Core fetch wrapper and type-safe API client   |
+| [`enlace`](./packages/enlace)          | React hooks for data fetching                 |
+| [`enlace-next`](./packages/next)       | Next.js integration with server revalidation  |
 | [`enlace-openapi`](./packages/openapi) | Generate OpenAPI specs from TypeScript schema |
-| [`enlace-hono`](./packages/hono) | Type adapter for Hono framework |
+| [`enlace-hono`](./packages/hono)       | Type adapter for Hono framework               |
 
 ## Installation
 
 ```bash
-# For React / Next.js projects
+# For React projects
 npm install enlace
+
+# For Next.js projects
+npm install enlace-next
 
 # For vanilla JS/TS (no React)
 npm install enlace-core
@@ -58,19 +62,19 @@ type ApiError = { message: string; code: number };
 
 type ApiSchema = {
   posts: {
-    $get: Post[];                                   // GET /posts → Post[]
-    $post: Endpoint<Post, CreatePost>;              // POST /posts
+    $get: Post[]; // GET /posts → Post[]
+    $post: Endpoint<Post, CreatePost>; // POST /posts
     _: {
-      $get: Post;                                   // GET /posts/:id → Post
-      $put: Endpoint<Post, UpdatePost>;             // PUT /posts/:id
-      $delete: void;                                // DELETE /posts/:id
+      $get: Post; // GET /posts/:id → Post
+      $put: Endpoint<Post, UpdatePost>; // PUT /posts/:id
+      $delete: void; // DELETE /posts/:id
     };
   };
   users: {
     _: {
       $get: User;
       posts: {
-        $get: Post[];                               // GET /users/:id/posts
+        $get: Post[]; // GET /users/:id/posts
       };
     };
   };
@@ -80,18 +84,20 @@ type ApiSchema = {
 ### Create Your Hook
 
 ```typescript
-import { enlaceHookReact } from "enlace/hook";
+import { enlaceHooks } from "enlace/hook";
 
-const useAPI = enlaceHookReact<ApiSchema, ApiError>("https://api.example.com");
+const { useRead, useWrite } = enlaceHooks<ApiSchema, ApiError>(
+  "https://api.example.com"
+);
 ```
 
 ### Read Data
 
 ```typescript
 function PostList() {
-  const { data, isLoading, error } = useAPI((api) => api.posts.$get());
+  const { data, loading, error } = useRead((api) => api.posts.$get());
 
-  if (isLoading) return <div>Loading...</div>;
+  if (loading) return <div>Loading...</div>;
   if (error) return <div>{error.message}</div>;
 
   return (
@@ -108,14 +114,14 @@ function PostList() {
 
 ```typescript
 function CreatePost() {
-  const { trigger, isMutating } = useAPI((api) => api.posts.$post);
+  const { trigger, loading } = useWrite((api) => api.posts.$post);
 
   const handleSubmit = async (title: string) => {
     await trigger({ body: { title } });
     // Cache for 'posts' is automatically invalidated
   };
 
-  return <button onClick={() => handleSubmit("New Post")} disabled={isMutating}>Create</button>;
+  return <button onClick={() => handleSubmit("New Post")} disabled={loading}>Create</button>;
 }
 ```
 
@@ -124,7 +130,7 @@ function CreatePost() {
 ```typescript
 function UserPosts({ userId }: { userId: string }) {
   // GET /users/:userId/posts
-  const { data } = useAPI((api) => api.users[userId].posts.$get());
+  const { data } = useRead((api) => api.users[userId].posts.$get());
 
   // Cache tags: ['users', 'users/:userId', 'users/:userId/posts']
   return <PostList posts={data} />;
@@ -147,19 +153,22 @@ export async function revalidateAction(tags: string[]) {
 ```
 
 ```typescript
-// useAPI.ts
-import { enlaceHookNext } from "enlace/hook";
+// hooks.ts
+import { enlaceHooks } from "enlace-next/client";
 import { revalidateAction } from "./actions";
 
-const useAPI = enlaceHookNext<ApiSchema, ApiError>("https://api.example.com", {}, {
-  serverRevalidator: revalidateAction,
-});
+export const { useRead, useWrite } = enlaceHooks<ApiSchema, ApiError>(
+  "https://api.example.com",
+  {},
+  { serverRevalidator: revalidateAction }
+);
 ```
 
 ## Documentation
 
 - [enlace-core](./packages/core/README.md) — Core API client
-- [enlace](./packages/enlace/README.md) — React hooks and Next.js
+- [enlace](./packages/enlace/README.md) — React hooks
+- [enlace-next](./packages/next/README.md) — Next.js integration
 - [enlace-openapi](./packages/openapi/README.md) — OpenAPI generation
 - [enlace-hono](./packages/hono/README.md) — Hono type adapter
 

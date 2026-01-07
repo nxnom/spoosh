@@ -1,1 +1,1 @@
-export * from "./generateTags";
+export { sortObjectKeys } from "./sortObjectKeys";

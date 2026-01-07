@@ -1,8 +1,11 @@
 import { useRef, useReducer, useCallback } from "react";
-import type { EnlaceResponse, ResolvedCacheConfig } from "enlace-core";
+import {
+  generateTags,
+  type EnlaceResponse,
+  type ResolvedCacheConfig,
+} from "enlace-core";
 import type { AnyReactRequestOptions, UseEnlaceWriteResult } from "../types";
 import { hookReducer, initialState } from "../reducer";
-import { generateTags } from "../../utils/generateTags";
 import { invalidateTags } from "../revalidator";
 import {
   setCacheOptimistic,

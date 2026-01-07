@@ -84,14 +84,14 @@ export type UseEnlaceReadResult<TData, TError> = {
   isOptimistic: boolean;
 } & HookResponseState<TData, TError>;
 
-export type ExtractData<T> = T extends (
+export type ExtractWriteData<T> = T extends (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ...args: any[]
 ) => Promise<EnlaceResponse<infer D, unknown>>
   ? D
   : never;
 
-export type ExtractError<T> = T extends (
+export type ExtractWriteError<T> = T extends (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ...args: any[]
 ) => Promise<EnlaceResponse<unknown, infer E>>
@@ -103,4 +103,4 @@ export type UseEnlaceWriteResult<TMethod> = {
   loading: boolean;
   fetching: boolean;
   abort: () => void;
-} & HookResponseState<ExtractData<TMethod>, ExtractError<TMethod>>;
+} & HookResponseState<ExtractWriteData<TMethod>, ExtractWriteError<TMethod>>;

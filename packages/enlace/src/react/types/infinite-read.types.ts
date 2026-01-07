@@ -114,8 +114,12 @@ export type UseEnlaceInfiniteReadResult<TData, TError, TItem> = {
   isOptimistic: boolean;
 };
 
-export type InfiniteReadFn<TSchema, TDefaultError = unknown> = (
-  api: ReadApiClient<TSchema, TDefaultError>
+export type InfiniteReadFn<
+  TSchema,
+  TDefaultError = unknown,
+  TOptionsMap = unknown,
+> = (
+  api: ReadApiClient<TSchema, TDefaultError, TOptionsMap>
 ) => Promise<EnlaceResponse<unknown, unknown, unknown>>;
 
 type InferData<T> =
@@ -143,7 +147,11 @@ type InferPartialRequest<T> =
     ? MakePartialRequest<PickOnlyRequestOptions<R>>
     : AnyInfiniteRequestOptions;
 
-export type UseInfiniteRead<TSchema, TDefaultError = unknown> = <
+export type UseInfiniteRead<
+  TSchema,
+  TDefaultError = unknown,
+  TOptionsMap = unknown,
+> = <
   TReturn extends Promise<EnlaceResponse<unknown, unknown, unknown>>,
   TData = InferData<TReturn>,
   TError = InferError<TReturn>,
@@ -151,6 +159,6 @@ export type UseInfiniteRead<TSchema, TDefaultError = unknown> = <
   TPartialRequest = InferPartialRequest<TReturn>,
   TItem = TData extends Array<infer U> ? U : TData,
 >(
-  readFn: (api: ReadApiClient<TSchema, TDefaultError>) => TReturn,
+  readFn: (api: ReadApiClient<TSchema, TDefaultError, TOptionsMap>) => TReturn,
   options: UseEnlaceInfiniteReadOptions<TData, TItem, TRequest, TPartialRequest>
 ) => UseEnlaceInfiniteReadResult<TData, TError, TItem>;

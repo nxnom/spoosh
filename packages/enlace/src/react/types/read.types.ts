@@ -23,7 +23,11 @@ export type UseEnlaceReadOptions<TData = unknown, TError = unknown> = {
   retryDelay?: number;
 };
 
-export type UseRead<TSchema, TDefaultError = unknown> = <TData, TError>(
-  readFn: ReadFn<TSchema, TData, TError, TDefaultError>,
+export type UseRead<
+  TSchema,
+  TDefaultError = unknown,
+  TOptionsMap = ReactOptionsMap,
+> = <TData, TError>(
+  readFn: ReadFn<TSchema, TData, TError, TDefaultError, TOptionsMap>,
   options?: UseEnlaceReadOptions<TData, TError>
 ) => UseEnlaceReadResult<TData, TError>;

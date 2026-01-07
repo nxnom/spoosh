@@ -9,11 +9,15 @@ export type WriteSelectorFn<
   TOptionsMap = ReactOptionsMap,
 > = (api: WriteApiClient<TSchema, TDefaultError, TOptionsMap>) => TMethod;
 
-export type UseWrite<TSchema, TDefaultError = unknown> = <
+export type UseWrite<
+  TSchema,
+  TDefaultError = unknown,
+  TOptionsMap = ReactOptionsMap,
+> = <
   TMethod extends (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...args: any[]
   ) => Promise<EnlaceResponse<unknown, unknown>>,
 >(
-  selectorFn: WriteSelectorFn<TSchema, TMethod, TDefaultError>
+  selectorFn: WriteSelectorFn<TSchema, TMethod, TDefaultError, TOptionsMap>
 ) => UseEnlaceWriteResult<TMethod>;

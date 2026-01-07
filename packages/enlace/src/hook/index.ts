@@ -1,7 +1,5 @@
 "use client";
 
-export { enlaceHookReact } from "../react/enlaceHookReact";
-export { enlaceHookNext } from "../next/enlaceHookNext";
+export { enlaceHookReact as enlaceHooks } from "../react/enlaceHookReact";
 export * from "../react/types";
-export type { NextEnlaceHooks, NextHookOptions } from "../next/types";
 export { invalidateTags } from "../react/revalidator";

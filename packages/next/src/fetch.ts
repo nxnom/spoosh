@@ -8,7 +8,7 @@ import {
   type EnlaceResponse,
   type HttpMethod,
 } from "enlace-core";
-import type { AnyReactRequestOptions } from "../react/types";
+import type { AnyReactRequestOptions } from "enlace";
 import type { NextOptions, NextRequestOptionsBase } from "./types";
 import { createNextFetchOptionsMiddleware } from "./middlewares/nextFetchOptions";
 import { createServerRevalidationMiddleware } from "./middlewares/serverRevalidation";

@@ -1,5 +1,5 @@
 import { useRef, useReducer, useEffect, useCallback } from "react";
-import type { EnlaceResponse } from "enlace-core";
+import { generateTags, type EnlaceResponse } from "enlace-core";
 import type {
   ApiClient,
   HookState,
@@ -9,7 +9,6 @@ import type {
 } from "../types";
 import type { AnyReactRequestOptions } from "../types";
 import { hookReducer } from "../reducer";
-import { generateTags } from "../../utils/generateTags";
 import { onRevalidate } from "../revalidator";
 import {
   createQueryKey,

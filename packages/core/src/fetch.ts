@@ -77,10 +77,11 @@ async function executeCoreFetch<TData, TError>(
   const {
     onSuccess,
     onError,
-    middlewares: _middlewares,
+    middlewares: _,
     headers: defaultHeaders,
     ...fetchDefaults
   } = defaultOptions;
+  void _;
 
   const maxRetries = requestOptions?.retry ?? 3;
   const baseDelay = requestOptions?.retryDelay ?? 1000;

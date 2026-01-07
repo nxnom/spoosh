@@ -1,3 +1,9 @@
 export * from "enlace-core";
-export { enlaceNext } from "./next";
-export type { NextOptions, NextRequestOptionsBase } from "./next/types";
+export {
+  enlaceHooks,
+  createHooksFactory,
+  invalidateTags,
+  clearCache,
+  cache,
+} from "./react";
+export * from "./react/types";

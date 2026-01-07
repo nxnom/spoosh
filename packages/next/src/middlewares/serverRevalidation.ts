@@ -1,5 +1,8 @@
-import { createMiddleware, type MiddlewareContext } from "enlace-core";
-import { generateTags } from "../../utils/generateTags";
+import {
+  createMiddleware,
+  generateTags,
+  type MiddlewareContext,
+} from "enlace-core";
 import type { ServerRevalidateHandler } from "../types";
 
 export type ServerRevalidationConfig = {
