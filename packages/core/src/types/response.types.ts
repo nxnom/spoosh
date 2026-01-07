@@ -1,3 +1,5 @@
+import type { EnlaceMiddleware } from "./middleware.types";
+
 export type EnlaceResponse<TData, TError, TRequestOptions = unknown> =
   | {
       status: number;
@@ -28,9 +30,10 @@ export type EnlaceErrorCallbackPayload<T> = {
   headers?: Headers;
 };
 
-export type EnlaceCallbacks = {
+export type EnlaceCallbacks<TData = unknown, TError = unknown> = {
   onSuccess?: ((payload: EnlaceCallbackPayload<unknown>) => void) | undefined;
   onError?:
     | ((payload: EnlaceErrorCallbackPayload<unknown>) => void)
     | undefined;
+  middlewares?: EnlaceMiddleware<TData, TError>[];
 };

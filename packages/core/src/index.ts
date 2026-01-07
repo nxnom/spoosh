@@ -23,4 +23,9 @@ export function enlace<TSchema = unknown, TDefaultError = unknown>(
 export * from "./types";
 export * from "./utils";
 export { createProxyHandler } from "./proxy";
-export { executeFetch } from "./fetch";
+export { executeFetch, type ExecuteFetchOptions } from "./fetch";
+export {
+  createMiddleware,
+  applyMiddlewares,
+  composeMiddlewares,
+} from "./middleware";

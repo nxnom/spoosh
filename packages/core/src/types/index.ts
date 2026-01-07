@@ -5,3 +5,4 @@ export * from "./endpoint.types";
 export * from "./optimistic.types";
 export * from "./client.types";
 export * from "./filtered-client.types";
+export * from "./middleware.types";

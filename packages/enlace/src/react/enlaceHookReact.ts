@@ -55,6 +55,7 @@ export function enlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
     staleTime = 0,
     onSuccess,
     onError,
+    middlewares,
     retry,
     retryDelay,
   } = hookOptions;
@@ -62,6 +63,7 @@ export function enlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
   const api = enlace<TSchema, TDefaultError>(baseUrl, defaultOptions, {
     onSuccess,
     onError,
+    middlewares,
   });
 
   function useRead<TData, TError>(

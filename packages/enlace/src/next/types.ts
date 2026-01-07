@@ -1,6 +1,7 @@
 export { type EnlaceOptions, type EnlaceCallbacks } from "enlace-core";
 import type {
   EnlaceCallbacks,
+  EnlaceMiddleware,
   EnlaceResponse,
   MethodOptionsMap,
   MutationOnlyClient,
@@ -27,10 +28,14 @@ export type NextOptions = Pick<
   EnlaceCallbacks & {
     serverRevalidator?: ServerRevalidateHandler;
     skipServerRevalidation?: boolean;
+    middlewares?: EnlaceMiddleware[];
   };
 
 export type NextHookOptions = EnlaceHookOptions &
-  Pick<NextOptions, "serverRevalidator" | "skipServerRevalidation">;
+  Pick<
+    NextOptions,
+    "serverRevalidator" | "skipServerRevalidation" | "middlewares"
+  >;
 
 export type NextQueryRequestOptions = QueryRequestOptions & {
   revalidate?: number | false;

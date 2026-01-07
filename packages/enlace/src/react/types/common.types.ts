@@ -1,7 +1,6 @@
 import type {
-  EnlaceCallbackPayload,
+  EnlaceCallbacks,
   EnlaceClient,
-  EnlaceErrorCallbackPayload,
   EnlaceResponse,
   MutationOnlyClient,
   QueryOnlyClient,
@@ -47,12 +46,10 @@ export type PollingInterval<TData = unknown, TError = unknown> =
   | PollingIntervalValue
   | PollingIntervalFn<TData, TError>;
 
-export type EnlaceHookOptions = {
+export type EnlaceHookOptions = EnlaceCallbacks & {
   autoGenerateTags?: boolean;
   autoRevalidateTags?: boolean;
   staleTime?: number;
-  onSuccess?: (payload: EnlaceCallbackPayload<unknown>) => void;
-  onError?: (payload: EnlaceErrorCallbackPayload<unknown>) => void;
 } & RetryConfig;
 
 export type HookState = {

@@ -1,10 +1,13 @@
+import { applyMiddlewares } from "./middleware";
 import { buildUrl, isJsonBody, mergeHeaders, objectToFormData } from "./utils";
 import type {
   AnyRequestOptions,
   EnlaceCallbacks,
+  EnlaceMiddleware,
   EnlaceOptions,
   EnlaceResponse,
   HttpMethod,
+  MiddlewareContext,
 } from "./types";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -14,16 +17,67 @@ const isNetworkError = (err: unknown): boolean => err instanceof TypeError;
 const isAbortError = (err: unknown): boolean =>
   err instanceof DOMException && err.name === "AbortError";
 
+export type ExecuteFetchOptions<TData = unknown, TError = unknown> = {
+  middlewares?: EnlaceMiddleware<TData, TError>[];
+};
+
 export async function executeFetch<TData, TError>(
   baseUrl: string,
   path: string[],
   method: HttpMethod,
   defaultOptions: EnlaceOptions & EnlaceCallbacks,
-  requestOptions?: AnyRequestOptions
+  requestOptions?: AnyRequestOptions,
+  fetchOptions?: ExecuteFetchOptions<TData, TError>
+): Promise<EnlaceResponse<TData, TError>> {
+  const optionsMiddlewares = (defaultOptions.middlewares ??
+    []) as EnlaceMiddleware<TData, TError>[];
+  const explicitMiddlewares = fetchOptions?.middlewares ?? [];
+  const middlewares =
+    explicitMiddlewares.length > 0 ? explicitMiddlewares : optionsMiddlewares;
+
+  let context: MiddlewareContext<TData, TError> = {
+    baseUrl,
+    path,
+    method,
+    defaultOptions,
+    requestOptions,
+    metadata: {},
+  };
+
+  if (middlewares.length > 0) {
+    context = await applyMiddlewares(context, middlewares, "before");
+  }
+
+  const response = await executeCoreFetch<TData, TError>(
+    context.baseUrl,
+    context.path,
+    context.method,
+    context.defaultOptions,
+    context.requestOptions,
+    context.fetchInit
+  );
+
+  context.response = response;
+
+  if (middlewares.length > 0) {
+    context = await applyMiddlewares(context, middlewares, "after");
+  }
+
+  return context.response!;
+}
+
+async function executeCoreFetch<TData, TError>(
+  baseUrl: string,
+  path: string[],
+  method: HttpMethod,
+  defaultOptions: EnlaceOptions & EnlaceCallbacks,
+  requestOptions?: AnyRequestOptions,
+  middlewareFetchInit?: RequestInit
 ): Promise<EnlaceResponse<TData, TError>> {
   const {
     onSuccess,
     onError,
+    middlewares: _middlewares,
     headers: defaultHeaders,
     ...fetchDefaults
   } = defaultOptions;
@@ -36,33 +90,38 @@ export async function executeFetch<TData, TError>(
 
   let headers = await mergeHeaders(defaultHeaders, requestOptions?.headers);
 
-  const fetchOptions: RequestInit = { ...fetchDefaults, method };
+  const fetchInit: RequestInit = {
+    ...fetchDefaults,
+    ...middlewareFetchInit,
+    method,
+  };
 
   if (headers) {
-    fetchOptions.headers = headers;
+    fetchInit.headers = headers;
   }
 
-  fetchOptions.cache = requestOptions?.cache ?? fetchDefaults?.cache;
+  fetchInit.cache = requestOptions?.cache ?? fetchDefaults?.cache;
 
   if (requestOptions?.signal) {
-    fetchOptions.signal = requestOptions.signal;
+    fetchInit.signal = requestOptions.signal;
   }
 
   if (requestOptions?.formData !== undefined) {
-    fetchOptions.body = objectToFormData(
+    fetchInit.body = objectToFormData(
       requestOptions.formData as Record<string, unknown>
     );
   } else if (requestOptions?.body !== undefined) {
     if (isJsonBody(requestOptions.body)) {
-      fetchOptions.body = JSON.stringify(requestOptions.body);
+      fetchInit.body = JSON.stringify(requestOptions.body);
       headers = await mergeHeaders(headers, {
         "Content-Type": "application/json",
       });
+
       if (headers) {
-        fetchOptions.headers = headers;
+        fetchInit.headers = headers;
       }
     } else {
-      fetchOptions.body = requestOptions.body as BodyInit;
+      fetchInit.body = requestOptions.body as BodyInit;
     }
   }
 
@@ -70,7 +129,7 @@ export async function executeFetch<TData, TError>(
 
   for (let attempt = 0; attempt <= retryCount; attempt++) {
     try {
-      const res = await fetch(url, fetchOptions);
+      const res = await fetch(url, fetchInit);
       const status = res.status;
       const resHeaders = res.headers;
 

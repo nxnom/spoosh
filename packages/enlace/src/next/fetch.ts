@@ -1,17 +1,17 @@
 import {
   executeFetch,
+  composeMiddlewares,
   type AnyRequestOptions,
-  type EnlaceCallbackPayload,
   type EnlaceCallbacks,
+  type EnlaceMiddleware,
   type EnlaceOptions,
   type EnlaceResponse,
   type HttpMethod,
 } from "enlace-core";
 import type { AnyReactRequestOptions } from "../react/types";
 import type { NextOptions, NextRequestOptionsBase } from "./types";
-import { generateTags } from "../utils/generateTags";
-
-type NextFetchOptions = Pick<NextRequestOptionsBase, "tags" | "revalidate">;
+import { createNextFetchOptionsMiddleware } from "./middlewares/nextFetchOptions";
+import { createServerRevalidationMiddleware } from "./middlewares/serverRevalidation";
 
 type CombinedOptions = EnlaceOptions & NextOptions & EnlaceCallbacks;
 
@@ -31,61 +31,32 @@ export async function executeNextFetch<TData, TError>(
     autoRevalidateTags = true,
     skipServerRevalidation = false,
     serverRevalidator,
-    onSuccess,
+    middlewares: userMiddlewares,
     ...coreOptions
   } = combinedOptions;
 
-  const isGet = method === "GET";
-  const autoTags = generateTags(path);
+  const internalMiddlewares = [
+    createNextFetchOptionsMiddleware({
+      autoGenerateTags,
+    }),
+    createServerRevalidationMiddleware({
+      serverRevalidator,
+      skipServerRevalidation,
+      autoRevalidateTags,
+    }),
+  ] as EnlaceMiddleware<TData, TError>[];
 
-  const nextOnSuccess = (payload: EnlaceCallbackPayload<unknown>) => {
-    if (!isGet) {
-      const shouldRevalidateServer =
-        requestOptions?.serverRevalidate ?? !skipServerRevalidation;
-
-      if (shouldRevalidateServer) {
-        const baseRevalidateTags =
-          requestOptions?.revalidateTags ??
-          (autoRevalidateTags ? autoTags : []);
-        const revalidateTags = [
-          ...baseRevalidateTags,
-          ...(requestOptions?.additionalRevalidateTags ?? []),
-        ];
-        const revalidatePaths = requestOptions?.revalidatePaths ?? [];
-
-        if (revalidateTags.length || revalidatePaths.length) {
-          serverRevalidator?.(revalidateTags, revalidatePaths);
-        }
-      }
-    }
-    onSuccess?.(payload);
-  };
-
-  const nextRequestOptions: AnyRequestOptions & {
-    next?: NextFetchOptions;
-  } = { ...requestOptions };
-
-  if (isGet) {
-    const tags =
-      requestOptions?.tags ?? (autoGenerateTags ? autoTags : undefined);
-    const nextFetchOptions: NextFetchOptions = {};
-
-    if (tags) {
-      nextFetchOptions.tags = tags;
-    }
-
-    if (requestOptions?.revalidate !== undefined) {
-      nextFetchOptions.revalidate = requestOptions.revalidate;
-    }
-
-    nextRequestOptions.next = nextFetchOptions;
-  }
+  const middlewares = composeMiddlewares<TData, TError>(
+    internalMiddlewares,
+    userMiddlewares as EnlaceMiddleware<TData, TError>[] | undefined
+  );
 
   return executeFetch<TData, TError>(
     baseUrl,
     path,
     method,
-    { ...coreOptions, onSuccess: nextOnSuccess },
-    nextRequestOptions
+    coreOptions,
+    requestOptions,
+    { middlewares }
   );
 }
