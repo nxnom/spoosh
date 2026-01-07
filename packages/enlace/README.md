@@ -463,6 +463,195 @@ trigger({
 // → PATCH /products/123 with body
 ```
 
+### useInfiniteRead (Pagination)
+
+For paginated data with infinite scroll or load-more patterns:
+
+```typescript
+function PostFeed() {
+  const {
+    data,           // Merged items from all pages
+    allResponses,   // Raw responses array
+    loading,
+    fetchingNext,
+    canFetchNext,
+    fetchNext,
+    refetch,
+    error,
+  } = useInfiniteRead(
+    (api) => api.posts.$get({ query: { limit: 20 } }),
+    {
+      canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
+      nextPageRequest: ({ response }) => ({
+        query: { cursor: response?.meta.nextCursor },
+      }),
+      merger: (allResponses) => allResponses.flatMap((r) => r.items),
+    }
+  );
+
+  return (
+    <div>
+      {data?.map((post) => <PostCard key={post.id} post={post} />)}
+      {canFetchNext && (
+        <button onClick={fetchNext} disabled={fetchingNext}>
+          {fetchingNext ? "Loading..." : "Load More"}
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+**Required Options:**
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `canFetchNext` | `({ response, allResponses, request }) => boolean` | Determines if more data is available |
+| `nextPageRequest` | `({ response, allResponses, request }) => RequestOverride` | Returns request options for next page (merged with initial) |
+| `merger` | `(allResponses) => TItem[]` | Combines all responses into a single array |
+
+**Optional Options:**
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `canFetchPrev` | `({ response, allResponses, request }) => boolean` | For bi-directional pagination |
+| `prevPageRequest` | `({ response, allResponses, request }) => RequestOverride` | Request options for previous page |
+| `enabled` | `boolean` | Skip fetching when false (default: true) |
+| `retry` | `number \| false` | Retry failed requests |
+| `retryDelay` | `number` | Delay between retries |
+
+#### Pagination Patterns
+
+**Cursor-based (recommended):**
+
+```typescript
+useInfiniteRead(
+  (api) => api.posts.$get({ query: { limit: 20 } }),
+  {
+    canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
+    nextPageRequest: ({ response }) => ({
+      query: { cursor: response?.meta.nextCursor },
+    }),
+    merger: (allResponses) => allResponses.flatMap((r) => r.items),
+  }
+);
+```
+
+**Page-based:**
+
+```typescript
+useInfiniteRead(
+  (api) => api.posts.$get({ query: { page: 1, limit: 20 } }),
+  {
+    canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
+    nextPageRequest: ({ response }) => ({
+      query: { page: response?.meta.nextPage },
+    }),
+    merger: (allResponses) => allResponses.flatMap((r) => r.items),
+  }
+);
+```
+
+**Offset-based:**
+
+```typescript
+useInfiniteRead(
+  (api) => api.posts.$get({ query: { offset: 0, limit: 20 } }),
+  {
+    canFetchNext: ({ response, allResponses }) => {
+      const loaded = allResponses.reduce((sum, r) => sum + r.items.length, 0);
+      return loaded < response?.total;
+    },
+    nextPageRequest: ({ request }) => ({
+      query: { offset: (request.query?.offset ?? 0) + 20 },
+    }),
+    merger: (allResponses) => allResponses.flatMap((r) => r.items),
+  }
+);
+```
+
+**Bi-directional (chat-style):**
+
+```typescript
+useInfiniteRead(
+  (api) => api.messages.$get({ query: { around: messageId, limit: 20 } }),
+  {
+    canFetchNext: ({ response }) => response?.hasNewer ?? false,
+    nextPageRequest: ({ response }) => ({
+      query: { after: response?.items.at(-1)?.id },
+    }),
+    canFetchPrev: ({ response }) => response?.hasOlder ?? false,
+    prevPageRequest: ({ response }) => ({
+      query: { before: response?.items.at(0)?.id },
+    }),
+    merger: (allResponses) => allResponses.flatMap((r) => r.items),
+  }
+);
+```
+
+**With path parameters:**
+
+```typescript
+useInfiniteRead(
+  (api) => api.users[":userId"].posts.$get({
+    params: { userId: "123" },
+    query: { limit: 10 }
+  }),
+  {
+    canFetchNext: ({ response }) => response?.hasMore ?? false,
+    nextPageRequest: ({ response }) => ({
+      query: { cursor: response?.nextCursor },
+    }),
+    merger: (allResponses) => allResponses.flatMap((r) => r.items),
+  }
+);
+```
+
+#### Infinite Scroll Integration
+
+```typescript
+function InfinitePostList() {
+  const loaderRef = useRef<HTMLDivElement>(null);
+  const { data, canFetchNext, fetchingNext, fetchNext } = useInfiniteRead(
+    (api) => api.posts.$get({ query: { limit: 20 } }),
+    {
+      canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
+      nextPageRequest: ({ response }) => ({
+        query: { cursor: response?.meta.nextCursor },
+      }),
+      merger: (allResponses) => allResponses.flatMap((r) => r.items),
+    }
+  );
+
+  useEffect(() => {
+    const loader = loaderRef.current;
+    if (!loader) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && canFetchNext && !fetchingNext) {
+          fetchNext();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(loader);
+    return () => observer.disconnect();
+  }, [canFetchNext, fetchingNext, fetchNext]);
+
+  return (
+    <div>
+      {data?.map((post) => <PostCard key={post.id} post={post} />)}
+      <div ref={loaderRef}>
+        {fetchingNext && <Spinner />}
+        {!canFetchNext && data?.length > 0 && <p>No more posts</p>}
+      </div>
+    </div>
+  );
+}
+```
+
 ### Optimistic Updates
 
 Update the UI instantly before the server responds, with automatic rollback on error:
@@ -895,6 +1084,38 @@ type UseEnlaceWriteResult<TMethod> = {
   data: TData | undefined;
   error: TError | undefined;
   abort: () => void; // Cancel in-flight request
+};
+```
+
+### useInfiniteRead
+
+```typescript
+type UseEnlaceInfiniteReadResult<TData, TError, TItem> = {
+  data: TItem[] | undefined;         // Merged data from merger()
+  allResponses: TData[] | undefined; // Raw responses array
+  loading: boolean;                  // Initial load in progress
+  fetching: boolean;                 // Any fetch in progress
+  fetchingNext: boolean;             // Fetching next page
+  fetchingPrev: boolean;             // Fetching previous page
+  canFetchNext: boolean;             // More pages available (forward)
+  canFetchPrev: boolean;             // More pages available (backward)
+  fetchNext: () => Promise<void>;    // Load next page
+  fetchPrev: () => Promise<void>;    // Load previous page
+  refetch: () => Promise<void>;      // Clear and reload from start
+  abort: () => void;                 // Cancel in-flight request
+  error: TError | undefined;
+  isOptimistic: boolean;
+};
+
+type UseEnlaceInfiniteReadOptions<TData, TItem, TRequest> = {
+  canFetchNext: (ctx: { response: TData; allResponses: TData[]; request: TRequest }) => boolean;
+  nextPageRequest: (ctx: { response: TData; allResponses: TData[]; request: TRequest }) => Partial<TRequest>;
+  merger: (allResponses: TData[]) => TItem[];
+  canFetchPrev?: (ctx: { response: TData; allResponses: TData[]; request: TRequest }) => boolean;
+  prevPageRequest?: (ctx: { response: TData; allResponses: TData[]; request: TRequest }) => Partial<TRequest>;
+  enabled?: boolean;
+  retry?: number | false;
+  retryDelay?: number;
 };
 ```
 
