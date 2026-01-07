@@ -10,13 +10,15 @@ export type { ResolvedCacheConfig };
  * trigger({
  *   optimistic: (cache, api) => cache({
  *     for: api.posts.$get,
+ *     match: (request) => request.query?.page === 1,
+ *     //                  ^^^^^^^ properly typed based on endpoint
  *     updater: (posts) => posts.filter(p => p.id !== deletedId),
  *     //        ^^^^^ properly typed as Post[]
  *   })
  * })
  */
-export function cache<TData, TResponse = unknown>(
-  config: CacheConfig<TData, TResponse>
+export function cache<TData, TResponse = unknown, TRequest = unknown>(
+  config: CacheConfig<TData, TResponse, TRequest>
 ): ResolvedCacheConfig {
   return config as ResolvedCacheConfig;
 }

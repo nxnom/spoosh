@@ -149,7 +149,7 @@ export function useWriteImpl<
           tags.forEach((t) => immediateTagsSet.add(t));
         }
 
-        const keys = setCacheOptimistic(tags, cfg.updater);
+        const keys = setCacheOptimistic(tags, cfg.updater, cfg.match);
         affectedKeysByConfig.set(cfg, keys);
       }
 
@@ -210,7 +210,7 @@ export function useWriteImpl<
             tags.forEach((t) => immediateTagsSet.add(t));
           }
 
-          updateCacheByTags(tags, cfg.updater, res.data);
+          updateCacheByTags(tags, cfg.updater, res.data, cfg.match);
         }
 
         const tagsToInvalidate =

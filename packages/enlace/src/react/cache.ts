@@ -5,6 +5,28 @@ function getExactPath(tags: string[]): string | undefined {
   return tags.length > 0 ? tags[tags.length - 1] : undefined;
 }
 
+type ParsedRequest = {
+  query?: Record<string, unknown>;
+  params?: Record<string, unknown>;
+  body?: unknown;
+};
+
+function parseRequestFromKey(key: string): ParsedRequest | undefined {
+  try {
+    const parsed = JSON.parse(key) as {
+      options?: { query?: unknown; params?: unknown; body?: unknown };
+    };
+
+    return {
+      query: parsed.options?.query as Record<string, unknown> | undefined,
+      params: parsed.options?.params as Record<string, unknown> | undefined,
+      body: parsed.options?.body,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 export type CacheEntry<TData = unknown, TError = unknown> = {
   data: TData | undefined;
   error: TError | undefined;
@@ -124,7 +146,8 @@ export function getCacheByTags<TData>(
 
 export function setCacheOptimistic<TData>(
   tags: string[],
-  updater: (data: TData) => TData
+  updater: (data: TData) => TData,
+  match?: (request: ParsedRequest) => boolean
 ): string[] {
   const affectedKeys: string[] = [];
   const targetExactPath = getExactPath(tags);
@@ -135,6 +158,11 @@ export function setCacheOptimistic<TData>(
 
   cache.forEach((entry, key) => {
     if (key.includes('"type":"infinite-tracker"')) return;
+
+    if (match) {
+      const request = parseRequestFromKey(key);
+      if (!request || !match(request)) return;
+    }
 
     const entryExactPath = getExactPath(entry.tags);
     const isExactMatch = entryExactPath === targetExactPath;
@@ -178,7 +206,8 @@ export function rollbackOptimistic(keys: string[]): void {
 export function updateCacheByTags<TData, TResponse>(
   tags: string[],
   updater: (data: TData, response: TResponse) => TData,
-  response: TResponse
+  response: TResponse,
+  match?: (request: ParsedRequest) => boolean
 ): void {
   const targetExactPath = getExactPath(tags);
 
@@ -188,6 +217,11 @@ export function updateCacheByTags<TData, TResponse>(
 
   cache.forEach((entry, key) => {
     if (key.includes('"type":"infinite-tracker"')) return;
+
+    if (match) {
+      const request = parseRequestFromKey(key);
+      if (!request || !match(request)) return;
+    }
 
     const entryExactPath = getExactPath(entry.tags);
     const isExactMatch = entryExactPath === targetExactPath;
