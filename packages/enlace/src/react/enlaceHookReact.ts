@@ -3,39 +3,39 @@ import type {
   ApiClient,
   EnlaceHookOptions,
   EnlaceHooks,
-  QueryFn,
-  SelectorFn,
-  UseEnlaceQueryOptions,
-  UseEnlaceQueryResult,
-  UseEnlaceSelectorResult,
-  InfiniteQueryFn,
-  UseEnlaceInfiniteQueryOptions,
-  UseEnlaceInfiniteQueryResult,
+  ReadFn,
+  WriteSelectorFn,
+  UseEnlaceReadOptions,
+  UseEnlaceReadResult,
+  UseEnlaceWriteResult,
+  InfiniteReadFn,
+  UseEnlaceInfiniteReadOptions,
+  UseEnlaceInfiniteReadResult,
 } from "./types";
-import { useAPIQueryImpl, type QueryModeOptions } from "./hooks/useAPIQuery";
-import { useAPIMutationImpl } from "./hooks/useAPIMutation";
+import { useReadImpl, type ReadModeOptions } from "./hooks/useRead";
+import { useWriteImpl } from "./hooks/useWrite";
 import {
-  useAPIInfiniteQueryImpl,
-  type InfiniteQueryModeOptions,
-} from "./hooks/useAPIInfiniteQuery";
+  useInfiniteReadImpl,
+  type InfiniteReadModeOptions,
+} from "./hooks/useInfiniteRead";
 import { createTrackingProxy, type TrackingResult } from "./trackingProxy";
 
 /**
  * Creates React hooks for making API calls.
- * Returns { useQuery, useMutation, useInfiniteQuery }.
+ * Returns { useRead, useWrite, useInfiniteRead }.
  *
  * @example
- * const { useQuery, useMutation, useInfiniteQuery } = enlaceHookReact<ApiSchema>('https://api.com');
+ * const { useRead, useWrite, useInfiniteRead } = enlaceHookReact<ApiSchema>('https://api.com');
  *
- * // Query - auto-fetch GET requests
- * const { loading, data, error } = useQuery((api) => api.posts.$get({ query: { userId } }));
+ * // Read - auto-fetch GET requests
+ * const { loading, data, error } = useRead((api) => api.posts.$get({ query: { userId } }));
  *
- * // Mutation - trigger-based mutations
- * const { trigger, loading } = useMutation((api) => api.posts.$delete);
+ * // Write - trigger-based mutations
+ * const { trigger, loading } = useWrite((api) => api.posts.$delete);
  * onClick={() => trigger({ body: { id: 1 } })}
  *
- * // Infinite Query - paginated data with fetchNext/fetchPrev
- * const { data, fetchNext, canFetchNext } = useInfiniteQuery(
+ * // Infinite Read - paginated data with fetchNext/fetchPrev
+ * const { data, fetchNext, canFetchNext } = useInfiniteRead(
  *   (api) => api.posts.$get({ query: { limit: 10 } }),
  *   {
  *     canFetchNext: ({ response }) => response?.hasMore ?? false,
@@ -64,10 +64,10 @@ export function enlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
     onError,
   });
 
-  function useQuery<TData, TError>(
-    queryFn: QueryFn<TSchema, TData, TError, TDefaultError>,
-    queryOptions?: UseEnlaceQueryOptions<TData, TError>
-  ): UseEnlaceQueryResult<TData, TError> {
+  function useRead<TData, TError>(
+    readFn: ReadFn<TSchema, TData, TError, TDefaultError>,
+    readOptions?: UseEnlaceReadOptions<TData, TError>
+  ): UseEnlaceReadResult<TData, TError> {
     let trackingResult: TrackingResult = {
       trackedCall: null,
       selectorPath: null,
@@ -78,41 +78,41 @@ export function enlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
       trackingResult = result;
     });
 
-    (queryFn as (api: ApiClient<TSchema, TDefaultError>) => unknown)(
+    (readFn as (api: ApiClient<TSchema, TDefaultError>) => unknown)(
       trackingProxy as ApiClient<TSchema, TDefaultError>
     );
 
     if (!trackingResult.trackedCall) {
       throw new Error(
-        "useQuery requires calling an HTTP method ($get). " +
-          "Example: useQuery((api) => api.posts.$get())"
+        "useRead requires calling an HTTP method ($get). " +
+          "Example: useRead((api) => api.posts.$get())"
       );
     }
 
-    const options: QueryModeOptions<TData, TError> = {
+    const options: ReadModeOptions<TData, TError> = {
       autoGenerateTags,
       staleTime,
-      enabled: queryOptions?.enabled ?? true,
-      pollingInterval: queryOptions?.pollingInterval,
-      retry: queryOptions?.retry ?? retry,
-      retryDelay: queryOptions?.retryDelay ?? retryDelay,
+      enabled: readOptions?.enabled ?? true,
+      pollingInterval: readOptions?.pollingInterval,
+      retry: readOptions?.retry ?? retry,
+      retryDelay: readOptions?.retryDelay ?? retryDelay,
     };
 
-    return useAPIQueryImpl<TSchema, TData, TError>(
+    return useReadImpl<TSchema, TData, TError>(
       api as ApiClient<TSchema, TDefaultError>,
       trackingResult.trackedCall,
       options
     );
   }
 
-  function useMutation<
+  function useWrite<
     TMethod extends (
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...args: any[]
     ) => Promise<EnlaceResponse<unknown, unknown>>,
   >(
-    selectorFn: SelectorFn<TSchema, TMethod, TDefaultError>
-  ): UseEnlaceSelectorResult<TMethod> {
+    selectorFn: WriteSelectorFn<TSchema, TMethod, TDefaultError>
+  ): UseEnlaceWriteResult<TMethod> {
     let trackingResult: TrackingResult = {
       trackedCall: null,
       selectorPath: null,
@@ -131,7 +131,7 @@ export function enlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
       selectorFn as (api: ApiClient<TSchema, TDefaultError>) => unknown
     )(api as ApiClient<TSchema, TDefaultError>);
 
-    return useAPIMutationImpl<TMethod>({
+    return useWriteImpl<TMethod>({
       method: actualMethod as (
         ...args: unknown[]
       ) => Promise<EnlaceResponse<unknown, unknown>>,
@@ -144,15 +144,15 @@ export function enlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
     });
   }
 
-  function useInfiniteQuery<
+  function useInfiniteRead<
     TData,
     TError,
     TItem = TData extends Array<infer U> ? U : TData,
     TRequest = unknown,
   >(
-    queryFn: InfiniteQueryFn<TSchema, TDefaultError>,
-    queryOptions: UseEnlaceInfiniteQueryOptions<TData, TItem, TRequest>
-  ): UseEnlaceInfiniteQueryResult<TData, TError, TItem> {
+    readFn: InfiniteReadFn<TSchema, TDefaultError>,
+    readOptions: UseEnlaceInfiniteReadOptions<TData, TItem, TRequest>
+  ): UseEnlaceInfiniteReadResult<TData, TError, TItem> {
     let trackingResult: TrackingResult = {
       trackedCall: null,
       selectorPath: null,
@@ -163,36 +163,36 @@ export function enlaceHookReact<TSchema = unknown, TDefaultError = unknown>(
       trackingResult = result;
     });
 
-    (queryFn as (api: ApiClient<TSchema, TDefaultError>) => unknown)(
+    (readFn as (api: ApiClient<TSchema, TDefaultError>) => unknown)(
       trackingProxy as ApiClient<TSchema, TDefaultError>
     );
 
     if (!trackingResult.trackedCall) {
       throw new Error(
-        "useInfiniteQuery requires calling an HTTP method ($get, $post, etc). " +
-          "Example: useInfiniteQuery((api) => api.posts.$get({ query: { limit: 10 } }), options)"
+        "useInfiniteRead requires calling an HTTP method ($get, $post, etc). " +
+          "Example: useInfiniteRead((api) => api.posts.$get({ query: { limit: 10 } }), options)"
       );
     }
 
     const options = {
       autoGenerateTags,
       staleTime,
-      ...queryOptions,
-      enabled: queryOptions.enabled ?? true,
-      retry: queryOptions.retry ?? retry,
-      retryDelay: queryOptions.retryDelay ?? retryDelay,
+      ...readOptions,
+      enabled: readOptions.enabled ?? true,
+      retry: readOptions.retry ?? retry,
+      retryDelay: readOptions.retryDelay ?? retryDelay,
     };
 
-    return useAPIInfiniteQueryImpl<TSchema, TData, TError, TItem>(
+    return useInfiniteReadImpl<TSchema, TData, TError, TItem>(
       api as ApiClient<TSchema, TDefaultError>,
       trackingResult.trackedCall,
-      options as unknown as InfiniteQueryModeOptions<TData, TItem>
+      options as unknown as InfiniteReadModeOptions<TData, TItem>
     );
   }
 
   return {
-    useQuery,
-    useMutation,
-    useInfiniteQuery,
+    useRead,
+    useWrite,
+    useInfiniteRead,
   } as EnlaceHooks<TSchema, TDefaultError>;
 }

@@ -2,14 +2,31 @@
 
 > **Enlace** (Spanish: /enˈla.se/) — *link, connection, bond*
 
-A type-safe API client for React and Next.js with built-in caching and automatic revalidation.
+The missing link between your API schema and your UI.
 
-## Features
+## Philosophy
 
-- **Type-Safe** — Full TypeScript support with schema-driven API clients
-- **Proxy-Based API** — Fluent interface: `api.users[id].posts.$get()`
-- **React Hooks** — SWR-style caching with automatic dependency tracking
-- **Next.js Integration** — ISR, cache tags, and server-side revalidation
+APIs are structured. Your code should reflect that structure.
+
+Enlace takes a different approach to data fetching. Instead of treating API calls as disconnected fetch operations, Enlace models your entire API as a navigable type-safe object. Your API paths become your code paths.
+
+```typescript
+// Your API structure IS your code structure
+api.users[userId].posts.$get()
+api.teams[teamId].members[memberId].$delete()
+```
+
+No route strings. No path templates. No runtime typos. Just types, all the way down.
+
+## Core Ideas
+
+**Schema-First** — Define your API shape once. TypeScript infers the rest.
+
+**Proxy Navigation** — Navigate your API like a file system. Paths are validated at compile time.
+
+**Zero Configuration Caching** — Cache tags are derived from URL structure automatically. `GET /posts/123` caches under `['posts', 'posts/123']`. Mutations to `/posts` invalidate what they should.
+
+**Framework Native** — First-class React hooks. Native Next.js cache integration with ISR and server revalidation.
 
 ## Packages
 
@@ -20,70 +37,101 @@ A type-safe API client for React and Next.js with built-in caching and automatic
 | [`enlace-openapi`](./packages/openapi) | Generate OpenAPI specs from TypeScript schema |
 | [`enlace-hono`](./packages/hono) | Type adapter for Hono framework |
 
-## Quick Start
+## Installation
 
 ```bash
-# For React projects
+# For React / Next.js projects
 npm install enlace
 
 # For vanilla JS/TS (no React)
 npm install enlace-core
 ```
 
-### Basic Usage
+## Usage
+
+### Define Your Schema
 
 ```typescript
-import { enlaceHookReact } from "enlace/hook";
 import { Endpoint } from "enlace";
 
-// Define your API error type
 type ApiError = { message: string; code: number };
 
-// Define your API schema (simplified syntax!)
 type ApiSchema = {
   posts: {
-    $get: Post[];                                   // Simple: just data type
-    $post: Endpoint<Post, CreatePost>;              // Data + Body
-    $put: Endpoint<Post, UpdatePost, CustomError>;  // Data + Body + Custom Error
+    $get: Post[];                                   // GET /posts → Post[]
+    $post: Endpoint<Post, CreatePost>;              // POST /posts
     _: {
-      $get: Post;                                   // Simple: just data type
-      $delete: void;                                // void response
+      $get: Post;                                   // GET /posts/:id → Post
+      $put: Endpoint<Post, UpdatePost>;             // PUT /posts/:id
+      $delete: void;                                // DELETE /posts/:id
+    };
+  };
+  users: {
+    _: {
+      $get: User;
+      posts: {
+        $get: Post[];                               // GET /users/:id/posts
+      };
     };
   };
 };
+```
 
-// Create a hook with global error type
+### Create Your Hook
+
+```typescript
+import { enlaceHookReact } from "enlace/hook";
+
 const useAPI = enlaceHookReact<ApiSchema, ApiError>("https://api.example.com");
+```
 
-// Use in components
-function Posts() {
-  const { data, loading, error } = useAPI((api) => api.posts.$get());
+### Read Data
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+```typescript
+function PostList() {
+  const { data, isLoading, error } = useAPI((api) => api.posts.$get());
 
-  return <ul>{data.map((post) => <li key={post.id}>{post.title}</li>)}</ul>;
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>{error.message}</div>;
+
+  return (
+    <ul>
+      {data.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  );
 }
 ```
 
-### Automatic Cache Tags
-
-**Tags are automatically generated from URL paths** — no manual configuration needed:
+### Write Data
 
 ```typescript
-// GET /posts → tags: ['posts']
-// GET /posts/123 → tags: ['posts', 'posts/123']
-// POST /posts → auto-revalidates 'posts' tag
+function CreatePost() {
+  const { trigger, isMutating } = useAPI((api) => api.posts.$post);
 
-// Queries automatically use generated tags for caching
-const { data } = useAPI((api) => api.posts[123].$get());
+  const handleSubmit = async (title: string) => {
+    await trigger({ body: { title } });
+    // Cache for 'posts' is automatically invalidated
+  };
 
-// Mutations automatically revalidate matching tags
-const { trigger } = useAPI((api) => api.posts.$post);
-trigger({ body: { title: "New" } }); // Auto-revalidates 'posts'
+  return <button onClick={() => handleSubmit("New Post")} disabled={isMutating}>Create</button>;
+}
 ```
 
-### Next.js with Server Revalidation
+### Dynamic Routes
+
+```typescript
+function UserPosts({ userId }: { userId: string }) {
+  // GET /users/:userId/posts
+  const { data } = useAPI((api) => api.users[userId].posts.$get());
+
+  // Cache tags: ['users', 'users/:userId', 'users/:userId/posts']
+  return <PostList posts={data} />;
+}
+```
+
+### Next.js Server Revalidation
 
 ```typescript
 // actions.ts
@@ -110,10 +158,10 @@ const useAPI = enlaceHookNext<ApiSchema, ApiError>("https://api.example.com", {}
 
 ## Documentation
 
-- [enlace-core](./packages/core/README.md) — Core API client documentation
-- [enlace](./packages/enlace/README.md) — React hooks and Next.js documentation
-- [enlace-openapi](./packages/openapi/README.md) — OpenAPI generator documentation
-- [enlace-hono](./packages/hono/README.md) — Hono type adapter documentation
+- [enlace-core](./packages/core/README.md) — Core API client
+- [enlace](./packages/enlace/README.md) — React hooks and Next.js
+- [enlace-openapi](./packages/openapi/README.md) — OpenAPI generation
+- [enlace-hono](./packages/hono/README.md) — Hono type adapter
 
 ## License
 

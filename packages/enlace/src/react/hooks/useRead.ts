@@ -5,7 +5,7 @@ import type {
   HookState,
   PollingInterval,
   TrackedCall,
-  UseEnlaceQueryResult,
+  UseEnlaceReadResult,
 } from "../types";
 import type { AnyReactRequestOptions } from "../types";
 import { hookReducer } from "../reducer";
@@ -41,7 +41,7 @@ function resolvePath(
   });
 }
 
-export type QueryModeOptions<TData = unknown, TError = unknown> = {
+export type ReadModeOptions<TData = unknown, TError = unknown> = {
   autoGenerateTags: boolean;
   staleTime: number;
   enabled: boolean;
@@ -50,11 +50,11 @@ export type QueryModeOptions<TData = unknown, TError = unknown> = {
   retryDelay?: number;
 };
 
-export function useAPIQueryImpl<TSchema, TData, TError>(
+export function useReadImpl<TSchema, TData, TError>(
   api: ApiClient<TSchema>,
   trackedCall: TrackedCall,
-  options: QueryModeOptions<TData, TError>
-): UseEnlaceQueryResult<TData, TError> {
+  options: ReadModeOptions<TData, TError>
+): UseEnlaceReadResult<TData, TError> {
   const {
     autoGenerateTags,
     staleTime,
@@ -259,7 +259,7 @@ export function useAPIQueryImpl<TSchema, TData, TError>(
   const cached = getCache<TData, TError>(queryKey);
   const isOptimistic = cached?.isOptimistic ?? false;
 
-  return { ...state, abort, isOptimistic } as UseEnlaceQueryResult<
+  return { ...state, abort, isOptimistic } as UseEnlaceReadResult<
     TData,
     TError
   >;

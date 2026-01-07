@@ -6,26 +6,23 @@ import type {
   NextApiClient,
   NextEnlaceHooks,
   NextHookOptions,
-  NextQueryFn,
-  NextSelectorFn,
-  NextInfiniteQueryFn,
+  NextReadFn,
+  NextWriteSelectorFn,
+  NextInfiniteReadFn,
 } from "./types";
 import type {
-  UseEnlaceQueryOptions,
-  UseEnlaceQueryResult,
-  UseEnlaceSelectorResult,
-  UseEnlaceInfiniteQueryOptions,
-  UseEnlaceInfiniteQueryResult,
+  UseEnlaceReadOptions,
+  UseEnlaceReadResult,
+  UseEnlaceWriteResult,
+  UseEnlaceInfiniteReadOptions,
+  UseEnlaceInfiniteReadResult,
 } from "../react/types";
+import { useReadImpl, type ReadModeOptions } from "../react/hooks/useRead";
+import { useWriteImpl } from "../react/hooks/useWrite";
 import {
-  useAPIQueryImpl,
-  type QueryModeOptions,
-} from "../react/hooks/useAPIQuery";
-import { useAPIMutationImpl } from "../react/hooks/useAPIMutation";
-import {
-  useAPIInfiniteQueryImpl,
-  type InfiniteQueryModeOptions,
-} from "../react/hooks/useAPIInfiniteQuery";
+  useInfiniteReadImpl,
+  type InfiniteReadModeOptions,
+} from "../react/hooks/useInfiniteRead";
 import {
   createTrackingProxy,
   type TrackingResult,
@@ -33,21 +30,21 @@ import {
 
 /**
  * Creates React hooks for making API calls in Next.js Client Components.
- * Returns { useQuery, useMutation, useInfiniteQuery }.
+ * Returns { useRead, useWrite, useInfiniteRead }.
  *
  * @example
- * const { useQuery, useMutation, useInfiniteQuery } = enlaceHookNext<ApiSchema>('https://api.com', {}, {
+ * const { useRead, useWrite, useInfiniteRead } = enlaceHookNext<ApiSchema>('https://api.com', {}, {
  *   serverRevalidator: (tags) => revalidateTagsAction(tags),
  * });
  *
- * // Query - auto-fetch GET requests
- * const { loading, data, error } = useQuery((api) => api.posts.$get());
+ * // Read - auto-fetch GET requests
+ * const { loading, data, error } = useRead((api) => api.posts.$get());
  *
- * // Mutation - trigger-based mutations
- * const { trigger } = useMutation((api) => api.posts.$delete);
+ * // Write - trigger-based mutations
+ * const { trigger } = useWrite((api) => api.posts.$delete);
  *
- * // Infinite Query - paginated data with fetchNext/fetchPrev
- * const { data, fetchNext, canFetchNext } = useInfiniteQuery(
+ * // Infinite Read - paginated data with fetchNext/fetchPrev
+ * const { data, fetchNext, canFetchNext } = useInfiniteRead(
  *   (api) => api.posts.$get({ query: { limit: 10 } }),
  *   {
  *     canFetchNext: ({ response }) => response?.hasMore ?? false,
@@ -76,10 +73,10 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
     ...nextOptions,
   });
 
-  function useQuery<TData, TError>(
-    queryFn: NextQueryFn<TSchema, TData, TError, TDefaultError>,
-    queryOptions?: UseEnlaceQueryOptions<TData, TError>
-  ): UseEnlaceQueryResult<TData, TError> {
+  function useRead<TData, TError>(
+    readFn: NextReadFn<TSchema, TData, TError, TDefaultError>,
+    readOptions?: UseEnlaceReadOptions<TData, TError>
+  ): UseEnlaceReadResult<TData, TError> {
     let trackingResult: TrackingResult = {
       trackedCall: null,
       selectorPath: null,
@@ -90,27 +87,27 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
       trackingResult = result;
     });
 
-    (queryFn as (api: NextApiClient<TSchema, TDefaultError>) => unknown)(
+    (readFn as (api: NextApiClient<TSchema, TDefaultError>) => unknown)(
       trackingProxy as NextApiClient<TSchema, TDefaultError>
     );
 
     if (!trackingResult.trackedCall) {
       throw new Error(
-        "useQuery requires calling an HTTP method ($get). " +
-          "Example: useQuery((api) => api.posts.$get())"
+        "useRead requires calling an HTTP method ($get). " +
+          "Example: useRead((api) => api.posts.$get())"
       );
     }
 
-    const options: QueryModeOptions<TData, TError> = {
+    const options: ReadModeOptions<TData, TError> = {
       autoGenerateTags,
       staleTime,
-      enabled: queryOptions?.enabled ?? true,
-      pollingInterval: queryOptions?.pollingInterval,
-      retry: queryOptions?.retry ?? retry,
-      retryDelay: queryOptions?.retryDelay ?? retryDelay,
+      enabled: readOptions?.enabled ?? true,
+      pollingInterval: readOptions?.pollingInterval,
+      retry: readOptions?.retry ?? retry,
+      retryDelay: readOptions?.retryDelay ?? retryDelay,
     };
 
-    return useAPIQueryImpl<TSchema, TData, TError>(
+    return useReadImpl<TSchema, TData, TError>(
       api as unknown as import("../react/types").ApiClient<
         TSchema,
         TDefaultError
@@ -120,14 +117,14 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
     );
   }
 
-  function useMutation<
+  function useWrite<
     TMethod extends (
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...args: any[]
     ) => Promise<EnlaceResponse<unknown, unknown>>,
   >(
-    selectorFn: NextSelectorFn<TSchema, TMethod, TDefaultError>
-  ): UseEnlaceSelectorResult<TMethod> {
+    selectorFn: NextWriteSelectorFn<TSchema, TMethod, TDefaultError>
+  ): UseEnlaceWriteResult<TMethod> {
     let trackingResult: TrackingResult = {
       trackedCall: null,
       selectorPath: null,
@@ -146,7 +143,7 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
       selectorFn as (api: NextApiClient<TSchema, TDefaultError>) => unknown
     )(api as NextApiClient<TSchema, TDefaultError>);
 
-    return useAPIMutationImpl<TMethod>({
+    return useWriteImpl<TMethod>({
       method: actualMethod as (
         ...args: unknown[]
       ) => Promise<EnlaceResponse<unknown, unknown>>,
@@ -159,15 +156,15 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
     });
   }
 
-  function useInfiniteQuery<
+  function useInfiniteRead<
     TData,
     TError,
     TItem = TData extends Array<infer U> ? U : TData,
     TRequest = unknown,
   >(
-    queryFn: NextInfiniteQueryFn<TSchema, TDefaultError>,
-    queryOptions: UseEnlaceInfiniteQueryOptions<TData, TItem, TRequest>
-  ): UseEnlaceInfiniteQueryResult<TData, TError, TItem> {
+    readFn: NextInfiniteReadFn<TSchema, TDefaultError>,
+    readOptions: UseEnlaceInfiniteReadOptions<TData, TItem, TRequest>
+  ): UseEnlaceInfiniteReadResult<TData, TError, TItem> {
     let trackingResult: TrackingResult = {
       trackedCall: null,
       selectorPath: null,
@@ -178,39 +175,39 @@ export function enlaceHookNext<TSchema = unknown, TDefaultError = unknown>(
       trackingResult = result;
     });
 
-    (queryFn as (api: NextApiClient<TSchema, TDefaultError>) => unknown)(
+    (readFn as (api: NextApiClient<TSchema, TDefaultError>) => unknown)(
       trackingProxy as NextApiClient<TSchema, TDefaultError>
     );
 
     if (!trackingResult.trackedCall) {
       throw new Error(
-        "useInfiniteQuery requires calling an HTTP method ($get, $post, etc). " +
-          "Example: useInfiniteQuery((api) => api.posts.$get({ query: { limit: 10 } }), options)"
+        "useInfiniteRead requires calling an HTTP method ($get, $post, etc). " +
+          "Example: useInfiniteRead((api) => api.posts.$get({ query: { limit: 10 } }), options)"
       );
     }
 
     const options = {
       autoGenerateTags,
       staleTime,
-      ...queryOptions,
-      enabled: queryOptions.enabled ?? true,
-      retry: queryOptions.retry ?? retry,
-      retryDelay: queryOptions.retryDelay ?? retryDelay,
+      ...readOptions,
+      enabled: readOptions.enabled ?? true,
+      retry: readOptions.retry ?? retry,
+      retryDelay: readOptions.retryDelay ?? retryDelay,
     };
 
-    return useAPIInfiniteQueryImpl<TSchema, TData, TError, TItem>(
+    return useInfiniteReadImpl<TSchema, TData, TError, TItem>(
       api as unknown as import("../react/types").ApiClient<
         TSchema,
         TDefaultError
       >,
       trackingResult.trackedCall,
-      options as unknown as InfiniteQueryModeOptions<TData, TItem>
+      options as unknown as InfiniteReadModeOptions<TData, TItem>
     );
   }
 
   return {
-    useQuery,
-    useMutation,
-    useInfiniteQuery,
+    useRead,
+    useWrite,
+    useInfiniteRead,
   } as NextEnlaceHooks<TSchema, TDefaultError>;
 }

@@ -3,8 +3,8 @@ import type { EnlaceResponse } from "enlace-core";
 import type {
   ApiClient,
   TrackedCall,
-  UseEnlaceInfiniteQueryResult,
-  UseEnlaceInfiniteQueryOptions,
+  UseEnlaceInfiniteReadResult,
+  UseEnlaceInfiniteReadOptions,
   InfiniteData,
   FetchDirection,
   AnyInfiniteRequestOptions,
@@ -62,20 +62,20 @@ function shallowMergeRequest(
   };
 }
 
-export type InfiniteQueryModeOptions<
+export type InfiniteReadModeOptions<
   TData,
   TItem,
   TRequest = AnyInfiniteRequestOptions,
 > = {
   autoGenerateTags: boolean;
   staleTime: number;
-} & UseEnlaceInfiniteQueryOptions<TData, TItem, TRequest>;
+} & UseEnlaceInfiniteReadOptions<TData, TItem, TRequest>;
 
-export function useAPIInfiniteQueryImpl<TSchema, TData, TError, TItem>(
+export function useInfiniteReadImpl<TSchema, TData, TError, TItem>(
   api: ApiClient<TSchema>,
   trackedCall: TrackedCall,
-  options: InfiniteQueryModeOptions<TData, TItem>
-): UseEnlaceInfiniteQueryResult<TData, TError, TItem> {
+  options: InfiniteReadModeOptions<TData, TItem>
+): UseEnlaceInfiniteReadResult<TData, TError, TItem> {
   const {
     autoGenerateTags,
     canFetchNext,

@@ -1,3 +1,3 @@
-export * from "./useAPIQuery";
-export * from "./useAPIMutation";
-export * from "./useAPIInfiniteQuery";
+export * from "./useRead";
+export * from "./useWrite";
+export * from "./useInfiniteRead";

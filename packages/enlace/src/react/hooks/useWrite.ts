@@ -1,6 +1,6 @@
 import { useRef, useReducer, useCallback } from "react";
 import type { EnlaceResponse, ResolvedCacheConfig } from "enlace-core";
-import type { AnyReactRequestOptions, UseEnlaceSelectorResult } from "../types";
+import type { AnyReactRequestOptions, UseEnlaceWriteResult } from "../types";
 import { hookReducer, initialState } from "../reducer";
 import { generateTags } from "../../utils/generateTags";
 import { invalidateTags } from "../revalidator";
@@ -54,7 +54,7 @@ function extractTagsFromMethod(
   return generateTags(path);
 }
 
-export type MutationModeConfig = {
+export type WriteModeConfig = {
   method: (...args: unknown[]) => Promise<EnlaceResponse<unknown, unknown>>;
   api: unknown;
   path: string[];
@@ -72,10 +72,10 @@ function normalizeOptimisticConfigs(
   return Array.isArray(result) ? result : [result];
 }
 
-export function useAPIMutationImpl<
+export function useWriteImpl<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TMethod extends (...args: any[]) => Promise<EnlaceResponse<unknown, unknown>>,
->(config: MutationModeConfig): UseEnlaceSelectorResult<TMethod> {
+>(config: WriteModeConfig): UseEnlaceWriteResult<TMethod> {
   const {
     method,
     api,
@@ -244,5 +244,5 @@ export function useAPIMutationImpl<
     trigger: triggerRef.current,
     abort,
     ...state,
-  } as UseEnlaceSelectorResult<TMethod>;
+  } as UseEnlaceWriteResult<TMethod>;
 }

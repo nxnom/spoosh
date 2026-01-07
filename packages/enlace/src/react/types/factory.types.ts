@@ -1,9 +1,9 @@
-import type { UseAPIQuery } from "./query.types";
-import type { UseAPIMutation } from "./mutation.types";
-import type { UseAPIInfiniteQuery } from "./infinite.types";
+import type { UseRead } from "./read.types";
+import type { UseWrite } from "./write.types";
+import type { UseInfiniteRead } from "./infinite-read.types";
 
 export type EnlaceHooks<TSchema, TDefaultError = unknown> = {
-  useQuery: UseAPIQuery<TSchema, TDefaultError>;
-  useMutation: UseAPIMutation<TSchema, TDefaultError>;
-  useInfiniteQuery: UseAPIInfiniteQuery<TSchema, TDefaultError>;
+  useRead: UseRead<TSchema, TDefaultError>;
+  useWrite: UseWrite<TSchema, TDefaultError>;
+  useInfiniteRead: UseInfiniteRead<TSchema, TDefaultError>;
 };

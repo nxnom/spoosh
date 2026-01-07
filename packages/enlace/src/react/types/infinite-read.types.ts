@@ -1,5 +1,5 @@
 import type { EnlaceResponse } from "enlace-core";
-import type { QueryApiClient } from "./common.types";
+import type { ReadApiClient } from "./common.types";
 
 export type FetchDirection = "next" | "prev";
 
@@ -72,7 +72,7 @@ export type PrevPageRequestFn<TData, TRequest, TPartialRequest = TRequest> = (
 
 export type MergerFn<TData, TItem> = (allResponses: TData[]) => TItem[];
 
-export type UseEnlaceInfiniteQueryOptions<
+export type UseEnlaceInfiniteReadOptions<
   TData,
   TItem,
   TRequest = AnyInfiniteRequestOptions,
@@ -97,7 +97,7 @@ export type InfiniteData<TData> = {
   responses: InfiniteResponseEntry<TData>[];
 };
 
-export type UseEnlaceInfiniteQueryResult<TData, TError, TItem> = {
+export type UseEnlaceInfiniteReadResult<TData, TError, TItem> = {
   data: TItem[] | undefined;
   allResponses: TData[] | undefined;
   loading: boolean;
@@ -114,8 +114,8 @@ export type UseEnlaceInfiniteQueryResult<TData, TError, TItem> = {
   isOptimistic: boolean;
 };
 
-export type InfiniteQueryFn<TSchema, TDefaultError = unknown> = (
-  api: QueryApiClient<TSchema, TDefaultError>
+export type InfiniteReadFn<TSchema, TDefaultError = unknown> = (
+  api: ReadApiClient<TSchema, TDefaultError>
 ) => Promise<EnlaceResponse<unknown, unknown, unknown>>;
 
 type InferData<T> =
@@ -143,7 +143,7 @@ type InferPartialRequest<T> =
     ? MakePartialRequest<PickOnlyRequestOptions<R>>
     : AnyInfiniteRequestOptions;
 
-export type UseAPIInfiniteQuery<TSchema, TDefaultError = unknown> = <
+export type UseInfiniteRead<TSchema, TDefaultError = unknown> = <
   TReturn extends Promise<EnlaceResponse<unknown, unknown, unknown>>,
   TData = InferData<TReturn>,
   TError = InferError<TReturn>,
@@ -151,11 +151,6 @@ export type UseAPIInfiniteQuery<TSchema, TDefaultError = unknown> = <
   TPartialRequest = InferPartialRequest<TReturn>,
   TItem = TData extends Array<infer U> ? U : TData,
 >(
-  queryFn: (api: QueryApiClient<TSchema, TDefaultError>) => TReturn,
-  options: UseEnlaceInfiniteQueryOptions<
-    TData,
-    TItem,
-    TRequest,
-    TPartialRequest
-  >
-) => UseEnlaceInfiniteQueryResult<TData, TError, TItem>;
+  readFn: (api: ReadApiClient<TSchema, TDefaultError>) => TReturn,
+  options: UseEnlaceInfiniteReadOptions<TData, TItem, TRequest, TPartialRequest>
+) => UseEnlaceInfiniteReadResult<TData, TError, TItem>;

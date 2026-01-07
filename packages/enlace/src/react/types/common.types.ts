@@ -20,7 +20,7 @@ export type ApiClient<
   ? WildcardClient<TOptionsMap>
   : EnlaceClient<TSchema, TDefaultError, TOptionsMap>;
 
-export type QueryApiClient<
+export type ReadApiClient<
   TSchema,
   TDefaultError = unknown,
   TOptionsMap = ReactOptionsMap,
@@ -28,7 +28,7 @@ export type QueryApiClient<
   ? WildcardQueryClient<TOptionsMap>
   : QueryOnlyClient<TSchema, TDefaultError, TOptionsMap>;
 
-export type MutationApiClient<
+export type WriteApiClient<
   TSchema,
   TDefaultError = unknown,
   TOptionsMap = ReactOptionsMap,
@@ -80,7 +80,7 @@ type HookResponseState<TData, TError> =
   | { data: TData; error?: undefined }
   | { data?: undefined; error: TError };
 
-export type UseEnlaceQueryResult<TData, TError> = {
+export type UseEnlaceReadResult<TData, TError> = {
   loading: boolean;
   fetching: boolean;
   abort: () => void;
@@ -101,7 +101,7 @@ export type ExtractError<T> = T extends (
   ? E
   : never;
 
-export type UseEnlaceSelectorResult<TMethod> = {
+export type UseEnlaceWriteResult<TMethod> = {
   trigger: TMethod;
   loading: boolean;
   fetching: boolean;

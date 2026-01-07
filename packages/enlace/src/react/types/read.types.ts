@@ -1,29 +1,29 @@
 import type { EnlaceResponse } from "enlace-core";
 import type {
   PollingInterval,
-  QueryApiClient,
-  UseEnlaceQueryResult,
+  ReadApiClient,
+  UseEnlaceReadResult,
 } from "./common.types";
 import type { ReactOptionsMap } from "./request.types";
 
-export type QueryFn<
+export type ReadFn<
   TSchema,
   TData,
   TError,
   TDefaultError = unknown,
   TOptionsMap = ReactOptionsMap,
 > = (
-  api: QueryApiClient<TSchema, TDefaultError, TOptionsMap>
+  api: ReadApiClient<TSchema, TDefaultError, TOptionsMap>
 ) => Promise<EnlaceResponse<TData, TError>>;
 
-export type UseEnlaceQueryOptions<TData = unknown, TError = unknown> = {
+export type UseEnlaceReadOptions<TData = unknown, TError = unknown> = {
   enabled?: boolean;
   pollingInterval?: PollingInterval<TData, TError>;
   retry?: number | false;
   retryDelay?: number;
 };
 
-export type UseAPIQuery<TSchema, TDefaultError = unknown> = <TData, TError>(
-  queryFn: QueryFn<TSchema, TData, TError, TDefaultError>,
-  options?: UseEnlaceQueryOptions<TData, TError>
-) => UseEnlaceQueryResult<TData, TError>;
+export type UseRead<TSchema, TDefaultError = unknown> = <TData, TError>(
+  readFn: ReadFn<TSchema, TData, TError, TDefaultError>,
+  options?: UseEnlaceReadOptions<TData, TError>
+) => UseEnlaceReadResult<TData, TError>;
