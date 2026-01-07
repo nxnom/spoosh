@@ -1,6 +1,10 @@
 import type { TrackedCall } from "./types";
 import { sortObjectKeys } from "../utils/sortObjectKeys";
 
+function getExactPath(tags: string[]): string | undefined {
+  return tags.length > 0 ? tags[tags.length - 1] : undefined;
+}
+
 export type CacheEntry<TData = unknown, TError = unknown> = {
   data: TData | undefined;
   error: TError | undefined;
@@ -123,11 +127,19 @@ export function setCacheOptimistic<TData>(
   updater: (data: TData) => TData
 ): string[] {
   const affectedKeys: string[] = [];
+  const targetExactPath = getExactPath(tags);
+
+  if (!targetExactPath) {
+    return affectedKeys;
+  }
 
   cache.forEach((entry, key) => {
-    const hasMatch = entry.tags.some((tag) => tags.includes(tag));
+    if (key.includes('"type":"infinite-tracker"')) return;
 
-    if (hasMatch && entry.data !== undefined) {
+    const entryExactPath = getExactPath(entry.tags);
+    const isExactMatch = entryExactPath === targetExactPath;
+
+    if (isExactMatch && entry.data !== undefined) {
       entry.previousData = entry.data;
       entry.data = updater(entry.data as TData);
       entry.isOptimistic = true;
@@ -168,10 +180,19 @@ export function updateCacheByTags<TData, TResponse>(
   updater: (data: TData, response: TResponse) => TData,
   response: TResponse
 ): void {
-  cache.forEach((entry) => {
-    const hasMatch = entry.tags.some((tag) => tags.includes(tag));
+  const targetExactPath = getExactPath(tags);
 
-    if (hasMatch && entry.data !== undefined) {
+  if (!targetExactPath) {
+    return;
+  }
+
+  cache.forEach((entry, key) => {
+    if (key.includes('"type":"infinite-tracker"')) return;
+
+    const entryExactPath = getExactPath(entry.tags);
+    const isExactMatch = entryExactPath === targetExactPath;
+
+    if (isExactMatch && entry.data !== undefined) {
       entry.data = updater(entry.data as TData, response);
       entry.timestamp = Date.now();
       entry.subscribers.forEach((cb) => cb());
@@ -179,14 +200,45 @@ export function updateCacheByTags<TData, TResponse>(
   });
 }
 
-export function createInfiniteQueryKey(
+export function createPageQueryKey(
+  path: string[],
+  method: string,
+  baseOptions: unknown,
+  pageOptions: { query?: unknown; params?: unknown; body?: unknown }
+): string {
+  const baseObj = (baseOptions ?? {}) as Record<string, unknown>;
+
+  const mergedOptions = {
+    ...baseObj,
+    query: pageOptions.query
+      ? { ...(baseObj.query as Record<string, unknown>), ...pageOptions.query }
+      : baseObj.query,
+    params: pageOptions.params
+      ? {
+          ...(baseObj.params as Record<string, unknown>),
+          ...pageOptions.params,
+        }
+      : baseObj.params,
+    body: pageOptions.body !== undefined ? pageOptions.body : baseObj.body,
+  };
+
+  return JSON.stringify(
+    sortObjectKeys({
+      path,
+      method,
+      options: mergedOptions,
+    })
+  );
+}
+
+export function createInfiniteTrackerKey(
   path: string[],
   method: string,
   baseOptions: unknown
 ): string {
   return JSON.stringify(
     sortObjectKeys({
-      type: "infinite",
+      type: "infinite-tracker",
       path,
       method,
       options: baseOptions,
@@ -194,33 +246,40 @@ export function createInfiniteQueryKey(
   );
 }
 
-export function addResponseToInfiniteCache<TData>(
+export type InfiniteTrackerData = {
+  pageKeys: string[];
+  pageRequests: Record<
+    string,
+    { query?: unknown; params?: unknown; body?: unknown }
+  >;
+};
+
+export function getInfiniteTracker(
+  key: string
+): InfiniteTrackerData | undefined {
+  const entry = cache.get(key);
+  return entry?.data as InfiniteTrackerData | undefined;
+}
+
+export function setInfiniteTracker(
   key: string,
-  response: TData,
-  request: { query?: unknown; params?: unknown; body?: unknown },
-  direction: "next" | "prev"
+  data: InfiniteTrackerData,
+  tags: string[]
 ): void {
-  const existing = cache.get(key);
-  const entry = { data: response, request };
+  setCache(key, {
+    data,
+    timestamp: Date.now(),
+    tags,
+  });
+}
 
-  if (!existing?.data) {
-    setCache(key, {
-      data: { responses: [entry] },
-      timestamp: Date.now(),
-    });
-    return;
-  }
+export function subscribeMultipleCache(
+  keys: string[],
+  callback: () => void
+): () => void {
+  const unsubscribers = keys.map((key) => subscribeCache(key, callback));
 
-  const infiniteData = existing.data as {
-    responses: Array<{ data: TData; request: unknown }>;
+  return () => {
+    unsubscribers.forEach((unsub) => unsub());
   };
-
-  if (direction === "next") {
-    infiniteData.responses = [...infiniteData.responses, entry];
-  } else {
-    infiniteData.responses = [entry, ...infiniteData.responses];
-  }
-
-  existing.timestamp = Date.now();
-  existing.subscribers.forEach((cb) => cb());
 }

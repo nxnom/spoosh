@@ -1,11 +1,10 @@
-import { useRef, useReducer, useEffect, useCallback } from "react";
+import { useRef, useReducer, useEffect, useCallback, useState } from "react";
 import { generateTags, type EnlaceResponse } from "enlace-core";
 import type {
   ApiClient,
   TrackedCall,
   UseEnlaceInfiniteReadResult,
   UseEnlaceInfiniteReadOptions,
-  InfiniteData,
   FetchDirection,
   AnyInfiniteRequestOptions,
 } from "../types";
@@ -17,11 +16,14 @@ import {
 } from "../reducer";
 import { onRevalidate } from "../revalidator";
 import {
-  createInfiniteQueryKey,
+  createPageQueryKey,
+  createInfiniteTrackerKey,
   getCache,
   setCache,
-  subscribeCache,
-  addResponseToInfiniteCache,
+  subscribeMultipleCache,
+  getInfiniteTracker,
+  setInfiniteTracker,
+  isStale,
 } from "../cache";
 
 function resolvePath(
@@ -77,6 +79,7 @@ export function useInfiniteReadImpl<TSchema, TData, TError, TItem>(
 ): UseEnlaceInfiniteReadResult<TData, TError, TItem> {
   const {
     autoGenerateTags,
+    staleTime,
     canFetchNext,
     nextPageRequest,
     canFetchPrev,
@@ -106,23 +109,50 @@ export function useInfiniteReadImpl<TSchema, TData, TError, TItem>(
     body: undefined,
   };
 
-  const queryKey = createInfiniteQueryKey(
-    trackedCall.path,
-    trackedCall.method,
-    baseOptionsForKey
-  );
-
   const resolvedPath = resolvePath(trackedCall.path, requestOptions?.params);
   const baseTags =
     requestOptions?.tags ??
     (autoGenerateTags ? generateTags(resolvedPath) : []);
-  const queryTags = [...baseTags, ...(requestOptions?.additionalTags ?? [])];
+  const queryTagsValue = [
+    ...baseTags,
+    ...(requestOptions?.additionalTags ?? []),
+  ];
+  const queryTagsRef = useRef(queryTagsValue);
+  queryTagsRef.current = queryTagsValue;
+
+  const trackerKeyValue = createInfiniteTrackerKey(
+    trackedCall.path,
+    trackedCall.method,
+    baseOptionsForKey
+  );
+  const trackerKeyRef = useRef(trackerKeyValue);
+  trackerKeyRef.current = trackerKeyValue;
+
+  const existingTracker = getInfiniteTracker(trackerKeyValue);
+  const pageKeysRef = useRef<string[]>(existingTracker?.pageKeys ?? []);
+  const pageRequestsRef = useRef<Map<string, AnyInfiniteRequestOptions>>(
+    new Map(
+      Object.entries(existingTracker?.pageRequests ?? {}) as [
+        string,
+        AnyInfiniteRequestOptions,
+      ][]
+    )
+  );
+  const [subscriptionVersion, setSubscriptionVersion] = useState(
+    existingTracker ? 1 : 0
+  );
+
+  const canFetchNextRef = useRef(canFetchNext);
+  const canFetchPrevRef = useRef(canFetchPrev);
+  const mergerRef = useRef(merger);
+  canFetchNextRef.current = canFetchNext;
+  canFetchPrevRef.current = canFetchPrev;
+  mergerRef.current = merger;
 
   const getCacheState = (): Partial<InfiniteHookState<TData, TItem>> => {
-    const cached = getCache<InfiniteData<TData>, TError>(queryKey);
-    const infiniteData = cached?.data;
+    const pageKeys = pageKeysRef.current;
 
-    if (!infiniteData || infiniteData.responses.length === 0) {
+    if (pageKeys.length === 0) {
       return {
         data: undefined,
         allResponses: undefined,
@@ -130,33 +160,66 @@ export function useInfiniteReadImpl<TSchema, TData, TError, TItem>(
         canFetchNext: false,
         canFetchPrev: false,
         isOptimistic: false,
-        error: cached?.error,
+        error: undefined,
       };
     }
 
-    const allResponses = infiniteData.responses.map((r) => r.data);
-    const allRequests = infiniteData.responses.map((r) => r.request);
+    const allResponses: TData[] = [];
+    const allRequests: AnyInfiniteRequestOptions[] = [];
+    let hasError: TError | undefined;
+    let isAnyOptimistic = false;
+
+    for (const key of pageKeys) {
+      const cached = getCache<TData, TError>(key);
+
+      if (cached?.error) {
+        hasError = cached.error;
+      }
+
+      if (cached?.data !== undefined) {
+        allResponses.push(cached.data);
+        allRequests.push(
+          pageRequestsRef.current.get(key) ?? initialRequestRef.current
+        );
+      }
+
+      if (cached?.isOptimistic) {
+        isAnyOptimistic = true;
+      }
+    }
+
+    if (allResponses.length === 0) {
+      return {
+        data: undefined,
+        allResponses: undefined,
+        allRequests: undefined,
+        canFetchNext: false,
+        canFetchPrev: false,
+        isOptimistic: false,
+        error: hasError,
+      };
+    }
 
     const lastResponse = allResponses.at(-1);
     const firstResponse = allResponses.at(0);
-    const lastRequest = allRequests.at(-1) ?? initialRequest;
-    const firstRequest = allRequests.at(0) ?? initialRequest;
+    const lastRequest = allRequests.at(-1) ?? initialRequestRef.current;
+    const firstRequest = allRequests.at(0) ?? initialRequestRef.current;
 
-    const canNext = canFetchNext({
+    const canNext = canFetchNextRef.current({
       response: lastResponse,
       allResponses,
       request: lastRequest,
     });
 
-    const canPrev = canFetchPrev
-      ? canFetchPrev({
+    const canPrev = canFetchPrevRef.current
+      ? canFetchPrevRef.current({
           response: firstResponse,
           allResponses,
           request: firstRequest,
         })
       : false;
 
-    const mergedData = merger(allResponses);
+    const mergedData = mergerRef.current(allResponses);
 
     return {
       data: mergedData,
@@ -164,8 +227,8 @@ export function useInfiniteReadImpl<TSchema, TData, TError, TItem>(
       allRequests,
       canFetchNext: canNext,
       canFetchPrev: canPrev,
-      isOptimistic: cached?.isOptimistic ?? false,
-      error: cached?.error,
+      isOptimistic: isAnyOptimistic,
+      error: hasError,
     };
   };
 
@@ -193,7 +256,19 @@ export function useInfiniteReadImpl<TSchema, TData, TError, TItem>(
       direction: FetchDirection,
       requestOverride: AnyInfiniteRequestOptions
     ) => {
-      const cached = getCache<InfiniteData<TData>, TError>(queryKey);
+      const mergedRequest = shallowMergeRequest(
+        initialRequestRef.current,
+        requestOverride
+      );
+
+      const pageKey = createPageQueryKey(
+        trackedCall.path,
+        trackedCall.method,
+        baseOptionsForKey,
+        mergedRequest
+      );
+
+      const cached = getCache<TData, TError>(pageKey);
 
       if (cached?.promise) {
         return;
@@ -208,16 +283,13 @@ export function useInfiniteReadImpl<TSchema, TData, TError, TItem>(
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
-      const mergedRequest = shallowMergeRequest(
-        initialRequestRef.current,
-        requestOverride
-      );
       const resolvedPathForFetch = resolvePath(
         trackedCall.path,
         mergedRequest.params
       );
 
       let current: unknown = api;
+
       for (const segment of resolvedPathForFetch) {
         current = (current as Record<string, unknown>)[segment];
       }
@@ -241,54 +313,86 @@ export function useInfiniteReadImpl<TSchema, TData, TError, TItem>(
           if (res.aborted || !mountedRef.current) return;
 
           if (res.error) {
-            setCache<InfiniteData<TData>, TError>(queryKey, {
+            setCache<TData, TError>(pageKey, {
               error: res.error,
               timestamp: Date.now(),
-              tags: queryTags,
+              tags: queryTagsRef.current,
             });
           } else if (res.data !== undefined) {
-            addResponseToInfiniteCache<TData>(
-              queryKey,
-              res.data,
-              mergedRequest,
-              direction
+            pageRequestsRef.current.set(pageKey, mergedRequest);
+
+            if (direction === "next") {
+              if (!pageKeysRef.current.includes(pageKey)) {
+                pageKeysRef.current = [...pageKeysRef.current, pageKey];
+              }
+            } else {
+              if (!pageKeysRef.current.includes(pageKey)) {
+                pageKeysRef.current = [pageKey, ...pageKeysRef.current];
+              }
+            }
+
+            setInfiniteTracker(
+              trackerKeyRef.current,
+              {
+                pageKeys: pageKeysRef.current,
+                pageRequests: Object.fromEntries(pageRequestsRef.current),
+              },
+              queryTagsRef.current
             );
 
-            setCache<InfiniteData<TData>, TError>(queryKey, {
+            setCache<TData, TError>(pageKey, {
+              data: res.data,
               error: undefined,
-              tags: queryTags,
+              timestamp: Date.now(),
+              tags: queryTagsRef.current,
             });
+
+            setSubscriptionVersion((v) => v + 1);
           }
         })
         .catch((err: TError) => {
           if (!mountedRef.current) return;
 
-          setCache<InfiniteData<TData>, TError>(queryKey, {
+          setCache<TData, TError>(pageKey, {
             error: err,
             timestamp: Date.now(),
-            tags: queryTags,
+            tags: queryTagsRef.current,
           });
         });
 
-      setCache<InfiniteData<TData>, TError>(queryKey, {
+      setCache<TData, TError>(pageKey, {
         promise: fetchPromise,
-        tags: queryTags,
+        tags: queryTagsRef.current,
       });
 
       await fetchPromise;
     },
-    [queryKey, api, trackedCall, queryTags, retry, retryDelay]
+    [api, trackedCall, baseOptionsForKey, retry, retryDelay]
   );
 
   const fetchNext = useCallback(async () => {
-    const cached = getCache<InfiniteData<TData>, TError>(queryKey);
+    const pageKeys = pageKeysRef.current;
 
-    if (!cached?.data || cached.data.responses.length === 0) {
+    if (pageKeys.length === 0) {
       return;
     }
 
-    const allResponses = cached.data.responses.map((r) => r.data);
-    const allRequests = cached.data.responses.map((r) => r.request);
+    const allResponses: TData[] = [];
+    const allRequests: AnyInfiniteRequestOptions[] = [];
+
+    for (const key of pageKeys) {
+      const cached = getCache<TData, TError>(key);
+
+      if (cached?.data !== undefined) {
+        allResponses.push(cached.data);
+        allRequests.push(
+          pageRequestsRef.current.get(key) ?? initialRequestRef.current
+        );
+      }
+    }
+
+    if (allResponses.length === 0) return;
+
     const lastResponse = allResponses.at(-1);
     const lastRequest = allRequests.at(-1) ?? initialRequestRef.current;
 
@@ -307,19 +411,33 @@ export function useInfiniteReadImpl<TSchema, TData, TError, TItem>(
     });
 
     await doFetch("next", nextRequest);
-  }, [queryKey, canFetchNext, nextPageRequest, doFetch]);
+  }, [canFetchNext, nextPageRequest, doFetch]);
 
   const fetchPrev = useCallback(async () => {
     if (!canFetchPrev || !prevPageRequest) return;
 
-    const cached = getCache<InfiniteData<TData>, TError>(queryKey);
+    const pageKeys = pageKeysRef.current;
 
-    if (!cached?.data || cached.data.responses.length === 0) {
+    if (pageKeys.length === 0) {
       return;
     }
 
-    const allResponses = cached.data.responses.map((r) => r.data);
-    const allRequests = cached.data.responses.map((r) => r.request);
+    const allResponses: TData[] = [];
+    const allRequests: AnyInfiniteRequestOptions[] = [];
+
+    for (const key of pageKeys) {
+      const cached = getCache<TData, TError>(key);
+
+      if (cached?.data !== undefined) {
+        allResponses.push(cached.data);
+        allRequests.push(
+          pageRequestsRef.current.get(key) ?? initialRequestRef.current
+        );
+      }
+    }
+
+    if (allResponses.length === 0) return;
+
     const firstResponse = allResponses.at(0);
     const firstRequest = allRequests.at(0) ?? initialRequestRef.current;
 
@@ -338,17 +456,28 @@ export function useInfiniteReadImpl<TSchema, TData, TError, TItem>(
     });
 
     await doFetch("prev", prevRequest);
-  }, [queryKey, canFetchPrev, prevPageRequest, doFetch]);
+  }, [canFetchPrev, prevPageRequest, doFetch]);
 
   const refetch = useCallback(async () => {
-    setCache<InfiniteData<TData>, TError>(queryKey, {
-      data: undefined,
-      error: undefined,
-      timestamp: 0,
-    });
+    for (const key of pageKeysRef.current) {
+      setCache<TData, TError>(key, {
+        data: undefined,
+        error: undefined,
+        timestamp: 0,
+      });
+    }
+
+    pageKeysRef.current = [];
+    pageRequestsRef.current.clear();
+
+    setInfiniteTracker(
+      trackerKeyRef.current,
+      { pageKeys: [], pageRequests: {} },
+      queryTagsRef.current
+    );
 
     await doFetch("next", {});
-  }, [queryKey, doFetch]);
+  }, [doFetch]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -360,38 +489,64 @@ export function useInfiniteReadImpl<TSchema, TData, TError, TItem>(
       };
     }
 
-    const cached = getCache<InfiniteData<TData>, TError>(queryKey);
+    const hasPages = pageKeysRef.current.length > 0;
+    const firstPageKey = pageKeysRef.current[0];
+    const isFirstPageStale = firstPageKey
+      ? isStale(firstPageKey, staleTime)
+      : true;
 
-    if (!cached?.data || cached.data.responses.length === 0) {
+    if (!hasPages || isFirstPageStale) {
       dispatch({ type: "FETCH_INITIAL_START" });
+
+      if (hasPages && isFirstPageStale) {
+        pageKeysRef.current = [];
+        pageRequestsRef.current.clear();
+        setInfiniteTracker(
+          trackerKeyRef.current,
+          { pageKeys: [], pageRequests: {} },
+          queryTagsRef.current
+        );
+      }
+
       doFetch("next", {});
     } else {
       dispatch({ type: "SYNC_CACHE", state: getCacheState() });
     }
 
-    const unsubscribe = subscribeCache(queryKey, () => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [enabled, staleTime]);
+
+  useEffect(() => {
+    if (pageKeysRef.current.length === 0) return;
+
+    dispatch({ type: "SYNC_CACHE", state: getCacheState() });
+
+    const unsubscribe = subscribeMultipleCache(pageKeysRef.current, () => {
       if (mountedRef.current) {
         dispatch({ type: "SYNC_CACHE", state: getCacheState() });
       }
     });
 
     return () => {
-      mountedRef.current = false;
       unsubscribe();
     };
-  }, [queryKey, enabled]);
+  }, [subscriptionVersion]);
 
   useEffect(() => {
-    if (queryTags.length === 0) return;
+    if (queryTagsRef.current.length === 0) return;
 
     return onRevalidate((invalidatedTags) => {
-      const hasMatch = invalidatedTags.some((tag) => queryTags.includes(tag));
+      const hasMatch = invalidatedTags.some((tag) =>
+        queryTagsRef.current.includes(tag)
+      );
 
       if (hasMatch && mountedRef.current) {
         refetch();
       }
     });
-  }, [JSON.stringify(queryTags), refetch]);
+  }, [JSON.stringify(queryTagsValue), refetch]);
 
   return {
     data: state.data,

@@ -88,15 +88,6 @@ export type UseEnlaceInfiniteReadOptions<
   retryDelay?: number;
 };
 
-export type InfiniteResponseEntry<TData> = {
-  data: TData;
-  request: AnyInfiniteRequestOptions;
-};
-
-export type InfiniteData<TData> = {
-  responses: InfiniteResponseEntry<TData>[];
-};
-
 export type UseEnlaceInfiniteReadResult<TData, TError, TItem> = {
   data: TItem[] | undefined;
   allResponses: TData[] | undefined;
