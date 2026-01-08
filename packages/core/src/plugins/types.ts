@@ -115,3 +115,25 @@ export type DataAwareTransform<TData = unknown, TError = unknown> = (
   data: TData | undefined,
   error: TError | undefined
 ) => TData | undefined;
+
+/**
+ * Marker type for callbacks that need the API schema type.
+ * Used by plugins like optimistic and invalidation that need
+ * to reference the full API schema for type-safe cache updates.
+ *
+ * @example
+ * ```ts
+ * interface MyPluginWriteOptions<TSchema = unknown> {
+ *   onMutate?: SchemaAwareCallback<TSchema>;
+ * }
+ * ```
+ */
+export type SchemaAwareCallback<TSchema = unknown> = (api: TSchema) => unknown;
+
+/**
+ * Marker type for options that need the API schema type.
+ * Array or callback form for schema-aware options.
+ */
+export type SchemaAwareOption<TSchema = unknown> =
+  | string[]
+  | SchemaAwareCallback<TSchema>;

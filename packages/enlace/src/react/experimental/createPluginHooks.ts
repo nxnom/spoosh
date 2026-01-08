@@ -17,6 +17,8 @@ import {
   type DataAwareTransform,
   type PluginContext,
   type OperationState,
+  type OptimisticCallbackFn,
+  type InvalidateOption,
   createPluginExecutor,
   createStateManager,
   createOperationController,
@@ -54,6 +56,16 @@ type ResolveDataTypes<TOptions, TData, TError> = {
         : TOptions[K] extends DataAwareTransform<unknown, unknown> | undefined
           ? DataAwareTransform<TData, TError> | undefined
           : TOptions[K];
+};
+
+type ResolveSchemaTypes<TOptions, TSchema> = {
+  [K in keyof TOptions]: TOptions[K] extends
+    | OptimisticCallbackFn<unknown>
+    | undefined
+    ? OptimisticCallbackFn<TSchema> | undefined
+    : TOptions[K] extends InvalidateOption<unknown> | undefined
+      ? InvalidateOption<TSchema> | undefined
+      : TOptions[K];
 };
 
 export type UseReadResult<TData, TError> = {
@@ -269,11 +281,13 @@ export function createPluginHooks<
   ): UseWriteResult<
     ExtractMethodData<TMethod>,
     ExtractMethodError<TMethod>,
-    ExtractMethodOptions<TMethod> & PluginOptions["write"]
+    ExtractMethodOptions<TMethod> &
+      ResolveSchemaTypes<PluginOptions["write"], TSchema>
   > {
     type TData = ExtractMethodData<TMethod>;
     type TError = ExtractMethodError<TMethod>;
-    type TOptions = ExtractMethodOptions<TMethod> & PluginOptions["write"];
+    type TOptions = ExtractMethodOptions<TMethod> &
+      ResolveSchemaTypes<PluginOptions["write"], TSchema>;
 
     const trackingResultRef = useRef<TrackingResult>({
       trackedCall: null,
@@ -354,7 +368,10 @@ export function createPluginHooks<
             tags,
             requestOptions: options ?? {},
             state: initialState,
-            metadata: new Map([["pluginOptions", options]]),
+            metadata: new Map<string, unknown>([
+              ["pluginOptions", options],
+              ["stateManager", stateManager],
+            ]),
             abort: () => abortControllerRef.current?.abort(),
             getCache: () => undefined,
             setCache: () => {},
