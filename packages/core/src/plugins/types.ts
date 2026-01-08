@@ -89,3 +89,29 @@ export type PluginFactory<
   : (
       config?: TConfig
     ) => EnlacePlugin<TReadOptions, TWriteOptions, TInfiniteReadOptions>;
+
+/**
+ * Marker type for callbacks that need TData/TError from useRead/useWrite.
+ * Third-party plugins should use this for data-aware callback options.
+ *
+ * @example
+ * ```ts
+ * interface MyPluginReadOptions {
+ *   onDataChange?: DataAwareCallback<boolean>;  // (data, error) => boolean
+ *   transform?: DataAwareTransform;             // (data, error) => data
+ * }
+ * ```
+ */
+export type DataAwareCallback<
+  TReturn = void,
+  TData = unknown,
+  TError = unknown,
+> = (data: TData | undefined, error: TError | undefined) => TReturn;
+
+/**
+ * Marker type for transform functions that receive and return TData.
+ */
+export type DataAwareTransform<TData = unknown, TError = unknown> = (
+  data: TData | undefined,
+  error: TError | undefined
+) => TData | undefined;

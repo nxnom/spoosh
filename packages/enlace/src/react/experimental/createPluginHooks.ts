@@ -6,10 +6,13 @@ import {
   type EnlaceResponse,
   type QueryOnlyClient,
   type PollingInterval,
+  type DataAwareCallback,
+  type DataAwareTransform,
   createPluginExecutor,
   createStateManager,
   createOperationController,
   generateTags,
+  type MergePluginOptions,
 } from "enlace-core";
 import { createTrackingProxy, type TrackingResult } from "../trackingProxy";
 import type { ReactOptionsMap } from "../types/request.types";
@@ -23,12 +26,25 @@ export type PluginHooksConfig<
   autoGenerateTags?: boolean;
 };
 
-export type UseReadOptions<TData = unknown, TError = unknown> = {
+export type BaseReadOptions = {
   enabled?: boolean;
-  staleTime?: number;
-  pollingInterval?: PollingInterval<TData, TError>;
-  revalidateOnFocus?: boolean;
-  revalidateOnReconnect?: boolean;
+};
+
+type ResolveDataTypes<TOptions, TData, TError> = {
+  [K in keyof TOptions]: Extract<
+    TOptions[K],
+    (...args: never[]) => unknown
+  > extends never
+    ? TOptions[K]
+    : TOptions[K] extends PollingInterval<unknown, unknown> | undefined
+      ? PollingInterval<TData, TError> | undefined
+      : TOptions[K] extends
+            | DataAwareCallback<infer R, unknown, unknown>
+            | undefined
+        ? DataAwareCallback<R, TData, TError> | undefined
+        : TOptions[K] extends DataAwareTransform<unknown, unknown> | undefined
+          ? DataAwareTransform<TData, TError> | undefined
+          : TOptions[K];
 };
 
 export type UseReadResult<TData, TError> = {
@@ -82,6 +98,8 @@ export function createPluginHooks<
     autoGenerateTags = true,
   } = config;
 
+  type PluginOptions = MergePluginOptions<TPlugins>;
+
   const api = enlace<TSchema, TDefaultError>(baseUrl, defaultOptions);
   const stateManager = createStateManager();
   const pluginExecutor = createPluginExecutor([...plugins]);
@@ -90,16 +108,10 @@ export function createPluginHooks<
     readFn: (
       api: ReadApiClient<TSchema, TDefaultError>
     ) => Promise<EnlaceResponse<TData, TError>>,
-    options?: UseReadOptions<TData, TError>
+    options?: BaseReadOptions &
+      ResolveDataTypes<PluginOptions["read"], TData, TError>
   ): UseReadResult<TData, TError> {
-    const opts = options ?? ({} as UseReadOptions<TData, TError>);
-    const {
-      enabled = true,
-      staleTime = 0,
-      pollingInterval,
-      revalidateOnFocus,
-      revalidateOnReconnect,
-    } = opts;
+    const { enabled = true, ...pluginOpts } = options ?? {};
 
     const trackingResultRef = useRef<TrackingResult>({
       trackedCall: null,
@@ -171,12 +183,7 @@ export function createPluginHooks<
     const controller = controllerRef.current;
 
     // Update metadata on every render (options may change)
-    controller.setMetadata("staleTime", staleTime);
-    controller.setMetadata("pluginOptions", {
-      pollingInterval,
-      revalidateOnFocus,
-      revalidateOnReconnect,
-    });
+    controller.setMetadata("pluginOptions", pluginOpts);
 
     const state = useSyncExternalStore(
       controller.subscribe,

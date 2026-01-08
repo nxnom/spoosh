@@ -28,13 +28,10 @@ export function cachePlugin(
           return context;
         }
 
-        const metadataStaleTime = context.metadata.get("staleTime") as
-          | number
+        const pluginOptions = context.metadata.get("pluginOptions") as
+          | CacheReadOptions
           | undefined;
-        const optionsStaleTime = (context.requestOptions as CacheReadOptions)
-          .staleTime;
-        const staleTime =
-          metadataStaleTime ?? optionsStaleTime ?? defaultStaleTime;
+        const staleTime = pluginOptions?.staleTime ?? defaultStaleTime;
         const isStale = Date.now() - cached.state.timestamp > staleTime;
 
         if (cached.state.data !== undefined && !isStale) {

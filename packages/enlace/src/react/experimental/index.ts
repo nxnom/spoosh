@@ -2,6 +2,6 @@ export { createPluginHooks } from "./createPluginHooks";
 
 export type {
   PluginHooksConfig,
-  UseReadOptions,
+  BaseReadOptions,
   UseReadResult,
 } from "./createPluginHooks";
