@@ -112,7 +112,7 @@ export function invalidationPlugin(
         const tags = resolveInvalidateTags(context, defaultAutoInvalidate);
 
         if (tags.length > 0) {
-          context.invalidateTags(tags);
+          context.eventEmitter.emit("invalidate", tags);
         }
 
         return context;

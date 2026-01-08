@@ -2,33 +2,11 @@ import type { CacheEntry, OperationState } from "../plugins/types";
 import { sortObjectKeys } from "../utils/sortObjectKeys";
 
 type Subscriber = () => void;
-type InvalidateListener = (tags: string[]) => void;
 
-type ParsedRequest = {
-  query?: Record<string, unknown>;
-  params?: Record<string, unknown>;
-  body?: unknown;
+export type CacheEntryWithKey<TData = unknown, TError = unknown> = {
+  key: string;
+  entry: CacheEntry<TData, TError>;
 };
-
-function parseRequestFromKey(key: string): ParsedRequest | undefined {
-  try {
-    const parsed = JSON.parse(key) as {
-      options?: { query?: unknown; params?: unknown; body?: unknown };
-    };
-
-    return {
-      query: parsed.options?.query as Record<string, unknown> | undefined,
-      params: parsed.options?.params as Record<string, unknown> | undefined,
-      body: parsed.options?.body,
-    };
-  } catch {
-    return undefined;
-  }
-}
-
-function getExactPath(tags: string[]): string | undefined {
-  return tags.length > 0 ? tags[tags.length - 1] : undefined;
-}
 
 function createInitialState<TData, TError>(): OperationState<TData, TError> {
   return {
@@ -62,30 +40,17 @@ export type StateManager = {
 
   subscribeCache: (key: string, callback: Subscriber) => () => void;
 
-  isStale: (key: string, staleTime: number) => boolean;
-
-  invalidateByTags: (tags: string[]) => void;
-
   getCacheByTags: <TData>(tags: string[]) => CacheEntry<TData> | undefined;
 
-  setOptimistic: <TData>(
-    tags: string[],
-    updater: (data: TData) => TData,
-    match?: (request: ParsedRequest) => boolean
-  ) => string[];
-
-  confirmOptimistic: (keys: string[]) => void;
-
-  rollbackOptimistic: (keys: string[]) => void;
-
-  onInvalidate: (callback: InvalidateListener) => () => void;
+  getCacheEntriesByTags: <TData, TError>(
+    tags: string[]
+  ) => CacheEntryWithKey<TData, TError>[];
 
   clear: () => void;
 };
 
 export function createStateManager(): StateManager {
   const cache = new Map<string, CacheEntry>();
-  const invalidateListeners = new Set<InvalidateListener>();
 
   return {
     createQueryKey({ path, method, options }) {
@@ -163,29 +128,6 @@ export function createStateManager(): StateManager {
       };
     },
 
-    isStale(key, staleTime) {
-      const entry = cache.get(key);
-
-      if (!entry) return true;
-
-      return Date.now() - entry.state.timestamp > staleTime;
-    },
-
-    invalidateByTags(tags) {
-      cache.forEach((entry) => {
-        const hasMatch = entry.tags.some((tag) => tags.includes(tag));
-
-        if (hasMatch) {
-          entry.state.timestamp = 0;
-          entry.state.isStale = true;
-          delete entry.promise;
-          entry.subscribers.forEach((cb) => cb());
-        }
-      });
-
-      invalidateListeners.forEach((listener) => listener(tags));
-    },
-
     getCacheByTags<TData>(tags: string[]) {
       for (const entry of cache.values()) {
         const hasMatch = entry.tags.some((tag) => tags.includes(tag));
@@ -198,73 +140,25 @@ export function createStateManager(): StateManager {
       return undefined;
     },
 
-    setOptimistic<TData>(
-      tags: string[],
-      updater: (data: TData) => TData,
-      match?: (request: ParsedRequest) => boolean
-    ) {
-      const affectedKeys: string[] = [];
-      const targetExactPath = getExactPath(tags);
-
-      if (!targetExactPath) {
-        return affectedKeys;
-      }
+    getCacheEntriesByTags<TData, TError>(tags: string[]) {
+      const entries: CacheEntryWithKey<TData, TError>[] = [];
 
       cache.forEach((entry, key) => {
-        if (key.includes('"type":"infinite-tracker"')) return;
+        const hasMatch = entry.tags.some((tag) => tags.includes(tag));
 
-        if (match) {
-          const request = parseRequestFromKey(key);
-          if (!request || !match(request)) return;
-        }
-
-        const entryExactPath = getExactPath(entry.tags);
-        const isExactMatch = entryExactPath === targetExactPath;
-
-        if (isExactMatch && entry.state.data !== undefined) {
-          entry.previousData = entry.state.data;
-          entry.state.data = updater(entry.state.data as TData);
-          entry.state.isOptimistic = true;
-          entry.subscribers.forEach((cb) => cb());
-          affectedKeys.push(key);
+        if (hasMatch) {
+          entries.push({
+            key,
+            entry: entry as CacheEntry<TData, TError>,
+          });
         }
       });
 
-      return affectedKeys;
-    },
-
-    confirmOptimistic(keys) {
-      keys.forEach((key) => {
-        const entry = cache.get(key);
-
-        if (entry) {
-          entry.state.isOptimistic = false;
-          delete entry.previousData;
-        }
-      });
-    },
-
-    rollbackOptimistic(keys) {
-      keys.forEach((key) => {
-        const entry = cache.get(key);
-
-        if (entry && entry.previousData !== undefined) {
-          entry.state.data = entry.previousData;
-          entry.state.isOptimistic = false;
-          delete entry.previousData;
-          entry.subscribers.forEach((cb) => cb());
-        }
-      });
-    },
-
-    onInvalidate(callback) {
-      invalidateListeners.add(callback);
-      return () => invalidateListeners.delete(callback);
+      return entries;
     },
 
     clear() {
       cache.clear();
-      invalidateListeners.clear();
     },
   };
 }

@@ -85,7 +85,7 @@ export function revalidationPlugin(
 
     handlers: {
       onMount(context: PluginContext) {
-        const { queryKey, tags, onInvalidate, metadata } = context;
+        const { queryKey, tags, eventEmitter, metadata } = context;
 
         const execute = metadata.get("execute") as (() => void) | undefined;
 
@@ -101,13 +101,18 @@ export function revalidationPlugin(
           pluginOptions?.revalidateOnReconnect ?? revalidateOnReconnect;
 
         if (tags.length > 0) {
-          const unsubscribe = onInvalidate((invalidatedTags) => {
-            const hasMatch = invalidatedTags.some((tag) => tags.includes(tag));
+          const unsubscribe = eventEmitter.on<string[]>(
+            "invalidate",
+            (invalidatedTags) => {
+              const hasMatch = invalidatedTags.some((tag) =>
+                tags.includes(tag)
+              );
 
-            if (hasMatch) {
-              execute();
+              if (hasMatch) {
+                execute();
+              }
             }
-          });
+          );
 
           invalidateUnsubscribers.set(queryKey, unsubscribe);
         }

@@ -4,4 +4,4 @@ export {
   resetDefaultStateManager,
 } from "./manager";
 
-export type { StateManager } from "./manager";
+export type { StateManager, CacheEntryWithKey } from "./manager";

@@ -1,6 +1,8 @@
 import type { HttpMethod } from "../types/common.types";
 import type { AnyRequestOptions } from "../types/request.types";
 import type { EnlaceResponse } from "../types/response.types";
+import type { EventEmitter } from "../events/emitter";
+import type { StateManager } from "../state/manager";
 
 export type OperationType = "read" | "write" | "infiniteRead";
 
@@ -46,11 +48,8 @@ export type PluginContext<TData = unknown, TError = unknown> = {
   metadata: Map<string, unknown>;
 
   abort: () => void;
-  getCache: () => CacheEntry<TData, TError> | undefined;
-  setCache: (entry: Partial<CacheEntry<TData, TError>>) => void;
-  invalidateTags: (tags: string[]) => void;
-  subscribe: (callback: () => void) => () => void;
-  onInvalidate: (callback: (tags: string[]) => void) => () => void;
+  stateManager: StateManager;
+  eventEmitter: EventEmitter;
 
   skipFetch?: boolean;
   skipRemainingPlugins?: boolean;

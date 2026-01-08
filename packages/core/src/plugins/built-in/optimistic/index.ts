@@ -27,6 +27,17 @@ type TrackedFunction = (() => Promise<{ data: undefined }>) & {
   __trackedMethod?: string;
 };
 
+type ParsedRequest = {
+  query?: Record<string, unknown>;
+  params?: Record<string, unknown>;
+  body?: unknown;
+};
+
+type OptimisticSnapshot = {
+  key: string;
+  previousData: unknown;
+};
+
 function createApiProxy(): unknown {
   const createTrackingProxy = (path: string[]): unknown => {
     const handler: ProxyHandler<object> = {
@@ -72,6 +83,26 @@ function extractTagsFromFor(forFn: ResolvedCacheConfig["for"]): string[] {
   return tags;
 }
 
+function getExactPath(tags: string[]): string | undefined {
+  return tags.length > 0 ? tags[tags.length - 1] : undefined;
+}
+
+function parseRequestFromKey(key: string): ParsedRequest | undefined {
+  try {
+    const parsed = JSON.parse(key) as {
+      options?: { query?: unknown; params?: unknown; body?: unknown };
+    };
+
+    return {
+      query: parsed.options?.query as Record<string, unknown> | undefined,
+      params: parsed.options?.params as Record<string, unknown> | undefined,
+      body: parsed.options?.body,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 function resolveOptimisticConfigs(
   context: PluginContext
 ): ResolvedCacheConfig[] {
@@ -99,6 +130,85 @@ function resolveOptimisticConfigs(
   return Array.isArray(result) ? result : [result];
 }
 
+function applyOptimisticUpdate(
+  stateManager: StateManager,
+  config: ResolvedCacheConfig
+): OptimisticSnapshot[] {
+  const tags = extractTagsFromFor(config.for);
+  const targetExactPath = getExactPath(tags);
+
+  if (!targetExactPath) return [];
+
+  const snapshots: OptimisticSnapshot[] = [];
+  const entries = stateManager.getCacheEntriesByTags(tags);
+
+  for (const { key, entry } of entries) {
+    if (key.includes('"type":"infinite-tracker"')) continue;
+
+    if (config.match) {
+      const request = parseRequestFromKey(key);
+      if (!request || !config.match(request)) continue;
+    }
+
+    const entryExactPath = getExactPath(entry.tags);
+
+    if (entryExactPath !== targetExactPath) continue;
+    if (entry.state.data === undefined) continue;
+
+    snapshots.push({ key, previousData: entry.state.data });
+
+    stateManager.setCache(key, {
+      previousData: entry.state.data,
+      state: {
+        ...entry.state,
+        data: config.updater(entry.state.data, undefined),
+        isOptimistic: true,
+      },
+    });
+  }
+
+  return snapshots;
+}
+
+function confirmOptimistic(
+  stateManager: StateManager,
+  snapshots: OptimisticSnapshot[]
+): void {
+  for (const { key } of snapshots) {
+    const entry = stateManager.getCache(key);
+
+    if (entry) {
+      stateManager.setCache(key, {
+        previousData: undefined,
+        state: {
+          ...entry.state,
+          isOptimistic: false,
+        },
+      });
+    }
+  }
+}
+
+function rollbackOptimistic(
+  stateManager: StateManager,
+  snapshots: OptimisticSnapshot[]
+): void {
+  for (const { key, previousData } of snapshots) {
+    const entry = stateManager.getCache(key);
+
+    if (entry) {
+      stateManager.setCache(key, {
+        previousData: undefined,
+        state: {
+          ...entry.state,
+          data: previousData,
+          isOptimistic: false,
+        },
+      });
+    }
+  }
+}
+
 export function optimisticPlugin(): EnlacePlugin<
   OptimisticReadOptions,
   OptimisticWriteOptions,
@@ -110,12 +220,7 @@ export function optimisticPlugin(): EnlacePlugin<
 
     handlers: {
       beforeFetch(context: PluginContext) {
-        const stateManager = context.metadata.get("stateManager") as
-          | StateManager
-          | undefined;
-
-        if (!stateManager) return context;
-
+        const { stateManager } = context;
         const configs = resolveOptimisticConfigs(context);
         const immediateConfigs = configs.filter(
           (c) => c.timing !== "onSuccess"
@@ -123,47 +228,30 @@ export function optimisticPlugin(): EnlacePlugin<
 
         if (immediateConfigs.length === 0) return context;
 
-        const allAffectedKeys: string[] = [];
+        const allSnapshots: OptimisticSnapshot[] = [];
 
         for (const config of immediateConfigs) {
-          const tags = extractTagsFromFor(config.for);
-
-          const affectedKeys = stateManager.setOptimistic(
-            tags,
-            config.updater as (data: unknown) => unknown,
-            config.match as
-              | ((request: {
-                  query?: Record<string, unknown>;
-                  params?: Record<string, unknown>;
-                  body?: unknown;
-                }) => boolean)
-              | undefined
-          );
-
-          allAffectedKeys.push(...affectedKeys);
+          const snapshots = applyOptimisticUpdate(stateManager, config);
+          allSnapshots.push(...snapshots);
         }
 
-        if (allAffectedKeys.length > 0) {
-          context.metadata.set("optimisticKeys", allAffectedKeys);
+        if (allSnapshots.length > 0) {
+          context.metadata.set("optimisticSnapshots", allSnapshots);
         }
 
         return context;
       },
 
       onSuccess(context: PluginContext) {
-        const stateManager = context.metadata.get("stateManager") as
-          | StateManager
-          | undefined;
-
-        if (!stateManager) return context;
-
+        const { stateManager } = context;
         const configs = resolveOptimisticConfigs(context);
+        const snapshots =
+          (context.metadata.get(
+            "optimisticSnapshots"
+          ) as OptimisticSnapshot[]) ?? [];
 
-        const affectedKeys =
-          (context.metadata.get("optimisticKeys") as string[]) ?? [];
-
-        if (affectedKeys.length > 0) {
-          stateManager.confirmOptimistic(affectedKeys);
+        if (snapshots.length > 0) {
+          confirmOptimistic(stateManager, snapshots);
         }
 
         const onSuccessConfigs = configs.filter(
@@ -172,28 +260,39 @@ export function optimisticPlugin(): EnlacePlugin<
 
         for (const config of onSuccessConfigs) {
           const tags = extractTagsFromFor(config.for);
+          const targetExactPath = getExactPath(tags);
 
-          stateManager.setOptimistic(
-            tags,
-            (data) => config.updater(data, context.response?.data),
-            config.match as
-              | ((request: {
-                  query?: Record<string, unknown>;
-                  params?: Record<string, unknown>;
-                  body?: unknown;
-                }) => boolean)
-              | undefined
-          );
+          if (!targetExactPath) continue;
+
+          const entries = stateManager.getCacheEntriesByTags(tags);
+
+          for (const { key, entry } of entries) {
+            if (config.match) {
+              const request = parseRequestFromKey(key);
+              if (!request || !config.match(request)) continue;
+            }
+
+            const entryExactPath = getExactPath(entry.tags);
+
+            if (entryExactPath !== targetExactPath) continue;
+
+            stateManager.setCache(key, {
+              state: {
+                ...entry.state,
+                data: config.updater(entry.state.data, context.response?.data),
+              },
+            });
+          }
 
           if (config.refetch) {
-            context.invalidateTags(tags);
+            context.eventEmitter.emit("invalidate", tags);
           }
         }
 
         for (const config of configs) {
           if (config.timing !== "onSuccess" && config.refetch) {
             const tags = extractTagsFromFor(config.for);
-            context.invalidateTags(tags);
+            context.eventEmitter.emit("invalidate", tags);
           }
         }
 
@@ -201,22 +300,19 @@ export function optimisticPlugin(): EnlacePlugin<
       },
 
       onError(context: PluginContext) {
-        const stateManager = context.metadata.get("stateManager") as
-          | StateManager
-          | undefined;
-
-        if (!stateManager) return context;
-
+        const { stateManager } = context;
         const configs = resolveOptimisticConfigs(context);
-        const affectedKeys =
-          (context.metadata.get("optimisticKeys") as string[]) ?? [];
+        const snapshots =
+          (context.metadata.get(
+            "optimisticSnapshots"
+          ) as OptimisticSnapshot[]) ?? [];
 
         const shouldRollback = configs.some(
           (c) => c.rollbackOnError !== false && c.timing !== "onSuccess"
         );
 
-        if (shouldRollback && affectedKeys.length > 0) {
-          stateManager.rollbackOptimistic(affectedKeys);
+        if (shouldRollback && snapshots.length > 0) {
+          rollbackOptimistic(stateManager, snapshots);
         }
 
         for (const config of configs) {

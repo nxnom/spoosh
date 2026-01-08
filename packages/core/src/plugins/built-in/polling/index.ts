@@ -51,7 +51,7 @@ export function pollingPlugin(
 
     if (pollingInterval === undefined) return;
 
-    const cached = context.getCache();
+    const cached = context.stateManager.getCache(queryKey);
     const data = cached?.state.data;
     const error = cached?.state.error;
 

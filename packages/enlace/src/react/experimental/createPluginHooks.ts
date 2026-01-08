@@ -21,6 +21,7 @@ import {
   type InvalidateOption,
   createPluginExecutor,
   createStateManager,
+  createEventEmitter,
   createOperationController,
   generateTags,
   type MergePluginOptions,
@@ -154,6 +155,7 @@ export function createPluginHooks<
 
   const api = enlace<TSchema, TDefaultError>(baseUrl, defaultOptions);
   const stateManager = createStateManager();
+  const eventEmitter = createEventEmitter();
   const pluginExecutor = createPluginExecutor([...plugins]);
 
   function useRead<TData, TError = TDefaultError>(
@@ -213,6 +215,7 @@ export function createPluginHooks<
           | Record<string, unknown>
           | undefined,
         stateManager,
+        eventEmitter,
         pluginExecutor,
         fetchFn: async (fetchOpts) => {
           let current: unknown = api;
@@ -368,16 +371,10 @@ export function createPluginHooks<
             tags,
             requestOptions: options ?? {},
             state: initialState,
-            metadata: new Map<string, unknown>([
-              ["pluginOptions", options],
-              ["stateManager", stateManager],
-            ]),
+            metadata: new Map<string, unknown>([["pluginOptions", options]]),
             abort: () => abortControllerRef.current?.abort(),
-            getCache: () => undefined,
-            setCache: () => {},
-            invalidateTags: (t) => stateManager.invalidateByTags(t),
-            subscribe: () => () => {},
-            onInvalidate: (cb) => stateManager.onInvalidate(cb),
+            stateManager,
+            eventEmitter,
           };
         };
 
@@ -458,6 +455,7 @@ export function createPluginHooks<
     useWrite,
     api,
     stateManager,
+    eventEmitter,
     pluginExecutor,
   };
 }

@@ -8,6 +8,7 @@ import type {
 } from "../plugins/types";
 import type { PluginExecutor } from "../plugins/executor";
 import type { StateManager } from "../state/manager";
+import type { EventEmitter } from "../events/emitter";
 
 export type OperationController<TData = unknown, TError = unknown> = {
   execute: (
@@ -29,6 +30,7 @@ export type CreateOperationOptions<TData, TError> = {
   tags: string[];
   requestOptions?: AnyRequestOptions;
   stateManager: StateManager;
+  eventEmitter: EventEmitter;
   pluginExecutor: PluginExecutor;
   fetchFn: (
     options: AnyRequestOptions
@@ -57,6 +59,7 @@ export function createOperationController<TData, TError>(
     tags,
     requestOptions: initialRequestOptions,
     stateManager,
+    eventEmitter,
     pluginExecutor,
     fetchFn,
   } = options;
@@ -90,11 +93,8 @@ export function createOperationController<TData, TError>(
       state,
       metadata,
       abort: () => abortController?.abort(),
-      getCache: () => stateManager.getCache<TData, TError>(queryKey),
-      setCache: (entry) => stateManager.setCache(queryKey, entry),
-      invalidateTags: (t) => stateManager.invalidateByTags(t),
-      subscribe: (cb) => stateManager.subscribeCache(queryKey, cb),
-      onInvalidate: (cb) => stateManager.onInvalidate(cb),
+      stateManager,
+      eventEmitter,
     };
   };
 
@@ -131,7 +131,7 @@ export function createOperationController<TData, TError>(
         return { data: context.state.data as TData, status: 200 };
       }
 
-      const cached = context.getCache();
+      const cached = stateManager.getCache<TData, TError>(queryKey);
 
       if (cached?.state.data !== undefined && !cached.state.isStale) {
         context = await pluginExecutor.execute(

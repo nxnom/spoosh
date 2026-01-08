@@ -22,7 +22,7 @@ export function cachePlugin(
 
     handlers: {
       beforeFetch(context: PluginContext) {
-        const cached = context.getCache();
+        const cached = context.stateManager.getCache(context.queryKey);
 
         if (!cached) {
           return context;
@@ -45,7 +45,7 @@ export function cachePlugin(
       onSuccess(context: PluginContext) {
         if (!context.response?.data) return context;
 
-        context.setCache({
+        context.stateManager.setCache(context.queryKey, {
           state: {
             ...context.state,
             data: context.response.data,
@@ -63,7 +63,7 @@ export function cachePlugin(
       },
 
       onError(context: PluginContext) {
-        context.setCache({
+        context.stateManager.setCache(context.queryKey, {
           state: {
             ...context.state,
             error: context.response?.error,
