@@ -26,4 +26,8 @@ export {
   type InvalidateCallbackFn,
   type InvalidateOption,
   type AutoInvalidate,
+  retryPlugin,
+  type RetryPluginConfig,
+  type RetryReadOptions,
+  type RetryWriteOptions,
 } from "enlace-core";
