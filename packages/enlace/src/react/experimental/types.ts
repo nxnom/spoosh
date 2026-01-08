@@ -155,10 +155,14 @@ export type BaseInfiniteReadOptions<
 > = {
   enabled?: boolean;
   canFetchNext: (ctx: InfiniteNextContext<TData, TRequest>) => boolean;
-  nextPageRequest: (ctx: InfiniteNextContext<TData, TRequest>) => Partial<TRequest>;
+  nextPageRequest: (
+    ctx: InfiniteNextContext<TData, TRequest>
+  ) => Partial<TRequest>;
   merger: (allResponses: TData[]) => TItem[];
   canFetchPrev?: (ctx: InfinitePrevContext<TData, TRequest>) => boolean;
-  prevPageRequest?: (ctx: InfinitePrevContext<TData, TRequest>) => Partial<TRequest>;
+  prevPageRequest?: (
+    ctx: InfinitePrevContext<TData, TRequest>
+  ) => Partial<TRequest>;
 };
 
 export type BaseInfiniteReadResult<TData, TError, TItem> = {

@@ -68,7 +68,11 @@ export function createPluginHooks<TSchema, TDefaultError = unknown>() {
       autoGenerateTags,
     });
 
-    const useInfiniteRead = createUseInfiniteRead<TSchema, TDefaultError, TPlugins>({
+    const useInfiniteRead = createUseInfiniteRead<
+      TSchema,
+      TDefaultError,
+      TPlugins
+    >({
       api,
       stateManager,
       eventEmitter,

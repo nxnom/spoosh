@@ -30,3 +30,10 @@ export {
   type RetryReadOptions,
   type RetryWriteOptions,
 } from "enlace-core";
+
+export {
+  nextjsPlugin,
+  type NextjsPluginConfig,
+  type NextjsWriteOptions,
+  type ServerRevalidateHandler,
+} from "../plugins/nextjs";
