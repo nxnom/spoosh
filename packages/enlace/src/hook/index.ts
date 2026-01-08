@@ -13,4 +13,7 @@ export {
   pollingPlugin,
   type PollingPluginConfig,
   type PollingReadOptions,
+  revalidationPlugin,
+  type RevalidationPluginConfig,
+  type RevalidationReadOptions,
 } from "enlace-core";

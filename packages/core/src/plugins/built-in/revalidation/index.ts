@@ -2,19 +2,82 @@ import type { EnlacePlugin, PluginContext } from "../../types";
 import type {
   RevalidationReadOptions,
   RevalidationWriteOptions,
+  RevalidationInfiniteReadOptions,
 } from "./types";
 
-export type { RevalidationReadOptions, RevalidationWriteOptions };
+export type {
+  RevalidationReadOptions,
+  RevalidationWriteOptions,
+  RevalidationInfiniteReadOptions,
+};
 
 export interface RevalidationPluginConfig {
   revalidateOnFocus?: boolean;
   revalidateOnReconnect?: boolean;
 }
 
+type CleanupFn = () => void;
+
 export function revalidationPlugin(
   config: RevalidationPluginConfig = {}
-): EnlacePlugin<RevalidationReadOptions, RevalidationWriteOptions> {
-  const unsubscribers = new Map<string, () => void>();
+): EnlacePlugin<
+  RevalidationReadOptions,
+  RevalidationWriteOptions,
+  RevalidationInfiniteReadOptions
+> {
+  const { revalidateOnFocus = false, revalidateOnReconnect = false } = config;
+
+  const invalidateUnsubscribers = new Map<string, CleanupFn>();
+  const focusUnsubscribers = new Map<string, CleanupFn>();
+  const reconnectUnsubscribers = new Map<string, CleanupFn>();
+
+  const isBrowser = typeof window !== "undefined";
+
+  const setupFocusListener = (queryKey: string, execute: () => void) => {
+    if (!isBrowser) return;
+
+    const handler = () => {
+      if (document.visibilityState === "visible") {
+        execute();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handler);
+    focusUnsubscribers.set(queryKey, () => {
+      document.removeEventListener("visibilitychange", handler);
+    });
+  };
+
+  const setupReconnectListener = (queryKey: string, execute: () => void) => {
+    if (!isBrowser) return;
+
+    const handler = () => execute();
+
+    window.addEventListener("online", handler);
+    reconnectUnsubscribers.set(queryKey, () => {
+      window.removeEventListener("online", handler);
+    });
+  };
+
+  const cleanupQuery = (queryKey: string) => {
+    const invalidateUnsub = invalidateUnsubscribers.get(queryKey);
+    if (invalidateUnsub) {
+      invalidateUnsub();
+      invalidateUnsubscribers.delete(queryKey);
+    }
+
+    const focusUnsub = focusUnsubscribers.get(queryKey);
+    if (focusUnsub) {
+      focusUnsub();
+      focusUnsubscribers.delete(queryKey);
+    }
+
+    const reconnectUnsub = reconnectUnsubscribers.get(queryKey);
+    if (reconnectUnsub) {
+      reconnectUnsub();
+      reconnectUnsubscribers.delete(queryKey);
+    }
+  };
 
   return {
     name: "enlace:revalidation",
@@ -24,41 +87,57 @@ export function revalidationPlugin(
       onMount(context: PluginContext) {
         const { queryKey, tags, onInvalidate, metadata } = context;
 
-        if (tags.length === 0) return context;
-
         const execute = metadata.get("execute") as (() => void) | undefined;
 
         if (!execute) return context;
 
-        const unsubscribe = onInvalidate((invalidatedTags) => {
-          const hasMatch = invalidatedTags.some((tag) => tags.includes(tag));
+        const pluginOptions = metadata.get("pluginOptions") as
+          | RevalidationReadOptions
+          | undefined;
 
-          if (hasMatch) {
-            execute();
-          }
-        });
+        const shouldRevalidateOnFocus =
+          pluginOptions?.revalidateOnFocus ?? revalidateOnFocus;
+        const shouldRevalidateOnReconnect =
+          pluginOptions?.revalidateOnReconnect ?? revalidateOnReconnect;
 
-        unsubscribers.set(queryKey, unsubscribe);
+        if (tags.length > 0) {
+          const unsubscribe = onInvalidate((invalidatedTags) => {
+            const hasMatch = invalidatedTags.some((tag) => tags.includes(tag));
+
+            if (hasMatch) {
+              execute();
+            }
+          });
+
+          invalidateUnsubscribers.set(queryKey, unsubscribe);
+        }
+
+        if (shouldRevalidateOnFocus) {
+          setupFocusListener(queryKey, execute);
+        }
+
+        if (shouldRevalidateOnReconnect) {
+          setupReconnectListener(queryKey, execute);
+        }
 
         return context;
       },
 
       onUnmount(context: PluginContext) {
-        const { queryKey } = context;
-        const unsubscribe = unsubscribers.get(queryKey);
-
-        if (unsubscribe) {
-          unsubscribe();
-          unsubscribers.delete(queryKey);
-        }
-
+        cleanupQuery(context.queryKey);
         return context;
       },
     },
 
     cleanup() {
-      unsubscribers.forEach((unsubscribe) => unsubscribe());
-      unsubscribers.clear();
+      invalidateUnsubscribers.forEach((unsub) => unsub());
+      invalidateUnsubscribers.clear();
+
+      focusUnsubscribers.forEach((unsub) => unsub());
+      focusUnsubscribers.clear();
+
+      reconnectUnsubscribers.forEach((unsub) => unsub());
+      reconnectUnsubscribers.clear();
     },
   };
 }

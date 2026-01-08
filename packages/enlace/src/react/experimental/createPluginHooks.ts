@@ -10,7 +10,6 @@ import {
   createStateManager,
   createOperationController,
   generateTags,
-  type MergePluginOptions,
 } from "enlace-core";
 import { createTrackingProxy, type TrackingResult } from "../trackingProxy";
 import type { ReactOptionsMap } from "../types/request.types";
@@ -28,6 +27,8 @@ export type UseReadOptions<TData = unknown, TError = unknown> = {
   enabled?: boolean;
   staleTime?: number;
   pollingInterval?: PollingInterval<TData, TError>;
+  revalidateOnFocus?: boolean;
+  revalidateOnReconnect?: boolean;
 };
 
 export type UseReadResult<TData, TError> = {
@@ -81,8 +82,6 @@ export function createPluginHooks<
     autoGenerateTags = true,
   } = config;
 
-  type PluginOptions = MergePluginOptions<TPlugins>;
-
   const api = enlace<TSchema, TDefaultError>(baseUrl, defaultOptions);
   const stateManager = createStateManager();
   const pluginExecutor = createPluginExecutor([...plugins]);
@@ -94,7 +93,13 @@ export function createPluginHooks<
     options?: UseReadOptions<TData, TError>
   ): UseReadResult<TData, TError> {
     const opts = options ?? ({} as UseReadOptions<TData, TError>);
-    const { enabled = true, staleTime = 0, pollingInterval } = opts;
+    const {
+      enabled = true,
+      staleTime = 0,
+      pollingInterval,
+      revalidateOnFocus,
+      revalidateOnReconnect,
+    } = opts;
 
     const trackingResultRef = useRef<TrackingResult>({
       trackedCall: null,
@@ -167,7 +172,11 @@ export function createPluginHooks<
 
     // Update metadata on every render (options may change)
     controller.setMetadata("staleTime", staleTime);
-    controller.setMetadata("pluginOptions", { pollingInterval });
+    controller.setMetadata("pluginOptions", {
+      pollingInterval,
+      revalidateOnFocus,
+      revalidateOnReconnect,
+    });
 
     const state = useSyncExternalStore(
       controller.subscribe,
