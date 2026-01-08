@@ -81,7 +81,9 @@ export function revalidationPlugin(
       onMount(context: PluginContext) {
         const { queryKey, tags, eventEmitter, metadata } = context;
 
-        const execute = metadata.get("execute") as (() => void) | undefined;
+        const execute = metadata.get("execute") as
+          | ((force?: boolean) => void)
+          | undefined;
 
         if (!execute) return context;
 
@@ -103,7 +105,7 @@ export function revalidationPlugin(
               );
 
               if (hasMatch) {
-                execute();
+                execute(true);
               }
             }
           );

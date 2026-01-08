@@ -11,7 +11,7 @@ import {
   type OperationState,
   generateTags,
 } from "enlace-core";
-import { createTrackingProxy, type TrackingResult } from "../trackingProxy";
+import { createTrackingProxy, type TrackingResult } from "./trackingProxy";
 import type {
   BaseInfiniteReadOptions,
   BaseInfiniteReadResult,

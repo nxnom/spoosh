@@ -10,9 +10,14 @@ import type { PluginExecutor } from "../plugins/executor";
 import type { StateManager } from "../state/manager";
 import type { EventEmitter } from "../events/emitter";
 
+export type ExecuteOptions = {
+  force?: boolean;
+};
+
 export type OperationController<TData = unknown, TError = unknown> = {
   execute: (
-    options?: AnyRequestOptions
+    options?: AnyRequestOptions,
+    executeOptions?: ExecuteOptions
   ) => Promise<EnlaceResponse<TData, TError>>;
   getState: () => OperationState<TData, TError>;
   subscribe: (callback: () => void) => () => void;
@@ -117,8 +122,15 @@ export function createOperationController<TData, TError>(
 
   const controller: OperationController<TData, TError> = {
     async execute(
-      opts?: AnyRequestOptions
+      opts?: AnyRequestOptions,
+      executeOptions?: ExecuteOptions
     ): Promise<EnlaceResponse<TData, TError>> {
+      const { force = false } = executeOptions ?? {};
+
+      if (force) {
+        metadata.set("forceRefetch", true);
+      }
+
       let context = createContext(opts);
 
       context = await pluginExecutor.execute(
@@ -267,7 +279,9 @@ export function createOperationController<TData, TError>(
     },
 
     mount() {
-      metadata.set("execute", () => controller.execute());
+      metadata.set("execute", (force?: boolean) =>
+        controller.execute(undefined, { force })
+      );
       const context = createContext();
       pluginExecutor.execute("onMount", operationType, context);
     },

@@ -19,11 +19,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
-    },
-    "./hook": {
-      "types": "./dist/hook/index.d.ts",
-      "import": "./dist/hook/index.mjs",
-      "require": "./dist/hook/index.js"
     }
   },
   "scripts": {

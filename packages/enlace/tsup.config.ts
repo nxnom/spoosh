@@ -1,24 +1,13 @@
 import { defineConfig } from "tsup";
 
-const common = {
+export default defineConfig((options) => ({
+  entry: { index: "src/index.ts" },
   external: ["react", "react-dom", "enlace-core"],
-  format: ["cjs", "esm"] as const,
+  format: ["cjs", "esm"],
   dts: true,
   splitting: false,
-  platform: "browser" as const,
-};
-
-export default defineConfig((options) => [
-  {
-    ...common,
-    entry: { index: "src/index.ts" },
-    outDir: "dist",
-    clean: !options.watch,
-  },
-  {
-    ...common,
-    entry: { index: "src/hook/index.ts" },
-    outDir: "dist/hook",
-    banner: { js: '"use client";' },
-  },
-]);
+  platform: "browser",
+  outDir: "dist",
+  clean: !options.watch,
+  banner: { js: '"use client";' },
+}));

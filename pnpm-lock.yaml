@@ -60,18 +60,6 @@ importers:
         specifier: ^4.10.6
         version: 4.11.3
 
-  packages/next:
-    dependencies:
-      enlace:
-        specifier: workspace:*
-        version: link:../enlace
-      enlace-core:
-        specifier: workspace:*
-        version: link:../core
-      react:
-        specifier: ^19
-        version: 19.2.0
-
   packages/openapi:
     dependencies:
       commander:
@@ -99,9 +87,6 @@ importers:
       enlace-hono:
         specifier: workspace:*
         version: link:../hono
-      enlace-next:
-        specifier: workspace:*
-        version: link:../next
       hono:
         specifier: ^4.11.3
         version: 4.11.3

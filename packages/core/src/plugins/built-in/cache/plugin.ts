@@ -25,6 +25,13 @@ export function cachePlugin(
 
     handlers: {
       beforeFetch(context: PluginContext) {
+        const forceRefetch = context.metadata.get("forceRefetch");
+
+        if (forceRefetch) {
+          context.metadata.delete("forceRefetch");
+          return context;
+        }
+
         const cached = context.stateManager.getCache(context.queryKey);
 
         if (!cached) {

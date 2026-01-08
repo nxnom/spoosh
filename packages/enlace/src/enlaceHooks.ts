@@ -36,7 +36,7 @@ type HooksConfig<TPlugins extends PluginArray> = {
   autoGenerateTags?: boolean;
 };
 
-export function createPluginHooks<TSchema, TDefaultError = unknown>() {
+export function enlaceHooks<TSchema, TDefaultError = unknown>() {
   return <const TPlugins extends PluginArray>(
     config: HooksConfig<TPlugins>
   ) => {

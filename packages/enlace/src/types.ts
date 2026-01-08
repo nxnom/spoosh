@@ -1,6 +1,7 @@
 import type {
   EnlacePlugin,
   EnlaceResponse,
+  EnlaceClient,
   QueryOnlyClient,
   CleanMutationOnlyClient,
   PollingInterval,
@@ -10,8 +11,41 @@ import type {
   InvalidateOption,
   EnlaceOptions,
   MergePluginResults,
+  MethodOptionsMap,
+  CoreRequestOptionsBase,
 } from "enlace-core";
-import type { ReactOptionsMap } from "../types/request.types";
+
+export const HTTP_METHODS = [
+  "$get",
+  "$post",
+  "$put",
+  "$patch",
+  "$delete",
+] as const;
+
+export type TrackedCall = {
+  path: string[];
+  method: string;
+  options: unknown;
+};
+
+type QueryRequestOptions = CoreRequestOptionsBase & {
+  tags?: string[];
+  additionalTags?: string[];
+};
+
+type MutationRequestOptions = CoreRequestOptionsBase;
+
+export type ReactOptionsMap = MethodOptionsMap<
+  QueryRequestOptions,
+  MutationRequestOptions
+>;
+
+export type ApiClient<TSchema> = EnlaceClient<
+  TSchema,
+  unknown,
+  ReactOptionsMap
+>;
 
 export type PluginHooksConfig<
   TPlugins extends readonly EnlacePlugin<
