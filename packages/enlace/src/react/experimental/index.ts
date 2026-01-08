@@ -5,4 +5,9 @@ export type {
   BaseReadOptions,
   UseReadResult,
   UseWriteResult,
+  UseInfiniteReadResult,
+  BaseReadResult,
+  BaseWriteResult,
+  BaseInfiniteReadResult,
+  BaseInfiniteReadOptions,
 } from "./createPluginHooks";

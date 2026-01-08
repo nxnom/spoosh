@@ -129,3 +129,70 @@ export type ExtractMethodError<T> = T extends (
 export type ExtractMethodOptions<T> = T extends (...args: infer A) => unknown
   ? A[0]
   : never;
+
+export type AnyInfiniteRequestOptions = {
+  query?: Record<string, unknown>;
+  params?: Record<string, string | number>;
+  body?: unknown;
+};
+
+export type InfiniteNextContext<TData, TRequest> = {
+  response: TData | undefined;
+  allResponses: TData[];
+  request: TRequest;
+};
+
+export type InfinitePrevContext<TData, TRequest> = {
+  response: TData | undefined;
+  allResponses: TData[];
+  request: TRequest;
+};
+
+export type BaseInfiniteReadOptions<
+  TData,
+  TItem,
+  TRequest = AnyInfiniteRequestOptions,
+> = {
+  enabled?: boolean;
+  canFetchNext: (ctx: InfiniteNextContext<TData, TRequest>) => boolean;
+  nextPageRequest: (ctx: InfiniteNextContext<TData, TRequest>) => Partial<TRequest>;
+  merger: (allResponses: TData[]) => TItem[];
+  canFetchPrev?: (ctx: InfinitePrevContext<TData, TRequest>) => boolean;
+  prevPageRequest?: (ctx: InfinitePrevContext<TData, TRequest>) => Partial<TRequest>;
+};
+
+export type BaseInfiniteReadResult<TData, TError, TItem> = {
+  data: TItem[] | undefined;
+  allResponses: TData[] | undefined;
+  loading: boolean;
+  fetching: boolean;
+  fetchingNext: boolean;
+  fetchingPrev: boolean;
+  canFetchNext: boolean;
+  canFetchPrev: boolean;
+  fetchNext: () => Promise<void>;
+  fetchPrev: () => Promise<void>;
+  refetch: () => Promise<void>;
+  abort: () => void;
+  error: TError | undefined;
+};
+
+export type UseInfiniteReadResult<
+  TData,
+  TError,
+  TItem,
+  TPlugins extends readonly EnlacePlugin<
+    object,
+    object,
+    object,
+    object,
+    object
+  >[],
+> = BaseInfiniteReadResult<TData, TError, TItem> &
+  MergePluginResults<TPlugins>["read"];
+
+export type InfiniteReadApiClient<TSchema, TDefaultError> = QueryOnlyClient<
+  TSchema,
+  TDefaultError,
+  ReactOptionsMap
+>;

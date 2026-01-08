@@ -8,13 +8,17 @@ import {
 } from "enlace-core";
 import { createUseRead } from "./useRead";
 import { createUseWrite } from "./useWrite";
+import { createUseInfiniteRead } from "./useInfiniteRead";
 
 export type { PluginHooksConfig, BaseReadOptions } from "./types";
 export type {
   UseReadResult,
   UseWriteResult,
+  UseInfiniteReadResult,
   BaseReadResult,
   BaseWriteResult,
+  BaseInfiniteReadResult,
+  BaseInfiniteReadOptions,
 } from "./types";
 
 type PluginArray = readonly EnlacePlugin<
@@ -64,9 +68,18 @@ export function createPluginHooks<TSchema, TDefaultError = unknown>() {
       autoGenerateTags,
     });
 
+    const useInfiniteRead = createUseInfiniteRead<TSchema, TDefaultError, TPlugins>({
+      api,
+      stateManager,
+      eventEmitter,
+      pluginExecutor,
+      autoGenerateTags,
+    });
+
     return {
       useRead,
       useWrite,
+      useInfiniteRead,
       api,
       stateManager,
       eventEmitter,
