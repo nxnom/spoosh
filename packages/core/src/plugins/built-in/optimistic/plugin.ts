@@ -66,7 +66,6 @@ function resolveOptimisticConfigs(
     timing: config.timing,
     updater: config.updater as ResolvedCacheConfig["updater"],
     rollbackOnError: config.rollbackOnError,
-    refetch: config.refetch,
     onError: config.onError,
   });
 
@@ -161,14 +160,18 @@ function rollbackOptimistic(
  * Immediately updates cached data before the mutation completes,
  * with automatic rollback on error.
  *
+ * When using optimistic updates, `autoInvalidate` defaults to `"none"` to prevent
+ * unnecessary refetches that would override the optimistic data. You can override
+ * this by explicitly setting `autoInvalidate` or using the `invalidate` option.
+ *
  * @returns Optimistic plugin instance
  *
  * @example
  * ```ts
  * const plugins = [optimisticPlugin()];
  *
- * // In useWrite
- * useWrite((api) => api.posts.$delete, {
+ * // In useWrite - autoInvalidate defaults to "none" when optimistic is used
+ * trigger({
  *   optimistic: ($, api) => $({
  *     for: api.posts.$get,
  *     updater: (posts) => posts.filter(p => p.id !== deletedId),
@@ -180,7 +183,7 @@ function rollbackOptimistic(
  * @example
  * ```ts
  * // Multiple targets
- * useWrite((api) => api.posts.$delete, {
+ * trigger({
  *   optimistic: ($, api) => [
  *     $({ for: api.posts.$get, updater: (posts) => posts.filter(p => p.id !== deletedId) }),
  *     $({ for: api.stats.$get, updater: (stats) => ({ ...stats, count: stats.count - 1 }) }),
@@ -190,14 +193,25 @@ function rollbackOptimistic(
  *
  * @example
  * ```ts
- * // Filtering by request.
- * // You might rarely need to use this, but it's available if needed.
- * useWrite((api) => api.items.$create, {
+ * // Optimistic update with explicit invalidation
+ * trigger({
+ *   optimistic: ($, api) => $({
+ *     for: api.posts.$get,
+ *     updater: (posts) => posts.filter(p => p.id !== deletedId),
+ *   }),
+ *   // By default autoInvalidate is "none" when using optimistic updates
+ *   autoInvalidate: "all", // You can override to enable refetching after mutation
+ * });
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Filtering by request
+ * trigger({
  *   optimistic: ($, api) => $({
  *     for: api.items.$get,
- *     timing: "onSuccess", // Apply after successful mutation to get response data
+ *     timing: "onSuccess",
  *     match: (request) => request.query?.page === 1,
- *     // Append the newly created item to the start of page 1
  *     updater: (items, newItem) => [newItem!, ...items],
  *   }),
  * });
@@ -218,6 +232,13 @@ export function optimisticPlugin(): EnlacePlugin<{
       beforeFetch(context: PluginContext) {
         const { stateManager } = context;
         const configs = resolveOptimisticConfigs(context);
+
+        if (configs.length > 0) {
+          context.plugins
+            .get("enlace:invalidation")
+            ?.setAutoInvalidateDefault("none");
+        }
+
         const immediateConfigs = configs.filter(
           (c) => c.timing !== "onSuccess"
         );
@@ -278,17 +299,6 @@ export function optimisticPlugin(): EnlacePlugin<{
                 data: config.updater(entry.state.data, context.response?.data),
               },
             });
-          }
-
-          if (config.refetch) {
-            context.eventEmitter.emit("invalidate", tags);
-          }
-        }
-
-        for (const config of configs) {
-          if (config.timing !== "onSuccess" && config.refetch) {
-            const tags = extractTagsFromFor(config.for);
-            context.eventEmitter.emit("invalidate", tags);
           }
         }
 

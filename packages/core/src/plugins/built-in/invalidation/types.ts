@@ -61,3 +61,17 @@ export type InvalidationInfiniteReadOptions = object;
 export type InvalidationReadResult = object;
 
 export type InvalidationWriteResult = object;
+
+/**
+ * Exports provided by the invalidation plugin for other plugins to use.
+ */
+export interface InvalidationPluginExports {
+  /** Set the default autoInvalidate behavior for this mutation */
+  setAutoInvalidateDefault: (value: AutoInvalidate) => void;
+}
+
+declare module "../../types" {
+  interface PluginExportsRegistry {
+    "enlace:invalidation": InvalidationPluginExports;
+  }
+}

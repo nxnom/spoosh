@@ -46,9 +46,6 @@ export type CacheConfig<
   /** Whether to rollback on error. Defaults to `true`. */
   rollbackOnError?: boolean;
 
-  /** Whether to refetch after mutation completes. Defaults to `false`. */
-  refetch?: boolean;
-
   /** Callback when an error occurs. */
   onError?: (error: unknown) => void;
 };
@@ -63,7 +60,6 @@ export type ResolvedCacheConfig = {
   timing?: "immediate" | "onSuccess";
   updater: (data: unknown, response?: unknown) => unknown;
   rollbackOnError?: boolean;
-  refetch?: boolean;
   onError?: (error: unknown) => void;
 };
 

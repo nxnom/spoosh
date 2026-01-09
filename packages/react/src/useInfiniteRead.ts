@@ -367,7 +367,7 @@ export function createUseInfiniteRead<
         timestamp: 0,
       };
 
-      return {
+      const ctx: PluginContext<TData, TError> = {
         operationType: "infiniteRead",
         path: trackedCall.path,
         method: trackedCall.method as "GET",
@@ -379,7 +379,12 @@ export function createUseInfiniteRead<
         abort: () => abortControllerRef.current?.abort(),
         stateManager,
         eventEmitter,
+        plugins: null as never,
       };
+
+      ctx.plugins = pluginExecutor.createPluginAccessor(ctx);
+
+      return ctx;
     };
 
     const saveTrackerState = () => {

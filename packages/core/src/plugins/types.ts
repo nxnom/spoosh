@@ -52,6 +52,9 @@ export type PluginContext<TData = unknown, TError = unknown> = {
   stateManager: StateManager;
   eventEmitter: EventEmitter;
 
+  /** Access other plugins' exported APIs */
+  plugins: PluginAccessor;
+
   skipFetch?: boolean;
   skipRemainingPlugins?: boolean;
 };
@@ -114,6 +117,9 @@ export interface EnlacePlugin<T extends PluginTypeConfig = PluginTypeConfig> {
   operations: OperationType[];
   handlers: PluginHandlers;
   cleanup?: () => void;
+
+  /** Expose functions/variables for other plugins to access via `context.plugins.get(name)` */
+  exports?: (context: PluginContext) => object;
 
   /** @internal Type carrier for inference - do not use directly */
   readonly _types?: T;
@@ -216,3 +222,34 @@ export interface DataResolvers<TData, TError> {
   // Built-in plugin types are registered in schema-resolver.ts
   // to avoid circular dependency issues
 }
+
+/**
+ * Registry for plugin exports. Extend via declaration merging for type-safe access.
+ *
+ * Plugins can expose functions and variables that other plugins can access
+ * via `context.plugins.get("plugin-name")`.
+ *
+ * @example
+ * ```ts
+ * // In your plugin's types file:
+ * declare module 'enlace' {
+ *   interface PluginExportsRegistry {
+ *     "my-plugin": { myMethod: () => void }
+ *   }
+ * }
+ * ```
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface PluginExportsRegistry {}
+
+/**
+ * Accessor for plugin exports with type-safe lookup.
+ */
+export type PluginAccessor = {
+  /** Get a plugin's exported API by name. Returns undefined if plugin not found. */
+  get<K extends keyof PluginExportsRegistry>(
+    name: K
+  ): PluginExportsRegistry[K] | undefined;
+
+  get(name: string): unknown;
+};

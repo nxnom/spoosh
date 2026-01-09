@@ -12,7 +12,10 @@ import type {
   InvalidationReadResult,
   InvalidationWriteResult,
   AutoInvalidate,
+  InvalidationPluginExports,
 } from "./types";
+
+const INVALIDATION_DEFAULT_KEY = "invalidation:autoInvalidateDefault";
 
 /**
  * Resolves tags to invalidate from context and plugin options.
@@ -50,7 +53,11 @@ function resolveInvalidateTags(
     }
   }
 
-  const autoInvalidate = pluginOptions?.autoInvalidate ?? defaultAutoInvalidate;
+  const overrideDefault = context.metadata.get(INVALIDATION_DEFAULT_KEY) as
+    | AutoInvalidate
+    | undefined;
+  const effectiveDefault = overrideDefault ?? defaultAutoInvalidate;
+  const autoInvalidate = pluginOptions?.autoInvalidate ?? effectiveDefault;
 
   if (autoInvalidate === "all") {
     tags.push(...context.tags);
@@ -67,6 +74,15 @@ function resolveInvalidateTags(
  *
  * Triggers refetch for queries with matching tags when a mutation succeeds.
  *
+ * ## Plugin Exports
+ *
+ * Other plugins can influence the default auto-invalidation behavior via the
+ * plugin exports API:
+ *
+ * ```ts
+ * context.plugins.get("enlace:invalidation")?.setAutoInvalidateDefault("none");
+ * ```
+ *
  * @param config - Plugin configuration
  * @returns Invalidation plugin instance
  *
@@ -76,11 +92,11 @@ function resolveInvalidateTags(
  *   invalidationPlugin({ autoInvalidate: "all" }),
  * ];
  *
- * // Auto-invalidates all related queries
- * useWrite((api) => api.posts.$post);
+ * // Auto-invalidates all related queries (default behavior)
+ * trigger({ body: { title: "New Post" } });
  *
  * // Custom invalidation targets
- * useWrite((api) => api.posts.$post, {
+ * trigger({
  *   autoInvalidate: "none",
  *   invalidate: (api) => [api.posts.$get, api.users.$get],
  * });
@@ -100,6 +116,14 @@ export function invalidationPlugin(
   return {
     name: "enlace:invalidation",
     operations: ["write"],
+
+    exports(context): InvalidationPluginExports {
+      return {
+        setAutoInvalidateDefault(value: AutoInvalidate) {
+          context.metadata.set(INVALIDATION_DEFAULT_KEY, value);
+        },
+      };
+    },
 
     handlers: {
       onSuccess(context: PluginContext) {

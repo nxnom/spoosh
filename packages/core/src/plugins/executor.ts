@@ -1,6 +1,7 @@
 import type {
   EnlacePlugin,
   OperationType,
+  PluginAccessor,
   PluginContext,
   PluginPhase,
 } from "./types";
@@ -15,12 +16,20 @@ export type PluginExecutor = {
   addPlugin: (plugin: EnlacePlugin) => void;
   removePlugin: (name: string) => void;
   getPlugins: () => EnlacePlugin[];
+  createPluginAccessor: (context: PluginContext) => PluginAccessor;
 };
 
 export function createPluginExecutor(
   initialPlugins: EnlacePlugin[] = []
 ): PluginExecutor {
   const plugins = [...initialPlugins];
+
+  const createPluginAccessor = (context: PluginContext): PluginAccessor => ({
+    get(name: string) {
+      const plugin = plugins.find((p) => p.name === name);
+      return plugin?.exports?.(context);
+    },
+  });
 
   return {
     async execute<TData, TError>(
@@ -69,5 +78,7 @@ export function createPluginExecutor(
     getPlugins() {
       return [...plugins];
     },
+
+    createPluginAccessor,
   };
 }
