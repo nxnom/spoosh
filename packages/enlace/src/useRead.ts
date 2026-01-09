@@ -136,6 +136,8 @@ export function createUseRead<
     const abortRef = useRef(controller.abort);
     abortRef.current = controller.abort;
 
+    const pluginOptsKey = JSON.stringify(pluginOpts);
+
     useEffect(() => {
       if (!enabled) return;
 
@@ -146,6 +148,12 @@ export function createUseRead<
         controller.unmount();
       };
     }, [queryKey, enabled]);
+
+    useEffect(() => {
+      if (!enabled) return;
+
+      controller.updateOptions();
+    }, [pluginOptsKey]);
 
     const abort = useCallback(() => {
       abortRef.current();

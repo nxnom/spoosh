@@ -114,11 +114,11 @@ export function revalidationPlugin(
         }
 
         if (shouldRevalidateOnFocus) {
-          setupFocusListener(queryKey, execute);
+          setupFocusListener(queryKey, () => execute(true));
         }
 
         if (shouldRevalidateOnReconnect) {
-          setupReconnectListener(queryKey, execute);
+          setupReconnectListener(queryKey, () => execute(true));
         }
 
         return context;

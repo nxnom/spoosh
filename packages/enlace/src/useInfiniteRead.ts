@@ -750,6 +750,15 @@ export function createUseInfiniteRead<
       };
     }, [JSON.stringify(resolvedTags), refetch]);
 
+    const pluginOptsKey = JSON.stringify(pluginOpts);
+
+    useEffect(() => {
+      if (!enabled) return;
+
+      const context = createContext(trackerKey);
+      pluginExecutor.execute("onOptionsUpdate", "infiniteRead", context);
+    }, [pluginOptsKey]);
+
     const result = {
       data: state.data,
       allResponses: state.allResponses,

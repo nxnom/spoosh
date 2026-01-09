@@ -25,6 +25,7 @@ export type OperationController<TData = unknown, TError = unknown> = {
   refetch: () => Promise<EnlaceResponse<TData, TError>>;
   mount: () => void;
   unmount: () => void;
+  updateOptions: () => void;
   setMetadata: (key: string, value: unknown) => void;
 };
 
@@ -290,6 +291,11 @@ export function createOperationController<TData, TError>(
       const context = createContext();
       pluginExecutor.execute("onUnmount", operationType, context);
       this.abort();
+    },
+
+    updateOptions() {
+      const context = createContext();
+      pluginExecutor.execute("onOptionsUpdate", operationType, context);
     },
 
     setMetadata(key, value) {

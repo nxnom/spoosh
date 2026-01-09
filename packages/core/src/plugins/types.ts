@@ -13,6 +13,7 @@ export type PluginPhase =
   | "onError"
   | "onMount"
   | "onUnmount"
+  | "onOptionsUpdate"
   | "onCacheHit"
   | "onCacheMiss"
   | "onCacheInvalidate";
