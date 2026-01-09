@@ -17,6 +17,9 @@ export type PluginExecutor = {
   removePlugin: (name: string) => void;
   getPlugins: () => EnlacePlugin[];
   createPluginAccessor: (context: PluginContext) => PluginAccessor;
+
+  /** Cleanup all plugins. Call this for SSR, tests, or vanilla JS usage. */
+  cleanup: () => void;
 };
 
 export function createPluginExecutor(
@@ -75,5 +78,11 @@ export function createPluginExecutor(
     },
 
     createPluginAccessor,
+
+    cleanup() {
+      for (const plugin of plugins) {
+        plugin.cleanup?.();
+      }
+    },
   };
 }
