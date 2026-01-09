@@ -354,6 +354,7 @@ export function createUseInfiniteRead<
 
     const mountedRef = useRef(true);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const pendingFetchesRef = useRef<Set<string>>(new Set());
 
     const abort = useCallback(() => {
       abortControllerRef.current?.abort();
@@ -423,9 +424,11 @@ export function createUseInfiniteRead<
 
         const cached = stateManager.getCache(pageKey);
 
-        if (cached?.promise) {
+        if (cached?.promise || pendingFetchesRef.current.has(pageKey)) {
           return;
         }
+
+        pendingFetchesRef.current.add(pageKey);
 
         if (direction === "next") {
           dispatch({ type: "FETCH_NEXT_START" });
@@ -442,13 +445,14 @@ export function createUseInfiniteRead<
         );
 
         let context = createContext(pageKey);
-        context = await pluginExecutor.execute(
-          "beforeFetch",
-          "infiniteRead",
-          context
-        );
 
         const fetchPromise = (async () => {
+          context = await pluginExecutor.execute(
+            "beforeFetch",
+            "infiniteRead",
+            context
+          );
+
           try {
             let current: unknown = api;
 
@@ -570,6 +574,7 @@ export function createUseInfiniteRead<
         });
 
         await fetchPromise;
+        pendingFetchesRef.current.delete(pageKey);
       },
       [trackedCall, baseOptionsForKey, resolvedTags, pluginOpts]
     );

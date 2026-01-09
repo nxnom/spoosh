@@ -1,4 +1,9 @@
 import type { EnlacePlugin, PluginContext } from "../../types";
+import {
+  createApiProxy,
+  extractPathFromTracked,
+  pathToTags,
+} from "../../../utils/api-proxy";
 import type {
   InvalidationPluginConfig,
   InvalidationWriteOptions,
@@ -23,51 +28,20 @@ function resolveInvalidateTags(
     if (Array.isArray(pluginOptions.invalidate)) {
       tags.push(...pluginOptions.invalidate);
     } else {
-      const proxy = new Proxy(
-        {},
-        {
-          get(_, prop) {
-            const path: string[] = [];
-
-            const createPathProxy = (): unknown =>
-              new Proxy(
-                {},
-                {
-                  get(_, innerProp) {
-                    if (
-                      innerProp === "$get" ||
-                      innerProp === "$post" ||
-                      innerProp === "$put" ||
-                      innerProp === "$patch" ||
-                      innerProp === "$delete"
-                    ) {
-                      return () => {
-                        const tag = path.join("/");
-                        tags.push(tag);
-
-                        return Promise.resolve({ data: undefined });
-                      };
-                    }
-
-                    path.push(String(innerProp));
-
-                    return createPathProxy();
-                  },
-                }
-              );
-
-            path.push(String(prop));
-
-            return createPathProxy();
-          },
-        }
-      );
-
-      const result = pluginOptions.invalidate(proxy);
+      const proxy = createApiProxy<never>();
+      const result = pluginOptions.invalidate(proxy as never);
 
       for (const item of result) {
         if (typeof item === "string") {
           tags.push(item);
+        } else {
+          const path = extractPathFromTracked(item);
+          const derivedTags = pathToTags(path);
+          const exactTag = derivedTags[derivedTags.length - 1];
+
+          if (exactTag) {
+            tags.push(exactTag);
+          }
         }
       }
     }

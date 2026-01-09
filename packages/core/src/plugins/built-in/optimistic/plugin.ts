@@ -1,6 +1,11 @@
 import type { EnlacePlugin, PluginContext } from "../../types";
 import type { ResolvedCacheConfig } from "../../../types/optimistic.types";
 import type { StateManager } from "../../../state/manager";
+import {
+  createApiProxy,
+  extractPathFromTracked,
+  pathToTags,
+} from "../../../utils/api-proxy";
 import type {
   OptimisticWriteOptions,
   OptimisticReadOptions,
@@ -9,11 +14,6 @@ import type {
   OptimisticWriteResult,
   CacheConfig,
 } from "./types";
-
-type TrackedFunction = (() => Promise<{ data: undefined }>) & {
-  __trackedPath?: string[];
-  __trackedMethod?: string;
-};
 
 type ParsedRequest = {
   query?: Record<string, unknown>;
@@ -26,49 +26,8 @@ type OptimisticSnapshot = {
   previousData: unknown;
 };
 
-function createApiProxy(): unknown {
-  const createTrackingProxy = (path: string[]): unknown => {
-    const handler: ProxyHandler<object> = {
-      get(_, prop) {
-        const propStr = String(prop);
-
-        if (
-          propStr === "$get" ||
-          propStr === "$post" ||
-          propStr === "$put" ||
-          propStr === "$patch" ||
-          propStr === "$delete"
-        ) {
-          const fn: TrackedFunction = () =>
-            Promise.resolve({ data: undefined });
-          fn.__trackedPath = path;
-          fn.__trackedMethod = propStr;
-          return fn;
-        }
-
-        return createTrackingProxy([...path, propStr]);
-      },
-    };
-
-    return new Proxy({}, handler);
-  };
-
-  return createTrackingProxy([]);
-}
-
 function extractTagsFromFor(forFn: ResolvedCacheConfig["for"]): string[] {
-  const fn = forFn as TrackedFunction;
-  const path = fn.__trackedPath ?? [];
-
-  const tags: string[] = [];
-  let currentPath = "";
-
-  for (const segment of path) {
-    currentPath = currentPath ? `${currentPath}/${segment}` : segment;
-    tags.push(currentPath);
-  }
-
-  return tags;
+  return pathToTags(extractPathFromTracked(forFn));
 }
 
 function getExactPath(tags: string[]): string | undefined {
