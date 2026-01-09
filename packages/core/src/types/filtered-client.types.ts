@@ -53,15 +53,13 @@ type QueryHttpMethods<
   TDefaultError = unknown,
   TOptionsMap = object,
   THasDynamicSegment extends boolean = false,
-  TRootSchema = TSchema,
 > = {
   [K in QueryMethod as K extends keyof TSchema ? K : never]: MethodFn<
     TSchema,
     K,
     TDefaultError,
     TOptionsMap,
-    THasDynamicSegment,
-    TRootSchema
+    THasDynamicSegment
   >;
 };
 
@@ -70,15 +68,13 @@ type MutationHttpMethods<
   TDefaultError = unknown,
   TOptionsMap = object,
   THasDynamicSegment extends boolean = false,
-  TRootSchema = TSchema,
 > = {
   [K in MutationMethod as K extends keyof TSchema ? K : never]: MethodFn<
     TSchema,
     K,
     TDefaultError,
     TOptionsMap,
-    THasDynamicSegment,
-    TRootSchema
+    THasDynamicSegment
   >;
 };
 
@@ -166,13 +162,7 @@ export type QueryOnlyClient<
   TOptionsMap = object,
   THasDynamicSegment extends boolean = false,
   TRootSchema = TSchema,
-> = QueryHttpMethods<
-  TSchema,
-  TDefaultError,
-  TOptionsMap,
-  THasDynamicSegment,
-  TRootSchema
-> &
+> = QueryHttpMethods<TSchema, TDefaultError, TOptionsMap, THasDynamicSegment> &
   QueryDynamicAccess<TSchema, TDefaultError, TOptionsMap, TRootSchema> &
   QueryDynamicKey<TSchema, TDefaultError, TOptionsMap, TRootSchema> & {
     [K in keyof StaticPathKeys<TSchema> as K extends MethodNameKeys
@@ -198,8 +188,7 @@ export type MutationOnlyClient<
   TSchema,
   TDefaultError,
   TOptionsMap,
-  THasDynamicSegment,
-  TRootSchema
+  THasDynamicSegment
 > &
   MutationDynamicAccess<TSchema, TDefaultError, TOptionsMap, TRootSchema> &
   MutationDynamicKey<TSchema, TDefaultError, TOptionsMap, TRootSchema> & {

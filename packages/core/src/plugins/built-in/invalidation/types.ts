@@ -2,7 +2,7 @@ import type { EnlaceResponse } from "../../../types/response.types";
 import type { SchemaMethod } from "../../../types/common.types";
 import type { OptimisticSchemaHelper } from "../optimistic/types";
 
-export type AutoInvalidate = "all" | "self" | false;
+export type AutoInvalidate = "all" | "self" | "none";
 
 type InvalidateCallbackFn<TSchema> = (
   api: OptimisticSchemaHelper<TSchema>

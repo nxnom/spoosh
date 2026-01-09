@@ -14,8 +14,6 @@ import type {
   HasMethod,
   HasRequiredOptions,
 } from "./endpoint.types";
-import type { WithOptimistic } from "../plugins/built-in/optimistic/types";
-import type { WithInvalidate } from "../plugins/built-in/invalidation/types";
 
 type MethodRequestOptions<
   TSchema,
@@ -50,7 +48,6 @@ export type MethodFn<
   TDefaultError = unknown,
   TOptionsMap = object,
   THasDynamicSegment extends boolean = false,
-  TRootSchema = TSchema,
 > =
   HasMethod<TSchema, TMethod> extends true
     ? HasRequiredOptions<TSchema, TMethod, TDefaultError> extends true
@@ -62,9 +59,7 @@ export type MethodFn<
             TOptionsMap,
             THasDynamicSegment,
             true
-          > &
-            WithOptimistic<TSchema, TMethod, TDefaultError, TRootSchema> &
-            WithInvalidate<TMethod, TRootSchema>
+          >
         ) => Promise<
           EnlaceResponse<
             ExtractData<TSchema, TMethod, TDefaultError>,
@@ -87,9 +82,7 @@ export type MethodFn<
             TOptionsMap,
             THasDynamicSegment,
             false
-          > &
-            WithOptimistic<TSchema, TMethod, TDefaultError, TRootSchema> &
-            WithInvalidate<TMethod, TRootSchema>
+          >
         ) => Promise<
           EnlaceResponse<
             ExtractData<TSchema, TMethod, TDefaultError>,
@@ -180,15 +173,13 @@ type HttpMethods<
   TDefaultError = unknown,
   TOptionsMap = object,
   THasDynamicSegment extends boolean = false,
-  TRootSchema = TSchema,
 > = {
   [K in SchemaMethod as K extends keyof TSchema ? K : never]: MethodFn<
     TSchema,
     K,
     TDefaultError,
     TOptionsMap,
-    THasDynamicSegment,
-    TRootSchema
+    THasDynamicSegment
   >;
 };
 
@@ -236,13 +227,7 @@ export type EnlaceClient<
   TOptionsMap = object,
   THasDynamicSegment extends boolean = false,
   TRootSchema = TSchema,
-> = HttpMethods<
-  TSchema,
-  TDefaultError,
-  TOptionsMap,
-  THasDynamicSegment,
-  TRootSchema
-> &
+> = HttpMethods<TSchema, TDefaultError, TOptionsMap, THasDynamicSegment> &
   DynamicAccess<TSchema, TDefaultError, TOptionsMap, TRootSchema> &
   DynamicKey<TSchema, TDefaultError, TOptionsMap, TRootSchema> & {
     [K in keyof StaticPathKeys<TSchema> as K extends MethodNameKeys
