@@ -14,8 +14,8 @@ import type {
   HasMethod,
   HasRequiredOptions,
 } from "./endpoint.types";
-import type { WithOptimistic } from "./optimistic.types";
-import type { WithInvalidate } from "./invalidation.types";
+import type { WithOptimistic } from "../plugins/built-in/optimistic/types";
+import type { WithInvalidate } from "../plugins/built-in/invalidation/types";
 
 type MethodRequestOptions<
   TSchema,

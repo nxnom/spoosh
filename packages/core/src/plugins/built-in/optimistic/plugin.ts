@@ -1,5 +1,5 @@
 import type { EnlacePlugin, PluginContext } from "../../types";
-import type { ResolvedCacheConfig } from "../../../types/optimistic.types";
+import type { ResolvedCacheConfig } from "./types";
 import type { StateManager } from "../../../state/manager";
 import {
   createApiProxy,
