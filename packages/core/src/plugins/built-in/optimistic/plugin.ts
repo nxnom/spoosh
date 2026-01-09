@@ -80,12 +80,12 @@ function applyOptimisticUpdate(
   config: ResolvedCacheConfig
 ): OptimisticSnapshot[] {
   const tags = extractTagsFromFor(config.for);
-  const targetExactPath = getExactPath(tags);
+  const targetSelfTag = getExactPath(tags);
 
-  if (!targetExactPath) return [];
+  if (!targetSelfTag) return [];
 
   const snapshots: OptimisticSnapshot[] = [];
-  const entries = stateManager.getCacheEntriesByTags(tags);
+  const entries = stateManager.getCacheEntriesBySelfTag(targetSelfTag);
 
   for (const { key, entry } of entries) {
     if (key.includes('"type":"infinite-tracker"')) continue;
@@ -95,9 +95,6 @@ function applyOptimisticUpdate(
       if (!request || !config.match(request)) continue;
     }
 
-    const entryExactPath = getExactPath(entry.tags);
-
-    if (entryExactPath !== targetExactPath) continue;
     if (entry.state.data === undefined) continue;
 
     snapshots.push({ key, previousData: entry.state.data });
@@ -277,21 +274,17 @@ export function optimisticPlugin(): EnlacePlugin<{
 
         for (const config of onSuccessConfigs) {
           const tags = extractTagsFromFor(config.for);
-          const targetExactPath = getExactPath(tags);
+          const targetSelfTag = getExactPath(tags);
 
-          if (!targetExactPath) continue;
+          if (!targetSelfTag) continue;
 
-          const entries = stateManager.getCacheEntriesByTags(tags);
+          const entries = stateManager.getCacheEntriesBySelfTag(targetSelfTag);
 
           for (const { key, entry } of entries) {
             if (config.match) {
               const request = parseRequestFromKey(key);
               if (!request || !config.match(request)) continue;
             }
-
-            const entryExactPath = getExactPath(entry.tags);
-
-            if (entryExactPath !== targetExactPath) continue;
 
             stateManager.setCache(key, {
               state: {

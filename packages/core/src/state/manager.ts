@@ -20,6 +20,15 @@ function createInitialState<TData, TError>(): OperationState<TData, TError> {
   };
 }
 
+function generateSelfTagFromKey(key: string): string | undefined {
+  try {
+    const parsed = JSON.parse(key) as { path?: string[] };
+    return parsed.path?.join("/");
+  } catch {
+    return undefined;
+  }
+}
+
 export type StateManager = {
   createQueryKey: (params: {
     path: string[];
@@ -44,6 +53,10 @@ export type StateManager = {
 
   getCacheEntriesByTags: <TData, TError>(
     tags: string[]
+  ) => CacheEntryWithKey<TData, TError>[];
+
+  getCacheEntriesBySelfTag: <TData, TError>(
+    selfTag: string
   ) => CacheEntryWithKey<TData, TError>[];
 
   clear: () => void;
@@ -97,6 +110,7 @@ export function createStateManager(): StateManager {
         const newEntry: CacheEntry = {
           state: entry.state ?? createInitialState(),
           tags: entry.tags ?? [],
+          selfTag: generateSelfTagFromKey(key),
           subscribers: new Set(),
           promise: entry.promise,
           previousData: entry.previousData,
@@ -116,6 +130,7 @@ export function createStateManager(): StateManager {
         entry = {
           state: createInitialState(),
           tags: [],
+          selfTag: generateSelfTagFromKey(key),
           subscribers: new Set(),
         };
         cache.set(key, entry);
@@ -147,6 +162,21 @@ export function createStateManager(): StateManager {
         const hasMatch = entry.tags.some((tag) => tags.includes(tag));
 
         if (hasMatch) {
+          entries.push({
+            key,
+            entry: entry as CacheEntry<TData, TError>,
+          });
+        }
+      });
+
+      return entries;
+    },
+
+    getCacheEntriesBySelfTag<TData, TError>(selfTag: string) {
+      const entries: CacheEntryWithKey<TData, TError>[] = [];
+
+      cache.forEach((entry, key) => {
+        if (entry.selfTag === selfTag) {
           entries.push({
             key,
             entry: entry as CacheEntry<TData, TError>,

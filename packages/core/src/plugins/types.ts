@@ -31,6 +31,9 @@ export type OperationState<TData = unknown, TError = unknown> = {
 export type CacheEntry<TData = unknown, TError = unknown> = {
   state: OperationState<TData, TError>;
   tags: string[];
+
+  /** The original path-derived tag (e.g., "posts/1/comments"). Used for exact matching in cache */
+  selfTag?: string;
   subscribers: Set<() => void>;
   promise?: Promise<unknown>;
   previousData?: TData;
