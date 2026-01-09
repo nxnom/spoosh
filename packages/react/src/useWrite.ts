@@ -181,19 +181,19 @@ export function createUseWrite<
           );
 
           if (response.error) {
-            context = await pluginExecutor.execute("onError", "write", context);
             setState({
               loading: false,
               data: undefined,
               error: response.error,
             });
+            context = await pluginExecutor.execute("onError", "write", context);
           } else {
+            setState({ loading: false, data: response.data, error: undefined });
             context = await pluginExecutor.execute(
               "onSuccess",
               "write",
               context
             );
-            setState({ loading: false, data: response.data, error: undefined });
           }
 
           return response;
@@ -205,9 +205,8 @@ export function createUseWrite<
           };
 
           context.response = errorResponse;
-          context = await pluginExecutor.execute("onError", "write", context);
-
           setState({ loading: false, data: undefined, error: err as TError });
+          context = await pluginExecutor.execute("onError", "write", context);
 
           return errorResponse;
         }

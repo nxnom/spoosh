@@ -485,12 +485,6 @@ export function createUseInfiniteRead<
             if (res.aborted || !mountedRef.current) return;
 
             if (res.error) {
-              context = await pluginExecutor.execute(
-                "onError",
-                "infiniteRead",
-                context
-              );
-
               stateManager.setCache(pageKey, {
                 state: {
                   loading: false,
@@ -503,13 +497,13 @@ export function createUseInfiniteRead<
                 },
                 tags: resolvedTags,
               });
-            } else if (res.data !== undefined) {
+
               context = await pluginExecutor.execute(
-                "onSuccess",
+                "onError",
                 "infiniteRead",
                 context
               );
-
+            } else if (res.data !== undefined) {
               pageRequestsRef.current.set(pageKey, mergedRequest);
 
               if (direction === "next") {
@@ -537,6 +531,12 @@ export function createUseInfiniteRead<
                 tags: resolvedTags,
               });
 
+              context = await pluginExecutor.execute(
+                "onSuccess",
+                "infiniteRead",
+                context
+              );
+
               setSubscriptionVersion((v) => v + 1);
             }
           } catch (err) {
@@ -547,12 +547,6 @@ export function createUseInfiniteRead<
               error: err as TError,
               data: undefined,
             };
-
-            context = await pluginExecutor.execute(
-              "onError",
-              "infiniteRead",
-              context
-            );
 
             stateManager.setCache(pageKey, {
               state: {
@@ -566,6 +560,12 @@ export function createUseInfiniteRead<
               },
               tags: resolvedTags,
             });
+
+            context = await pluginExecutor.execute(
+              "onError",
+              "infiniteRead",
+              context
+            );
           }
         })();
 

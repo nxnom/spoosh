@@ -209,24 +209,18 @@ export function createOperationController<TData, TError>(
           );
 
           if (response.error) {
-            context = await pluginExecutor.execute(
-              "onError",
-              operationType,
-              context
-            );
-
             updateState({
               fetching: false,
               loading: false,
               error: response.error,
             });
-          } else {
+
             context = await pluginExecutor.execute(
-              "onSuccess",
+              "onError",
               operationType,
               context
             );
-
+          } else {
             updateState({
               fetching: false,
               loading: false,
@@ -235,6 +229,12 @@ export function createOperationController<TData, TError>(
               isStale: false,
               timestamp: Date.now(),
             });
+
+            context = await pluginExecutor.execute(
+              "onSuccess",
+              operationType,
+              context
+            );
           }
 
           return response;
@@ -247,17 +247,17 @@ export function createOperationController<TData, TError>(
 
           context.response = errorResponse;
 
-          context = await pluginExecutor.execute(
-            "onError",
-            operationType,
-            context
-          );
-
           updateState({
             fetching: false,
             loading: false,
             error: err as TError,
           });
+
+          context = await pluginExecutor.execute(
+            "onError",
+            operationType,
+            context
+          );
 
           return errorResponse;
         }
