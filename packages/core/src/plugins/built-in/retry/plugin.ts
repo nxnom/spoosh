@@ -33,7 +33,7 @@ export function retryPlugin(config: RetryPluginConfig = {}): EnlacePlugin<{
 
         context.requestOptions = {
           ...context.requestOptions,
-          retry: retries,
+          retries,
           retryDelay,
         };
 

@@ -83,7 +83,7 @@ async function executeCoreFetch<TData, TError>(
   } = defaultOptions;
   void _;
 
-  const maxRetries = requestOptions?.retry ?? 3;
+  const maxRetries = requestOptions?.retries ?? 3;
   const baseDelay = requestOptions?.retryDelay ?? 1000;
   const retryCount = maxRetries === false ? 0 : maxRetries;
 
