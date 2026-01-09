@@ -7,6 +7,7 @@ export interface DebugLogEntry {
   method: string;
   path: string;
   queryKey: string;
+  requestTimestamp: number;
   tags: string[];
   requestOptions: unknown;
   state: {

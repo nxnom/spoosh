@@ -373,6 +373,7 @@ export function createUseInfiniteRead<
         method: trackedCall.method as "GET",
         queryKey: pageKey,
         tags: resolvedTags,
+        requestTimestamp: Date.now(),
         requestOptions: trackedCall.options ?? {},
         state: initialState,
         metadata: new Map<string, unknown>([["pluginOptions", pluginOpts]]),

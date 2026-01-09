@@ -136,6 +136,7 @@ export function createUseWrite<
               options: triggerOptions,
             }),
             tags,
+            requestTimestamp: Date.now(),
             requestOptions: triggerOptions ?? {},
             state: initialState,
             metadata: new Map<string, unknown>([

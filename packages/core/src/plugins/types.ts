@@ -43,6 +43,9 @@ export type PluginContext<TData = unknown, TError = unknown> = {
   readonly queryKey: string;
   readonly tags: string[];
 
+  /** Timestamp when this request was initiated. Useful for tracing and debugging. */
+  readonly requestTimestamp: number;
+
   requestOptions: AnyRequestOptions;
   state: OperationState<TData, TError>;
   response?: EnlaceResponse<TData, TError>;

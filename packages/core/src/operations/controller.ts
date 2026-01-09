@@ -82,9 +82,12 @@ export function createOperationController<TData, TError>(
     TData,
     TError
   >();
+  let currentRequestTimestamp: number = Date.now();
+  let isFirstExecute = true;
 
   const createContext = (
-    requestOptions: AnyRequestOptions = {}
+    requestOptions: AnyRequestOptions = {},
+    requestTimestamp: number = Date.now()
   ): PluginContext<TData, TError> => {
     const cached = stateManager.getCache<TData, TError>(queryKey);
     const state = cached?.state ?? createInitialState<TData, TError>();
@@ -95,6 +98,7 @@ export function createOperationController<TData, TError>(
       method,
       queryKey,
       tags,
+      requestTimestamp,
       requestOptions: { ...initialRequestOptions, ...requestOptions },
       state,
       metadata,
@@ -137,7 +141,12 @@ export function createOperationController<TData, TError>(
         metadata.set("forceRefetch", true);
       }
 
-      let context = createContext(opts);
+      if (!isFirstExecute) {
+        currentRequestTimestamp = Date.now();
+      }
+      isFirstExecute = false;
+
+      let context = createContext(opts, currentRequestTimestamp);
 
       context = await pluginExecutor.execute(
         "beforeFetch",
@@ -285,21 +294,23 @@ export function createOperationController<TData, TError>(
     },
 
     mount() {
+      currentRequestTimestamp = Date.now();
+      isFirstExecute = true;
       metadata.set("execute", (force?: boolean) =>
         controller.execute(undefined, { force })
       );
-      const context = createContext();
+      const context = createContext({}, currentRequestTimestamp);
       pluginExecutor.execute("onMount", operationType, context);
     },
 
     unmount() {
-      const context = createContext();
+      const context = createContext({}, currentRequestTimestamp);
       pluginExecutor.execute("onUnmount", operationType, context);
       this.abort();
     },
 
     updateOptions() {
-      const context = createContext();
+      const context = createContext({}, currentRequestTimestamp);
       pluginExecutor.execute("onOptionsUpdate", operationType, context);
     },
 

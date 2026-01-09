@@ -46,7 +46,7 @@ export function debugPlugin(config: DebugPluginConfig = {}): EnlacePlugin<{
 }> {
   const { enabled = true, logCache = false, logger } = config;
 
-  let lastQueryKey: string | null = null;
+  let lastRequestTimestamp: number | null = null;
 
   const logPhase = (phase: PluginPhase, context: PluginContext) => {
     if (!enabled) return;
@@ -63,6 +63,7 @@ export function debugPlugin(config: DebugPluginConfig = {}): EnlacePlugin<{
       method: context.method,
       path: context.path.join("/"),
       queryKey: context.queryKey,
+      requestTimestamp: context.requestTimestamp,
       tags: context.tags,
       requestOptions: context.requestOptions,
       state: {
@@ -89,10 +90,13 @@ export function debugPlugin(config: DebugPluginConfig = {}): EnlacePlugin<{
       return;
     }
 
-    if (lastQueryKey && lastQueryKey !== context.queryKey) {
+    if (
+      lastRequestTimestamp &&
+      lastRequestTimestamp !== context.requestTimestamp
+    ) {
       console.log("─".repeat(80));
     }
-    lastQueryKey = context.queryKey;
+    lastRequestTimestamp = context.requestTimestamp;
 
     const label = `[enlace] ${context.operationType} ${context.method} /${context.path.join("/")} → ${phase}`;
 
