@@ -2,7 +2,7 @@ import type {
   Endpoint,
   EndpointWithQuery,
   EndpointWithFormData,
-  EndpointFull,
+  EndpointDefinition,
 } from "enlace";
 import type { Hono } from "hono";
 import type { HonoBase } from "hono/hono-base";
@@ -36,7 +36,7 @@ type HonoEndpointToEnlace<T> =
     ? EndpointWithFormData<ExtractHonoOutput<T>, ExtractHonoFormData<T>>
     : IsNever<ExtractHonoQuery<T>> extends false
       ? IsNever<ExtractHonoBody<T>> extends false
-        ? EndpointFull<{
+        ? EndpointDefinition<{
             data: ExtractHonoOutput<T>;
             body: ExtractHonoBody<T>;
             query: ExtractHonoQuery<T>;

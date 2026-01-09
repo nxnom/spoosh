@@ -8,9 +8,7 @@ import type {
   CacheWriteResult,
 } from "./types";
 
-export function cachePlugin(
-  config: CachePluginConfig = {}
-): EnlacePlugin<{
+export function cachePlugin(config: CachePluginConfig = {}): EnlacePlugin<{
   readOptions: CacheReadOptions;
   writeOptions: CacheWriteOptions;
   infiniteReadOptions: CacheInfiniteReadOptions;

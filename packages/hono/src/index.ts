@@ -4,5 +4,5 @@ export type {
   Endpoint,
   EndpointWithQuery,
   EndpointWithFormData,
-  EndpointFull,
+  EndpointDefinition,
 } from "enlace";

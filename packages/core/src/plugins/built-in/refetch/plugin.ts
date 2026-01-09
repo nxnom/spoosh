@@ -10,9 +10,7 @@ import type {
 
 type CleanupFn = () => void;
 
-export function refetchPlugin(
-  config: RefetchPluginConfig = {}
-): EnlacePlugin<{
+export function refetchPlugin(config: RefetchPluginConfig = {}): EnlacePlugin<{
   readOptions: RefetchReadOptions;
   writeOptions: RefetchWriteOptions;
   infiniteReadOptions: RefetchInfiniteReadOptions;

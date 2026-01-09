@@ -8,9 +8,7 @@ import type {
   RetryWriteResult,
 } from "./types";
 
-export function retryPlugin(
-  config: RetryPluginConfig = {}
-): EnlacePlugin<{
+export function retryPlugin(config: RetryPluginConfig = {}): EnlacePlugin<{
   readOptions: RetryReadOptions;
   writeOptions: RetryWriteOptions;
   infiniteReadOptions: RetryInfiniteReadOptions;

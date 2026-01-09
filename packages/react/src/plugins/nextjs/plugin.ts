@@ -8,9 +8,7 @@ import type {
   NextjsWriteResult,
 } from "./types";
 
-export function nextjsPlugin(
-  config: NextjsPluginConfig = {}
-): EnlacePlugin<{
+export function nextjsPlugin(config: NextjsPluginConfig = {}): EnlacePlugin<{
   readOptions: NextjsReadOptions;
   writeOptions: NextjsWriteOptions;
   infiniteReadOptions: NextjsInfiniteReadOptions;

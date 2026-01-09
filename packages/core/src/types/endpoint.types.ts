@@ -24,7 +24,7 @@ export type EndpointWithFormData<TData, TFormData, TError = never> = {
   ? { data: TData; formData: TFormData }
   : { data: TData; formData: TFormData; error: TError });
 
-export type EndpointFull<
+export type EndpointDefinition<
   T extends {
     data: unknown;
     body?: unknown;

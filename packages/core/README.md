@@ -153,16 +153,16 @@ api.uploads.$post({
 | `array` of files                | Each file appended            |
 | `null` / `undefined`            | Skipped                       |
 
-### `EndpointFull<T>`
+### `EndpointDefinition<T>`
 
 Object-style for complex endpoints:
 
 ```typescript
-import { EndpointFull } from "enlace-core";
+import { EndpointDefinition } from "enlace-core";
 
 type ApiSchema = {
   products: {
-    $post: EndpointFull<{
+    $post: EndpointDefinition<{
       data: Product;
       body: CreateProduct;
       query: { categoryId: string };
@@ -416,7 +416,7 @@ export type {
   Endpoint,
   EndpointWithQuery,
   EndpointWithFormData,
-  EndpointFull,
+  EndpointDefinition,
   EnlaceResponse,
   EnlaceOptions,
 } from "./types";

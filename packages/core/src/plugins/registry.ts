@@ -58,12 +58,11 @@ export type MergePluginResults<
   write: UnionToIntersection<ExtractWriteResult<TPlugins[number]>>;
 };
 
-export type PluginRegistry<
-  TPlugins extends EnlacePlugin<PluginTypeConfig>[],
-> = {
-  plugins: TPlugins;
-  _options: MergePluginOptions<TPlugins>;
-};
+export type PluginRegistry<TPlugins extends EnlacePlugin<PluginTypeConfig>[]> =
+  {
+    plugins: TPlugins;
+    _options: MergePluginOptions<TPlugins>;
+  };
 
 export function createPluginRegistry<
   TPlugins extends EnlacePlugin<PluginTypeConfig>[],

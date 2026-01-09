@@ -219,16 +219,16 @@ Generated OpenAPI:
 }
 ```
 
-### `EndpointFull<T>`
+### `EndpointDefinition<T>`
 
 Object-style for complex endpoints with multiple options:
 
 ```typescript
-import { EndpointFull } from "enlace-core";
+import { EndpointDefinition } from "enlace-core";
 
 type ApiSchema = {
   products: {
-    $post: EndpointFull<{
+    $post: EndpointDefinition<{
       data: Product;
       body: CreateProduct;
       query: { categoryId: string };
@@ -236,7 +236,7 @@ type ApiSchema = {
     }>;
   };
   files: {
-    $post: EndpointFull<{
+    $post: EndpointDefinition<{
       data: FileUpload;
       formData: { file: File; description: string };
       query: { folder: string };
