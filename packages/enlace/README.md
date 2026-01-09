@@ -287,11 +287,16 @@ function Posts() {
 
 ```typescript
 const { data } = useRead((api) => api.posts.$get(), {
-  enabled: true,           // Skip fetching when false
-  staleTime: 5000,         // Cache freshness (from cachePlugin)
-  retries: 3,              // Retry attempts (from retryPlugin)
-  pollingInterval: 5000,   // Polling interval (from pollingPlugin)
-  revalidateOnFocus: true, // Refetch on focus (from revalidationPlugin)
+  // Base options
+  enabled: true,             // Skip fetching when false
+  tags: ["custom-tag"],      // Override auto-generated tags
+  additionalTags: ["extra"], // Append to auto-generated tags
+
+  // Plugin options
+  staleTime: 5000,           // Cache freshness (from cachePlugin)
+  retries: 3,                // Retry attempts (from retryPlugin)
+  pollingInterval: 5000,     // Polling interval (from pollingPlugin)
+  revalidateOnFocus: true,   // Refetch on focus (from revalidationPlugin)
 });
 ```
 
@@ -473,6 +478,28 @@ const { trigger } = useWrite((api) => api.posts.$post);
 trigger({ body: { title: "New" } });
 // → Automatically invalidates 'posts' tag
 // → All queries with 'posts' tag refetch
+```
+
+### Custom Tags
+
+Override or extend auto-generated tags:
+
+```typescript
+// Replace auto-generated tags entirely
+useRead((api) => api.posts.$get(), {
+  tags: ["my-custom-tag"],
+});
+
+// Disable tags (no invalidation)
+useRead((api) => api.posts.$get(), {
+  tags: [],
+});
+
+// Add to auto-generated tags
+useRead((api) => api.posts.$get(), {
+  additionalTags: ["dashboard", "sidebar"],
+});
+// → tags: ['posts', 'dashboard', 'sidebar']
 ```
 
 ### Manual Tag Invalidation

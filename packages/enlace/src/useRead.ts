@@ -48,7 +48,12 @@ export function createUseRead<
     readOptions?: BaseReadOptions &
       ResolveDataTypes<PluginOptions["read"], TData, TError>
   ): BaseReadResult<TData, TError> & PluginResults["read"] {
-    const { enabled = true, ...pluginOpts } = readOptions ?? {};
+    const {
+      enabled = true,
+      tags,
+      additionalTags,
+      ...pluginOpts
+    } = readOptions ?? {};
 
     const trackingResultRef = useRef<TrackingResult>({
       trackedCall: null,
@@ -76,7 +81,7 @@ export function createUseRead<
       | undefined;
 
     const resolvedPath = resolvePath(trackedCall.path, requestOptions?.params);
-    const tags = resolveTags(pluginOpts, resolvedPath);
+    const resolvedTags = resolveTags({ tags, additionalTags }, resolvedPath);
 
     const queryKey = stateManager.createQueryKey({
       path: trackedCall.path,
@@ -93,7 +98,7 @@ export function createUseRead<
         operationType: "read",
         path: trackedCall.path,
         method: trackedCall.method as "GET",
-        tags,
+        tags: resolvedTags,
         requestOptions: trackedCall.options as
           | Record<string, unknown>
           | undefined,

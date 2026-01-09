@@ -29,10 +29,7 @@ export type TrackedCall = {
   options: unknown;
 };
 
-type QueryRequestOptions = CoreRequestOptionsBase & {
-  tags?: string[];
-  additionalTags?: string[];
-};
+type QueryRequestOptions = CoreRequestOptionsBase;
 
 type MutationRequestOptions = CoreRequestOptionsBase;
 
@@ -63,6 +60,8 @@ export type PluginHooksConfig<
 
 export type BaseReadOptions = {
   enabled?: boolean;
+  tags?: string[];
+  additionalTags?: string[];
 };
 
 export type ResolveDataTypes<TOptions, TData, TError> = {
@@ -187,6 +186,8 @@ export type BaseInfiniteReadOptions<
   TRequest = AnyInfiniteRequestOptions,
 > = {
   enabled?: boolean;
+  tags?: string[];
+  additionalTags?: string[];
   canFetchNext: (ctx: InfiniteNextContext<TData, TRequest>) => boolean;
   nextPageRequest: (
     ctx: InfiniteNextContext<TData, TRequest>

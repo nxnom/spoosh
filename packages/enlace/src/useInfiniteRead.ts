@@ -173,6 +173,8 @@ export function createUseInfiniteRead<
   ): BaseInfiniteReadResult<TData, TError, TItem> & PluginResults["read"] {
     const {
       enabled = true,
+      tags,
+      additionalTags,
       canFetchNext,
       nextPageRequest,
       merger,
@@ -224,7 +226,7 @@ export function createUseInfiniteRead<
     };
 
     const resolvedPath = resolvePath(trackedCall.path, requestOptions?.params);
-    const tags = resolveTags(pluginOpts, resolvedPath);
+    const resolvedTags = resolveTags({ tags, additionalTags }, resolvedPath);
 
     const trackerKey = createInfiniteTrackerKey(
       trackedCall.path,
@@ -374,7 +376,7 @@ export function createUseInfiniteRead<
         path: trackedCall.path,
         method: trackedCall.method as "GET",
         queryKey: pageKey,
-        tags,
+        tags: resolvedTags,
         requestOptions: trackedCall.options ?? {},
         state: initialState,
         metadata: new Map<string, unknown>([["pluginOptions", pluginOpts]]),
@@ -398,7 +400,7 @@ export function createUseInfiniteRead<
           isStale: false,
           timestamp: Date.now(),
         },
-        tags,
+        tags: resolvedTags,
       });
     };
 
@@ -494,7 +496,7 @@ export function createUseInfiniteRead<
                   isStale: true,
                   timestamp: Date.now(),
                 },
-                tags,
+                tags: resolvedTags,
               });
             } else if (res.data !== undefined) {
               context = await pluginExecutor.execute(
@@ -527,7 +529,7 @@ export function createUseInfiniteRead<
                   isStale: false,
                   timestamp: Date.now(),
                 },
-                tags,
+                tags: resolvedTags,
               });
 
               setSubscriptionVersion((v) => v + 1);
@@ -557,19 +559,19 @@ export function createUseInfiniteRead<
                 isStale: true,
                 timestamp: Date.now(),
               },
-              tags,
+              tags: resolvedTags,
             });
           }
         })();
 
         stateManager.setCache(pageKey, {
           promise: fetchPromise,
-          tags,
+          tags: resolvedTags,
         });
 
         await fetchPromise;
       },
-      [trackedCall, baseOptionsForKey, tags, pluginOpts]
+      [trackedCall, baseOptionsForKey, resolvedTags, pluginOpts]
     );
 
     const fetchNext = useCallback(async () => {
@@ -723,12 +725,14 @@ export function createUseInfiniteRead<
     }, [subscriptionVersion]);
 
     useEffect(() => {
-      if (tags.length === 0) return;
+      if (resolvedTags.length === 0) return;
 
       const unsubscribe = eventEmitter.on<string[]>(
         "invalidate",
         (invalidatedTags) => {
-          const hasMatch = invalidatedTags.some((tag) => tags.includes(tag));
+          const hasMatch = invalidatedTags.some((tag) =>
+            resolvedTags.includes(tag)
+          );
 
           if (hasMatch && mountedRef.current) {
             refetch();
@@ -739,7 +743,7 @@ export function createUseInfiniteRead<
       return () => {
         unsubscribe();
       };
-    }, [JSON.stringify(tags), refetch]);
+    }, [JSON.stringify(resolvedTags), refetch]);
 
     const result = {
       data: state.data,
