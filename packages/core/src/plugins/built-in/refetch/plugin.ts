@@ -104,7 +104,6 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): EnlacePlugin<{
   return {
     name: "enlace:refetch",
     operations: ["read", "infiniteRead"],
-    dependencies: ["enlace:invalidation"],
 
     handlers: {
       onMount(context) {

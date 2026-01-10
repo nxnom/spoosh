@@ -721,27 +721,6 @@ export function createUseInfiniteRead<
       };
     }, [subscriptionVersion]);
 
-    useEffect(() => {
-      if (resolvedTags.length === 0) return;
-
-      const unsubscribe = eventEmitter.on<string[]>(
-        "invalidate",
-        (invalidatedTags) => {
-          const hasMatch = invalidatedTags.some((tag) =>
-            resolvedTags.includes(tag)
-          );
-
-          if (hasMatch && mountedRef.current) {
-            refetch();
-          }
-        }
-      );
-
-      return () => {
-        unsubscribe();
-      };
-    }, [JSON.stringify(resolvedTags), refetch]);
-
     const pluginOptsKey = JSON.stringify(pluginOpts);
 
     useEffect(() => {

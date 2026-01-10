@@ -116,6 +116,7 @@ export function invalidationPlugin(
   return {
     name: "enlace:invalidation",
     operations: ["write"],
+    dependencies: ["enlace:refetch"],
 
     exports(context): InvalidationPluginExports {
       return {
