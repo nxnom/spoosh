@@ -119,61 +119,74 @@ export function createUseInfiniteRead<
     prevPageRequestRef.current = prevPageRequest;
     mergerRef.current = merger;
 
-    const controllerRef = useRef<ReturnType<
-      typeof createInfiniteReadController<TData, TItem, TError, TRequest>
-    > | null>(null);
+    const queryKey = stateManager.createQueryKey({
+      path: trackedCall.path,
+      method: trackedCall.method,
+      options: baseOptionsForKey,
+    });
 
-    if (!controllerRef.current) {
-      controllerRef.current = createInfiniteReadController<
-        TData,
-        TItem,
-        TError,
-        TRequest
-      >({
-        path: trackedCall.path,
-        method: trackedCall.method as "GET",
-        tags: resolvedTags,
-        initialRequest,
-        baseOptionsForKey,
-        canFetchNext: (ctx) => canFetchNextRef.current(ctx),
-        canFetchPrev: canFetchPrev
-          ? (ctx) => canFetchPrevRef.current?.(ctx) ?? false
-          : undefined,
-        nextPageRequest: (ctx) => nextPageRequestRef.current(ctx),
-        prevPageRequest: prevPageRequest
-          ? (ctx) => prevPageRequestRef.current?.(ctx) ?? {}
-          : undefined,
-        merger: (responses) => mergerRef.current(responses),
-        stateManager,
-        eventEmitter,
-        pluginExecutor,
-        fetchFn: async (opts, signal) => {
-          const fetchPath = resolvePath(trackedCall.path, opts.params);
+    const controllerRef = useRef<{
+      controller: ReturnType<
+        typeof createInfiniteReadController<TData, TItem, TError, TRequest>
+      >;
+      queryKey: string;
+    } | null>(null);
 
-          let current: unknown = api;
+    // Recreate controller when queryKey changes
+    if (!controllerRef.current || controllerRef.current.queryKey !== queryKey) {
+      controllerRef.current = {
+        controller: createInfiniteReadController<
+          TData,
+          TItem,
+          TError,
+          TRequest
+        >({
+          path: trackedCall.path,
+          method: trackedCall.method as "GET",
+          tags: resolvedTags,
+          initialRequest,
+          baseOptionsForKey,
+          canFetchNext: (ctx) => canFetchNextRef.current(ctx),
+          canFetchPrev: canFetchPrev
+            ? (ctx) => canFetchPrevRef.current?.(ctx) ?? false
+            : undefined,
+          nextPageRequest: (ctx) => nextPageRequestRef.current(ctx),
+          prevPageRequest: prevPageRequest
+            ? (ctx) => prevPageRequestRef.current?.(ctx) ?? {}
+            : undefined,
+          merger: (responses) => mergerRef.current(responses),
+          stateManager,
+          eventEmitter,
+          pluginExecutor,
+          fetchFn: async (opts, signal) => {
+            const fetchPath = resolvePath(trackedCall.path, opts.params);
 
-          for (const segment of fetchPath) {
-            current = (current as Record<string, unknown>)[segment];
-          }
+            let current: unknown = api;
 
-          const method = (current as Record<string, unknown>)[
-            trackedCall.method
-          ] as (opts?: unknown) => Promise<EnlaceResponse<TData, TError>>;
+            for (const segment of fetchPath) {
+              current = (current as Record<string, unknown>)[segment];
+            }
 
-          const fetchOptions = {
-            ...(trackedCall.options as object),
-            query: opts.query,
-            params: opts.params,
-            body: opts.body,
-            signal,
-          };
+            const method = (current as Record<string, unknown>)[
+              trackedCall.method
+            ] as (opts?: unknown) => Promise<EnlaceResponse<TData, TError>>;
 
-          return method(fetchOptions);
-        },
-      });
+            const fetchOptions = {
+              ...(trackedCall.options as object),
+              query: opts.query,
+              params: opts.params,
+              body: opts.body,
+              signal,
+            };
+
+            return method(fetchOptions);
+          },
+        }),
+        queryKey,
+      };
     }
 
-    const controller = controllerRef.current;
+    const controller = controllerRef.current.controller;
 
     controller.setPluginOptions(pluginOpts);
 

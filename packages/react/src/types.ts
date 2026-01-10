@@ -64,6 +64,7 @@ export type BaseReadResult<TData, TError> = {
   data: TData | undefined;
   error: TError | undefined;
   abort: () => void;
+  refetch: () => Promise<EnlaceResponse<TData, TError>>;
 };
 
 export type BaseWriteResult<TData, TError, TOptions> = {

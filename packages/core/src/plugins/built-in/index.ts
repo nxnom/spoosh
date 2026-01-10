@@ -1,4 +1,5 @@
 export * from "./cache";
+export * from "./debounce";
 export * from "./debug";
 export * from "./deduplication";
 export * from "./initial-data";
@@ -7,3 +8,4 @@ export * from "./optimistic";
 export * from "./polling";
 export * from "./refetch";
 export * from "./retry";
+export * from "./throttle";

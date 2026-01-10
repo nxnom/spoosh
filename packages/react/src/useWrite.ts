@@ -84,41 +84,46 @@ export function createUseWrite<
       options: undefined,
     });
 
-    const controllerRef = useRef<ReturnType<
-      typeof createOperationController<TData, TError>
-    > | null>(null);
+    const controllerRef = useRef<{
+      controller: ReturnType<typeof createOperationController<TData, TError>>;
+      queryKey: string;
+    } | null>(null);
 
-    if (!controllerRef.current) {
-      controllerRef.current = createOperationController<TData, TError>({
-        operationType: "write",
-        path: selectorPath,
-        method: selectorMethod as "POST" | "PUT" | "PATCH" | "DELETE",
-        tags: [],
-        stateManager,
-        eventEmitter,
-        pluginExecutor,
-        fetchFn: async (fetchOpts) => {
-          const params = (
-            fetchOpts as { params?: Record<string, string | number> }
-          )?.params;
-          const resolvedPath = resolvePath(selectorPath, params);
+    // Recreate controller when path changes (e.g., api.posts[postId].$delete)
+    if (!controllerRef.current || controllerRef.current.queryKey !== queryKey) {
+      controllerRef.current = {
+        controller: createOperationController<TData, TError>({
+          operationType: "write",
+          path: selectorPath,
+          method: selectorMethod as "POST" | "PUT" | "PATCH" | "DELETE",
+          tags: [],
+          stateManager,
+          eventEmitter,
+          pluginExecutor,
+          fetchFn: async (fetchOpts) => {
+            const params = (
+              fetchOpts as { params?: Record<string, string | number> }
+            )?.params;
+            const resolvedPath = resolvePath(selectorPath, params);
 
-          let current: unknown = api;
+            let current: unknown = api;
 
-          for (const segment of resolvedPath) {
-            current = (current as Record<string, unknown>)[segment];
-          }
+            for (const segment of resolvedPath) {
+              current = (current as Record<string, unknown>)[segment];
+            }
 
-          const method = (current as Record<string, unknown>)[
-            selectorMethod
-          ] as (o?: unknown) => Promise<EnlaceResponse<TData, TError>>;
+            const method = (current as Record<string, unknown>)[
+              selectorMethod
+            ] as (o?: unknown) => Promise<EnlaceResponse<TData, TError>>;
 
-          return method(fetchOpts);
-        },
-      });
+            return method(fetchOpts);
+          },
+        }),
+        queryKey,
+      };
     }
 
-    const controller = controllerRef.current;
+    const controller = controllerRef.current.controller;
 
     const state = useSyncExternalStore(
       controller.subscribe,

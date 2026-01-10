@@ -84,11 +84,13 @@ export function createUseRead<
       options: trackedCall.options,
     });
 
-    const controllerRef = useRef<ReturnType<
-      typeof createOperationController
-    > | null>(null);
+    const controllerRef = useRef<{
+      controller: ReturnType<typeof createOperationController>;
+      queryKey: string;
+    } | null>(null);
 
-    if (!controllerRef.current) {
+    // Recreate controller when queryKey changes
+    if (!controllerRef.current || controllerRef.current.queryKey !== queryKey) {
       const controller = createOperationController<TData, TError>({
         operationType: "read",
         path: trackedCall.path,
@@ -115,10 +117,10 @@ export function createUseRead<
         },
       });
 
-      controllerRef.current = controller;
+      controllerRef.current = { controller, queryKey };
     }
 
-    const controller = controllerRef.current;
+    const controller = controllerRef.current.controller;
 
     controller.setPluginOptions(pluginOpts);
 
@@ -161,6 +163,10 @@ export function createUseRead<
       abortRef.current();
     }, []);
 
+    const refetch = useCallback(() => {
+      return controller.execute(undefined, { force: true });
+    }, []);
+
     const entry = stateManager.getCache(queryKey);
     const pluginResultData = entry?.pluginResult
       ? Object.fromEntries(entry.pluginResult)
@@ -172,6 +178,7 @@ export function createUseRead<
       data: state.data as TData | undefined,
       error: state.error as TError | undefined,
       abort,
+      refetch,
     };
 
     return result as unknown as BaseReadResult<TData, TError> &
