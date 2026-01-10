@@ -15,6 +15,9 @@ import type {
   CacheConfig,
 } from "./types";
 
+export const OPTIMISTIC_SNAPSHOTS_KEY = "optimistic:snapshots";
+export const OPTIMISTIC_PLUGIN_OPTIONS_KEY = "optimistic:pluginOptions";
+
 type ParsedRequest = {
   query?: Record<string, unknown>;
   params?: Record<string, unknown>;
@@ -30,7 +33,7 @@ function extractTagsFromFor(forFn: ResolvedCacheConfig["for"]): string[] {
   return pathToTags(extractPathFromTracked(forFn));
 }
 
-function getExactPath(tags: string[]): string | undefined {
+function getExactMatchPath(tags: string[]): string | undefined {
   return tags.length > 0 ? tags[tags.length - 1] : undefined;
 }
 
@@ -53,7 +56,7 @@ function parseRequestFromKey(key: string): ParsedRequest | undefined {
 function resolveOptimisticConfigs(
   context: PluginContext
 ): ResolvedCacheConfig[] {
-  const pluginOptions = context.metadata.get("pluginOptions") as
+  const pluginOptions = context.metadata.get(OPTIMISTIC_PLUGIN_OPTIONS_KEY) as
     | OptimisticWriteOptions
     | undefined;
 
@@ -70,9 +73,14 @@ function resolveOptimisticConfigs(
   });
 
   const apiProxy = createApiProxy();
-  const result = pluginOptions.optimistic($ as never, apiProxy as never);
+  const optimisticConfigs = pluginOptions.optimistic(
+    $ as never,
+    apiProxy as never
+  );
 
-  return Array.isArray(result) ? result : [result];
+  return Array.isArray(optimisticConfigs)
+    ? optimisticConfigs
+    : [optimisticConfigs];
 }
 
 function applyOptimisticUpdate(
@@ -80,7 +88,7 @@ function applyOptimisticUpdate(
   config: ResolvedCacheConfig
 ): OptimisticSnapshot[] {
   const tags = extractTagsFromFor(config.for);
-  const targetSelfTag = getExactPath(tags);
+  const targetSelfTag = getExactMatchPath(tags);
 
   if (!targetSelfTag) return [];
 
@@ -250,7 +258,7 @@ export function optimisticPlugin(): EnlacePlugin<{
         }
 
         if (allSnapshots.length > 0) {
-          context.metadata.set("optimisticSnapshots", allSnapshots);
+          context.metadata.set(OPTIMISTIC_SNAPSHOTS_KEY, allSnapshots);
         }
 
         return context;
@@ -261,7 +269,7 @@ export function optimisticPlugin(): EnlacePlugin<{
         const configs = resolveOptimisticConfigs(context);
         const snapshots =
           (context.metadata.get(
-            "optimisticSnapshots"
+            OPTIMISTIC_SNAPSHOTS_KEY
           ) as OptimisticSnapshot[]) ?? [];
 
         if (snapshots.length > 0) {
@@ -274,7 +282,7 @@ export function optimisticPlugin(): EnlacePlugin<{
 
         for (const config of onSuccessConfigs) {
           const tags = extractTagsFromFor(config.for);
-          const targetSelfTag = getExactPath(tags);
+          const targetSelfTag = getExactMatchPath(tags);
 
           if (!targetSelfTag) continue;
 
@@ -303,7 +311,7 @@ export function optimisticPlugin(): EnlacePlugin<{
         const configs = resolveOptimisticConfigs(context);
         const snapshots =
           (context.metadata.get(
-            "optimisticSnapshots"
+            OPTIMISTIC_SNAPSHOTS_KEY
           ) as OptimisticSnapshot[]) ?? [];
 
         const shouldRollback = configs.some(

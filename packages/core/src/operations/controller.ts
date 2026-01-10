@@ -9,6 +9,7 @@ import type {
 import type { PluginExecutor } from "../plugins/executor";
 import type { StateManager } from "../state/manager";
 import type { EventEmitter } from "../events/emitter";
+import { CACHE_FORCE_REFETCH_KEY } from "../plugins/built-in/cache";
 
 export type ExecuteOptions = {
   force?: boolean;
@@ -138,7 +139,7 @@ export function createOperationController<TData, TError>(
       const { force = false } = executeOptions ?? {};
 
       if (force) {
-        metadata.set("forceRefetch", true);
+        metadata.set(CACHE_FORCE_REFETCH_KEY, true);
       }
 
       if (!isFirstExecute) {

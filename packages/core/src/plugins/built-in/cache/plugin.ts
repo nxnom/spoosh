@@ -8,6 +8,9 @@ import type {
   CacheWriteResult,
 } from "./types";
 
+export const CACHE_FORCE_REFETCH_KEY = "cache:forceRefetch";
+export const CACHE_PLUGIN_OPTIONS_KEY = "cache:pluginOptions";
+
 /**
  * Enables response caching with configurable stale time.
  *
@@ -42,10 +45,10 @@ export function cachePlugin(config: CachePluginConfig = {}): EnlacePlugin<{
 
     handlers: {
       beforeFetch(context: PluginContext) {
-        const forceRefetch = context.metadata.get("forceRefetch");
+        const forceRefetch = context.metadata.get(CACHE_FORCE_REFETCH_KEY);
 
         if (forceRefetch) {
-          context.metadata.delete("forceRefetch");
+          context.metadata.delete(CACHE_FORCE_REFETCH_KEY);
           return context;
         }
 
@@ -55,7 +58,7 @@ export function cachePlugin(config: CachePluginConfig = {}): EnlacePlugin<{
           return context;
         }
 
-        const pluginOptions = context.metadata.get("pluginOptions") as
+        const pluginOptions = context.metadata.get(CACHE_PLUGIN_OPTIONS_KEY) as
           | CacheReadOptions
           | undefined;
         const staleTime = pluginOptions?.staleTime ?? defaultStaleTime;

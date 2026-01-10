@@ -9,13 +9,13 @@ export function objectToFormData(obj: Record<string, unknown>): FormData {
     if (value instanceof Blob || value instanceof File) {
       formData.append(key, value);
     } else if (Array.isArray(value)) {
-      for (const item of value) {
-        if (item instanceof Blob || item instanceof File) {
-          formData.append(key, item);
-        } else if (typeof item === "object" && item !== null) {
-          formData.append(key, JSON.stringify(item));
+      for (const entry of value) {
+        if (entry instanceof Blob || entry instanceof File) {
+          formData.append(key, entry);
+        } else if (typeof entry === "object" && entry !== null) {
+          formData.append(key, JSON.stringify(entry));
         } else {
-          formData.append(key, String(item));
+          formData.append(key, String(entry));
         }
       }
     } else if (typeof value === "object") {

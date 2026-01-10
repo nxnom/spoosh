@@ -7,23 +7,23 @@ export function createApiProxy<TSchema>(): TSchema {
   const createTrackingProxy = (path: string[]): unknown => {
     const handler: ProxyHandler<object> = {
       get(_, prop) {
-        const propStr = String(prop);
+        const propertyName = String(prop);
 
         if (
-          propStr === "$get" ||
-          propStr === "$post" ||
-          propStr === "$put" ||
-          propStr === "$patch" ||
-          propStr === "$delete"
+          propertyName === "$get" ||
+          propertyName === "$post" ||
+          propertyName === "$put" ||
+          propertyName === "$patch" ||
+          propertyName === "$delete"
         ) {
-          const fn: TrackedFunction = () =>
+          const trackedMethod: TrackedFunction = () =>
             Promise.resolve({ data: undefined });
-          fn.__trackedPath = path;
-          fn.__trackedMethod = propStr;
-          return fn;
+          trackedMethod.__trackedPath = path;
+          trackedMethod.__trackedMethod = propertyName;
+          return trackedMethod;
         }
 
-        return createTrackingProxy([...path, propStr]);
+        return createTrackingProxy([...path, propertyName]);
       },
     };
 

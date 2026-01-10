@@ -35,13 +35,13 @@ function resolveInvalidateTags(
       tags.push(...pluginOptions.invalidate);
     } else {
       const proxy = createApiProxy<never>();
-      const result = pluginOptions.invalidate(proxy as never);
+      const invalidationTargets = pluginOptions.invalidate(proxy as never);
 
-      for (const item of result) {
-        if (typeof item === "string") {
-          tags.push(item);
+      for (const target of invalidationTargets) {
+        if (typeof target === "string") {
+          tags.push(target);
         } else {
-          const path = extractPathFromTracked(item);
+          const path = extractPathFromTracked(target);
           const derivedTags = pathToTags(path);
           const exactTag = derivedTags[derivedTags.length - 1];
 
