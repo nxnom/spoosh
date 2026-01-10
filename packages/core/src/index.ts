@@ -1,10 +1,13 @@
 export { createEnlace } from "./createEnlace";
-export { createClient, type ClientConfig } from "./createClient";
+export {
+  createClient,
+  type EnlaceClientConfig as ClientConfig,
+} from "./createClient";
 
 export * from "./types";
 export * from "./utils";
 export { createProxyHandler } from "./proxy";
-export { executeFetch, type ExecuteFetchOptions } from "./fetch";
+export { executeFetch } from "./fetch";
 export {
   createMiddleware,
   applyMiddlewares,

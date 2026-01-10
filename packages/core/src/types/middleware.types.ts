@@ -1,6 +1,6 @@
 import type { HttpMethod } from "./common.types";
 import type { AnyRequestOptions, EnlaceOptions } from "./request.types";
-import type { EnlaceCallbacks, EnlaceResponse } from "./response.types";
+import type { EnlaceOptionsExtra, EnlaceResponse } from "./response.types";
 
 export type MiddlewarePhase = "before" | "after";
 
@@ -8,7 +8,7 @@ export type MiddlewareContext<TData = unknown, TError = unknown> = {
   baseUrl: string;
   path: string[];
   method: HttpMethod;
-  defaultOptions: EnlaceOptions & EnlaceCallbacks;
+  defaultOptions: EnlaceOptions & EnlaceOptionsExtra;
   requestOptions?: AnyRequestOptions;
   fetchInit?: RequestInit;
   response?: EnlaceResponse<TData, TError>;

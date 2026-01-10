@@ -1,10 +1,12 @@
 import { createProxyHandler } from "./proxy";
 import type { EnlaceClient } from "./types/client.types";
 import type { EnlaceOptions } from "./types/request.types";
+import type { EnlaceMiddleware } from "./types/middleware.types";
 
-export type ClientConfig = {
+export type EnlaceClientConfig = {
   baseUrl: string;
   defaultOptions?: EnlaceOptions;
+  middlewares?: EnlaceMiddleware[];
 };
 
 /**
@@ -43,12 +45,14 @@ export type ClientConfig = {
  * ```
  */
 export function createClient<TSchema, TDefaultError = unknown>(
-  config: ClientConfig
+  config: EnlaceClientConfig
 ): EnlaceClient<TSchema, TDefaultError> {
-  const { baseUrl, defaultOptions = {} } = config;
+  const { baseUrl, defaultOptions = {}, middlewares = [] } = config;
+
+  const optionsWithMiddlewares = { ...defaultOptions, middlewares };
 
   return createProxyHandler<EnlaceClient<TSchema, TDefaultError>>(
     baseUrl,
-    defaultOptions
+    optionsWithMiddlewares
   );
 }

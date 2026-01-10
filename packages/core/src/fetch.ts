@@ -2,7 +2,7 @@ import { applyMiddlewares } from "./middleware";
 import { buildUrl, isJsonBody, mergeHeaders, objectToFormData } from "./utils";
 import type {
   AnyRequestOptions,
-  EnlaceCallbacks,
+  EnlaceOptionsExtra,
   EnlaceMiddleware,
   EnlaceOptions,
   EnlaceResponse,
@@ -17,23 +17,17 @@ const isNetworkError = (err: unknown): boolean => err instanceof TypeError;
 const isAbortError = (err: unknown): boolean =>
   err instanceof DOMException && err.name === "AbortError";
 
-export type ExecuteFetchOptions<TData = unknown, TError = unknown> = {
-  middlewares?: EnlaceMiddleware<TData, TError>[];
-};
-
 export async function executeFetch<TData, TError>(
   baseUrl: string,
   path: string[],
   method: HttpMethod,
-  defaultOptions: EnlaceOptions & EnlaceCallbacks,
-  requestOptions?: AnyRequestOptions,
-  fetchOptions?: ExecuteFetchOptions<TData, TError>
+  defaultOptions: EnlaceOptions & EnlaceOptionsExtra,
+  requestOptions?: AnyRequestOptions
 ): Promise<EnlaceResponse<TData, TError>> {
-  const optionsMiddlewares = (defaultOptions.middlewares ??
-    []) as EnlaceMiddleware<TData, TError>[];
-  const explicitMiddlewares = fetchOptions?.middlewares ?? [];
-  const middlewares =
-    explicitMiddlewares.length > 0 ? explicitMiddlewares : optionsMiddlewares;
+  const middlewares = (defaultOptions.middlewares ?? []) as EnlaceMiddleware<
+    TData,
+    TError
+  >[];
 
   let context: MiddlewareContext<TData, TError> = {
     baseUrl,
@@ -70,13 +64,11 @@ async function executeCoreFetch<TData, TError>(
   baseUrl: string,
   path: string[],
   method: HttpMethod,
-  defaultOptions: EnlaceOptions & EnlaceCallbacks,
+  defaultOptions: EnlaceOptions & EnlaceOptionsExtra,
   requestOptions?: AnyRequestOptions,
   middlewareFetchInit?: RequestInit
 ): Promise<EnlaceResponse<TData, TError>> {
   const {
-    onSuccess,
-    onError,
     middlewares: _,
     headers: defaultHeaders,
     ...fetchDefaults
@@ -141,12 +133,10 @@ async function executeCoreFetch<TData, TError>(
 
       if (res.ok) {
         const payload = { status, data: body, headers: resHeaders };
-        onSuccess?.(payload);
         return { ...payload, error: undefined };
       }
 
       const payload = { status, error: body, headers: resHeaders };
-      onError?.(payload);
       return { ...payload, data: undefined };
     } catch (err) {
       if (isAbortError(err)) {
@@ -166,11 +156,9 @@ async function executeCoreFetch<TData, TError>(
         continue;
       }
 
-      onError?.({ status: 0, error: lastError });
       return { status: 0, error: lastError, data: undefined };
     }
   }
 
-  onError?.({ status: 0, error: lastError! });
   return { status: 0, error: lastError!, data: undefined };
 }

@@ -30,10 +30,6 @@ export type EnlaceErrorCallbackPayload<T> = {
   headers?: Headers;
 };
 
-export type EnlaceCallbacks<TData = unknown, TError = unknown> = {
-  onSuccess?: ((payload: EnlaceCallbackPayload<unknown>) => void) | undefined;
-  onError?:
-    | ((payload: EnlaceErrorCallbackPayload<unknown>) => void)
-    | undefined;
+export type EnlaceOptionsExtra<TData = unknown, TError = unknown> = {
   middlewares?: EnlaceMiddleware<TData, TError>[];
 };
