@@ -5,6 +5,7 @@ import type {
   PluginContext,
   PluginContextInput,
   PluginPhase,
+  PluginHandler,
 } from "./types";
 
 export type PluginExecutor = {
@@ -55,7 +56,7 @@ export function createPluginExecutor(
           continue;
         }
 
-        ctx = (await handler(
+        ctx = (await (handler as PluginHandler)(
           ctx as PluginContext<unknown, unknown>
         )) as PluginContext<TData, TError>;
       }

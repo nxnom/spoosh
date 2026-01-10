@@ -73,13 +73,38 @@ export type PluginContextInput<TData = unknown, TError = unknown> = Omit<
   "plugins"
 >;
 
-export type PluginHandler<TData = unknown, TError = unknown> = (
-  context: PluginContext<TData, TError>
+/**
+ * Helper type to exclude empty object types from the union.
+ * Filters out `{}` and `object` which have no known keys.
+ */
+type NonEmptyObject<T> = T extends object
+  ? keyof T extends never
+    ? never
+    : T
+  : never;
+
+/**
+ * Extracts all plugin options from a PluginTypeConfig as a union type.
+ * Excludes empty object types to ensure proper property access.
+ */
+export type ExtractPluginOptions<T extends PluginTypeConfig> =
+  | NonEmptyObject<T["readOptions"]>
+  | NonEmptyObject<T["writeOptions"]>
+  | NonEmptyObject<T["infiniteReadOptions"]>;
+
+export type PluginHandler<
+  TData = unknown,
+  TError = unknown,
+  TPluginOptions = unknown,
+> = (
+  context: PluginContext<TData, TError> & { pluginOptions?: TPluginOptions }
 ) => PluginContext<TData, TError> | Promise<PluginContext<TData, TError>>;
 
-export type PluginHandlers<TData = unknown, TError = unknown> = Partial<
-  Record<PluginPhase, PluginHandler<TData, TError>>
->;
+export type PluginHandlers<
+  TData = unknown,
+  TError = unknown,
+  TPluginOptions = unknown,
+> = Partial<Record<PluginPhase, PluginHandler<TData, TError, TPluginOptions>>>;
 
 /**
  * Configuration object for plugin type definitions.
@@ -129,7 +154,7 @@ export type PluginTypeConfig = {
 export interface EnlacePlugin<T extends PluginTypeConfig = PluginTypeConfig> {
   name: string;
   operations: OperationType[];
-  handlers: PluginHandlers;
+  handlers: PluginHandlers<unknown, unknown, ExtractPluginOptions<T>>;
 
   /** Expose functions/variables for other plugins to access via `context.plugins.get(name)` */
   exports?: (context: PluginContext) => object;

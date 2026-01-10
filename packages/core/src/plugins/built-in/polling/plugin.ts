@@ -50,15 +50,13 @@ export function pollingPlugin(): EnlacePlugin<{
     }
   };
 
-  const scheduleNextPoll = (context: PluginContext) => {
-    const { queryKey } = context;
-
-    const pluginOptions = context.pluginOptions as
-      | PollingReadOptions
-      | undefined;
-    const pollingInterval = pluginOptions?.pollingInterval;
-
+  const scheduleNextPoll = (
+    context: PluginContext,
+    pollingInterval: PollingReadOptions["pollingInterval"]
+  ) => {
     if (!pollingInterval) return;
+
+    const { queryKey } = context;
 
     const cached = context.stateManager.getCache(queryKey);
     const data = cached?.state.data;
@@ -89,7 +87,7 @@ export function pollingPlugin(): EnlacePlugin<{
     operations: ["read", "infiniteRead"],
 
     handlers: {
-      onMount(context: PluginContext) {
+      onMount(context) {
         const execute = context.metadata.get("execute") as
           | ((force?: boolean) => void)
           | undefined;
@@ -101,32 +99,29 @@ export function pollingPlugin(): EnlacePlugin<{
         return context;
       },
 
-      onSuccess(context: PluginContext) {
-        scheduleNextPoll(context);
+      onSuccess(context) {
+        scheduleNextPoll(context, context.pluginOptions?.pollingInterval);
         return context;
       },
 
-      onError(context: PluginContext) {
-        scheduleNextPoll(context);
+      onError(context) {
+        scheduleNextPoll(context, context.pluginOptions?.pollingInterval);
         return context;
       },
 
-      onUnmount(context: PluginContext) {
+      onUnmount(context) {
         clearPolling(context.queryKey);
         refetchFns.delete(context.queryKey);
         return context;
       },
 
-      onOptionsUpdate(context: PluginContext) {
+      onOptionsUpdate(context) {
         const { queryKey } = context;
         const refetch = refetchFns.get(queryKey);
 
         if (!refetch) return context;
 
-        const pluginOptions = context.pluginOptions as
-          | PollingReadOptions
-          | undefined;
-        const pollingInterval = pluginOptions?.pollingInterval;
+        const pollingInterval = context.pluginOptions?.pollingInterval;
 
         if (!pollingInterval) {
           clearPolling(queryKey);
@@ -136,7 +131,7 @@ export function pollingPlugin(): EnlacePlugin<{
         const currentTimeout = timeouts.get(queryKey);
 
         if (!currentTimeout) {
-          scheduleNextPoll(context);
+          scheduleNextPoll(context, pollingInterval);
         }
 
         return context;

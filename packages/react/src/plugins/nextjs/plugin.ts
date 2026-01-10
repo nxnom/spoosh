@@ -27,18 +27,14 @@ export function nextjsPlugin(config: NextjsPluginConfig = {}): EnlacePlugin<{
           return context;
         }
 
-        const pluginOptions = context.pluginOptions as
-          | NextjsWriteOptions
-          | undefined;
-
         const shouldRevalidate =
-          pluginOptions?.serverRevalidate ?? !skipServerRevalidation;
+          context.pluginOptions?.serverRevalidate ?? !skipServerRevalidation;
 
         if (!shouldRevalidate) {
           return context;
         }
 
-        const revalidatePaths = pluginOptions?.revalidatePaths ?? [];
+        const revalidatePaths = context.pluginOptions?.revalidatePaths ?? [];
 
         if (context.tags.length > 0 || revalidatePaths.length > 0) {
           await serverRevalidator(context.tags, revalidatePaths);

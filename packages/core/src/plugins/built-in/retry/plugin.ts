@@ -43,12 +43,9 @@ export function retryPlugin(config: RetryPluginConfig = {}): EnlacePlugin<{
 
     handlers: {
       beforeFetch(context) {
-        const pluginOptions = context.pluginOptions as
-          | RetryReadOptions
-          | undefined;
-
-        const retries = pluginOptions?.retries ?? defaultRetries;
-        const retryDelay = pluginOptions?.retryDelay ?? defaultRetryDelay;
+        const retries = context.pluginOptions?.retries ?? defaultRetries;
+        const retryDelay =
+          context.pluginOptions?.retryDelay ?? defaultRetryDelay;
 
         context.requestOptions = {
           ...context.requestOptions,

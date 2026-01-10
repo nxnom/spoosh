@@ -21,13 +21,10 @@ const INVALIDATION_DEFAULT_KEY = "invalidation:autoInvalidateDefault";
  * Resolves tags to invalidate from context and plugin options.
  */
 function resolveInvalidateTags(
+  pluginOptions: InvalidationWriteOptions | undefined,
   context: PluginContext,
   defaultAutoInvalidate: AutoInvalidate
 ): string[] {
-  const pluginOptions = context.pluginOptions as
-    | InvalidationWriteOptions
-    | undefined;
-
   const tags: string[] = [];
 
   if (pluginOptions?.invalidate) {
@@ -126,8 +123,12 @@ export function invalidationPlugin(
     },
 
     handlers: {
-      onSuccess(context: PluginContext) {
-        const tags = resolveInvalidateTags(context, defaultAutoInvalidate);
+      onSuccess(context) {
+        const tags = resolveInvalidateTags(
+          context.pluginOptions,
+          context,
+          defaultAutoInvalidate
+        );
 
         if (tags.length > 0) {
           context.eventEmitter.emit("invalidate", tags);
