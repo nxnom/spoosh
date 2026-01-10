@@ -164,7 +164,7 @@ export function createOperationController<TData, TError>(
 
       updateState({
         fetching: true,
-        loading: cached?.state.data === undefined,
+        loading: operationType === "write" || cached?.state.data === undefined,
       });
 
       const fetchPromise = (async (): Promise<

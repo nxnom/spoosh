@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from "react";
+import { useSyncExternalStore, useRef, useCallback } from "react";
 import {
   type EnlaceResponse,
   type PluginExecutor,
@@ -33,7 +33,7 @@ export function createUseWrite<
   TDefaultError,
   TPlugins extends readonly EnlacePlugin<PluginTypeConfig>[],
 >(options: CreateUseWriteOptions) {
-  const { api, stateManager, eventEmitter, pluginExecutor } = options;
+  const { api, stateManager, pluginExecutor, eventEmitter } = options;
 
   type PluginOptions = MergePluginOptions<TPlugins>;
   type PluginResults = MergePluginResults<TPlugins>;
@@ -78,14 +78,10 @@ export function createUseWrite<
       );
     }
 
-    const [state, setState] = useState<{
-      loading: boolean;
-      data: TData | undefined;
-      error: TError | undefined;
-    }>({
-      loading: false,
-      data: undefined,
-      error: undefined,
+    const queryKey = stateManager.createQueryKey({
+      path: selectorPath,
+      method: selectorMethod,
+      options: undefined,
     });
 
     const controllerRef = useRef<ReturnType<
@@ -124,9 +120,15 @@ export function createUseWrite<
 
     const controller = controllerRef.current;
 
+    const state = useSyncExternalStore(
+      controller.subscribe,
+      controller.getState,
+      controller.getState
+    );
+
     const reset = useCallback(() => {
-      setState({ loading: false, data: undefined, error: undefined });
-    }, []);
+      stateManager.deleteCache(queryKey);
+    }, [queryKey]);
 
     const abort = useCallback(() => {
       controller.abort();
@@ -136,8 +138,6 @@ export function createUseWrite<
       async (
         triggerOptions?: TOptions
       ): Promise<EnlaceResponse<TData, TError>> => {
-        setState((prev) => ({ ...prev, loading: true, error: undefined }));
-
         const params = (
           triggerOptions as
             | { params?: Record<string, string | number> }
@@ -148,26 +148,22 @@ export function createUseWrite<
 
         controller.setPluginOptions({ ...triggerOptions, tags });
 
-        const response = await controller.execute(triggerOptions, {
-          force: true,
-        });
-
-        if (response.error) {
-          setState({ loading: false, data: undefined, error: response.error });
-        } else {
-          setState({ loading: false, data: response.data, error: undefined });
-        }
-
-        return response;
+        return controller.execute(triggerOptions, { force: true });
       },
       [selectorPath]
     );
 
+    const entry = stateManager.getCache(queryKey);
+    const pluginResultData = entry?.pluginResult
+      ? Object.fromEntries(entry.pluginResult)
+      : {};
+
     const result = {
       trigger,
-      loading: state.loading,
-      data: state.data,
-      error: state.error,
+      ...state,
+      ...pluginResultData,
+      data: state.data as TData | undefined,
+      error: state.error as TError | undefined,
       reset,
       abort,
     };
