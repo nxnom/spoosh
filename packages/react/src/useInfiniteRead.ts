@@ -10,6 +10,7 @@ import {
   type PluginTypeConfig,
   type PluginContext,
   type OperationState,
+  type RefetchEvent,
 } from "enlace";
 import { createTrackingProxy, type TrackingResult } from "./trackingProxy";
 import type {
@@ -41,7 +42,6 @@ type InfiniteState<TData, TItem> = {
   canFetchNext: boolean;
   canFetchPrev: boolean;
   error: unknown;
-  isOptimistic: boolean;
 };
 
 type InfiniteAction<TData, TItem> =
@@ -99,7 +99,6 @@ const initialInfiniteState: InfiniteState<unknown, unknown> = {
   canFetchNext: false,
   canFetchPrev: false,
   error: undefined,
-  isOptimistic: false,
 };
 
 function createPageQueryKey(
@@ -265,7 +264,6 @@ export function createUseInfiniteRead<
           allRequests: undefined,
           canFetchNext: false,
           canFetchPrev: false,
-          isOptimistic: false,
           error: undefined,
         };
       }
@@ -273,7 +271,6 @@ export function createUseInfiniteRead<
       const allResponses: TData[] = [];
       const allRequests: AnyInfiniteRequestOptions[] = [];
       let hasError: TError | undefined;
-      let isAnyOptimistic = false;
 
       for (const key of pageKeys) {
         const cached = stateManager.getCache(key);
@@ -288,10 +285,6 @@ export function createUseInfiniteRead<
             pageRequestsRef.current.get(key) ?? initialRequestRef.current
           );
         }
-
-        if (cached?.state?.isOptimistic) {
-          isAnyOptimistic = true;
-        }
       }
 
       if (allResponses.length === 0) {
@@ -301,7 +294,6 @@ export function createUseInfiniteRead<
           allRequests: undefined,
           canFetchNext: false,
           canFetchPrev: false,
-          isOptimistic: false,
           error: hasError,
         };
       }
@@ -333,7 +325,6 @@ export function createUseInfiniteRead<
         allRequests,
         canFetchNext: canNext,
         canFetchPrev: canPrev,
-        isOptimistic: isAnyOptimistic,
         error: hasError,
       };
     };
@@ -362,8 +353,6 @@ export function createUseInfiniteRead<
         fetching: true,
         data: undefined,
         error: undefined,
-        isOptimistic: false,
-        isStale: true,
         timestamp: 0,
       };
 
@@ -394,8 +383,6 @@ export function createUseInfiniteRead<
             pageRequests: Object.fromEntries(pageRequestsRef.current),
           },
           error: undefined,
-          isOptimistic: false,
-          isStale: false,
           timestamp: Date.now(),
         },
         tags: resolvedTags,
@@ -487,8 +474,6 @@ export function createUseInfiniteRead<
                   fetching: false,
                   data: undefined,
                   error: res.error,
-                  isOptimistic: false,
-                  isStale: true,
                   timestamp: Date.now(),
                 },
                 tags: resolvedTags,
@@ -520,8 +505,6 @@ export function createUseInfiniteRead<
                   fetching: false,
                   data: res.data,
                   error: undefined,
-                  isOptimistic: false,
-                  isStale: false,
                   timestamp: Date.now(),
                 },
                 tags: resolvedTags,
@@ -550,8 +533,6 @@ export function createUseInfiniteRead<
                 fetching: false,
                 data: undefined,
                 error: err,
-                isOptimistic: false,
-                isStale: true,
                 timestamp: Date.now(),
               },
               tags: resolvedTags,
@@ -699,9 +680,24 @@ export function createUseInfiniteRead<
       const context = createContext(trackerKey);
       pluginExecutor.execute("onMount", "infiniteRead", context);
 
+      const unsubscribeRefetch = eventEmitter.on<RefetchEvent>(
+        "refetch",
+        (event) => {
+          const pageKeys = pageKeysRef.current;
+          const isRelevant =
+            event.queryKey === trackerKey ||
+            pageKeys.includes(event.queryKey);
+
+          if (isRelevant) {
+            refetch();
+          }
+        }
+      );
+
       return () => {
         mountedRef.current = false;
         pluginExecutor.execute("onUnmount", "infiniteRead", context);
+        unsubscribeRefetch();
       };
     }, [enabled]);
 

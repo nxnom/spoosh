@@ -27,9 +27,6 @@ export interface CacheInfiniteReadOptions {
 /**
  * Result properties added by cache plugin to useRead return value.
  */
-export interface CacheReadResult {
-  /** Whether the current data is stale and a background refetch may occur. */
-  isStale: boolean;
-}
+export type CacheReadResult = object;
 
 export type CacheWriteResult = object;

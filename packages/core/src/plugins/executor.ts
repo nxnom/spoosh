@@ -24,10 +24,57 @@ export type PluginExecutor = {
   ) => PluginContext<TData, TError>;
 };
 
+function validateDependencies(plugins: EnlacePlugin[]): void {
+  const names = new Set(plugins.map((p) => p.name));
+
+  for (const plugin of plugins) {
+    for (const dep of plugin.dependencies ?? []) {
+      if (!names.has(dep)) {
+        throw new Error(
+          `Plugin "${plugin.name}" depends on "${dep}" which is not registered`
+        );
+      }
+    }
+  }
+}
+
+function sortByDependencies(plugins: EnlacePlugin[]): EnlacePlugin[] {
+  const sorted: EnlacePlugin[] = [];
+  const visited = new Set<string>();
+  const visiting = new Set<string>();
+  const pluginMap = new Map(plugins.map((p) => [p.name, p]));
+
+  function visit(plugin: EnlacePlugin): void {
+    if (visited.has(plugin.name)) return;
+
+    if (visiting.has(plugin.name)) {
+      throw new Error(`Circular dependency detected involving "${plugin.name}"`);
+    }
+
+    visiting.add(plugin.name);
+
+    for (const dep of plugin.dependencies ?? []) {
+      const depPlugin = pluginMap.get(dep);
+      if (depPlugin) visit(depPlugin);
+    }
+
+    visiting.delete(plugin.name);
+    visited.add(plugin.name);
+    sorted.push(plugin);
+  }
+
+  for (const plugin of plugins) {
+    visit(plugin);
+  }
+
+  return sorted;
+}
+
 export function createPluginExecutor(
   initialPlugins: EnlacePlugin[] = []
 ): PluginExecutor {
-  const plugins = [...initialPlugins];
+  validateDependencies(initialPlugins);
+  const plugins = sortByDependencies(initialPlugins);
 
   const createPluginAccessor = (context: PluginContext): PluginAccessor => ({
     get(name: string) {

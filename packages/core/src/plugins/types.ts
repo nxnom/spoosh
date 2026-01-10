@@ -13,24 +13,22 @@ export type PluginPhase =
   | "onError"
   | "onMount"
   | "onUnmount"
-  | "onOptionsUpdate"
-  | "onCacheHit"
-  | "onCacheMiss"
-  | "onCacheInvalidate";
+  | "onOptionsUpdate";
 
 export type OperationState<TData = unknown, TError = unknown> = {
   loading: boolean;
   fetching: boolean;
   data: TData | undefined;
   error: TError | undefined;
-  isOptimistic: boolean;
-  isStale: boolean;
   timestamp: number;
 };
 
 export type CacheEntry<TData = unknown, TError = unknown> = {
   state: OperationState<TData, TError>;
   tags: string[];
+
+  /** Plugin-contributed result data (e.g., isOptimistic, isStale). Merged into hook result. */
+  pluginResult: Map<string, unknown>;
 
   /** The original path-derived tag (e.g., "posts/1/comments"). Used for exact matching in cache */
   selfTag?: string;
@@ -64,7 +62,11 @@ export type PluginContext<TData = unknown, TError = unknown> = {
   /** Plugin-specific options passed from hooks (useRead/useWrite/useInfiniteRead) */
   pluginOptions?: unknown;
 
-  skipFetch?: boolean;
+  /** Data to return without fetching. Set by cache plugin when cache is fresh. */
+  cachedData?: TData;
+
+  /** Force a network request even if cached data exists. */
+  forceRefetch?: boolean;
 };
 
 /** Input type for creating PluginContext (without plugins, which is injected) */
@@ -133,6 +135,9 @@ export interface EnlacePlugin<T extends PluginTypeConfig = PluginTypeConfig> {
 
   /** Expose functions/variables for other plugins to access via `context.plugins.get(name)` */
   exports?: (context: PluginContext) => object;
+
+  /** Declare plugin dependencies. These plugins must be registered before this one. */
+  dependencies?: string[];
 
   /** @internal Type carrier for inference - do not use directly */
   readonly _types?: T;
@@ -265,4 +270,13 @@ export type PluginAccessor = {
   ): PluginExportsRegistry[K] | undefined;
 
   get(name: string): unknown;
+};
+
+/**
+ * Event emitted by plugins to request a refetch.
+ * Hooks subscribe to this event and trigger controller.execute().
+ */
+export type RefetchEvent = {
+  queryKey: string;
+  reason: "focus" | "reconnect" | "polling" | "invalidate";
 };

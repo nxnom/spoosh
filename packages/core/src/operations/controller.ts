@@ -9,7 +9,6 @@ import type {
 import type { PluginExecutor } from "../plugins/executor";
 import type { StateManager } from "../state/manager";
 import type { EventEmitter } from "../events/emitter";
-import { CACHE_FORCE_REFETCH_KEY } from "../plugins/built-in/cache";
 import { createInitialState } from "../state/manager";
 
 export type ExecuteOptions = {
@@ -125,10 +124,6 @@ export function createOperationController<TData, TError>(
     ): Promise<EnlaceResponse<TData, TError>> {
       const { force = false } = executeOptions ?? {};
 
-      if (force) {
-        metadata.set(CACHE_FORCE_REFETCH_KEY, true);
-      }
-
       if (!isFirstExecute) {
         currentRequestTimestamp = Date.now();
       }
@@ -136,35 +131,21 @@ export function createOperationController<TData, TError>(
 
       let context = createContext(opts, currentRequestTimestamp);
 
+      if (force) {
+        context.forceRefetch = true;
+      }
+
       context = await pluginExecutor.execute(
         "beforeFetch",
         operationType,
         context
       );
 
-      if (context.skipFetch && context.state.data !== undefined) {
-        return { data: context.state.data as TData, status: 200 };
+      if (context.cachedData !== undefined && !context.forceRefetch) {
+        return { data: context.cachedData as TData, status: 200 };
       }
 
       const cached = stateManager.getCache<TData, TError>(queryKey);
-
-      if (cached?.state.data !== undefined && !cached.state.isStale) {
-        context = await pluginExecutor.execute(
-          "onCacheHit",
-          operationType,
-          context
-        );
-
-        if (context.skipFetch) {
-          return { data: context.state.data as TData, status: 200 };
-        }
-      } else {
-        context = await pluginExecutor.execute(
-          "onCacheMiss",
-          operationType,
-          context
-        );
-      }
 
       // Request deduplication: reuse in-flight promise
       const existingPromise = cached?.promise as
@@ -214,7 +195,6 @@ export function createOperationController<TData, TError>(
               loading: false,
               data: response.data,
               error: undefined,
-              isStale: false,
               timestamp: Date.now(),
             });
 
@@ -284,9 +264,6 @@ export function createOperationController<TData, TError>(
     mount() {
       currentRequestTimestamp = Date.now();
       isFirstExecute = true;
-      metadata.set("execute", (force?: boolean) =>
-        controller.execute(undefined, { force })
-      );
       const context = createContext({}, currentRequestTimestamp);
       pluginExecutor.execute("onMount", operationType, context);
     },

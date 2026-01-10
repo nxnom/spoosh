@@ -1,4 +1,4 @@
-import type { EnlacePlugin, PluginContext } from "../../types";
+import type { EnlacePlugin, PluginContext, RefetchEvent } from "../../types";
 import type {
   PollingReadOptions,
   PollingWriteOptions,
@@ -39,7 +39,6 @@ export function pollingPlugin(): EnlacePlugin<{
   writeResult: PollingWriteResult;
 }> {
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>();
-  const refetchFns = new Map<string, () => void>();
 
   const clearPolling = (queryKey: string) => {
     const timeout = timeouts.get(queryKey);
@@ -51,7 +50,7 @@ export function pollingPlugin(): EnlacePlugin<{
   };
 
   const scheduleNextPoll = (context: PluginContext) => {
-    const { queryKey } = context;
+    const { queryKey, eventEmitter } = context;
 
     const pluginOptions = context.pluginOptions as
       | PollingReadOptions
@@ -73,12 +72,11 @@ export function pollingPlugin(): EnlacePlugin<{
 
     clearPolling(queryKey);
 
-    const refetch = refetchFns.get(queryKey);
-
-    if (!refetch) return;
-
     const timeout = setTimeout(() => {
-      refetch();
+      eventEmitter.emit<RefetchEvent>("refetch", {
+        queryKey,
+        reason: "polling",
+      });
     }, resolvedInterval);
 
     timeouts.set(queryKey, timeout);
@@ -89,18 +87,6 @@ export function pollingPlugin(): EnlacePlugin<{
     operations: ["read", "infiniteRead"],
 
     handlers: {
-      onMount(context) {
-        const execute = context.metadata.get("execute") as
-          | ((force?: boolean) => void)
-          | undefined;
-
-        if (execute) {
-          refetchFns.set(context.queryKey, () => execute(true));
-        }
-
-        return context;
-      },
-
       onSuccess(context) {
         scheduleNextPoll(context);
         return context;
@@ -113,15 +99,11 @@ export function pollingPlugin(): EnlacePlugin<{
 
       onUnmount(context) {
         clearPolling(context.queryKey);
-        refetchFns.delete(context.queryKey);
         return context;
       },
 
       onOptionsUpdate(context) {
         const { queryKey } = context;
-        const refetch = refetchFns.get(queryKey);
-
-        if (!refetch) return context;
 
         const pluginOptions = context.pluginOptions as
           | PollingReadOptions

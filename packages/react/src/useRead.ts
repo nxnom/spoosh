@@ -8,6 +8,7 @@ import {
   type MergePluginResults,
   type EnlacePlugin,
   type PluginTypeConfig,
+  type RefetchEvent,
   createOperationController,
 } from "enlace";
 import { createTrackingProxy, type TrackingResult } from "./trackingProxy";
@@ -139,8 +140,15 @@ export function createUseRead<
       controller.mount();
       controller.execute();
 
+      const unsubscribe = eventEmitter.on<RefetchEvent>("refetch", (event) => {
+        if (event.queryKey === queryKey) {
+          controller.execute(undefined, { force: true });
+        }
+      });
+
       return () => {
         controller.unmount();
+        unsubscribe();
       };
     }, [queryKey, enabled]);
 
@@ -154,8 +162,14 @@ export function createUseRead<
       abortRef.current();
     }, []);
 
+    const entry = stateManager.getCache(queryKey);
+    const pluginResultData = entry?.pluginResult
+      ? Object.fromEntries(entry.pluginResult)
+      : {};
+
     const result = {
       ...state,
+      ...pluginResultData,
       data: state.data as TData | undefined,
       error: state.error as TError | undefined,
       abort,

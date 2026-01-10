@@ -121,8 +121,6 @@ export function createUseWrite<
             fetching: true,
             data: undefined,
             error: undefined,
-            isOptimistic: false,
-            isStale: true,
             timestamp: 0,
           };
 

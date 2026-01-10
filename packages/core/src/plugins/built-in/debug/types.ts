@@ -15,8 +15,6 @@ export interface DebugLogEntry {
     fetching: boolean;
     data: unknown;
     error: unknown;
-    isOptimistic: boolean;
-    isStale: boolean;
     timestamp: number;
   };
   response?: {

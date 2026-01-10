@@ -71,8 +71,6 @@ export function debugPlugin(config: DebugPluginConfig = {}): EnlacePlugin<{
         fetching: context.state.fetching,
         data: context.state.data,
         error: context.state.error,
-        isOptimistic: context.state.isOptimistic,
-        isStale: context.state.isStale,
         timestamp: context.state.timestamp,
       },
       response: context.response

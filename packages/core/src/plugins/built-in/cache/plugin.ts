@@ -8,8 +8,6 @@ import type {
   CacheWriteResult,
 } from "./types";
 
-export const CACHE_FORCE_REFETCH_KEY = "cache:forceRefetch";
-
 /**
  * Enables response caching with configurable stale time.
  *
@@ -44,16 +42,13 @@ export function cachePlugin(config: CachePluginConfig = {}): EnlacePlugin<{
 
     handlers: {
       beforeFetch(context) {
-        const forceRefetch = context.metadata.get(CACHE_FORCE_REFETCH_KEY);
-
-        if (forceRefetch) {
-          context.metadata.delete(CACHE_FORCE_REFETCH_KEY);
+        if (context.forceRefetch) {
           return context;
         }
 
         const cached = context.stateManager.getCache(context.queryKey);
 
-        if (!cached) {
+        if (!cached?.state.data) {
           return context;
         }
 
@@ -63,9 +58,8 @@ export function cachePlugin(config: CachePluginConfig = {}): EnlacePlugin<{
         const staleTime = pluginOptions?.staleTime ?? defaultStaleTime;
         const isStale = Date.now() - cached.state.timestamp > staleTime;
 
-        if (cached.state.data !== undefined && !isStale) {
-          context.state = { ...cached.state, isStale: false };
-          context.skipFetch = true;
+        if (!isStale) {
+          context.cachedData = cached.state.data;
         }
 
         return context;
@@ -79,8 +73,6 @@ export function cachePlugin(config: CachePluginConfig = {}): EnlacePlugin<{
             ...context.state,
             data: context.response.data,
             error: undefined,
-            isStale: false,
-            isOptimistic: false,
             timestamp: Date.now(),
             loading: false,
             fetching: false,
@@ -96,7 +88,6 @@ export function cachePlugin(config: CachePluginConfig = {}): EnlacePlugin<{
           state: {
             ...context.state,
             error: context.response?.error,
-            isStale: true,
             loading: false,
             fetching: false,
           },

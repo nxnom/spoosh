@@ -17,8 +17,6 @@ export function createInitialState<TData, TError>(): OperationState<
     fetching: false,
     data: undefined,
     error: undefined,
-    isOptimistic: false,
-    isStale: true,
     timestamp: 0,
   };
 }
@@ -61,6 +59,11 @@ export type StateManager = {
   getCacheEntriesBySelfTag: <TData, TError>(
     selfTag: string
   ) => CacheEntryWithKey<TData, TError>[];
+
+  setPluginResult: (
+    key: string,
+    data: Record<string, unknown>
+  ) => void;
 
   clear: () => void;
 };
@@ -113,6 +116,7 @@ export function createStateManager(): StateManager {
         const newEntry: CacheEntry = {
           state: entry.state ?? createInitialState(),
           tags: entry.tags ?? [],
+          pluginResult: new Map(),
           selfTag: generateSelfTagFromKey(key),
           subscribers: new Set(),
           promise: entry.promise,
@@ -133,6 +137,7 @@ export function createStateManager(): StateManager {
         entry = {
           state: createInitialState(),
           tags: [],
+          pluginResult: new Map(),
           selfTag: generateSelfTagFromKey(key),
           subscribers: new Set(),
         };
@@ -188,6 +193,18 @@ export function createStateManager(): StateManager {
       });
 
       return entries;
+    },
+
+    setPluginResult(key, data) {
+      const entry = cache.get(key);
+
+      if (entry) {
+        for (const [name, value] of Object.entries(data)) {
+          entry.pluginResult.set(name, value);
+        }
+
+        entry.subscribers.forEach((cb) => cb());
+      }
     },
 
     clear() {

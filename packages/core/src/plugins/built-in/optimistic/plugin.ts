@@ -111,9 +111,10 @@ function applyOptimisticUpdate(
       state: {
         ...entry.state,
         data: config.updater(entry.state.data, undefined),
-        isOptimistic: true,
       },
     });
+
+    stateManager.setPluginResult(key, { isOptimistic: true });
   }
 
   return snapshots;
@@ -129,11 +130,9 @@ function confirmOptimistic(
     if (entry) {
       stateManager.setCache(key, {
         previousData: undefined,
-        state: {
-          ...entry.state,
-          isOptimistic: false,
-        },
       });
+
+      stateManager.setPluginResult(key, { isOptimistic: false });
     }
   }
 }
@@ -151,9 +150,10 @@ function rollbackOptimistic(
         state: {
           ...entry.state,
           data: previousData,
-          isOptimistic: false,
         },
       });
+
+      stateManager.setPluginResult(key, { isOptimistic: false });
     }
   }
 }
@@ -231,6 +231,7 @@ export function optimisticPlugin(): EnlacePlugin<{
   return {
     name: "enlace:optimistic",
     operations: ["write"],
+    dependencies: ["enlace:invalidation"],
 
     handlers: {
       beforeFetch(context) {

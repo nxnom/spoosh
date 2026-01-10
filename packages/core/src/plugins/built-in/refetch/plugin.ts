@@ -1,4 +1,5 @@
-import type { EnlacePlugin } from "../../types";
+import type { EventEmitter } from "../../../events/emitter";
+import type { EnlacePlugin, RefetchEvent } from "../../types";
 import type {
   RefetchPluginConfig,
   RefetchReadOptions,
@@ -43,12 +44,18 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): EnlacePlugin<{
 
   const isBrowser = typeof window !== "undefined";
 
-  const setupFocusListener = (queryKey: string, execute: () => void) => {
+  const setupFocusListener = (
+    queryKey: string,
+    eventEmitter: EventEmitter
+  ) => {
     if (!isBrowser) return;
 
     const handler = () => {
       if (document.visibilityState === "visible") {
-        execute();
+        eventEmitter.emit<RefetchEvent>("refetch", {
+          queryKey,
+          reason: "focus",
+        });
       }
     };
 
@@ -58,10 +65,18 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): EnlacePlugin<{
     });
   };
 
-  const setupReconnectListener = (queryKey: string, execute: () => void) => {
+  const setupReconnectListener = (
+    queryKey: string,
+    eventEmitter: EventEmitter
+  ) => {
     if (!isBrowser) return;
 
-    const handler = () => execute();
+    const handler = () => {
+      eventEmitter.emit<RefetchEvent>("refetch", {
+        queryKey,
+        reason: "reconnect",
+      });
+    };
 
     window.addEventListener("online", handler);
     reconnectUnsubscribers.set(queryKey, () => {
@@ -95,13 +110,7 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): EnlacePlugin<{
 
     handlers: {
       onMount(context) {
-        const { queryKey, tags, eventEmitter, metadata } = context;
-
-        const execute = metadata.get("execute") as
-          | ((force?: boolean) => void)
-          | undefined;
-
-        if (!execute) return context;
+        const { queryKey, tags, eventEmitter } = context;
 
         const pluginOptions = context.pluginOptions as
           | RefetchReadOptions
@@ -121,7 +130,10 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): EnlacePlugin<{
               );
 
               if (hasMatch) {
-                execute(true);
+                eventEmitter.emit<RefetchEvent>("refetch", {
+                  queryKey,
+                  reason: "invalidate",
+                });
               }
             }
           );
@@ -130,11 +142,11 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): EnlacePlugin<{
         }
 
         if (shouldRefetchOnFocus) {
-          setupFocusListener(queryKey, () => execute(true));
+          setupFocusListener(queryKey, eventEmitter);
         }
 
         if (shouldRefetchOnReconnect) {
-          setupReconnectListener(queryKey, () => execute(true));
+          setupReconnectListener(queryKey, eventEmitter);
         }
 
         return context;
