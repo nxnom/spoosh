@@ -150,13 +150,15 @@ export function createOperationController<TData, TError>(
 
       const cached = stateManager.getCache<TData, TError>(queryKey);
 
-      // Request deduplication: reuse in-flight promise
-      const existingPromise = cached?.promise as
-        | Promise<EnlaceResponse<TData, TError>>
-        | undefined;
+      // Request deduplication: reuse in-flight promise (only for reads)
+      if (operationType !== "write") {
+        const existingPromise = cached?.promise as
+          | Promise<EnlaceResponse<TData, TError>>
+          | undefined;
 
-      if (existingPromise) {
-        return existingPromise;
+        if (existingPromise) {
+          return existingPromise;
+        }
       }
 
       abortController = new AbortController();
