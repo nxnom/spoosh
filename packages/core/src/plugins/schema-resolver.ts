@@ -23,6 +23,7 @@ type BuiltInSchemaResolvers<TSchema> = {
  */
 type BuiltInDataResolvers<TData, TError> = {
   pollingInterval: PollingInterval<TData, TError> | undefined;
+  initialData: TData | undefined;
 };
 
 /**
