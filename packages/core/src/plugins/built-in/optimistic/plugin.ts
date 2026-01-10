@@ -1,4 +1,4 @@
-import type { EnlacePlugin } from "../../types";
+import type { EnlacePlugin, PluginContext } from "../../types";
 import type { ResolvedCacheConfig } from "./types";
 import type { StateManager } from "../../../state/manager";
 import {
@@ -53,8 +53,12 @@ function parseRequestFromKey(key: string): ParsedRequest | undefined {
 }
 
 function resolveOptimisticConfigs(
-  pluginOptions: OptimisticWriteOptions | undefined
+  context: PluginContext
 ): ResolvedCacheConfig[] {
+  const pluginOptions = context.pluginOptions as
+    | OptimisticWriteOptions
+    | undefined;
+
   if (!pluginOptions?.optimistic) return [];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -229,9 +233,9 @@ export function optimisticPlugin(): EnlacePlugin<{
     operations: ["write"],
 
     handlers: {
-      beforeFetch(context) {
+      beforeFetch(context: PluginContext) {
         const { stateManager } = context;
-        const configs = resolveOptimisticConfigs(context.pluginOptions);
+        const configs = resolveOptimisticConfigs(context);
 
         if (configs.length > 0) {
           context.plugins
@@ -259,9 +263,9 @@ export function optimisticPlugin(): EnlacePlugin<{
         return context;
       },
 
-      onSuccess(context) {
+      onSuccess(context: PluginContext) {
         const { stateManager } = context;
-        const configs = resolveOptimisticConfigs(context.pluginOptions);
+        const configs = resolveOptimisticConfigs(context);
         const snapshots =
           (context.metadata.get(
             OPTIMISTIC_SNAPSHOTS_KEY
@@ -301,9 +305,9 @@ export function optimisticPlugin(): EnlacePlugin<{
         return context;
       },
 
-      onError(context) {
+      onError(context: PluginContext) {
         const { stateManager } = context;
-        const configs = resolveOptimisticConfigs(context.pluginOptions);
+        const configs = resolveOptimisticConfigs(context);
         const snapshots =
           (context.metadata.get(
             OPTIMISTIC_SNAPSHOTS_KEY

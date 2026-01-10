@@ -1,4 +1,4 @@
-import type { EnlacePlugin } from "../../types";
+import type { EnlacePlugin, PluginContext } from "../../types";
 import type {
   CachePluginConfig,
   CacheReadOptions,
@@ -43,7 +43,7 @@ export function cachePlugin(config: CachePluginConfig = {}): EnlacePlugin<{
     operations: ["read", "infiniteRead"],
 
     handlers: {
-      beforeFetch(context) {
+      beforeFetch(context: PluginContext) {
         const forceRefetch = context.metadata.get(CACHE_FORCE_REFETCH_KEY);
 
         if (forceRefetch) {
@@ -57,7 +57,10 @@ export function cachePlugin(config: CachePluginConfig = {}): EnlacePlugin<{
           return context;
         }
 
-        const staleTime = context.pluginOptions?.staleTime ?? defaultStaleTime;
+        const pluginOptions = context.pluginOptions as
+          | CacheReadOptions
+          | undefined;
+        const staleTime = pluginOptions?.staleTime ?? defaultStaleTime;
         const isStale = Date.now() - cached.state.timestamp > staleTime;
 
         if (cached.state.data !== undefined && !isStale) {
@@ -68,7 +71,7 @@ export function cachePlugin(config: CachePluginConfig = {}): EnlacePlugin<{
         return context;
       },
 
-      onSuccess(context) {
+      onSuccess(context: PluginContext) {
         if (!context.response?.data) return context;
 
         context.stateManager.setCache(context.queryKey, {
@@ -88,7 +91,7 @@ export function cachePlugin(config: CachePluginConfig = {}): EnlacePlugin<{
         return context;
       },
 
-      onError(context) {
+      onError(context: PluginContext) {
         context.stateManager.setCache(context.queryKey, {
           state: {
             ...context.state,
