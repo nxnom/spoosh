@@ -76,6 +76,33 @@ export type BaseWriteResult<TData, TError, TOptions> = {
   abort: () => void;
 };
 
+type OptionalQueryField<TQuery> = [TQuery] extends [never]
+  ? object
+  : { query: TQuery | undefined };
+
+type OptionalBodyField<TBody> = [TBody] extends [never]
+  ? object
+  : { body: TBody | undefined };
+
+type OptionalFormDataField<TFormData> = [TFormData] extends [never]
+  ? object
+  : { formData: TFormData | undefined };
+
+type OptionalParamsField<THasDynamicSegment extends boolean> =
+  THasDynamicSegment extends true
+    ? { params: Record<string, unknown> | undefined }
+    : object;
+
+export type WriteResponseInputFields<
+  TQuery,
+  TBody,
+  TFormData,
+  THasDynamicSegment extends boolean,
+> = OptionalQueryField<TQuery> &
+  OptionalBodyField<TBody> &
+  OptionalFormDataField<TFormData> &
+  OptionalParamsField<THasDynamicSegment>;
+
 export type UseReadResult<
   TData,
   TError,
@@ -102,21 +129,80 @@ export type WriteApiClient<TSchema, TDefaultError> = MutationOnlyClient<
   ReactOptionsMap
 >;
 
-export type ExtractMethodData<T> = T extends (
-  ...args: never[]
-) => Promise<EnlaceResponse<infer D, unknown>>
-  ? D
+type SuccessResponse<T> = Extract<T, { data: unknown; error?: undefined }>;
+
+type ErrorResponse<T> = Extract<T, { error: unknown; data?: undefined }>;
+
+export type ExtractMethodData<T> = T extends (...args: never[]) => infer R
+  ? SuccessResponse<Awaited<R>> extends { data: infer D }
+    ? D
+    : unknown
   : unknown;
 
-export type ExtractMethodError<T> = T extends (
-  ...args: never[]
-) => Promise<EnlaceResponse<unknown, infer E>>
-  ? E
+export type ExtractMethodError<T> = T extends (...args: never[]) => infer R
+  ? ErrorResponse<Awaited<R>> extends { error: infer E }
+    ? E
+    : unknown
   : unknown;
 
 export type ExtractMethodOptions<T> = T extends (...args: infer A) => unknown
   ? A[0]
   : never;
+
+type AwaitedReturnType<T> = T extends (...args: never[]) => infer R
+  ? Awaited<R>
+  : never;
+
+type SuccessReturnType<T> = SuccessResponse<AwaitedReturnType<T>>;
+
+export type ExtractResponseQuery<T> =
+  SuccessReturnType<T> extends {
+    query: infer Q;
+  }
+    ? Q
+    : never;
+
+export type ExtractResponseBody<T> =
+  SuccessReturnType<T> extends {
+    body: infer B;
+  }
+    ? B
+    : never;
+
+export type ExtractResponseFormData<T> =
+  SuccessReturnType<T> extends {
+    formData: infer F;
+  }
+    ? F
+    : never;
+
+export type ExtractResponseHasDynamicSegment<T> =
+  SuccessReturnType<T> extends { params: Record<string, unknown> }
+    ? true
+    : false;
+
+type QueryField<TQuery> = [TQuery] extends [never] ? object : { query: TQuery };
+
+type BodyField<TBody> = [TBody] extends [never] ? object : { body: TBody };
+
+type FormDataField<TFormData> = [TFormData] extends [never]
+  ? object
+  : { formData: TFormData };
+
+type ParamsField<THasDynamicSegment extends boolean> =
+  THasDynamicSegment extends true
+    ? { params: Record<string, unknown> }
+    : object;
+
+export type ResponseInputFields<
+  TQuery,
+  TBody,
+  TFormData,
+  THasDynamicSegment extends boolean,
+> = QueryField<TQuery> &
+  BodyField<TBody> &
+  FormDataField<TFormData> &
+  ParamsField<THasDynamicSegment>;
 
 export type AnyInfiniteRequestOptions = {
   query?: Record<string, unknown>;

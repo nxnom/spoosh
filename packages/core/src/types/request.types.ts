@@ -43,6 +43,7 @@ export type AnyRequestOptions = BaseRequestOptions & {
   body?: unknown;
   query?: Record<string, string | number | boolean | undefined>;
   formData?: Record<string, unknown>;
+  params?: Record<string, string | number>;
   signal?: AbortSignal;
 } & Partial<RetryConfig>;
 

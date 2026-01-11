@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useRef, useCallback } from "react";
+import { useSyncExternalStore, useRef, useCallback, useState } from "react";
 import {
   type EnlaceResponse,
   type PluginExecutor,
@@ -18,6 +18,11 @@ import type {
   ExtractMethodData,
   ExtractMethodError,
   ExtractMethodOptions,
+  ExtractResponseQuery,
+  ExtractResponseBody,
+  ExtractResponseFormData,
+  ExtractResponseHasDynamicSegment,
+  WriteResponseInputFields,
 } from "./types";
 import { resolvePath, resolveTags } from "./utils";
 
@@ -38,6 +43,8 @@ export function createUseWrite<
   type PluginOptions = MergePluginOptions<TPlugins>;
   type PluginResults = MergePluginResults<TPlugins>;
 
+  type InferError<T> = [T] extends [unknown] ? TDefaultError : T;
+
   return function useWrite<
     TMethod extends (
       ...args: never[]
@@ -46,13 +53,19 @@ export function createUseWrite<
     writeFn: (api: WriteApiClient<TSchema, TDefaultError>) => TMethod
   ): BaseWriteResult<
     ExtractMethodData<TMethod>,
-    ExtractMethodError<TMethod>,
+    InferError<ExtractMethodError<TMethod>>,
     ExtractMethodOptions<TMethod> &
       ResolveSchemaTypes<PluginOptions["write"], TSchema>
   > &
+    WriteResponseInputFields<
+      ExtractResponseQuery<TMethod>,
+      ExtractResponseBody<TMethod>,
+      ExtractResponseFormData<TMethod>,
+      ExtractResponseHasDynamicSegment<TMethod>
+    > &
     PluginResults["write"] {
     type TData = ExtractMethodData<TMethod>;
-    type TError = ExtractMethodError<TMethod>;
+    type TError = InferError<ExtractMethodError<TMethod>>;
     type TOptions = ExtractMethodOptions<TMethod> &
       ResolveSchemaTypes<PluginOptions["write"], TSchema>;
 
@@ -131,6 +144,10 @@ export function createUseWrite<
       controller.getState
     );
 
+    const [lastTriggerOptions, setLastTriggerOptions] = useState<
+      TOptions | undefined
+    >(undefined);
+
     const reset = useCallback(() => {
       stateManager.deleteCache(queryKey);
     }, [queryKey]);
@@ -143,6 +160,8 @@ export function createUseWrite<
       async (
         triggerOptions?: TOptions
       ): Promise<EnlaceResponse<TData, TError>> => {
+        setLastTriggerOptions(triggerOptions);
+
         const params = (
           triggerOptions as
             | { params?: Record<string, string | number> }
@@ -163,10 +182,30 @@ export function createUseWrite<
       ? Object.fromEntries(entry.pluginResult)
       : {};
 
+    const inputFields: Record<string, unknown> = {};
+    const opts = lastTriggerOptions as Record<string, unknown> | undefined;
+
+    if (opts?.query !== undefined) {
+      inputFields.query = opts.query;
+    }
+
+    if (opts?.body !== undefined) {
+      inputFields.body = opts.body;
+    }
+
+    if (opts?.formData !== undefined) {
+      inputFields.formData = opts.formData;
+    }
+
+    if (opts?.params !== undefined) {
+      inputFields.params = opts.params;
+    }
+
     const result = {
       trigger,
       ...state,
       ...pluginResultData,
+      ...inputFields,
       data: state.data as TData | undefined,
       error: state.error as TError | undefined,
       reset,
@@ -174,6 +213,12 @@ export function createUseWrite<
     };
 
     return result as unknown as BaseWriteResult<TData, TError, TOptions> &
+      WriteResponseInputFields<
+        ExtractResponseQuery<TMethod>,
+        ExtractResponseBody<TMethod>,
+        ExtractResponseFormData<TMethod>,
+        ExtractResponseHasDynamicSegment<TMethod>
+      > &
       PluginResults["write"];
   };
 }

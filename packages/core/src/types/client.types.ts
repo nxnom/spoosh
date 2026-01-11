@@ -71,7 +71,11 @@ export type MethodFn<
               TOptionsMap,
               THasDynamicSegment,
               true
-            >
+            >,
+            ExtractQuery<TSchema, TMethod, TDefaultError>,
+            ExtractBody<TSchema, TMethod, TDefaultError>,
+            ExtractFormData<TSchema, TMethod, TDefaultError>,
+            THasDynamicSegment
           >
         >
       : (
@@ -94,7 +98,11 @@ export type MethodFn<
               TOptionsMap,
               THasDynamicSegment,
               false
-            >
+            >,
+            ExtractQuery<TSchema, TMethod, TDefaultError>,
+            ExtractBody<TSchema, TMethod, TDefaultError>,
+            ExtractFormData<TSchema, TMethod, TDefaultError>,
+            THasDynamicSegment
           >
         >
     : never;

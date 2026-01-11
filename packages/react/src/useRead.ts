@@ -16,6 +16,11 @@ import type {
   ResolveDataTypes,
   BaseReadResult,
   ReadApiClient,
+  ExtractResponseQuery,
+  ExtractResponseBody,
+  ExtractResponseFormData,
+  ExtractResponseHasDynamicSegment,
+  ResponseInputFields,
 } from "./types";
 import { resolvePath, resolveTags } from "./utils";
 
@@ -36,13 +41,38 @@ export function createUseRead<
   type PluginOptions = MergePluginOptions<TPlugins>;
   type PluginResults = MergePluginResults<TPlugins>;
 
-  return function useRead<TData, TError = TDefaultError>(
-    readFn: (
+  type InferError<T> = [T] extends [unknown] ? TDefaultError : T;
+  type ExtractData<T> = T extends (
+    ...args: unknown[]
+  ) => Promise<{ data: infer D }>
+    ? D
+    : unknown;
+  type ExtractError<T> = T extends (
+    ...args: unknown[]
+  ) => Promise<{ error: infer E }>
+    ? E
+    : unknown;
+
+  return function useRead<
+    TReadFn extends (
       api: ReadApiClient<TSchema, TDefaultError>
-    ) => Promise<EnlaceResponse<TData, TError>>,
+    ) => Promise<{ data?: unknown; error?: unknown }>,
+  >(
+    readFn: TReadFn,
     readOptions?: BaseReadOptions &
-      ResolveDataTypes<PluginOptions["read"], TData, TError>
-  ): BaseReadResult<TData, TError> & PluginResults["read"] {
+      ResolveDataTypes<
+        PluginOptions["read"],
+        ExtractData<TReadFn>,
+        InferError<ExtractError<TReadFn>>
+      >
+  ): BaseReadResult<ExtractData<TReadFn>, InferError<ExtractError<TReadFn>>> &
+    ResponseInputFields<
+      ExtractResponseQuery<TReadFn>,
+      ExtractResponseBody<TReadFn>,
+      ExtractResponseFormData<TReadFn>,
+      ExtractResponseHasDynamicSegment<TReadFn>
+    > &
+    PluginResults["read"] {
     const {
       enabled = true,
       tags,
@@ -88,6 +118,9 @@ export function createUseRead<
       controller: ReturnType<typeof createOperationController>;
       queryKey: string;
     } | null>(null);
+
+    type TData = ExtractData<TReadFn>;
+    type TError = InferError<ExtractError<TReadFn>>;
 
     // Recreate controller when queryKey changes
     if (!controllerRef.current || controllerRef.current.queryKey !== queryKey) {
@@ -172,9 +205,29 @@ export function createUseRead<
       ? Object.fromEntries(entry.pluginResult)
       : {};
 
+    const inputFields: Record<string, unknown> = {};
+    const opts = trackedCall.options as Record<string, unknown> | undefined;
+
+    if (opts?.query !== undefined) {
+      inputFields.query = opts.query;
+    }
+
+    if (opts?.body !== undefined) {
+      inputFields.body = opts.body;
+    }
+
+    if (opts?.formData !== undefined) {
+      inputFields.formData = opts.formData;
+    }
+
+    if (opts?.params !== undefined) {
+      inputFields.params = opts.params;
+    }
+
     const result = {
       ...state,
       ...pluginResultData,
+      ...inputFields,
       data: state.data as TData | undefined,
       error: state.error as TError | undefined,
       abort,
@@ -182,6 +235,12 @@ export function createUseRead<
     };
 
     return result as unknown as BaseReadResult<TData, TError> &
+      ResponseInputFields<
+        ExtractResponseQuery<TReadFn>,
+        ExtractResponseBody<TReadFn>,
+        ExtractResponseFormData<TReadFn>,
+        ExtractResponseHasDynamicSegment<TReadFn>
+      > &
       PluginResults["read"];
   };
 }

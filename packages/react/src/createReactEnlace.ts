@@ -19,16 +19,39 @@ import type {
   BaseInfiniteReadOptions,
   BaseInfiniteReadResult,
   AnyInfiniteRequestOptions,
+  ExtractResponseQuery,
+  ExtractResponseBody,
+  ExtractResponseFormData,
+  ExtractResponseHasDynamicSegment,
+  ResponseInputFields,
+  WriteResponseInputFields,
+  ExtractMethodData,
+  ExtractMethodError,
 } from "./types";
 
+type InferError<T, TDefaultError> = [T] extends [unknown] ? TDefaultError : T;
+
 type UseReadFn<TApi, TDefaultError, TPlugins extends PluginArray> = <
-  TData,
-  TError = TDefaultError,
+  TReadFn extends (api: TApi) => Promise<{ data?: unknown; error?: unknown }>,
 >(
-  readFn: (api: TApi) => Promise<EnlaceResponse<TData, TError>>,
+  readFn: TReadFn,
   readOptions?: BaseReadOptions &
-    ResolveDataTypes<MergePluginOptions<TPlugins>["read"], TData, TError>
-) => BaseReadResult<TData, TError> & MergePluginResults<TPlugins>["read"];
+    ResolveDataTypes<
+      MergePluginOptions<TPlugins>["read"],
+      ExtractMethodData<TReadFn>,
+      InferError<ExtractMethodError<TReadFn>, TDefaultError>
+    >
+) => BaseReadResult<
+  ExtractMethodData<TReadFn>,
+  InferError<ExtractMethodError<TReadFn>, TDefaultError>
+> &
+  ResponseInputFields<
+    ExtractResponseQuery<TReadFn>,
+    ExtractResponseBody<TReadFn>,
+    ExtractResponseFormData<TReadFn>,
+    ExtractResponseHasDynamicSegment<TReadFn>
+  > &
+  MergePluginResults<TPlugins>["read"];
 
 type UseWriteFn<TApi, TDefaultError, TSchema, TPlugins extends PluginArray> = <
   TMethod extends (
@@ -37,19 +60,17 @@ type UseWriteFn<TApi, TDefaultError, TSchema, TPlugins extends PluginArray> = <
 >(
   writeFn: (api: TApi) => TMethod
 ) => BaseWriteResult<
-  TMethod extends (
-    ...args: never[]
-  ) => Promise<EnlaceResponse<infer D, unknown>>
-    ? D
-    : unknown,
-  TMethod extends (
-    ...args: never[]
-  ) => Promise<EnlaceResponse<unknown, infer E>>
-    ? E
-    : TDefaultError,
+  ExtractMethodData<TMethod>,
+  InferError<ExtractMethodError<TMethod>, TDefaultError>,
   (TMethod extends (options: infer O) => unknown ? O : object) &
     ResolveSchemaTypes<MergePluginOptions<TPlugins>["write"], TSchema>
 > &
+  WriteResponseInputFields<
+    ExtractResponseQuery<TMethod>,
+    ExtractResponseBody<TMethod>,
+    ExtractResponseFormData<TMethod>,
+    ExtractResponseHasDynamicSegment<TMethod>
+  > &
   MergePluginResults<TPlugins>["write"];
 
 type UseInfiniteReadFn<TApi, TDefaultError, TPlugins extends PluginArray> = <

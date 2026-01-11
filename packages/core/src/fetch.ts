@@ -60,6 +60,30 @@ export async function executeFetch<TData, TError>(
   return context.response!;
 }
 
+function buildInputFields(
+  requestOptions?: AnyRequestOptions
+): Record<string, unknown> {
+  const fields: Record<string, unknown> = {};
+
+  if (requestOptions?.query !== undefined) {
+    fields.query = requestOptions.query;
+  }
+
+  if (requestOptions?.body !== undefined) {
+    fields.body = requestOptions.body;
+  }
+
+  if (requestOptions?.formData !== undefined) {
+    fields.formData = requestOptions.formData;
+  }
+
+  if (requestOptions?.params !== undefined) {
+    fields.params = requestOptions.params;
+  }
+
+  return fields;
+}
+
 async function executeCoreFetch<TData, TError>(
   baseUrl: string,
   path: string[],
@@ -74,6 +98,8 @@ async function executeCoreFetch<TData, TError>(
     ...fetchDefaults
   } = defaultOptions;
   void _;
+
+  const inputFields = buildInputFields(requestOptions);
 
   const maxRetries = requestOptions?.retries ?? 3;
   const baseDelay = requestOptions?.retryDelay ?? 1000;
@@ -132,12 +158,22 @@ async function executeCoreFetch<TData, TError>(
       const body = (isJson ? await res.json() : res) as never;
 
       if (res.ok) {
-        const payload = { status, data: body, headers: resHeaders };
-        return { ...payload, error: undefined };
+        return {
+          status,
+          data: body,
+          headers: resHeaders,
+          error: undefined,
+          ...inputFields,
+        };
       }
 
-      const payload = { status, error: body, headers: resHeaders };
-      return { ...payload, data: undefined };
+      return {
+        status,
+        error: body,
+        headers: resHeaders,
+        data: undefined,
+        ...inputFields,
+      };
     } catch (err) {
       if (isAbortError(err)) {
         return {
@@ -145,6 +181,7 @@ async function executeCoreFetch<TData, TError>(
           error: err as TError,
           data: undefined,
           aborted: true,
+          ...inputFields,
         };
       }
 
@@ -156,9 +193,9 @@ async function executeCoreFetch<TData, TError>(
         continue;
       }
 
-      return { status: 0, error: lastError, data: undefined };
+      return { status: 0, error: lastError, data: undefined, ...inputFields };
     }
   }
 
-  return { status: 0, error: lastError!, data: undefined };
+  return { status: 0, error: lastError!, data: undefined, ...inputFields };
 }
