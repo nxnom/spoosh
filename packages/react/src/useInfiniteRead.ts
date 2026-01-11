@@ -9,9 +9,10 @@ import {
   type EnlacePlugin,
   type PluginTypeConfig,
   type InfiniteRequestOptions,
+  type TrackingResult,
   createInfiniteReadController,
+  createTrackingProxy,
 } from "enlace";
-import { createTrackingProxy, type TrackingResult } from "./trackingProxy";
 import type {
   BaseInfiniteReadOptions,
   BaseInfiniteReadResult,

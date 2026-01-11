@@ -14,20 +14,6 @@ import type {
   PluginTypeConfig,
 } from "enlace";
 
-export const HTTP_METHODS = [
-  "$get",
-  "$post",
-  "$put",
-  "$patch",
-  "$delete",
-] as const;
-
-export type TrackedCall = {
-  path: string[];
-  method: string;
-  options: unknown;
-};
-
 type QueryRequestOptions = CoreRequestOptionsBase;
 
 type MutationRequestOptions = CoreRequestOptionsBase;

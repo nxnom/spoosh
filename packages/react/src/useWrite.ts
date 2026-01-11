@@ -8,9 +8,10 @@ import {
   type MergePluginResults,
   type EnlacePlugin,
   type PluginTypeConfig,
+  type TrackingResult,
   createOperationController,
+  createTrackingProxy,
 } from "enlace";
-import { createTrackingProxy, type TrackingResult } from "./trackingProxy";
 import type {
   ResolveSchemaTypes,
   BaseWriteResult,
