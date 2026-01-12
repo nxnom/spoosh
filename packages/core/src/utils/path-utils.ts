@@ -1,4 +1,4 @@
-import { generateTags } from "enlace";
+import { generateTags } from "./generateTags";
 
 type TagOptions = {
   tags?: string[];
@@ -12,6 +12,7 @@ export function resolveTags(
   const customTags = options?.tags;
   const additionalTags = options?.additionalTags ?? [];
   const baseTags = customTags ?? generateTags(resolvedPath);
+
   return [...baseTags, ...additionalTags];
 }
 

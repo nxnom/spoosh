@@ -8,9 +8,11 @@ import {
   type MergePluginResults,
   type EnlacePlugin,
   type PluginTypeConfig,
-  type TrackingResult,
+  type SelectorResult,
   createOperationController,
-  createTrackingProxy,
+  createSelectorProxy,
+  resolvePath,
+  resolveTags,
 } from "enlace";
 import type {
   ResolveSchemaTypes,
@@ -25,7 +27,6 @@ import type {
   ExtractResponseParamNames,
   WriteResponseInputFields,
 } from "./types";
-import { resolvePath, resolveTags } from "./utils";
 
 export type CreateUseWriteOptions = {
   api: unknown;
@@ -70,22 +71,20 @@ export function createUseWrite<
     type TOptions = ExtractMethodOptions<TMethod> &
       ResolveSchemaTypes<PluginOptions["write"], TSchema>;
 
-    const trackingResultRef = useRef<TrackingResult>({
-      trackedCall: null,
-      selectorPath: null,
-      selectorMethod: null,
+    const selectorResultRef = useRef<SelectorResult>({
+      call: null,
+      selector: null,
     });
 
-    const trackingProxy = createTrackingProxy<TSchema>((result) => {
-      trackingResultRef.current = result;
+    const selectorProxy = createSelectorProxy<TSchema>((result) => {
+      selectorResultRef.current = result;
     });
 
-    (writeFn as (api: unknown) => unknown)(trackingProxy);
+    (writeFn as (api: unknown) => unknown)(selectorProxy);
 
-    const selectorPath = trackingResultRef.current.selectorPath;
-    const selectorMethod = trackingResultRef.current.selectorMethod;
+    const selectedEndpoint = selectorResultRef.current.selector;
 
-    if (!selectorPath || !selectorMethod) {
+    if (!selectedEndpoint) {
       throw new Error(
         "useWrite requires selecting an HTTP method ($post, $put, $patch, $delete). " +
           "Example: useWrite((api) => api.posts.$post)"
@@ -93,8 +92,8 @@ export function createUseWrite<
     }
 
     const queryKey = stateManager.createQueryKey({
-      path: selectorPath,
-      method: selectorMethod,
+      path: selectedEndpoint.path,
+      method: selectedEndpoint.method,
       options: undefined,
     });
 
@@ -108,8 +107,12 @@ export function createUseWrite<
       controllerRef.current = {
         controller: createOperationController<TData, TError>({
           operationType: "write",
-          path: selectorPath,
-          method: selectorMethod as "POST" | "PUT" | "PATCH" | "DELETE",
+          path: selectedEndpoint.path,
+          method: selectedEndpoint.method as
+            | "POST"
+            | "PUT"
+            | "PATCH"
+            | "DELETE",
           tags: [],
           stateManager,
           eventEmitter,
@@ -118,7 +121,7 @@ export function createUseWrite<
             const params = (
               fetchOpts as { params?: Record<string, string | number> }
             )?.params;
-            const resolvedPath = resolvePath(selectorPath, params);
+            const resolvedPath = resolvePath(selectedEndpoint.path, params);
 
             let current: unknown = api;
 
@@ -127,7 +130,7 @@ export function createUseWrite<
             }
 
             const method = (current as Record<string, unknown>)[
-              selectorMethod
+              selectedEndpoint.method
             ] as (o?: unknown) => Promise<EnlaceResponse<TData, TError>>;
 
             return method(fetchOpts);
@@ -168,14 +171,14 @@ export function createUseWrite<
             | { params?: Record<string, string | number> }
             | undefined
         )?.params;
-        const resolvedPath = resolvePath(selectorPath, params);
+        const resolvedPath = resolvePath(selectedEndpoint.path, params);
         const tags = resolveTags(triggerOptions, resolvedPath);
 
         controller.setPluginOptions({ ...triggerOptions, tags });
 
         return controller.execute(triggerOptions, { force: true });
       },
-      [selectorPath]
+      [selectedEndpoint.path]
     );
 
     const entry = stateManager.getCache(queryKey);

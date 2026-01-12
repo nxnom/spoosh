@@ -6,7 +6,7 @@ export {
 
 export * from "./types";
 export * from "./utils";
-export { createProxyHandler } from "./proxy";
+export * from "./proxy";
 export { executeFetch } from "./fetch";
 export {
   createMiddleware,
@@ -18,4 +18,3 @@ export * from "./plugins";
 export * from "./state";
 export * from "./operations";
 export * from "./events";
-export * from "./tracking-proxy";

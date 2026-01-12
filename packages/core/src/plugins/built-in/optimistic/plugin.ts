@@ -2,10 +2,10 @@ import type { EnlacePlugin, PluginContext } from "../../types";
 import type { ResolvedCacheConfig } from "./types";
 import type { StateManager } from "../../../state/manager";
 import {
-  createApiProxy,
-  extractPathFromTracked,
-  pathToTags,
-} from "../../../utils/api-proxy";
+  createSelectorProxy,
+  extractPathFromSelector,
+} from "../../../proxy/selector-proxy";
+import { generateTags } from "../../../utils/generateTags";
 import type {
   OptimisticWriteOptions,
   OptimisticReadOptions,
@@ -29,7 +29,7 @@ type OptimisticSnapshot = {
 };
 
 function extractTagsFromFor(forFn: ResolvedCacheConfig["for"]): string[] {
-  return pathToTags(extractPathFromTracked(forFn));
+  return generateTags(extractPathFromSelector(forFn));
 }
 
 function getExactMatchPath(tags: string[]): string | undefined {
@@ -92,7 +92,7 @@ function resolveOptimisticConfigs(
     onError: config.onError,
   });
 
-  const apiProxy = createApiProxy();
+  const apiProxy = createSelectorProxy();
   const optimisticConfigs = pluginOptions.optimistic(
     $ as never,
     apiProxy as never

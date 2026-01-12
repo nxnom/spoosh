@@ -8,9 +8,11 @@ import {
   type MergePluginResults,
   type EnlacePlugin,
   type PluginTypeConfig,
-  type TrackingResult,
+  type SelectorResult,
   createOperationController,
-  createTrackingProxy,
+  createSelectorProxy,
+  resolvePath,
+  resolveTags,
 } from "enlace";
 import type {
   BaseReadOptions,
@@ -22,7 +24,6 @@ import type {
   ExtractResponseParamNames,
   ResponseInputFields,
 } from "./types";
-import { resolvePath, resolveTags } from "./utils";
 
 export type CreateUseReadOptions = {
   api: unknown;
@@ -75,38 +76,37 @@ export function createUseRead<
       ...pluginOpts
     } = readOptions ?? {};
 
-    const trackingResultRef = useRef<TrackingResult>({
-      trackedCall: null,
-      selectorPath: null,
-      selectorMethod: null,
+    const selectorResultRef = useRef<SelectorResult>({
+      call: null,
+      selector: null,
     });
 
-    const trackingProxy = createTrackingProxy<TSchema>((result) => {
-      trackingResultRef.current = result;
+    const selectorProxy = createSelectorProxy<TSchema>((result) => {
+      selectorResultRef.current = result;
     });
 
-    (readFn as (api: unknown) => unknown)(trackingProxy);
+    (readFn as (api: unknown) => unknown)(selectorProxy);
 
-    const trackedCall = trackingResultRef.current.trackedCall;
+    const capturedCall = selectorResultRef.current.call;
 
-    if (!trackedCall) {
+    if (!capturedCall) {
       throw new Error(
         "useRead requires calling an HTTP method ($get). " +
           "Example: useRead((api) => api.posts.$get())"
       );
     }
 
-    const requestOptions = trackedCall.options as
+    const requestOptions = capturedCall.options as
       | { params?: Record<string, string | number> }
       | undefined;
 
-    const resolvedPath = resolvePath(trackedCall.path, requestOptions?.params);
+    const resolvedPath = resolvePath(capturedCall.path, requestOptions?.params);
     const resolvedTags = resolveTags({ tags, additionalTags }, resolvedPath);
 
     const queryKey = stateManager.createQueryKey({
-      path: trackedCall.path,
-      method: trackedCall.method,
-      options: trackedCall.options,
+      path: capturedCall.path,
+      method: capturedCall.method,
+      options: capturedCall.options,
     });
 
     const controllerRef = useRef<{
@@ -121,10 +121,10 @@ export function createUseRead<
     if (!controllerRef.current || controllerRef.current.queryKey !== queryKey) {
       const controller = createOperationController<TData, TError>({
         operationType: "read",
-        path: trackedCall.path,
-        method: trackedCall.method as "GET",
+        path: capturedCall.path,
+        method: capturedCall.method as "GET",
         tags: resolvedTags,
-        requestOptions: trackedCall.options as
+        requestOptions: capturedCall.options as
           | Record<string, unknown>
           | undefined,
         stateManager,
@@ -138,7 +138,7 @@ export function createUseRead<
           }
 
           const method = (current as Record<string, unknown>)[
-            trackedCall.method
+            capturedCall.method
           ] as (o?: unknown) => Promise<EnlaceResponse<TData, TError>>;
 
           return method(fetchOpts);
@@ -200,7 +200,7 @@ export function createUseRead<
       ? Object.fromEntries(entry.pluginResult)
       : {};
 
-    const opts = trackedCall.options as Record<string, unknown> | undefined;
+    const opts = capturedCall.options as Record<string, unknown> | undefined;
     const inputInner: Record<string, unknown> = {};
 
     if (opts?.query !== undefined) {

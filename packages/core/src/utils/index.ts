@@ -4,10 +4,4 @@ export { isJsonBody } from "./isJsonBody";
 export { mergeHeaders } from "./mergeHeaders";
 export { objectToFormData } from "./objectToFormData";
 export { sortObjectKeys } from "./sortObjectKeys";
-export {
-  createApiProxy,
-  extractPathFromTracked,
-  extractMethodFromTracked,
-  pathToTags,
-  type TrackedFunction,
-} from "./api-proxy";
+export { resolvePath, resolveTags } from "./path-utils";

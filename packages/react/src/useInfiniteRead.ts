@@ -9,9 +9,11 @@ import {
   type EnlacePlugin,
   type PluginTypeConfig,
   type InfiniteRequestOptions,
-  type TrackingResult,
+  type SelectorResult,
   createInfiniteReadController,
-  createTrackingProxy,
+  createSelectorProxy,
+  resolvePath,
+  resolveTags,
 } from "enlace";
 import type {
   BaseInfiniteReadOptions,
@@ -19,7 +21,6 @@ import type {
   InfiniteReadApiClient,
   AnyInfiniteRequestOptions,
 } from "./types";
-import { resolvePath, resolveTags } from "./utils";
 
 export type CreateUseInfiniteReadOptions = {
   api: unknown;
@@ -62,28 +63,27 @@ export function createUseInfiniteRead<
       ...pluginOpts
     } = readOptions;
 
-    const trackingResultRef = useRef<TrackingResult>({
-      trackedCall: null,
-      selectorPath: null,
-      selectorMethod: null,
+    const selectorResultRef = useRef<SelectorResult>({
+      call: null,
+      selector: null,
     });
 
-    const trackingProxy = createTrackingProxy<TSchema>((result) => {
-      trackingResultRef.current = result;
+    const selectorProxy = createSelectorProxy<TSchema>((result) => {
+      selectorResultRef.current = result;
     });
 
-    (readFn as (api: unknown) => unknown)(trackingProxy);
+    (readFn as (api: unknown) => unknown)(selectorProxy);
 
-    const trackedCall = trackingResultRef.current.trackedCall;
+    const capturedCall = selectorResultRef.current.call;
 
-    if (!trackedCall) {
+    if (!capturedCall) {
       throw new Error(
         "useInfiniteRead requires calling an HTTP method ($get). " +
           "Example: useInfiniteRead((api) => api.posts.$get())"
       );
     }
 
-    const requestOptions = trackedCall.options as
+    const requestOptions = capturedCall.options as
       | {
           params?: Record<string, string | number>;
           query?: Record<string, unknown>;
@@ -98,13 +98,13 @@ export function createUseInfiniteRead<
     };
 
     const baseOptionsForKey = {
-      ...(trackedCall.options as object),
+      ...(capturedCall.options as object),
       query: undefined,
       params: undefined,
       body: undefined,
     };
 
-    const resolvedPath = resolvePath(trackedCall.path, requestOptions?.params);
+    const resolvedPath = resolvePath(capturedCall.path, requestOptions?.params);
     const resolvedTags = resolveTags({ tags, additionalTags }, resolvedPath);
 
     const canFetchNextRef = useRef(canFetchNext);
@@ -120,8 +120,8 @@ export function createUseInfiniteRead<
     mergerRef.current = merger;
 
     const queryKey = stateManager.createQueryKey({
-      path: trackedCall.path,
-      method: trackedCall.method,
+      path: capturedCall.path,
+      method: capturedCall.method,
       options: baseOptionsForKey,
     });
 
@@ -141,8 +141,8 @@ export function createUseInfiniteRead<
           TError,
           TRequest
         >({
-          path: trackedCall.path,
-          method: trackedCall.method as "GET",
+          path: capturedCall.path,
+          method: capturedCall.method as "GET",
           tags: resolvedTags,
           initialRequest,
           baseOptionsForKey,
@@ -159,7 +159,7 @@ export function createUseInfiniteRead<
           eventEmitter,
           pluginExecutor,
           fetchFn: async (opts, signal) => {
-            const fetchPath = resolvePath(trackedCall.path, opts.params);
+            const fetchPath = resolvePath(capturedCall.path, opts.params);
 
             let current: unknown = api;
 
@@ -168,11 +168,11 @@ export function createUseInfiniteRead<
             }
 
             const method = (current as Record<string, unknown>)[
-              trackedCall.method
+              capturedCall.method
             ] as (opts?: unknown) => Promise<EnlaceResponse<TData, TError>>;
 
             const fetchOptions = {
-              ...(trackedCall.options as object),
+              ...(capturedCall.options as object),
               query: opts.query,
               params: opts.params,
               body: opts.body,

@@ -1,9 +1,9 @@
 import type { EnlacePlugin, PluginContext } from "../../types";
 import {
-  createApiProxy,
-  extractPathFromTracked,
-  pathToTags,
-} from "../../../utils/api-proxy";
+  createSelectorProxy,
+  extractPathFromSelector,
+} from "../../../proxy/selector-proxy";
+import { generateTags } from "../../../utils/generateTags";
 import type {
   InvalidationPluginConfig,
   InvalidationWriteOptions,
@@ -34,15 +34,15 @@ function resolveInvalidateTags(
     if (Array.isArray(pluginOptions.invalidate)) {
       tags.push(...pluginOptions.invalidate);
     } else {
-      const proxy = createApiProxy<never>();
+      const proxy = createSelectorProxy<never>();
       const invalidationTargets = pluginOptions.invalidate(proxy as never);
 
       for (const target of invalidationTargets) {
         if (typeof target === "string") {
           tags.push(target);
         } else {
-          const path = extractPathFromTracked(target);
-          const derivedTags = pathToTags(path);
+          const path = extractPathFromSelector(target);
+          const derivedTags = generateTags(path);
           const exactTag = derivedTags[derivedTags.length - 1];
 
           if (exactTag) {
