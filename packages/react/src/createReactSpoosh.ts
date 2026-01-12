@@ -3,14 +3,14 @@ import type {
   StateManager,
   EventEmitter,
   PluginExecutor,
-  EnlaceResponse,
+  SpooshResponse,
   MergePluginOptions,
   MergePluginResults,
   MergePluginInstanceApi,
   ResolveTypes,
   ResolverContext,
   ResolveSchemaTypes,
-} from "enlace";
+} from "@spoosh/core";
 import { createUseRead } from "./useRead";
 import { createUseWrite } from "./useWrite";
 import { createUseInfiniteRead } from "./useInfiniteRead";
@@ -79,7 +79,7 @@ type UseReadFn<TApi, TDefaultError, TSchema, TPlugins extends PluginArray> = <
 type UseWriteFn<TApi, TDefaultError, TSchema, TPlugins extends PluginArray> = <
   TMethod extends (
     ...args: never[]
-  ) => Promise<EnlaceResponse<unknown, unknown>>,
+  ) => Promise<SpooshResponse<unknown, unknown>>,
 >(
   writeFn: (api: TApi) => TMethod
 ) => BaseWriteResult<
@@ -129,13 +129,13 @@ type UseInfiniteReadFn<
   TError = TDefaultError,
   TRequest extends AnyInfiniteRequestOptions = AnyInfiniteRequestOptions,
 >(
-  readFn: (api: TApi) => Promise<EnlaceResponse<TData, TError>>,
+  readFn: (api: TApi) => Promise<SpooshResponse<TData, TError>>,
   readOptions: BaseInfiniteReadOptions<TData, TItem, TRequest> &
     ResolvedInfiniteReadOptions<TSchema, TPlugins, TData, TError, TRequest>
 ) => BaseInfiniteReadResult<TData, TError, TItem> &
   MergePluginResults<TPlugins>["read"];
 
-export type EnlaceReactHooks<
+export type SpooshReactHooks<
   TApi,
   TDefaultError,
   TSchema,
@@ -146,7 +146,7 @@ export type EnlaceReactHooks<
   useInfiniteRead: UseInfiniteReadFn<TApi, TDefaultError, TSchema, TPlugins>;
 } & MergePluginInstanceApi<TPlugins, TSchema>;
 
-type EnlaceInstanceShape<TApi, TSchema, TDefaultError, TPlugins> = {
+type SpooshInstanceShape<TApi, TSchema, TDefaultError, TPlugins> = {
   api: TApi;
   stateManager: StateManager;
   eventEmitter: EventEmitter;
@@ -158,14 +158,14 @@ type EnlaceInstanceShape<TApi, TSchema, TDefaultError, TPlugins> = {
   };
 };
 
-export function createReactEnlace<
+export function createReactSpoosh<
   TSchema,
   TDefaultError,
   TPlugins extends PluginArray,
   TApi,
 >(
-  instance: EnlaceInstanceShape<TApi, TSchema, TDefaultError, TPlugins>
-): EnlaceReactHooks<TApi, TDefaultError, TSchema, TPlugins> {
+  instance: SpooshInstanceShape<TApi, TSchema, TDefaultError, TPlugins>
+): SpooshReactHooks<TApi, TDefaultError, TSchema, TPlugins> {
   const { api, stateManager, eventEmitter, pluginExecutor } = instance;
 
   const useRead = createUseRead<TSchema, TDefaultError, TPlugins>({
@@ -216,5 +216,5 @@ export function createReactEnlace<
     useWrite,
     useInfiniteRead,
     ...instanceApis,
-  } as EnlaceReactHooks<TApi, TDefaultError, TSchema, TPlugins>;
+  } as SpooshReactHooks<TApi, TDefaultError, TSchema, TPlugins>;
 }

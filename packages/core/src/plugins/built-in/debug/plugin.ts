@@ -1,4 +1,4 @@
-import type { EnlacePlugin, PluginContext } from "../../types";
+import type { SpooshPlugin, PluginContext } from "../../types";
 import type {
   DebugPluginConfig,
   DebugReadOptions,
@@ -44,7 +44,7 @@ type DebugPhase =
  * const plugins = [debugPlugin({ enabled: process.env.NODE_ENV === 'development' })];
  * ```
  */
-export function debugPlugin(config: DebugPluginConfig = {}): EnlacePlugin<{
+export function debugPlugin(config: DebugPluginConfig = {}): SpooshPlugin<{
   readOptions: DebugReadOptions;
   writeOptions: DebugWriteOptions;
   infiniteReadOptions: DebugInfiniteReadOptions;
@@ -103,7 +103,7 @@ export function debugPlugin(config: DebugPluginConfig = {}): EnlacePlugin<{
     }
     lastRequestTimestamp = context.requestTimestamp;
 
-    const label = `[enlace] ${context.operationType} ${context.method} /${context.path.join("/")} → ${phase}`;
+    const label = `[spoosh] ${context.operationType} ${context.method} /${context.path.join("/")} → ${phase}`;
 
     console.groupCollapsed(label);
     console.log("Query Key:", context.queryKey);
@@ -127,7 +127,7 @@ export function debugPlugin(config: DebugPluginConfig = {}): EnlacePlugin<{
   };
 
   return {
-    name: "enlace:debug",
+    name: "spoosh:debug",
     operations: ["read", "write", "infiniteRead"],
 
     middleware: async (context, next) => {

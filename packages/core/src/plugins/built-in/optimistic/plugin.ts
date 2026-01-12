@@ -1,4 +1,4 @@
-import type { EnlacePlugin, PluginContext } from "../../types";
+import type { SpooshPlugin, PluginContext } from "../../types";
 import type { ResolvedCacheConfig } from "./types";
 import type { StateManager } from "../../../state/manager";
 import {
@@ -243,7 +243,7 @@ function rollbackOptimistic(
  * });
  * ```
  */
-export function optimisticPlugin(): EnlacePlugin<{
+export function optimisticPlugin(): SpooshPlugin<{
   readOptions: OptimisticReadOptions;
   writeOptions: OptimisticWriteOptions;
   infiniteReadOptions: OptimisticInfiniteReadOptions;
@@ -251,9 +251,9 @@ export function optimisticPlugin(): EnlacePlugin<{
   writeResult: OptimisticWriteResult;
 }> {
   return {
-    name: "enlace:optimistic",
+    name: "spoosh:optimistic",
     operations: ["write"],
-    dependencies: ["enlace:invalidation"],
+    dependencies: ["spoosh:invalidation"],
 
     middleware: async (context, next) => {
       const { stateManager } = context;
@@ -261,7 +261,7 @@ export function optimisticPlugin(): EnlacePlugin<{
 
       if (configs.length > 0) {
         context.plugins
-          .get("enlace:invalidation")
+          .get("spoosh:invalidation")
           ?.setAutoInvalidateDefault("none");
       }
 

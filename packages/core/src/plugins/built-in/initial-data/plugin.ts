@@ -1,4 +1,4 @@
-import type { EnlacePlugin } from "../../types";
+import type { SpooshPlugin } from "../../types";
 import type {
   InitialDataReadOptions,
   InitialDataInfiniteReadOptions,
@@ -35,7 +35,7 @@ import type {
  * );
  * ```
  */
-export function initialDataPlugin(): EnlacePlugin<{
+export function initialDataPlugin(): SpooshPlugin<{
   readOptions: InitialDataReadOptions;
   writeOptions: InitialDataWriteOptions;
   infiniteReadOptions: InitialDataInfiniteReadOptions;
@@ -45,7 +45,7 @@ export function initialDataPlugin(): EnlacePlugin<{
   const initialDataAppliedFor = new Set<string>();
 
   return {
-    name: "enlace:initialData",
+    name: "spoosh:initialData",
     operations: ["read", "infiniteRead"],
 
     middleware: async (context, next) => {

@@ -1,4 +1,4 @@
-import type { EnlaceResponse } from "./response.types";
+import type { SpooshResponse } from "./response.types";
 import type { SchemaMethod } from "./common.types";
 import type {
   RequestOptions,
@@ -63,7 +63,7 @@ export type MethodFn<
             true
           >
         ) => Promise<
-          EnlaceResponse<
+          SpooshResponse<
             ExtractData<TSchema, TMethod, TDefaultError>,
             ExtractError<TSchema, TMethod, TDefaultError>,
             MethodRequestOptions<
@@ -90,7 +90,7 @@ export type MethodFn<
             false
           >
         ) => Promise<
-          EnlaceResponse<
+          SpooshResponse<
             ExtractData<TSchema, TMethod, TDefaultError>,
             ExtractError<TSchema, TMethod, TDefaultError>,
             MethodRequestOptions<
@@ -146,14 +146,14 @@ type DynamicAccess<
   ExtractDynamicSchema<TSchema> extends never
     ? object
     : {
-        [key: string]: EnlaceClient<
+        [key: string]: SpooshClient<
           ExtractDynamicSchema<TSchema>,
           TDefaultError,
           TOptionsMap,
           TParamNames | string,
           TRootSchema
         >;
-        [key: number]: EnlaceClient<
+        [key: number]: SpooshClient<
           ExtractDynamicSchema<TSchema>,
           TDefaultError,
           TOptionsMap,
@@ -172,7 +172,7 @@ type DynamicAccess<
          */
         <TKey extends string>(
           key: TKey
-        ): EnlaceClient<
+        ): SpooshClient<
           ExtractDynamicSchema<TSchema>,
           TDefaultError,
           TOptionsMap,
@@ -200,7 +200,7 @@ type DynamicKey<
        * const { data } = await api.posts._.$get({ params: { id: 123 } })
        * ```
        */
-      _: EnlaceClient<
+      _: SpooshClient<
         D,
         TDefaultError,
         TOptionsMap,
@@ -210,7 +210,7 @@ type DynamicKey<
     }
   : object;
 
-export type EnlaceClient<
+export type SpooshClient<
   TSchema,
   TDefaultError = unknown,
   TOptionsMap = object,
@@ -221,7 +221,7 @@ export type EnlaceClient<
   DynamicKey<TSchema, TDefaultError, TOptionsMap, TParamNames, TRootSchema> & {
     [K in keyof StaticPathKeys<TSchema> as K extends SchemaMethod
       ? never
-      : K]: EnlaceClient<
+      : K]: SpooshClient<
       TSchema[K],
       TDefaultError,
       TOptionsMap,

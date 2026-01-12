@@ -1,6 +1,6 @@
 "use client";
 
-export { createReactEnlace, type EnlaceReactHooks } from "./createReactEnlace";
+export { createReactSpoosh, type SpooshReactHooks } from "./createReactSpoosh";
 
 export type {
   PluginHooksConfig,

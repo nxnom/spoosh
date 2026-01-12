@@ -3,18 +3,18 @@ import { createStateManager } from "./state";
 import { createEventEmitter } from "./events";
 import { createPluginExecutor } from "./plugins";
 import type {
-  EnlaceConfig,
-  EnlaceInstance,
+  SpooshConfig,
+  SpooshInstance,
   PluginArray,
 } from "./types/instance.types";
 
-export function createEnlace<
+export function createSpoosh<
   TSchema = unknown,
   TDefaultError = unknown,
   const TPlugins extends PluginArray = PluginArray,
 >(
-  config: EnlaceConfig<TPlugins>
-): EnlaceInstance<TSchema, TDefaultError, TPlugins> {
+  config: SpooshConfig<TPlugins>
+): SpooshInstance<TSchema, TDefaultError, TPlugins> {
   const {
     baseUrl,
     defaultOptions = {},
@@ -40,5 +40,5 @@ export function createEnlace<
       defaultError: undefined as unknown as TDefaultError,
       plugins: plugins as TPlugins,
     },
-  } as EnlaceInstance<TSchema, TDefaultError, TPlugins>;
+  } as SpooshInstance<TSchema, TDefaultError, TPlugins>;
 }

@@ -1,13 +1,13 @@
-import type { EnlaceResponse } from "../../../types/response.types";
+import type { SpooshResponse } from "../../../types/response.types";
 import type { SchemaMethod } from "../../../types/common.types";
 import type { ExtractData } from "../../../types/endpoint.types";
 import type { QuerySchemaHelper } from "../../schema-helper";
 
 type ExtractResponseData<T> =
-  T extends EnlaceResponse<infer D, unknown, unknown> ? D : unknown;
+  T extends SpooshResponse<infer D, unknown, unknown> ? D : unknown;
 
 type ExtractRequestOptions<T> =
-  T extends EnlaceResponse<unknown, unknown, infer R> ? R : never;
+  T extends SpooshResponse<unknown, unknown, infer R> ? R : never;
 
 type CleanRequestOptions<T> = unknown extends T
   ? never
@@ -24,7 +24,7 @@ type CleanRequestOptions<T> = unknown extends T
  * @typeParam TRequest - The request options type (inferred from TFor)
  */
 export type CacheConfig<
-  TFor extends () => Promise<EnlaceResponse<unknown, unknown, unknown>>,
+  TFor extends () => Promise<SpooshResponse<unknown, unknown, unknown>>,
   TResponse = unknown,
   TData = ExtractResponseData<Awaited<ReturnType<TFor>>>,
   TRequest = CleanRequestOptions<
@@ -55,7 +55,7 @@ export type CacheConfig<
  */
 export type ResolvedCacheConfig = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for: (...args: any[]) => Promise<EnlaceResponse<unknown, unknown>>;
+  for: (...args: any[]) => Promise<SpooshResponse<unknown, unknown>>;
   match?: (request: Record<string, unknown>) => boolean;
   timing?: "immediate" | "onSuccess";
   updater: (data: unknown, response?: unknown) => unknown;
@@ -74,7 +74,7 @@ export type ResolvedCacheConfig = {
  * @returns Single or array of cache configs
  */
 export type OptimisticCallbackFn<TSchema = unknown, TResponse = unknown> = (
-  $: <TFor extends () => Promise<EnlaceResponse<unknown, unknown, unknown>>>(
+  $: <TFor extends () => Promise<SpooshResponse<unknown, unknown, unknown>>>(
     config: CacheConfig<TFor, TResponse>
   ) => ResolvedCacheConfig,
   api: QuerySchemaHelper<TSchema>

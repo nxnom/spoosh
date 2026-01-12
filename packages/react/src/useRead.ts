@@ -6,13 +6,13 @@ import {
   useId,
 } from "react";
 import {
-  type EnlaceResponse,
+  type SpooshResponse,
   type PluginExecutor,
   type StateManager,
   type EventEmitter,
   type MergePluginOptions,
   type MergePluginResults,
-  type EnlacePlugin,
+  type SpooshPlugin,
   type PluginTypeConfig,
   type PluginContext,
   type SelectorResult,
@@ -20,7 +20,7 @@ import {
   createSelectorProxy,
   resolvePath,
   resolveTags,
-} from "enlace";
+} from "@spoosh/core";
 import type {
   BaseReadOptions,
   BaseReadResult,
@@ -42,7 +42,7 @@ export type CreateUseReadOptions = {
 export function createUseRead<
   TSchema,
   TDefaultError,
-  TPlugins extends readonly EnlacePlugin<PluginTypeConfig>[],
+  TPlugins extends readonly SpooshPlugin<PluginTypeConfig>[],
 >(options: CreateUseReadOptions) {
   const { api, stateManager, eventEmitter, pluginExecutor } = options;
 
@@ -163,7 +163,7 @@ export function createUseRead<
 
           const method = (current as Record<string, unknown>)[
             capturedCall.method
-          ] as (o?: unknown) => Promise<EnlaceResponse<TData, TError>>;
+          ] as (o?: unknown) => Promise<SpooshResponse<TData, TError>>;
 
           return method(fetchOpts);
         },

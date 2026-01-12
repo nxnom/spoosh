@@ -1,5 +1,5 @@
 import type {
-  EnlaceMiddleware,
+  SpooshMiddleware,
   MiddlewareContext,
   MiddlewarePhase,
 } from "./types";
@@ -7,14 +7,14 @@ import type {
 export function createMiddleware<TData = unknown, TError = unknown>(
   name: string,
   phase: MiddlewarePhase,
-  handler: EnlaceMiddleware<TData, TError>["handler"]
-): EnlaceMiddleware<TData, TError> {
+  handler: SpooshMiddleware<TData, TError>["handler"]
+): SpooshMiddleware<TData, TError> {
   return { name, phase, handler };
 }
 
 export async function applyMiddlewares<TData = unknown, TError = unknown>(
   context: MiddlewareContext<TData, TError>,
-  middlewares: EnlaceMiddleware<TData, TError>[],
+  middlewares: SpooshMiddleware<TData, TError>[],
   phase: MiddlewarePhase
 ): Promise<MiddlewareContext<TData, TError>> {
   const phaseMiddlewares = middlewares.filter((m) => m.phase === phase);
@@ -29,9 +29,9 @@ export async function applyMiddlewares<TData = unknown, TError = unknown>(
 }
 
 export function composeMiddlewares<TData = unknown, TError = unknown>(
-  ...middlewareLists: (EnlaceMiddleware<TData, TError>[] | undefined)[]
-): EnlaceMiddleware<TData, TError>[] {
-  return middlewareLists.flat().filter(Boolean) as EnlaceMiddleware<
+  ...middlewareLists: (SpooshMiddleware<TData, TError>[] | undefined)[]
+): SpooshMiddleware<TData, TError>[] {
+  return middlewareLists.flat().filter(Boolean) as SpooshMiddleware<
     TData,
     TError
   >[];

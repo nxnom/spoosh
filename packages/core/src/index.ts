@@ -1,7 +1,7 @@
-export { createEnlace } from "./createEnlace";
+export { createSpoosh } from "./createSpoosh";
 export {
   createClient,
-  type EnlaceClientConfig as ClientConfig,
+  type SpooshClientConfig as ClientConfig,
 } from "./createClient";
 
 export * from "./types";

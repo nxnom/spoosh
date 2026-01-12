@@ -44,7 +44,7 @@ importers:
 
   packages/hono:
     devDependencies:
-      enlace:
+      '@spoosh/core':
         specifier: workspace:*
         version: link:../core
       hono:
@@ -69,13 +69,13 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.7.6
         version: 0.7.6(hono@4.11.3)(zod@4.3.4)
-      enlace:
+      '@spoosh/core':
         specifier: workspace:*
         version: link:../core
-      enlace-hono:
+      '@spoosh/hono':
         specifier: workspace:*
         version: link:../hono
-      enlace-react:
+      '@spoosh/react':
         specifier: workspace:*
         version: link:../react
       hono:
@@ -121,7 +121,7 @@ importers:
 
   packages/react:
     dependencies:
-      enlace:
+      '@spoosh/core':
         specifier: workspace:*
         version: link:../core
       react:

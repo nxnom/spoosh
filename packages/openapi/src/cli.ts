@@ -6,7 +6,7 @@ import { parseSchema } from "./parser.js";
 import { generateOpenAPISpec } from "./generator.js";
 
 program
-  .name("enlace-openapi")
+  .name("spoosh-openapi")
   .description("Generate OpenAPI spec from TypeScript API schema")
   .requiredOption(
     "-s, --schema <path>",

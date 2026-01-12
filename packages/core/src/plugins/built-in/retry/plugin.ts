@@ -1,4 +1,4 @@
-import type { EnlacePlugin } from "../../types";
+import type { SpooshPlugin } from "../../types";
 import type {
   RetryPluginConfig,
   RetryReadOptions,
@@ -27,7 +27,7 @@ import type {
  * useRead((api) => api.posts.$get(), { retries: false });
  * ```
  */
-export function retryPlugin(config: RetryPluginConfig = {}): EnlacePlugin<{
+export function retryPlugin(config: RetryPluginConfig = {}): SpooshPlugin<{
   readOptions: RetryReadOptions;
   writeOptions: RetryWriteOptions;
   infiniteReadOptions: RetryInfiniteReadOptions;
@@ -38,7 +38,7 @@ export function retryPlugin(config: RetryPluginConfig = {}): EnlacePlugin<{
     config;
 
   return {
-    name: "enlace:retry",
+    name: "spoosh:retry",
     operations: ["read", "write", "infiniteRead"],
 
     middleware: async (context, next) => {

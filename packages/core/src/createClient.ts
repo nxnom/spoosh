@@ -1,18 +1,18 @@
 import { createProxyHandler } from "./proxy";
-import type { EnlaceClient } from "./types/client.types";
-import type { EnlaceOptions } from "./types/request.types";
-import type { EnlaceMiddleware } from "./types/middleware.types";
+import type { SpooshClient } from "./types/client.types";
+import type { SpooshOptions } from "./types/request.types";
+import type { SpooshMiddleware } from "./types/middleware.types";
 
-export type EnlaceClientConfig = {
+export type SpooshClientConfig = {
   baseUrl: string;
-  defaultOptions?: EnlaceOptions;
-  middlewares?: EnlaceMiddleware[];
+  defaultOptions?: SpooshOptions;
+  middlewares?: SpooshMiddleware[];
 };
 
 /**
  * Creates a lightweight type-safe API client for vanilla JavaScript/TypeScript usage.
  *
- * This is a simpler alternative to `createEnlace` for users who don't need
+ * This is a simpler alternative to `createSpoosh` for users who don't need
  * the full plugin system, state management, or React integration.
  *
  * @param config - Client configuration
@@ -45,13 +45,13 @@ export type EnlaceClientConfig = {
  * ```
  */
 export function createClient<TSchema, TDefaultError = unknown>(
-  config: EnlaceClientConfig
-): EnlaceClient<TSchema, TDefaultError> {
+  config: SpooshClientConfig
+): SpooshClient<TSchema, TDefaultError> {
   const { baseUrl, defaultOptions = {}, middlewares = [] } = config;
 
   const optionsWithMiddlewares = { ...defaultOptions, middlewares };
 
-  return createProxyHandler<EnlaceClient<TSchema, TDefaultError>>(
+  return createProxyHandler<SpooshClient<TSchema, TDefaultError>>(
     baseUrl,
     optionsWithMiddlewares
   );

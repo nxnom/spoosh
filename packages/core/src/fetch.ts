@@ -2,10 +2,10 @@ import { applyMiddlewares } from "./middleware";
 import { buildUrl, isJsonBody, mergeHeaders, objectToFormData } from "./utils";
 import type {
   AnyRequestOptions,
-  EnlaceOptionsExtra,
-  EnlaceMiddleware,
-  EnlaceOptions,
-  EnlaceResponse,
+  SpooshOptionsExtra,
+  SpooshMiddleware,
+  SpooshOptions,
+  SpooshResponse,
   HttpMethod,
   MiddlewareContext,
 } from "./types";
@@ -21,10 +21,10 @@ export async function executeFetch<TData, TError>(
   baseUrl: string,
   path: string[],
   method: HttpMethod,
-  defaultOptions: EnlaceOptions & EnlaceOptionsExtra,
+  defaultOptions: SpooshOptions & SpooshOptionsExtra,
   requestOptions?: AnyRequestOptions
-): Promise<EnlaceResponse<TData, TError>> {
-  const middlewares = (defaultOptions.middlewares ?? []) as EnlaceMiddleware<
+): Promise<SpooshResponse<TData, TError>> {
+  const middlewares = (defaultOptions.middlewares ?? []) as SpooshMiddleware<
     TData,
     TError
   >[];
@@ -92,10 +92,10 @@ async function executeCoreFetch<TData, TError>(
   baseUrl: string,
   path: string[],
   method: HttpMethod,
-  defaultOptions: EnlaceOptions & EnlaceOptionsExtra,
+  defaultOptions: SpooshOptions & SpooshOptionsExtra,
   requestOptions?: AnyRequestOptions,
   middlewareFetchInit?: RequestInit
-): Promise<EnlaceResponse<TData, TError>> {
+): Promise<SpooshResponse<TData, TError>> {
   const {
     middlewares: _,
     headers: defaultHeaders,

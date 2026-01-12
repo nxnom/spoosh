@@ -1,4 +1,4 @@
-import type { EnlaceResponse } from "../types/response.types";
+import type { SpooshResponse } from "../types/response.types";
 import type { SchemaMethod } from "../types/common.types";
 import type { HasQueryMethods } from "../types/filtered-client.types";
 
@@ -15,7 +15,7 @@ type ExtractEndpointRequestOptions<T> = {
 type EndpointToMethod<T> = (
   options?: ExtractEndpointRequestOptions<T>
 ) => Promise<
-  EnlaceResponse<
+  SpooshResponse<
     ExtractEndpointData<T>,
     unknown,
     ExtractEndpointRequestOptions<T>
@@ -45,7 +45,7 @@ type EndpointToMethod<T> = (
  * }
  *
  * // Register for schema resolution
- * declare module 'enlace' {
+ * declare module '@spoosh/core' {
  *   interface SchemaResolvers<TSchema> {
  *     myCallback: MyCallbackFn<TSchema> | undefined;
  *   }

@@ -6,20 +6,20 @@ import {
   useId,
 } from "react";
 import {
-  type EnlaceResponse,
+  type SpooshResponse,
   type PluginExecutor,
   type StateManager,
   type EventEmitter,
   type MergePluginOptions,
   type MergePluginResults,
-  type EnlacePlugin,
+  type SpooshPlugin,
   type PluginTypeConfig,
   type SelectorResult,
   createOperationController,
   createSelectorProxy,
   resolvePath,
   resolveTags,
-} from "enlace";
+} from "@spoosh/core";
 import type {
   ResolveSchemaTypes,
   BaseWriteResult,
@@ -44,7 +44,7 @@ export type CreateUseWriteOptions = {
 export function createUseWrite<
   TSchema,
   TDefaultError,
-  TPlugins extends readonly EnlacePlugin<PluginTypeConfig>[],
+  TPlugins extends readonly SpooshPlugin<PluginTypeConfig>[],
 >(options: CreateUseWriteOptions) {
   const { api, stateManager, pluginExecutor, eventEmitter } = options;
 
@@ -56,7 +56,7 @@ export function createUseWrite<
   return function useWrite<
     TMethod extends (
       ...args: never[]
-    ) => Promise<EnlaceResponse<unknown, unknown>>,
+    ) => Promise<SpooshResponse<unknown, unknown>>,
   >(
     writeFn: (api: WriteApiClient<TSchema, TDefaultError>) => TMethod
   ): BaseWriteResult<
@@ -140,7 +140,7 @@ export function createUseWrite<
 
             const method = (current as Record<string, unknown>)[
               selectedEndpoint.method
-            ] as (o?: unknown) => Promise<EnlaceResponse<TData, TError>>;
+            ] as (o?: unknown) => Promise<SpooshResponse<TData, TError>>;
 
             return method(fetchOpts);
           },
@@ -172,7 +172,7 @@ export function createUseWrite<
     const trigger = useCallback(
       async (
         triggerOptions?: TOptions
-      ): Promise<EnlaceResponse<TData, TError>> => {
+      ): Promise<SpooshResponse<TData, TError>> => {
         setLastTriggerOptions(triggerOptions);
 
         const params = (

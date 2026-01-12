@@ -1,16 +1,16 @@
 {
-  "name": "enlace-react",
+  "name": "@spoosh/react",
   "version": "0.0.1-beta.1",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nxnom/enlace.git",
+    "url": "git+https://github.com/nxnom/spoosh.git",
     "directory": "packages/react"
   },
   "bugs": {
-    "url": "https://github.com/nxnom/enlace/issues"
+    "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://github.com/nxnom/enlace/tree/main/packages/react#readme",
+  "homepage": "https://github.com/nxnom/spoosh/tree/main/packages/react#readme",
   "files": [
     "dist"
   ],
@@ -30,7 +30,7 @@
     "prepublishOnly": "npm run build && npm run typecheck && npm run lint"
   },
   "dependencies": {
-    "enlace": "workspace:*"
+    "@spoosh/core": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18 || ^19"

@@ -1,4 +1,4 @@
-import type { EnlacePlugin } from "../../types";
+import type { SpooshPlugin } from "../../types";
 import type {
   CachePluginConfig,
   CacheReadOptions,
@@ -27,7 +27,7 @@ import type {
  * useRead((api) => api.posts.$get(), { staleTime: 10000 });
  * ```
  */
-export function cachePlugin(config: CachePluginConfig = {}): EnlacePlugin<{
+export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
   readOptions: CacheReadOptions;
   writeOptions: CacheWriteOptions;
   infiniteReadOptions: CacheInfiniteReadOptions;
@@ -37,7 +37,7 @@ export function cachePlugin(config: CachePluginConfig = {}): EnlacePlugin<{
   const { staleTime: defaultStaleTime = 0 } = config;
 
   return {
-    name: "enlace:cache",
+    name: "spoosh:cache",
     operations: ["read", "infiniteRead"],
 
     middleware: async (context, next) => {

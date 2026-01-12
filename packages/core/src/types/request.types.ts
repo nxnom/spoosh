@@ -1,4 +1,4 @@
-import type { EnlaceResponse } from "./response.types";
+import type { SpooshResponse } from "./response.types";
 import type { HttpMethod, SchemaMethod } from "./common.types";
 
 export type RetryConfig = {
@@ -10,7 +10,7 @@ export type HeadersInitOrGetter =
   | HeadersInit
   | (() => HeadersInit | Promise<HeadersInit>);
 
-export type EnlaceOptions = Omit<RequestInit, "method" | "body" | "headers"> & {
+export type SpooshOptions = Omit<RequestInit, "method" | "body" | "headers"> & {
   headers?: HeadersInitOrGetter;
 };
 
@@ -74,7 +74,7 @@ export type ExtractMethodOptions<TOptionsMap, TMethod extends SchemaMethod> =
     : TOptionsMap;
 
 export type FetchExecutor<
-  TOptions = EnlaceOptions,
+  TOptions = SpooshOptions,
   TRequestOptions = AnyRequestOptions,
 > = <TData, TError>(
   baseUrl: string,
@@ -82,7 +82,7 @@ export type FetchExecutor<
   method: HttpMethod,
   defaultOptions: TOptions,
   requestOptions?: TRequestOptions
-) => Promise<EnlaceResponse<TData, TError>>;
+) => Promise<SpooshResponse<TData, TError>>;
 
 type TypedParamsOption<TParamNames extends string> = [TParamNames] extends [
   never,

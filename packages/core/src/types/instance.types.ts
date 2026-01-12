@@ -1,25 +1,25 @@
 import type { StateManager } from "../state/manager";
 import type { EventEmitter } from "../events/emitter";
 import type { PluginExecutor } from "../plugins/executor";
-import type { EnlaceClient } from "./client.types";
-import type { EnlaceOptions } from "./request.types";
-import type { EnlacePlugin, PluginTypeConfig } from "../plugins/types";
+import type { SpooshClient } from "./client.types";
+import type { SpooshOptions } from "./request.types";
+import type { SpooshPlugin, PluginTypeConfig } from "../plugins/types";
 import type { CoreRequestOptionsBase } from "./request.types";
 
-export type PluginArray = readonly EnlacePlugin<PluginTypeConfig>[];
+export type PluginArray = readonly SpooshPlugin<PluginTypeConfig>[];
 
-export interface EnlaceConfig<TPlugins extends PluginArray = PluginArray> {
+export interface SpooshConfig<TPlugins extends PluginArray = PluginArray> {
   baseUrl: string;
-  defaultOptions?: EnlaceOptions;
+  defaultOptions?: SpooshOptions;
   plugins?: TPlugins;
 }
 
-export type EnlaceInstance<
+export type SpooshInstance<
   TSchema = unknown,
   TDefaultError = unknown,
   TPlugins extends PluginArray = PluginArray,
 > = {
-  api: EnlaceClient<TSchema, TDefaultError, CoreRequestOptionsBase>;
+  api: SpooshClient<TSchema, TDefaultError, CoreRequestOptionsBase>;
 
   stateManager: StateManager;
   eventEmitter: EventEmitter;
@@ -27,7 +27,7 @@ export type EnlaceInstance<
 
   config: {
     baseUrl: string;
-    defaultOptions: EnlaceOptions;
+    defaultOptions: SpooshOptions;
   };
 
   _types: {

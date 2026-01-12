@@ -1,6 +1,6 @@
 import type { HttpMethod } from "../types/common.types";
 import type { AnyRequestOptions } from "../types/request.types";
-import type { EnlaceResponse } from "../types/response.types";
+import type { SpooshResponse } from "../types/response.types";
 import type {
   OperationState,
   OperationType,
@@ -19,11 +19,11 @@ export type OperationController<TData = unknown, TError = unknown> = {
   execute: (
     options?: AnyRequestOptions,
     executeOptions?: ExecuteOptions
-  ) => Promise<EnlaceResponse<TData, TError>>;
+  ) => Promise<SpooshResponse<TData, TError>>;
   getState: () => OperationState<TData, TError>;
   subscribe: (callback: () => void) => () => void;
   abort: () => void;
-  refetch: () => Promise<EnlaceResponse<TData, TError>>;
+  refetch: () => Promise<SpooshResponse<TData, TError>>;
 
   /** Called once when hook first mounts */
   mount: () => void;
@@ -52,7 +52,7 @@ export type CreateOperationOptions<TData, TError> = {
   pluginExecutor: PluginExecutor;
   fetchFn: (
     options: AnyRequestOptions
-  ) => Promise<EnlaceResponse<TData, TError>>;
+  ) => Promise<SpooshResponse<TData, TError>>;
 
   /** Unique identifier for the hook instance. Persists across queryKey changes. */
   hookId?: string;
@@ -139,7 +139,7 @@ export function createOperationController<TData, TError>(
     async execute(
       opts?: AnyRequestOptions,
       executeOptions?: ExecuteOptions
-    ): Promise<EnlaceResponse<TData, TError>> {
+    ): Promise<SpooshResponse<TData, TError>> {
       const { force = false } = executeOptions ?? {};
 
       if (!isFirstExecute) {
@@ -153,7 +153,7 @@ export function createOperationController<TData, TError>(
         context.forceRefetch = true;
       }
 
-      const coreFetch = async (): Promise<EnlaceResponse<TData, TError>> => {
+      const coreFetch = async (): Promise<SpooshResponse<TData, TError>> => {
         const cached = stateManager.getCache<TData, TError>(queryKey);
 
         abortController = new AbortController();
@@ -166,7 +166,7 @@ export function createOperationController<TData, TError>(
         });
 
         const fetchPromise = (async (): Promise<
-          EnlaceResponse<TData, TError>
+          SpooshResponse<TData, TError>
         > => {
           try {
             const response = await fetchFn(context.requestOptions);
@@ -190,7 +190,7 @@ export function createOperationController<TData, TError>(
 
             return response;
           } catch (err) {
-            const errorResponse: EnlaceResponse<TData, TError> = {
+            const errorResponse: SpooshResponse<TData, TError> = {
               status: 0,
               error: err as TError,
               data: undefined,

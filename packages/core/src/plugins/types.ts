@@ -1,6 +1,6 @@
 import type { HttpMethod } from "../types/common.types";
 import type { AnyRequestOptions } from "../types/request.types";
-import type { EnlaceResponse } from "../types/response.types";
+import type { SpooshResponse } from "../types/response.types";
 import type { EventEmitter } from "../events/emitter";
 import type { StateManager } from "../state/manager";
 
@@ -48,7 +48,7 @@ export type PluginContext<TData = unknown, TError = unknown> = {
 
   requestOptions: AnyRequestOptions;
   state: OperationState<TData, TError>;
-  response?: EnlaceResponse<TData, TError>;
+  response?: SpooshResponse<TData, TError>;
   metadata: Map<string, unknown>;
 
   abort: () => void;
@@ -102,8 +102,8 @@ export type PluginContextInput<TData = unknown, TError = unknown> = Omit<
  */
 export type PluginMiddleware<TData = unknown, TError = unknown> = (
   context: PluginContext<TData, TError>,
-  next: () => Promise<EnlaceResponse<TData, TError>>
-) => Promise<EnlaceResponse<TData, TError>>;
+  next: () => Promise<SpooshResponse<TData, TError>>
+) => Promise<SpooshResponse<TData, TError>>;
 
 export type PluginHandler<TData = unknown, TError = unknown> = (
   context: PluginContext<TData, TError>
@@ -120,7 +120,7 @@ export type PluginUpdateHandler<TData = unknown, TError = unknown> = (
  */
 export type PluginResponseHandler<TData = unknown, TError = unknown> = (
   context: PluginContext<TData, TError>,
-  response: EnlaceResponse<TData, TError>
+  response: SpooshResponse<TData, TError>
 ) => void | Promise<void>;
 
 export type PluginLifecycle<TData = unknown, TError = unknown> = {
@@ -141,17 +141,17 @@ export type PluginLifecycle<TData = unknown, TError = unknown> = {
  * @example
  * ```ts
  * // Plugin with read options only
- * EnlacePlugin<{ readOptions: MyReadOptions }>
+ * SpooshPlugin<{ readOptions: MyReadOptions }>
  *
  * // Plugin with read/write options and results
- * EnlacePlugin<{
+ * SpooshPlugin<{
  *   readOptions: MyReadOptions;
  *   writeOptions: MyWriteOptions;
  *   readResult: MyReadResult;
  * }>
  *
  * // Plugin with instance-level API
- * EnlacePlugin<{
+ * SpooshPlugin<{
  *   instanceApi: { prefetch: (selector: Selector) => Promise<void> };
  * }>
  * ```
@@ -166,7 +166,7 @@ export type PluginTypeConfig = {
 };
 
 /**
- * Base interface for Enlace plugins.
+ * Base interface for Spoosh plugins.
  *
  * Plugins can implement:
  * - `middleware`: Wraps the fetch flow for full control (intercept, retry, transform)
@@ -178,7 +178,7 @@ export type PluginTypeConfig = {
  *
  * @example
  * ```ts
- * function myPlugin(): EnlacePlugin<{
+ * function myPlugin(): SpooshPlugin<{
  *   readOptions: { cacheTime: number };
  *   readResult: { isFromCache: boolean };
  * }> {
@@ -202,7 +202,7 @@ export type PluginTypeConfig = {
  * }
  * ```
  */
-export interface EnlacePlugin<T extends PluginTypeConfig = PluginTypeConfig> {
+export interface SpooshPlugin<T extends PluginTypeConfig = PluginTypeConfig> {
   name: string;
   operations: OperationType[];
 
@@ -219,7 +219,7 @@ export interface EnlacePlugin<T extends PluginTypeConfig = PluginTypeConfig> {
   exports?: (context: PluginContext) => object;
 
   /**
-   * Expose functions/properties on the framework adapter return value (e.g., createReactEnlace).
+   * Expose functions/properties on the framework adapter return value (e.g., createReactSpoosh).
    * Unlike `exports`, these are accessible directly from the instance, not just within plugin context.
    *
    * @example
@@ -260,8 +260,8 @@ export type PluginFactory<
   TConfig = void,
   TTypes extends PluginTypeConfig = PluginTypeConfig,
 > = TConfig extends void
-  ? () => EnlacePlugin<TTypes>
-  : (config?: TConfig) => EnlacePlugin<TTypes>;
+  ? () => SpooshPlugin<TTypes>
+  : (config?: TConfig) => SpooshPlugin<TTypes>;
 
 /**
  * Marker type for callbacks that need TData/TError from useRead/useWrite.
@@ -322,7 +322,7 @@ export type ResolverContext<
  * @example
  * ```ts
  * // In your plugin's types file:
- * declare module 'enlace' {
+ * declare module '@spoosh/core' {
  *   interface PluginResolvers<TContext> {
  *     // Access schema
  *     mySchemaCallback: MyFn<TContext['schema']> | undefined;
@@ -353,7 +353,7 @@ export interface PluginResolvers<TContext extends ResolverContext> {
  * @example
  * ```ts
  * // In your plugin's types file:
- * declare module 'enlace' {
+ * declare module '@spoosh/core' {
  *   interface PluginExportsRegistry {
  *     "my-plugin": { myMethod: () => void }
  *   }
@@ -372,7 +372,7 @@ export interface PluginExportsRegistry {}
  * @example
  * ```ts
  * // In your plugin's types file:
- * declare module 'enlace' {
+ * declare module '@spoosh/core' {
  *   interface InstanceApiResolvers<TSchema> {
  *     myFunction: MyFn<TSchema>;
  *   }
@@ -411,8 +411,8 @@ export type InstancePluginExecutor = {
   executeMiddleware: <TData, TError>(
     operationType: OperationType,
     context: PluginContext<TData, TError>,
-    coreFetch: () => Promise<EnlaceResponse<TData, TError>>
-  ) => Promise<EnlaceResponse<TData, TError>>;
+    coreFetch: () => Promise<SpooshResponse<TData, TError>>
+  ) => Promise<SpooshResponse<TData, TError>>;
 
   createContext: <TData, TError>(
     input: PluginContextInput<TData, TError>
@@ -421,7 +421,7 @@ export type InstancePluginExecutor = {
 
 /**
  * Context provided to plugin's instanceApi function.
- * Used for creating framework-agnostic APIs exposed on the Enlace instance.
+ * Used for creating framework-agnostic APIs exposed on the Spoosh instance.
  */
 export type InstanceApiContext<TApi = unknown> = {
   api: TApi;

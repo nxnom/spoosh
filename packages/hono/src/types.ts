@@ -3,7 +3,7 @@ import type {
   EndpointWithQuery,
   EndpointWithFormData,
   EndpointDefinition,
-} from "enlace";
+} from "@spoosh/core";
 import type { Hono } from "hono";
 import type { HonoBase } from "hono/hono-base";
 
@@ -31,7 +31,7 @@ type ExtractHonoFormData<T> = T extends { input: { form: infer F } }
     : F
   : never;
 
-type HonoEndpointToEnlace<T> =
+type HonoEndpointToSpoosh<T> =
   IsNever<ExtractHonoFormData<T>> extends false
     ? EndpointWithFormData<ExtractHonoOutput<T>, ExtractHonoFormData<T>>
     : IsNever<ExtractHonoQuery<T>> extends false
@@ -49,20 +49,20 @@ type HonoEndpointToEnlace<T> =
 type TransformMethods<T> = {
   [K in keyof T as K extends HonoSchemaMethod
     ? K
-    : never]: HonoEndpointToEnlace<T[K]>;
+    : never]: HonoEndpointToSpoosh<T[K]>;
 };
 
 type TransformSegment<S extends string> = S extends `:${string}` ? "_" : S;
 
-type PathToEnlace<
+type PathToSpoosh<
   Path extends string,
   S,
   Original extends string = Path,
 > = Path extends `/${infer P}`
-  ? PathToEnlace<P, S, Original>
+  ? PathToSpoosh<P, S, Original>
   : Path extends `${infer Head}/${infer Rest}`
     ? {
-        [K in TransformSegment<Head>]: PathToEnlace<Rest, S, Original>;
+        [K in TransformSegment<Head>]: PathToSpoosh<Rest, S, Original>;
       }
     : {
         [K in TransformSegment<
@@ -87,15 +87,15 @@ type ExtractSchemaFromHono<T> =
       ? S
       : never;
 
-type SchemaToEnlace<S> =
+type SchemaToSpoosh<S> =
   S extends Record<infer K, unknown>
     ? K extends string
-      ? PathToEnlace<K, S>
+      ? PathToSpoosh<K, S>
       : never
     : never;
 
 /**
- * Transforms Hono's AppType (from `typeof app`) into Enlace's ApiSchema format.
+ * Transforms Hono's AppType (from `typeof app`) into Spoosh's ApiSchema format.
  *
  * @example
  * ```typescript
@@ -108,15 +108,15 @@ type SchemaToEnlace<S> =
  *
  * export type AppType = typeof app;
  *
- * // Client (Enlace)
- * import type { HonoToEnlace } from 'enlace-hono';
- * type ApiSchema = HonoToEnlace<AppType>;
+ * // Client (Spoosh)
+ * import type { HonoToSpoosh } from '@spoosh/hono';
+ * type ApiSchema = HonoToSpoosh<AppType>;
  *
- * const client = enlace<ApiSchema['api']>('http://localhost:3000/api');
+ * const client = spoosh<ApiSchema['api']>('http://localhost:3000/api');
  * const posts = await client.posts.get();       // typed as { id, title }[]
  * const post = await client.posts['123'].get(); // typed as { id }
  * ```
  */
-export type HonoToEnlace<T> = UnionToIntersection<
-  SchemaToEnlace<ExtractSchemaFromHono<T>>
+export type HonoToSpoosh<T> = UnionToIntersection<
+  SchemaToSpoosh<ExtractSchemaFromHono<T>>
 >;

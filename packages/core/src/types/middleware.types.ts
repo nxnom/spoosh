@@ -1,6 +1,6 @@
 import type { HttpMethod } from "./common.types";
-import type { AnyRequestOptions, EnlaceOptions } from "./request.types";
-import type { EnlaceOptionsExtra, EnlaceResponse } from "./response.types";
+import type { AnyRequestOptions, SpooshOptions } from "./request.types";
+import type { SpooshOptionsExtra, SpooshResponse } from "./response.types";
 
 export type MiddlewarePhase = "before" | "after";
 
@@ -8,10 +8,10 @@ export type MiddlewareContext<TData = unknown, TError = unknown> = {
   baseUrl: string;
   path: string[];
   method: HttpMethod;
-  defaultOptions: EnlaceOptions & EnlaceOptionsExtra;
+  defaultOptions: SpooshOptions & SpooshOptionsExtra;
   requestOptions?: AnyRequestOptions;
   fetchInit?: RequestInit;
-  response?: EnlaceResponse<TData, TError>;
+  response?: SpooshResponse<TData, TError>;
   metadata: Record<string, unknown>;
 };
 
@@ -21,7 +21,7 @@ export type MiddlewareHandler<TData = unknown, TError = unknown> = (
   | MiddlewareContext<TData, TError>
   | Promise<MiddlewareContext<TData, TError>>;
 
-export type EnlaceMiddleware<TData = unknown, TError = unknown> = {
+export type SpooshMiddleware<TData = unknown, TError = unknown> = {
   name: string;
   phase: MiddlewarePhase;
   handler: MiddlewareHandler<TData, TError>;

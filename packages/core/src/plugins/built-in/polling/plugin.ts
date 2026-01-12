@@ -1,4 +1,4 @@
-import type { EnlacePlugin, PluginContext } from "../../types";
+import type { SpooshPlugin, PluginContext } from "../../types";
 import type {
   PollingReadOptions,
   PollingWriteOptions,
@@ -31,7 +31,7 @@ import type {
  * });
  * ```
  */
-export function pollingPlugin(): EnlacePlugin<{
+export function pollingPlugin(): SpooshPlugin<{
   readOptions: PollingReadOptions;
   writeOptions: PollingWriteOptions;
   infiniteReadOptions: PollingInfiniteReadOptions;
@@ -83,7 +83,7 @@ export function pollingPlugin(): EnlacePlugin<{
   };
 
   return {
-    name: "enlace:polling",
+    name: "spoosh:polling",
     operations: ["read", "infiniteRead"],
 
     onResponse(context) {

@@ -1,10 +1,10 @@
 import type {
-  EnlacePlugin,
-  EnlaceResponse,
-  EnlaceClient,
+  SpooshPlugin,
+  SpooshResponse,
+  SpooshClient,
   QueryOnlyClient,
   MutationOnlyClient,
-  EnlaceOptions,
+  SpooshOptions,
   MergePluginResults,
   MethodOptionsMap,
   CoreRequestOptionsBase,
@@ -13,7 +13,7 @@ import type {
   ResolverContext,
   PluginTypeConfig,
   TagOptions,
-} from "enlace";
+} from "@spoosh/core";
 
 type QueryRequestOptions = CoreRequestOptionsBase;
 
@@ -24,17 +24,17 @@ export type ReactOptionsMap = MethodOptionsMap<
   MutationRequestOptions
 >;
 
-export type ApiClient<TSchema> = EnlaceClient<
+export type ApiClient<TSchema> = SpooshClient<
   TSchema,
   unknown,
   ReactOptionsMap
 >;
 
 export type PluginHooksConfig<
-  TPlugins extends readonly EnlacePlugin<PluginTypeConfig>[],
+  TPlugins extends readonly SpooshPlugin<PluginTypeConfig>[],
 > = {
   baseUrl: string;
-  defaultOptions?: EnlaceOptions;
+  defaultOptions?: SpooshOptions;
   plugins: TPlugins;
 };
 
@@ -55,11 +55,11 @@ export type BaseReadResult<TData, TError> = {
   data: TData | undefined;
   error: TError | undefined;
   abort: () => void;
-  refetch: () => Promise<EnlaceResponse<TData, TError>>;
+  refetch: () => Promise<SpooshResponse<TData, TError>>;
 };
 
 export type BaseWriteResult<TData, TError, TOptions> = {
-  trigger: (options?: TOptions) => Promise<EnlaceResponse<TData, TError>>;
+  trigger: (options?: TOptions) => Promise<SpooshResponse<TData, TError>>;
   loading: boolean;
   data: TData | undefined;
   error: TError | undefined;
@@ -107,14 +107,14 @@ export type WriteResponseInputFields<
 export type UseReadResult<
   TData,
   TError,
-  TPlugins extends readonly EnlacePlugin<PluginTypeConfig>[],
+  TPlugins extends readonly SpooshPlugin<PluginTypeConfig>[],
 > = BaseReadResult<TData, TError> & MergePluginResults<TPlugins>["read"];
 
 export type UseWriteResult<
   TData,
   TError,
   TOptions,
-  TPlugins extends readonly EnlacePlugin<PluginTypeConfig>[],
+  TPlugins extends readonly SpooshPlugin<PluginTypeConfig>[],
 > = BaseWriteResult<TData, TError, TOptions> &
   MergePluginResults<TPlugins>["write"];
 
@@ -270,7 +270,7 @@ export type UseInfiniteReadResult<
   TData,
   TError,
   TItem,
-  TPlugins extends readonly EnlacePlugin<PluginTypeConfig>[],
+  TPlugins extends readonly SpooshPlugin<PluginTypeConfig>[],
 > = BaseInfiniteReadResult<TData, TError, TItem> &
   MergePluginResults<TPlugins>["read"];
 

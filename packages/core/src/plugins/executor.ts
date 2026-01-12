@@ -1,11 +1,11 @@
 import type {
-  EnlacePlugin,
+  SpooshPlugin,
   OperationType,
   PluginAccessor,
   PluginContext,
   PluginContextInput,
 } from "./types";
-import type { EnlaceResponse } from "../types/response.types";
+import type { SpooshResponse } from "../types/response.types";
 
 export type PluginExecutor = {
   /** Execute lifecycle hooks for onMount or onUnmount */
@@ -26,10 +26,10 @@ export type PluginExecutor = {
   executeMiddleware: <TData, TError>(
     operationType: OperationType,
     context: PluginContext<TData, TError>,
-    coreFetch: () => Promise<EnlaceResponse<TData, TError>>
-  ) => Promise<EnlaceResponse<TData, TError>>;
+    coreFetch: () => Promise<SpooshResponse<TData, TError>>
+  ) => Promise<SpooshResponse<TData, TError>>;
 
-  getPlugins: () => readonly EnlacePlugin[];
+  getPlugins: () => readonly SpooshPlugin[];
 
   /** Creates a full PluginContext with plugins accessor injected */
   createContext: <TData, TError>(
@@ -37,7 +37,7 @@ export type PluginExecutor = {
   ) => PluginContext<TData, TError>;
 };
 
-function validateDependencies(plugins: EnlacePlugin[]): void {
+function validateDependencies(plugins: SpooshPlugin[]): void {
   const names = new Set(plugins.map((p) => p.name));
 
   for (const plugin of plugins) {
@@ -51,13 +51,13 @@ function validateDependencies(plugins: EnlacePlugin[]): void {
   }
 }
 
-function sortByDependencies(plugins: EnlacePlugin[]): EnlacePlugin[] {
-  const sorted: EnlacePlugin[] = [];
+function sortByDependencies(plugins: SpooshPlugin[]): SpooshPlugin[] {
+  const sorted: SpooshPlugin[] = [];
   const visited = new Set<string>();
   const visiting = new Set<string>();
   const pluginMap = new Map(plugins.map((p) => [p.name, p]));
 
-  function visit(plugin: EnlacePlugin): void {
+  function visit(plugin: SpooshPlugin): void {
     if (visited.has(plugin.name)) return;
 
     if (visiting.has(plugin.name)) {
@@ -86,7 +86,7 @@ function sortByDependencies(plugins: EnlacePlugin[]): EnlacePlugin[] {
 }
 
 export function createPluginExecutor(
-  initialPlugins: EnlacePlugin[] = []
+  initialPlugins: SpooshPlugin[] = []
 ): PluginExecutor {
   validateDependencies(initialPlugins);
   const plugins = sortByDependencies(initialPlugins);
@@ -149,8 +149,8 @@ export function createPluginExecutor(
     async executeMiddleware<TData, TError>(
       operationType: OperationType,
       context: PluginContext<TData, TError>,
-      coreFetch: () => Promise<EnlaceResponse<TData, TError>>
-    ): Promise<EnlaceResponse<TData, TError>> {
+      coreFetch: () => Promise<SpooshResponse<TData, TError>>
+    ): Promise<SpooshResponse<TData, TError>> {
       const applicablePlugins = plugins.filter((p) =>
         p.operations.includes(operationType)
       );
@@ -159,20 +159,20 @@ export function createPluginExecutor(
         .filter((p) => p.middleware)
         .map((p) => p.middleware!);
 
-      let response: EnlaceResponse<TData, TError>;
+      let response: SpooshResponse<TData, TError>;
 
       if (middlewares.length === 0) {
         response = await coreFetch();
       } else {
-        type NextFn = () => Promise<EnlaceResponse<TData, TError>>;
+        type NextFn = () => Promise<SpooshResponse<TData, TError>>;
 
         const chain: NextFn = middlewares.reduceRight<NextFn>(
           (next, middleware) => {
             return () =>
               middleware(
                 context as PluginContext<unknown, unknown>,
-                next as () => Promise<EnlaceResponse<unknown, unknown>>
-              ) as Promise<EnlaceResponse<TData, TError>>;
+                next as () => Promise<SpooshResponse<unknown, unknown>>
+              ) as Promise<SpooshResponse<TData, TError>>;
           },
           coreFetch
         );
@@ -184,7 +184,7 @@ export function createPluginExecutor(
         if (plugin.onResponse) {
           await plugin.onResponse(
             context as PluginContext<unknown, unknown>,
-            response as EnlaceResponse<unknown, unknown>
+            response as SpooshResponse<unknown, unknown>
           );
         }
       }

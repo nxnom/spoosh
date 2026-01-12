@@ -1,4 +1,4 @@
-import type { EnlacePlugin, PluginContext } from "../../types";
+import type { SpooshPlugin, PluginContext } from "../../types";
 import {
   createSelectorProxy,
   extractPathFromSelector,
@@ -80,7 +80,7 @@ function resolveInvalidateTags(
  * plugin exports API:
  *
  * ```ts
- * context.plugins.get("enlace:invalidation")?.setAutoInvalidateDefault("none");
+ * context.plugins.get("spoosh:invalidation")?.setAutoInvalidateDefault("none");
  * ```
  *
  * @param config - Plugin configuration
@@ -104,7 +104,7 @@ function resolveInvalidateTags(
  */
 export function invalidationPlugin(
   config: InvalidationPluginConfig = {}
-): EnlacePlugin<{
+): SpooshPlugin<{
   readOptions: InvalidationReadOptions;
   writeOptions: InvalidationWriteOptions;
   infiniteReadOptions: InvalidationInfiniteReadOptions;
@@ -114,7 +114,7 @@ export function invalidationPlugin(
   const { autoInvalidate: defaultAutoInvalidate = "all" } = config;
 
   return {
-    name: "enlace:invalidation",
+    name: "spoosh:invalidation",
     operations: ["write"],
 
     exports(context): InvalidationPluginExports {

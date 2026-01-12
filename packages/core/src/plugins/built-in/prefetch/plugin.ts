@@ -1,9 +1,9 @@
 import type {
-  EnlacePlugin,
+  SpooshPlugin,
   InstanceApiContext,
   OperationState,
 } from "../../types";
-import type { EnlaceResponse } from "../../../types/response.types";
+import type { SpooshResponse } from "../../../types/response.types";
 import { createSelectorProxy } from "../../../proxy/selector-proxy";
 import { resolvePath, resolveTags } from "../../../utils/path-utils";
 import { createInitialState } from "../../../state/manager";
@@ -27,7 +27,7 @@ import type {
  * ```ts
  * // Setup
  * const plugins = [prefetchPlugin(), cachePlugin(), retryPlugin()];
- * const { prefetch } = createReactEnlace(enlace);
+ * const { prefetch } = createReactSpoosh(spoosh);
  *
  * // Basic prefetch
  * await prefetch((api) => api.posts.$get());
@@ -53,11 +53,11 @@ import type {
 export function prefetchPlugin(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _config: PrefetchPluginConfig = {}
-): EnlacePlugin<{
+): SpooshPlugin<{
   instanceApi: PrefetchInstanceApi;
 }> {
   return {
-    name: "enlace:prefetch",
+    name: "spoosh:prefetch",
     operations: [],
 
     instanceApi(context: InstanceApiContext) {
@@ -66,7 +66,7 @@ export function prefetchPlugin(
       const prefetch = async <TData = unknown, TError = unknown>(
         selector: (api: unknown) => unknown,
         options: PrefetchOptions = {}
-      ): Promise<EnlaceResponse<TData, TError>> => {
+      ): Promise<SpooshResponse<TData, TError>> => {
         const { tags, additionalTags } = options;
 
         let callPath: string[] = [];
@@ -123,7 +123,7 @@ export function prefetchPlugin(
           eventEmitter,
         });
 
-        const coreFetch = async (): Promise<EnlaceResponse<TData, TError>> => {
+        const coreFetch = async (): Promise<SpooshResponse<TData, TError>> => {
           const abortController = new AbortController();
           pluginContext.requestOptions.signal = abortController.signal;
 
@@ -155,7 +155,7 @@ export function prefetchPlugin(
 
             const method = (current as Record<string, unknown>)[callMethod] as (
               o?: unknown
-            ) => Promise<EnlaceResponse<TData, TError>>;
+            ) => Promise<SpooshResponse<TData, TError>>;
 
             const mergedOptions = {
               ...(callOptions as object),
@@ -183,7 +183,7 @@ export function prefetchPlugin(
 
             return response;
           } catch (err) {
-            const errorResponse: EnlaceResponse<TData, TError> = {
+            const errorResponse: SpooshResponse<TData, TError> = {
               status: 0,
               error: err as TError,
               data: undefined,

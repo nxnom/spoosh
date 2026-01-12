@@ -1,5 +1,5 @@
 import type { EventEmitter } from "../../../events/emitter";
-import type { EnlacePlugin } from "../../types";
+import type { SpooshPlugin } from "../../types";
 import type {
   RefetchPluginConfig,
   RefetchReadOptions,
@@ -35,7 +35,7 @@ type HookListenerEntry = {
  * });
  * ```
  */
-export function refetchPlugin(config: RefetchPluginConfig = {}): EnlacePlugin<{
+export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
   readOptions: RefetchReadOptions;
   writeOptions: RefetchWriteOptions;
   infiniteReadOptions: RefetchInfiniteReadOptions;
@@ -144,7 +144,7 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): EnlacePlugin<{
   };
 
   return {
-    name: "enlace:refetch",
+    name: "spoosh:refetch",
     operations: ["read", "infiniteRead"],
 
     lifecycle: {

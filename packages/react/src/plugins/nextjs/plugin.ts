@@ -1,4 +1,4 @@
-import type { EnlacePlugin } from "enlace";
+import type { SpooshPlugin } from "@spoosh/core";
 import type {
   NextjsPluginConfig,
   NextjsReadOptions,
@@ -8,7 +8,7 @@ import type {
   NextjsWriteResult,
 } from "./types";
 
-export function nextjsPlugin(config: NextjsPluginConfig = {}): EnlacePlugin<{
+export function nextjsPlugin(config: NextjsPluginConfig = {}): SpooshPlugin<{
   readOptions: NextjsReadOptions;
   writeOptions: NextjsWriteOptions;
   infiniteReadOptions: NextjsInfiniteReadOptions;
@@ -18,7 +18,7 @@ export function nextjsPlugin(config: NextjsPluginConfig = {}): EnlacePlugin<{
   const { serverRevalidator, skipServerRevalidation = false } = config;
 
   return {
-    name: "enlace:nextjs",
+    name: "spoosh:nextjs",
     operations: ["write"],
 
     middleware: async (context, next) => {

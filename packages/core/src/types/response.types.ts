@@ -1,4 +1,4 @@
-import type { EnlaceMiddleware } from "./middleware.types";
+import type { SpooshMiddleware } from "./middleware.types";
 
 type QueryField<TQuery> = [TQuery] extends [never] ? object : { query: TQuery };
 
@@ -31,7 +31,7 @@ type InputFieldWrapper<TQuery, TBody, TFormData, TParamNames extends string> = [
   ? object
   : { input: InputFields<TQuery, TBody, TFormData, TParamNames> };
 
-export type EnlaceResponse<
+export type SpooshResponse<
   TData,
   TError,
   TRequestOptions = unknown,
@@ -57,6 +57,6 @@ export type EnlaceResponse<
       readonly __requestOptions?: TRequestOptions;
     } & InputFieldWrapper<TQuery, TBody, TFormData, TParamNames>);
 
-export type EnlaceOptionsExtra<TData = unknown, TError = unknown> = {
-  middlewares?: EnlaceMiddleware<TData, TError>[];
+export type SpooshOptionsExtra<TData = unknown, TError = unknown> = {
+  middlewares?: SpooshMiddleware<TData, TError>[];
 };

@@ -1,12 +1,12 @@
 import { useRef, useEffect, useSyncExternalStore, useId } from "react";
 import {
-  type EnlaceResponse,
+  type SpooshResponse,
   type PluginExecutor,
   type StateManager,
   type EventEmitter,
   type MergePluginOptions,
   type MergePluginResults,
-  type EnlacePlugin,
+  type SpooshPlugin,
   type PluginTypeConfig,
   type PluginContext,
   type InfiniteRequestOptions,
@@ -15,7 +15,7 @@ import {
   createSelectorProxy,
   resolvePath,
   resolveTags,
-} from "enlace";
+} from "@spoosh/core";
 import type {
   BaseInfiniteReadOptions,
   BaseInfiniteReadResult,
@@ -33,7 +33,7 @@ export type CreateUseInfiniteReadOptions = {
 export function createUseInfiniteRead<
   TSchema,
   TDefaultError,
-  TPlugins extends readonly EnlacePlugin<PluginTypeConfig>[],
+  TPlugins extends readonly SpooshPlugin<PluginTypeConfig>[],
 >(options: CreateUseInfiniteReadOptions) {
   const { api, stateManager, eventEmitter, pluginExecutor } = options;
 
@@ -48,7 +48,7 @@ export function createUseInfiniteRead<
   >(
     readFn: (
       api: InfiniteReadApiClient<TSchema, TDefaultError>
-    ) => Promise<EnlaceResponse<TData, TError>>,
+    ) => Promise<SpooshResponse<TData, TError>>,
     readOptions: BaseInfiniteReadOptions<TData, TItem, TRequest> &
       PluginOptions["infiniteRead"]
   ): BaseInfiniteReadResult<TData, TError, TItem> & PluginResults["read"] {
@@ -173,7 +173,7 @@ export function createUseInfiniteRead<
 
             const method = (current as Record<string, unknown>)[
               capturedCall.method
-            ] as (opts?: unknown) => Promise<EnlaceResponse<TData, TError>>;
+            ] as (opts?: unknown) => Promise<SpooshResponse<TData, TError>>;
 
             const fetchOptions = {
               ...(capturedCall.options as object),

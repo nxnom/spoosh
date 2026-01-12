@@ -2,7 +2,7 @@ import type { PluginContext, OperationState } from "../plugins/types";
 import type { PluginExecutor } from "../plugins/executor";
 import type { StateManager } from "../state/manager";
 import type { EventEmitter } from "../events/emitter";
-import type { EnlaceResponse } from "../types/response.types";
+import type { SpooshResponse } from "../types/response.types";
 import type { HttpMethod } from "../types/common.types";
 
 export type InfiniteRequestOptions = {
@@ -65,7 +65,7 @@ export type CreateInfiniteReadOptions<TData, TItem, TError, TRequest> = {
   fetchFn: (
     options: InfiniteRequestOptions,
     signal: AbortSignal
-  ) => Promise<EnlaceResponse<TData, TError>>;
+  ) => Promise<SpooshResponse<TData, TError>>;
 
   /** Unique identifier for the hook instance. Persists across queryKey changes. */
   hookId?: string;
@@ -351,9 +351,9 @@ export function createInfiniteReadController<
 
     const context = createContext(pageKey);
 
-    const coreFetch = async (): Promise<EnlaceResponse<TData, TError>> => {
+    const coreFetch = async (): Promise<SpooshResponse<TData, TError>> => {
       const fetchPromise = (async (): Promise<
-        EnlaceResponse<TData, TError>
+        SpooshResponse<TData, TError>
       > => {
         try {
           const response = await fetchFn(mergedRequest, signal);
@@ -364,7 +364,7 @@ export function createInfiniteReadController<
               status: 0,
               data: undefined,
               aborted: true,
-            } as EnlaceResponse<TData, TError>;
+            } as SpooshResponse<TData, TError>;
           }
 
           if (response.error) {
@@ -414,10 +414,10 @@ export function createInfiniteReadController<
               status: 0,
               data: undefined,
               aborted: true,
-            } as EnlaceResponse<TData, TError>;
+            } as SpooshResponse<TData, TError>;
           }
 
-          const errorResponse: EnlaceResponse<TData, TError> = {
+          const errorResponse: SpooshResponse<TData, TError> = {
             status: 0,
             error: err as TError,
             data: undefined,

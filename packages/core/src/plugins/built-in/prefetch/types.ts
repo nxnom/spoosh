@@ -1,4 +1,4 @@
-import type { EnlaceResponse } from "../../../types/response.types";
+import type { SpooshResponse } from "../../../types/response.types";
 import type { QuerySchemaHelper } from "../../schema-helper";
 import type { TagOptions } from "../../../utils/path-utils";
 
@@ -14,7 +14,7 @@ export interface PrefetchOptions extends TagOptions {
 
 type PrefetchCallbackFn<TSchema> = (
   api: QuerySchemaHelper<TSchema>
-) => Promise<EnlaceResponse<unknown, unknown>>;
+) => Promise<SpooshResponse<unknown, unknown>>;
 
 export type PrefetchFn<TSchema, TPluginOptions = object> = <
   TData = unknown,
@@ -22,7 +22,7 @@ export type PrefetchFn<TSchema, TPluginOptions = object> = <
 >(
   selector: PrefetchCallbackFn<TSchema>,
   options?: PrefetchOptions & TPluginOptions
-) => Promise<EnlaceResponse<TData, TError>>;
+) => Promise<SpooshResponse<TData, TError>>;
 
 export interface PrefetchInstanceApi {
   /**

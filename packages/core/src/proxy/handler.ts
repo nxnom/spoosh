@@ -1,7 +1,7 @@
 import { executeFetch } from "../fetch";
 import type {
   AnyRequestOptions,
-  EnlaceOptions,
+  SpooshOptions,
   FetchExecutor,
   HttpMethod,
 } from "../types";
@@ -20,7 +20,7 @@ const HTTP_METHODS: Record<string, HttpMethod> = {
  * This proxy intercepts property access and function calls to build URL paths,
  * then executes fetch requests when an HTTP method ($get, $post, etc.) is called.
  *
- * Used internally by `createClient` and `createEnlace` to create typed API clients.
+ * Used internally by `createClient` and `createSpoosh` to create typed API clients.
  *
  * @param baseUrl - The base URL for all API requests
  * @param defaultOptions - Default options applied to every request
@@ -46,7 +46,7 @@ const HTTP_METHODS: Record<string, HttpMethod> = {
  */
 export function createProxyHandler<
   TSchema extends object,
-  TOptions = EnlaceOptions,
+  TOptions = SpooshOptions,
 >(
   baseUrl: string,
   defaultOptions: TOptions,

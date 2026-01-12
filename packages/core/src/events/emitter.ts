@@ -8,7 +8,7 @@ type EventCallback<T = unknown> = (payload: T) => void;
  * Third-party plugins can extend this via declaration merging:
  * @example
  * ```ts
- * declare module 'enlace' {
+ * declare module '@spoosh/core' {
  *   interface BuiltInEvents {
  *     "my-custom-event": MyPayloadType;
  *   }

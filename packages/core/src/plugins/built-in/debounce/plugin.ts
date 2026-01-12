@@ -1,4 +1,4 @@
-import type { EnlacePlugin } from "../../types";
+import type { SpooshPlugin } from "../../types";
 import type {
   DebounceReadOptions,
   DebounceInfiniteReadOptions,
@@ -55,7 +55,7 @@ function resolveDebounceMs(
  * );
  * ```
  */
-export function debouncePlugin(): EnlacePlugin<{
+export function debouncePlugin(): SpooshPlugin<{
   readOptions: DebounceReadOptions;
   writeOptions: DebounceWriteOptions;
   infiniteReadOptions: DebounceInfiniteReadOptions;
@@ -67,7 +67,7 @@ export function debouncePlugin(): EnlacePlugin<{
   const prevRequests = new Map<string, RequestOptionsSnapshot>();
 
   return {
-    name: "enlace:debounce",
+    name: "spoosh:debounce",
     operations: ["read", "infiniteRead"],
 
     middleware: async (context, next) => {

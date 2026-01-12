@@ -1,8 +1,8 @@
-export type { HonoToEnlace } from "./types";
+export type { HonoToSpoosh } from "./types";
 
 export type {
   Endpoint,
   EndpointWithQuery,
   EndpointWithFormData,
   EndpointDefinition,
-} from "enlace";
+} from "@spoosh/core";

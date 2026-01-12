@@ -1,5 +1,5 @@
-import type { EnlacePlugin } from "../../types";
-import type { EnlaceResponse } from "../../../types/response.types";
+import type { SpooshPlugin } from "../../types";
+import type { SpooshResponse } from "../../../types/response.types";
 import type {
   DeduplicationConfig,
   DeduplicationReadOptions,
@@ -12,7 +12,7 @@ import type {
 
 declare module "../../types" {
   interface PluginExportsRegistry {
-    "enlace:deduplication": {
+    "spoosh:deduplication": {
       getConfig: () => { read: DedupeMode; write: DedupeMode };
     };
   }
@@ -46,7 +46,7 @@ declare module "../../types" {
  */
 export function deduplicationPlugin(
   config?: DeduplicationConfig
-): EnlacePlugin<{
+): SpooshPlugin<{
   readOptions: DeduplicationReadOptions;
   writeOptions: DeduplicationWriteOptions;
   infiniteReadOptions: DeduplicationInfiniteReadOptions;
@@ -59,7 +59,7 @@ export function deduplicationPlugin(
   };
 
   return {
-    name: "enlace:deduplication",
+    name: "spoosh:deduplication",
     operations: ["read", "infiniteRead", "write"],
 
     middleware: async (context, next) => {
@@ -80,7 +80,7 @@ export function deduplicationPlugin(
 
         if (existingPromise) {
           return existingPromise as Promise<
-            EnlaceResponse<unknown, unknown>
+            SpooshResponse<unknown, unknown>
           > as ReturnType<typeof next>;
         }
       }

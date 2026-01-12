@@ -1,4 +1,4 @@
-import type { EnlacePlugin } from "../../types";
+import type { SpooshPlugin } from "../../types";
 import type {
   ThrottleReadOptions,
   ThrottleInfiniteReadOptions,
@@ -29,7 +29,7 @@ import type {
  * );
  * ```
  */
-export function throttlePlugin(): EnlacePlugin<{
+export function throttlePlugin(): SpooshPlugin<{
   readOptions: ThrottleReadOptions;
   writeOptions: ThrottleWriteOptions;
   infiniteReadOptions: ThrottleInfiniteReadOptions;
@@ -39,7 +39,7 @@ export function throttlePlugin(): EnlacePlugin<{
   const lastFetchTime = new Map<string, number>();
 
   return {
-    name: "enlace:throttle",
+    name: "spoosh:throttle",
     operations: ["read", "infiniteRead"],
 
     middleware: async (context, next) => {

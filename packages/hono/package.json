@@ -1,16 +1,16 @@
 {
-  "name": "enlace-hono",
+  "name": "@spoosh/hono",
   "version": "0.0.1-beta.3",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nxnom/enlace.git",
+    "url": "git+https://github.com/nxnom/spoosh.git",
     "directory": "packages/hono"
   },
   "bugs": {
-    "url": "https://github.com/nxnom/enlace/issues"
+    "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://github.com/nxnom/enlace/tree/main/packages/hono#readme",
+  "homepage": "https://github.com/nxnom/spoosh/tree/main/packages/hono#readme",
   "files": [
     "dist"
   ],
@@ -30,11 +30,11 @@
     "prepublishOnly": "npm run build && npm run typecheck && npm run lint"
   },
   "peerDependencies": {
-    "enlace": ">=0.0.1-beta.1",
+    "@spoosh/core": ">=0.0.1-beta.1",
     "hono": ">=4.0.0"
   },
   "devDependencies": {
-    "enlace": "workspace:*",
+    "@spoosh/core": "workspace:*",
     "hono": "^4.10.6"
   }
 }
