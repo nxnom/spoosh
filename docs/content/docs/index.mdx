@@ -1,16 +1,16 @@
 ---
 title: Introduction
-description: A type-safe API client framework with a powerful plugin system for React
+description: A type-safe API client with a powerful plugin system
 ---
 
-**Spoosh** is a lightweight, type-safe API client framework for React applications. It provides a clean, intuitive way to define API schemas and make HTTP requests with full TypeScript support.
+**Spoosh** is a lightweight, type-safe API client with a powerful plugin system. It provides a clean, intuitive way to define API schemas and make HTTP requests with full TypeScript support.
 
 ## Key Features
 
 - **Type-Safe Schema Definition** - Define your API once, get autocomplete and type checking everywhere
 - **Plugin System** - Extend functionality with caching, retry, polling, optimistic updates, and more
-- **React Hooks** - `useRead`, `useWrite`, and `useInfiniteRead` for seamless data fetching
-- **Framework Adapters** - First-class support for Hono with automatic type inference
+- **Framework Bindings** - Hooks for React, with more frameworks coming soon
+- **Server Adapters** - First-class support for Hono with automatic type inference
 - **Cache Invalidation** - Automatic tag-based cache invalidation after mutations
 - **Next.js Integration** - Server-side cache revalidation with App Router
 
@@ -39,7 +39,7 @@ const spoosh = createSpoosh<ApiSchema>({
   ],
 });
 
-// Export React hooks
+// Export hooks
 export const { useRead, useWrite } = createReactSpoosh(spoosh);
 ```
 
@@ -66,7 +66,7 @@ function UserList() {
 | Package | Description |
 | ------- | ----------- |
 | `@spoosh/core` | Core client and plugin system |
-| `@spoosh/react` | React hooks (`useRead`, `useWrite`, `useInfiniteRead`) |
+| `@spoosh/react` | React bindings (`useRead`, `useWrite`, `useInfiniteRead`) |
 | `@spoosh/hono` | Hono type adapter |
 | `@spoosh/openapi` | OpenAPI spec generator |
 

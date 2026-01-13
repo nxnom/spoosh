@@ -1,5 +1,6 @@
 {
   "title": "LLM",
+  "defaultOpen": true,
   "pages": [
     "[Docs List](/llms)",
     "[Full Docs](/llms-full)"

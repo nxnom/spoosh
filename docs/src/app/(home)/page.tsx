@@ -62,7 +62,7 @@ export default function HomePage() {
         </div>
 
         <p className="text-xl md:text-2xl text-fd-muted-foreground max-w-2xl mb-8">
-          A type-safe API client framework with a powerful plugin system for React
+          A type-safe API client with a powerful plugin system
         </p>
 
         <div className="flex flex-wrap gap-4 justify-center mb-12">
@@ -115,8 +115,8 @@ export default function HomePage() {
             />
 
             <FeatureCard
-              title="React Hooks"
-              description="useRead, useWrite, and useInfiniteRead hooks for seamless data fetching in React."
+              title="Framework Bindings"
+              description="useRead, useWrite, and useInfiniteRead hooks for seamless data fetching."
               icon={
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
