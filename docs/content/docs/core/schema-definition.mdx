@@ -1,0 +1,217 @@
+---
+title: Schema Definition
+description: Define type-safe API schemas with TypeScript
+---
+
+Spoosh uses TypeScript types to define your API structure. This gives you full autocomplete and type checking for all API calls.
+
+## Basic Schema
+
+Define your API schema as a nested type structure:
+
+```typescript
+import type { Endpoint, EndpointWithQuery, EndpointWithFormData } from "@spoosh/core";
+
+type User = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+type ApiSchema = {
+  users: {
+    $get: Endpoint<User[]>;
+    $post: Endpoint<User, { name: string; email: string }>;
+  };
+};
+```
+
+## Endpoint Types
+
+### Endpoint\<TData\>
+
+Simple endpoint that returns data:
+
+```typescript
+type ApiSchema = {
+  health: {
+    $get: Endpoint<{ status: string }>;
+  };
+};
+
+// Usage
+const { data } = await api.health.$get();
+// data: { status: string } | undefined
+```
+
+### Endpoint\<TData, TBody\>
+
+Endpoint with a request body:
+
+```typescript
+type ApiSchema = {
+  users: {
+    $post: Endpoint<User, { name: string; email: string }>;
+  };
+};
+
+// Usage
+const { data } = await api.users.$post({
+  body: { name: "John", email: "john@example.com" },
+});
+```
+
+### EndpointWithQuery\<TData, TQuery\>
+
+Endpoint with query parameters:
+
+```typescript
+type ApiSchema = {
+  search: {
+    $get: EndpointWithQuery<User[], { q: string; page?: number; limit?: number }>;
+  };
+};
+
+// Usage
+const { data } = await api.search.$get({
+  query: { q: "john", page: 1, limit: 10 },
+});
+```
+
+### EndpointWithFormData\<TData, TFormData\>
+
+Endpoint that accepts form data:
+
+```typescript
+type ApiSchema = {
+  upload: {
+    $post: EndpointWithFormData<{ url: string }, { file: File; description?: string }>;
+  };
+};
+
+// Usage
+const { data } = await api.upload.$post({
+  formData: { file: myFile, description: "Profile photo" },
+});
+```
+
+## Dynamic Path Segments
+
+Use `_` to define dynamic path segments:
+
+```typescript
+type ApiSchema = {
+  users: {
+    $get: Endpoint<User[]>;
+    _: {
+      $get: Endpoint<User>;
+      $put: Endpoint<User, Partial<User>>;
+      $delete: Endpoint<void>;
+    };
+  };
+};
+
+// Usage
+const { data: users } = await api.users.$get();           // GET /users
+const { data: user } = await api.users[123].$get();       // GET /users/123
+const { data } = await api.users[123].$put({ body: {} }); // PUT /users/123
+await api.users[123].$delete();                           // DELETE /users/123
+```
+
+### Nested Dynamic Segments
+
+```typescript
+type ApiSchema = {
+  users: {
+    _: {
+      posts: {
+        $get: Endpoint<Post[]>;
+        _: {
+          $get: Endpoint<Post>;
+        };
+      };
+    };
+  };
+};
+
+// Usage
+await api.users[1].posts.$get();        // GET /users/1/posts
+await api.users[1].posts[42].$get();    // GET /users/1/posts/42
+```
+
+### Typed Dynamic Params
+
+Use the function syntax for type-safe params:
+
+```typescript
+// Function syntax (recommended for type safety)
+const { data } = await api.users(":userId").$get({
+  params: { userId: "123" },
+});
+
+// Bracket syntax (works but no type inference)
+const { data } = await api.users[userId].$get();
+```
+
+## HTTP Methods
+
+Spoosh supports all common HTTP methods:
+
+| Method | Type | Description |
+| ------ | ---- | ----------- |
+| `$get` | `Endpoint` | GET request |
+| `$post` | `Endpoint` | POST request |
+| `$put` | `Endpoint` | PUT request |
+| `$patch` | `Endpoint` | PATCH request |
+| `$delete` | `Endpoint` | DELETE request |
+
+## Schema Organization
+
+For larger APIs, organize your schema into separate files:
+
+```typescript title="src/api/schema/users.ts"
+import type { Endpoint, EndpointWithQuery } from "@spoosh/core";
+
+export type UsersSchema = {
+  users: {
+    $get: EndpointWithQuery<User[], { page?: number }>;
+    $post: Endpoint<User, CreateUserBody>;
+    _: {
+      $get: Endpoint<User>;
+      $put: Endpoint<User, UpdateUserBody>;
+      $delete: Endpoint<void>;
+    };
+  };
+};
+```
+
+```typescript title="src/api/schema/posts.ts"
+import type { Endpoint } from "@spoosh/core";
+
+export type PostsSchema = {
+  posts: {
+    $get: Endpoint<Post[]>;
+    $post: Endpoint<Post, CreatePostBody>;
+  };
+};
+```
+
+```typescript title="src/api/schema/index.ts"
+import type { UsersSchema } from "./users";
+import type { PostsSchema } from "./posts";
+
+export type ApiSchema = UsersSchema & PostsSchema;
+```
+
+## Type Inference from Hono
+
+If you're using Hono on the server, you can automatically infer your schema:
+
+```typescript
+import type { HonoToSpoosh } from "@spoosh/hono";
+import type { AppType } from "./server";
+
+type ApiSchema = HonoToSpoosh<AppType>;
+```
+
+See the [Hono Integration](/docs/integrations/hono) guide for details.
