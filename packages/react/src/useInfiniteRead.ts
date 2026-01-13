@@ -200,6 +200,12 @@ export function createUseInfiniteRead<
       controller.getState
     );
 
+    const fetchingDirection = controller.getFetchingDirection();
+    const fetching = fetchingDirection !== null;
+    const fetchingNext = fetchingDirection === "next";
+    const fetchingPrev = fetchingDirection === "prev";
+    const loading = fetching && state.data === undefined;
+
     const lifecycleRef = useRef<{
       initialized: boolean;
       prevContext: PluginContext | null;
@@ -244,8 +250,9 @@ export function createUseInfiniteRead<
 
       if (enabled) {
         const currentState = controller.getState();
+        const isFetching = controller.getFetchingDirection() !== null;
 
-        if (currentState.data === undefined && !currentState.fetching) {
+        if (currentState.data === undefined && !isFetching) {
           controller.fetchNext();
         }
       }
@@ -261,10 +268,10 @@ export function createUseInfiniteRead<
     const result = {
       data: state.data,
       allResponses: state.allResponses,
-      loading: state.loading,
-      fetching: state.fetching,
-      fetchingNext: state.fetchingNext,
-      fetchingPrev: state.fetchingPrev,
+      loading,
+      fetching,
+      fetchingNext,
+      fetchingPrev,
       canFetchNext: state.canFetchNext,
       canFetchPrev: state.canFetchPrev,
       fetchNext: controller.fetchNext,

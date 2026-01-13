@@ -8,4 +8,5 @@ export type {
   CreateInfiniteReadOptions,
   InfiniteRequestOptions,
   PageContext,
+  FetchDirection,
 } from "./infinite-controller";

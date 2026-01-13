@@ -17,11 +17,9 @@ export type PageContext<TData, TRequest = InfiniteRequestOptions> = {
   request: TRequest;
 };
 
+export type FetchDirection = "next" | "prev";
+
 export type InfiniteReadState<TData, TItem, TError> = {
-  loading: boolean;
-  fetching: boolean;
-  fetchingNext: boolean;
-  fetchingPrev: boolean;
   data: TItem[] | undefined;
   allResponses: TData[] | undefined;
   allRequests: InfiniteRequestOptions[] | undefined;
@@ -32,6 +30,7 @@ export type InfiniteReadState<TData, TItem, TError> = {
 
 export type InfiniteReadController<TData, TItem, TError> = {
   getState: () => InfiniteReadState<TData, TItem, TError>;
+  getFetchingDirection: () => FetchDirection | null;
   subscribe: (callback: () => void) => () => void;
 
   fetchNext: () => Promise<void>;
@@ -70,8 +69,6 @@ export type CreateInfiniteReadOptions<TData, TItem, TError, TRequest> = {
   /** Unique identifier for the hook instance. Persists across queryKey changes. */
   hookId?: string;
 };
-
-type FetchDirection = "next" | "prev";
 
 function createTrackerKey(
   path: string[],
@@ -147,10 +144,6 @@ function createInitialInfiniteState<TData, TItem, TError>(): InfiniteReadState<
   TError
 > {
   return {
-    loading: true,
-    fetching: false,
-    fetchingNext: false,
-    fetchingPrev: false,
     data: undefined,
     allResponses: undefined,
     allRequests: undefined,
@@ -236,10 +229,6 @@ export function createInfiniteReadController<
     if (pageKeys.length === 0) {
       return {
         ...createInitialInfiniteState<TData, TItem, TError>(),
-        loading: fetchingDirection !== null,
-        fetching: fetchingDirection !== null,
-        fetchingNext: fetchingDirection === "next",
-        fetchingPrev: fetchingDirection === "prev",
         error: latestError,
       };
     }
@@ -253,10 +242,6 @@ export function createInfiniteReadController<
 
     if (allResponses.length === 0) {
       return {
-        loading: fetchingDirection !== null,
-        fetching: fetchingDirection !== null,
-        fetchingNext: fetchingDirection === "next",
-        fetchingPrev: fetchingDirection === "prev",
         data: undefined,
         allResponses: undefined,
         allRequests: undefined,
@@ -288,10 +273,6 @@ export function createInfiniteReadController<
     const mergedData = merger(allResponses);
 
     return {
-      loading: false,
-      fetching: fetchingDirection !== null,
-      fetchingNext: fetchingDirection === "next",
-      fetchingPrev: fetchingDirection === "prev",
       data: mergedData,
       allResponses,
       allRequests,
@@ -453,6 +434,10 @@ export function createInfiniteReadController<
   const controller: InfiniteReadController<TData, TItem, TError> = {
     getState() {
       return cachedState;
+    },
+
+    getFetchingDirection() {
+      return fetchingDirection;
     },
 
     subscribe(callback) {
