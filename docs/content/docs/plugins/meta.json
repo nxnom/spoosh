@@ -1,6 +1,6 @@
 {
   "title": "Plugins",
-  "defaultOpen": true,
+  "defaultOpen": false,
   "pages": [
     "index",
     "cache",
