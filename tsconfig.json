@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "nodenext",
     "target": "esnext",
-    "types": [],
+    "types": ["vitest/globals"],
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,

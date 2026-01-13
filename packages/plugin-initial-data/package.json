@@ -31,6 +31,7 @@
     "@spoosh/core": ">=0.1.0"
   },
   "devDependencies": {
-    "@spoosh/core": "workspace:*"
+    "@spoosh/core": "workspace:*",
+    "@spoosh/test-utils": "workspace:*"
   }
 }

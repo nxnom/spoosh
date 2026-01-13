@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@spoosh/core": "workspace:*",
-    "@spoosh/plugin-invalidation": "workspace:*"
+    "@spoosh/plugin-invalidation": "workspace:*",
+    "@spoosh/test-utils": "workspace:*"
   }
 }
