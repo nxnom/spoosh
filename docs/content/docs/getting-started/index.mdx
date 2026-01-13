@@ -1,0 +1,113 @@
+---
+title: Quick Start
+description: Get up and running with Spoosh in minutes
+---
+
+This guide will help you set up Spoosh in your React project and make your first type-safe API call.
+
+## Prerequisites
+
+- Node.js 18+
+- TypeScript 5.0+
+- React 18+
+
+## Installation
+
+```bash
+npm install @spoosh/core @spoosh/react @spoosh/plugin-cache @spoosh/plugin-invalidation
+```
+
+## Define Your API Schema
+
+Create a file to define your API types:
+
+```typescript title="src/api/schema.ts"
+import type { Endpoint, EndpointWithQuery } from "@spoosh/core";
+
+type User = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+type CreateUserBody = {
+  name: string;
+  email: string;
+};
+
+export type ApiSchema = {
+  users: {
+    $get: Endpoint<User[]>;
+    $post: Endpoint<User, CreateUserBody>;
+    _: {
+      $get: Endpoint<User>;
+      $put: Endpoint<User, Partial<CreateUserBody>>;
+      $delete: Endpoint<void>;
+    };
+  };
+  search: {
+    $get: EndpointWithQuery<User[], { q: string; page?: number }>;
+  };
+};
+```
+
+## Create the Client
+
+Set up the Spoosh client with plugins:
+
+```typescript title="src/api/client.ts"
+import { createSpoosh } from "@spoosh/core";
+import { createReactSpoosh } from "@spoosh/react";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+import type { ApiSchema } from "./schema";
+
+const plugins = [
+  cachePlugin({ staleTime: 5000 }),
+  invalidationPlugin(), // Auto-refresh queries after mutations
+];
+
+const spoosh = createSpoosh<ApiSchema, Error, typeof plugins>({
+  baseUrl: "/api",
+  plugins,
+});
+
+export const { useRead, useWrite } = createReactSpoosh(spoosh);
+```
+
+> **Why invalidationPlugin?** When you create, update, or delete data with `useWrite`, the invalidation plugin automatically refreshes related queries. No manual cache management needed.
+
+## Use in Components
+
+Now you can use the hooks in your React components:
+
+```tsx title="src/components/UserList.tsx"
+import { useRead } from "../api/client";
+
+export function UserList() {
+  const { data, loading, error, refetch } = useRead(
+    (api) => api.users.$get()
+  );
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <button onClick={refetch}>Refresh</button>
+      <ul>
+        {data?.map((user) => (
+          <li key={user.id}>{user.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Installation" href="/docs/getting-started/installation" />
+  <Card title="First API Call" href="/docs/getting-started/first-api-call" />
+</Cards>

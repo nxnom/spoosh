@@ -1,13 +1,96 @@
 ---
-title: Hello World
-description: Your first document
+title: Introduction
+description: A type-safe API client framework with a powerful plugin system for React
 ---
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+**Spoosh** is a lightweight, type-safe API client framework for React applications. It provides a clean, intuitive way to define API schemas and make HTTP requests with full TypeScript support.
 
-## What is Next?
+## Key Features
+
+- **Type-Safe Schema Definition** - Define your API once, get autocomplete and type checking everywhere
+- **Plugin System** - Extend functionality with caching, retry, polling, optimistic updates, and more
+- **React Hooks** - `useRead`, `useWrite`, and `useInfiniteRead` for seamless data fetching
+- **Framework Adapters** - First-class support for Hono with automatic type inference
+- **Cache Invalidation** - Automatic tag-based cache invalidation after mutations
+- **Next.js Integration** - Server-side cache revalidation with App Router
+
+## Quick Example
+
+```typescript
+import { createSpoosh } from "@spoosh/core";
+import { createReactSpoosh } from "@spoosh/react";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+
+// Define your API schema
+type ApiSchema = {
+  users: {
+    $get: Endpoint<User[]>;
+    $post: Endpoint<User, CreateUserBody>;
+  };
+};
+
+// Create the client with plugins
+const spoosh = createSpoosh<ApiSchema>({
+  baseUrl: "/api",
+  plugins: [
+    cachePlugin({ staleTime: 5000 }),
+    invalidationPlugin(), // Auto-refresh queries after mutations
+  ],
+});
+
+// Export React hooks
+export const { useRead, useWrite } = createReactSpoosh(spoosh);
+```
+
+```tsx
+// Use in your components
+function UserList() {
+  const { data, loading, error } = useRead((api) => api.users.$get());
+
+  if (loading) return <Spinner />;
+  if (error) return <Error message={error.message} />;
+
+  return (
+    <ul>
+      {data?.map((user) => (
+        <li key={user.id}>{user.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## Packages
+
+| Package | Description |
+| ------- | ----------- |
+| `@spoosh/core` | Core client and plugin system |
+| `@spoosh/react` | React hooks (`useRead`, `useWrite`, `useInfiniteRead`) |
+| `@spoosh/hono` | Hono type adapter |
+| `@spoosh/openapi` | OpenAPI spec generator |
+
+### Plugins
+
+| Plugin | Description |
+| ------ | ----------- |
+| `@spoosh/plugin-cache` | Response caching with stale time |
+| **`@spoosh/plugin-invalidation`** | **Auto-refresh queries after mutations (recommended)** |
+| `@spoosh/plugin-retry` | Automatic retry with configurable attempts |
+| `@spoosh/plugin-optimistic` | Optimistic updates with rollback |
+| `@spoosh/plugin-polling` | Automatic polling at intervals |
+| `@spoosh/plugin-debounce` | Request debouncing |
+| `@spoosh/plugin-throttle` | Request throttling |
+| `@spoosh/plugin-deduplication` | Prevents duplicate in-flight requests |
+| `@spoosh/plugin-prefetch` | Preload data before needed |
+| `@spoosh/plugin-refetch` | Refetch on focus/reconnect |
+| `@spoosh/plugin-initial-data` | Show data before fetch completes |
+| `@spoosh/plugin-nextjs` | Next.js server revalidation |
+| `@spoosh/plugin-debug` | Debug logging |
+
+## Next Steps
 
 <Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.dev" />
+  <Card title="Getting Started" href="/docs/getting-started" />
+  <Card title="Installation" href="/docs/getting-started/installation" />
 </Cards>
