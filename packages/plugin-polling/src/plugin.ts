@@ -50,6 +50,8 @@ export function pollingPlugin(): SpooshPlugin<{
     clearPolling(queryKey);
 
     const timeout = setTimeout(() => {
+      timeouts.delete(queryKey);
+
       eventEmitter.emit("refetch", {
         queryKey,
         reason: "polling",

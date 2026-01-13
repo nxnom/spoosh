@@ -50,5 +50,11 @@ export function throttlePlugin(): SpooshPlugin<{
 
       return next();
     },
+
+    lifecycle: {
+      onUnmount(context) {
+        lastFetchTime.delete(context.queryKey);
+      },
+    },
   };
 }

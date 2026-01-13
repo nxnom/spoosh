@@ -112,6 +112,8 @@ export function prefetchPlugin(
 
         const initialState = createInitialState<TData, TError>();
 
+        const abortController = new AbortController();
+
         const pluginContext = pluginExecutor.createContext<TData, TError>({
           operationType: "read",
           path: callPath,
@@ -123,13 +125,12 @@ export function prefetchPlugin(
           state: initialState,
           metadata: new Map(),
           pluginOptions: options,
-          abort: () => {},
+          abort: () => abortController.abort(),
           stateManager,
           eventEmitter,
         });
 
         const coreFetch = async (): Promise<SpooshResponse<TData, TError>> => {
-          const abortController = new AbortController();
           pluginContext.requestOptions.signal = abortController.signal;
 
           const updateState = (
@@ -188,6 +189,15 @@ export function prefetchPlugin(
 
             return response;
           } catch (err) {
+            if (abortController.signal.aborted) {
+              return {
+                status: 0,
+                data: undefined,
+                error: undefined,
+                aborted: true,
+              } as SpooshResponse<TData, TError>;
+            }
+
             const errorResponse: SpooshResponse<TData, TError> = {
               status: 0,
               error: err as TError,
