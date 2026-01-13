@@ -1,0 +1,123 @@
+---
+title: Plugin System
+description: Extend Spoosh with powerful plugins
+---
+
+Plugins are the heart of Spoosh. They extend the core functionality with features like caching, automatic retries, cache invalidation, and optimistic updates.
+
+## Installing Plugins
+
+Each plugin is a separate package:
+
+```bash
+npm install @spoosh/plugin-cache @spoosh/plugin-invalidation @spoosh/plugin-retry
+```
+
+## Using Plugins
+
+Pass plugins to `createSpoosh`:
+
+```typescript
+import { createSpoosh } from "@spoosh/core";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+import { retryPlugin } from "@spoosh/plugin-retry";
+
+const plugins = [
+  cachePlugin({ staleTime: 5000 }),
+  invalidationPlugin(), // Auto-refresh queries after mutations
+  retryPlugin({ retries: 3 }),
+];
+
+const spoosh = createSpoosh<ApiSchema, Error, typeof plugins>({
+  baseUrl: "/api",
+  plugins,
+});
+```
+
+## Available Plugins
+
+### Essential
+
+| Plugin | Package | Description |
+| ------ | ------- | ----------- |
+| [Cache](/docs/plugins/cache) | `@spoosh/plugin-cache` | Response caching with configurable stale time |
+| [Invalidation](/docs/plugins/invalidation) | `@spoosh/plugin-invalidation` | Auto-invalidate queries after mutations |
+| [Retry](/docs/plugins/retry) | `@spoosh/plugin-retry` | Automatic retry on failure |
+
+### Data Management
+
+| Plugin | Package | Description |
+| ------ | ------- | ----------- |
+| [Optimistic](/docs/plugins/optimistic) | `@spoosh/plugin-optimistic` | Instant UI updates with automatic rollback |
+| [Initial Data](/docs/plugins/initial-data) | `@spoosh/plugin-initial-data` | Provide initial data for queries |
+| [Prefetch](/docs/plugins/prefetch) | `@spoosh/plugin-prefetch` | Preload data before it's needed |
+
+### Request Control
+
+| Plugin | Package | Description |
+| ------ | ------- | ----------- |
+| [Polling](/docs/plugins/polling) | `@spoosh/plugin-polling` | Automatic periodic refetching |
+| [Refetch](/docs/plugins/refetch) | `@spoosh/plugin-refetch` | Refetch on window focus/network reconnect |
+| [Debounce](/docs/plugins/debounce) | `@spoosh/plugin-debounce` | Delay requests until input stops changing |
+| [Throttle](/docs/plugins/throttle) | `@spoosh/plugin-throttle` | Limit request frequency |
+| [Deduplication](/docs/plugins/deduplication) | `@spoosh/plugin-deduplication` | Prevent duplicate concurrent requests |
+
+### Framework Integration
+
+| Plugin | Package | Description |
+| ------ | ------- | ----------- |
+| [Next.js](/docs/plugins/nextjs) | `@spoosh/plugin-nextjs` | Server-side cache revalidation |
+| [Debug](/docs/plugins/debug) | `@spoosh/plugin-debug` | Development logging |
+
+## Recommended Setup
+
+For most applications, we recommend this plugin combination:
+
+```typescript
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+import { retryPlugin } from "@spoosh/plugin-retry";
+import { refetchPlugin } from "@spoosh/plugin-refetch";
+
+const plugins = [
+  cachePlugin({ staleTime: 5000 }),
+  invalidationPlugin(),
+  retryPlugin({ retries: 3 }),
+  refetchPlugin({ refetchOnWindowFocus: true }),
+];
+```
+
+This gives you:
+- **Caching** - Avoid redundant network requests
+- **Auto-invalidation** - Queries refresh automatically after mutations
+- **Retry** - Automatic recovery from transient failures
+- **Refetch** - Fresh data when users return to your app
+
+## Plugin Order
+
+Plugin order matters. Plugins are executed in order, and each can modify the request/response:
+
+```typescript
+const plugins = [
+  cachePlugin(),       // 1. Check cache first
+  deduplicationPlugin(), // 2. Dedupe concurrent requests
+  retryPlugin(),       // 3. Retry on failure
+  invalidationPlugin(), // 4. Invalidate after mutations
+];
+```
+
+## Per-Request Options
+
+Most plugins support per-request overrides:
+
+```typescript
+// Override cache time for this query
+useRead((api) => api.users.$get(), { staleTime: 60000 });
+
+// Disable retries for this query
+useRead((api) => api.health.$get(), { retries: false });
+
+// Custom polling interval
+useRead((api) => api.notifications.$get(), { pollingInterval: 5000 });
+```
