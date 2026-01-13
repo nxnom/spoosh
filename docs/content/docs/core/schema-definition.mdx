@@ -10,7 +10,7 @@ Spoosh uses TypeScript types to define your API structure. This gives you full a
 Define your API schema as a nested type structure:
 
 ```typescript
-import type { Endpoint, EndpointWithQuery, EndpointWithFormData } from "@spoosh/core";
+import type { Endpoint } from "@spoosh/core";
 
 type User = {
   id: number;
@@ -20,42 +20,73 @@ type User = {
 
 type ApiSchema = {
   users: {
-    $get: Endpoint<User[]>;
-    $post: Endpoint<User, { name: string; email: string }>;
+    $get: User[];  // Simple form - just the return type
+    $post: Endpoint<User, { name: string; email: string }>;  // With body
   };
 };
 ```
 
 ## Endpoint Types
 
-### Endpoint\<TData\>
+### Simple Data Type
 
-Simple endpoint that returns data:
+For endpoints that only return data (no body, query, or formData), you can use the type directly:
 
-```typescript
+```ts twoslash
+// @noErrors
+import { createClient } from "@spoosh/core";
+
+type User = { id: number; name: string; email: string };
 type ApiSchema = {
-  health: {
-    $get: Endpoint<{ status: string }>;
+  users: {
+    $get: User[];  // Just the return type - no wrapper needed
   };
 };
 
-// Usage
-const { data } = await api.health.$get();
-// data: { status: string } | undefined
+const api = createClient<ApiSchema>({ baseUrl: "/api" });
+// ---cut---
+const { data } = await api.users.$get();
+```
+
+### Endpoint\<TData\>
+
+For more explicit typing, use the `Endpoint` wrapper:
+
+```ts twoslash
+// @noErrors
+import type { Endpoint } from "@spoosh/core";
+import { createClient } from "@spoosh/core";
+
+type User = { id: number; name: string; email: string };
+type ApiSchema = {
+  users: {
+    $get: Endpoint<User[]>;
+  };
+};
+
+const api = createClient<ApiSchema>({ baseUrl: "/api" });
+// ---cut---
+const { data } = await api.users.$get();
 ```
 
 ### Endpoint\<TData, TBody\>
 
 Endpoint with a request body:
 
-```typescript
+```ts twoslash
+// @noErrors
+import type { Endpoint } from "@spoosh/core";
+import { createClient } from "@spoosh/core";
+
+type User = { id: number; name: string; email: string };
 type ApiSchema = {
   users: {
     $post: Endpoint<User, { name: string; email: string }>;
   };
 };
 
-// Usage
+const api = createClient<ApiSchema>({ baseUrl: "/api" });
+// ---cut---
 const { data } = await api.users.$post({
   body: { name: "John", email: "john@example.com" },
 });
@@ -65,16 +96,22 @@ const { data } = await api.users.$post({
 
 Endpoint with query parameters:
 
-```typescript
+```ts twoslash
+// @noErrors
+import type { Endpoint, EndpointWithQuery } from "@spoosh/core";
+import { createClient } from "@spoosh/core";
+
+type User = { id: number; name: string; email: string };
 type ApiSchema = {
-  search: {
-    $get: EndpointWithQuery<User[], { q: string; page?: number; limit?: number }>;
+  users: {
+    $get: EndpointWithQuery<User[], { page?: number; limit?: number }>;
   };
 };
 
-// Usage
-const { data } = await api.search.$get({
-  query: { q: "john", page: 1, limit: 10 },
+const api = createClient<ApiSchema>({ baseUrl: "/api" });
+// ---cut---
+const { data } = await api.users.$get({
+  query: { page: 1, limit: 10 },
 });
 ```
 
@@ -82,16 +119,50 @@ const { data } = await api.search.$get({
 
 Endpoint that accepts form data:
 
-```typescript
+```ts twoslash
+// @noErrors
+import type { EndpointWithFormData } from "@spoosh/core";
+import { createClient } from "@spoosh/core";
+
 type ApiSchema = {
-  upload: {
-    $post: EndpointWithFormData<{ url: string }, { file: File; description?: string }>;
+  users: {
+    avatar: {
+      $post: EndpointWithFormData<{ url: string }, { file: File }>;
+    };
   };
 };
 
-// Usage
-const { data } = await api.upload.$post({
-  formData: { file: myFile, description: "Profile photo" },
+const api = createClient<ApiSchema>({ baseUrl: "/api" });
+declare const myFile: File;
+// ---cut---
+const { data } = await api.users.avatar.$post({
+  formData: { file: myFile },
+});
+```
+
+### EndpointDefinition\<T\>
+
+For full control over all endpoint properties:
+
+```ts twoslash
+// @noErrors
+import type { EndpointDefinition } from "@spoosh/core";
+import { createClient } from "@spoosh/core";
+
+type User = { id: number; name: string; email: string };
+type ApiSchema = {
+  users: {
+    $get: EndpointDefinition<{
+      data: User[];
+      query: { page?: number; limit?: number };
+    }>;
+  };
+};
+
+const api = createClient<ApiSchema>({ baseUrl: "/api" });
+// ---cut---
+const { data } = await api.users.$get({
+  query: { page: 1, limit: 10 },
 });
 ```
 
@@ -215,3 +286,15 @@ type ApiSchema = HonoToSpoosh<AppType>;
 ```
 
 See the [Hono Integration](/docs/integrations/hono) guide for details.
+
+## Summary
+
+| Type | Description | Example |
+| ---- | ----------- | ------- |
+| `TData` | Simple data type (no body) | `$get: User[]` |
+| `Endpoint<TData>` | Explicit endpoint | `$get: Endpoint<User[]>` |
+| `Endpoint<TData, TBody>` | Endpoint with JSON body | `$post: Endpoint<User, CreateUserBody>` |
+| `EndpointWithQuery<TData, TQuery>` | Endpoint with query params | `$get: EndpointWithQuery<User[], { page: number }>` |
+| `EndpointWithFormData<TData, TForm>` | Endpoint with form data | `$post: EndpointWithFormData<Result, { file: File }>` |
+| `EndpointDefinition<T>` | Full endpoint definition | `$get: EndpointDefinition<{ data: User[]; query: { page: number } }>` |
+| `_` | Dynamic path segment | `users: { _: { $get: User } }` |

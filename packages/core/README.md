@@ -25,12 +25,12 @@ type User = { id: number; name: string; email: string };
 
 type ApiSchema = {
   users: {
-    $get: Endpoint<User[]>;
-    $post: Endpoint<User, { name: string; email: string }>;
+    $get: User[]; // Simple form - just the return type
+    $post: Endpoint<User, { name: string; email: string }>; // With body
     _: {
-      $get: Endpoint<User>;
+      $get: User;
       $put: Endpoint<User, Partial<User>>;
-      $delete: Endpoint<void>;
+      $delete: void;
     };
   };
   search: {
@@ -172,13 +172,15 @@ const updatedContext = await applyMiddlewares(context, middlewares, "before");
 
 ## Schema Types
 
-| Type                                 | Description                | Example                                               |
-| ------------------------------------ | -------------------------- | ----------------------------------------------------- |
-| `Endpoint<TData>`                    | Simple GET endpoint        | `$get: Endpoint<User[]>`                              |
-| `Endpoint<TData, TBody>`             | Endpoint with JSON body    | `$post: Endpoint<User, CreateUserBody>`               |
-| `EndpointWithQuery<TData, TQuery>`   | Endpoint with query params | `$get: EndpointWithQuery<User[], { page: number }>`   |
-| `EndpointWithFormData<TData, TForm>` | Endpoint with form data    | `$post: EndpointWithFormData<Result, { file: File }>` |
-| `_`                                  | Dynamic path segment       | `users: { _: { $get: Endpoint<User> } }`              |
+| Type                                 | Description                | Example                                                               |
+| ------------------------------------ | -------------------------- | --------------------------------------------------------------------- |
+| `TData`                              | Simple data type (no body) | `$get: User[]`                                                        |
+| `Endpoint<TData>`                    | Explicit endpoint          | `$get: Endpoint<User[]>`                                              |
+| `Endpoint<TData, TBody>`             | Endpoint with JSON body    | `$post: Endpoint<User, CreateUserBody>`                               |
+| `EndpointWithQuery<TData, TQuery>`   | Endpoint with query params | `$get: EndpointWithQuery<User[], { page: number }>`                   |
+| `EndpointWithFormData<TData, TForm>` | Endpoint with form data    | `$post: EndpointWithFormData<Result, { file: File }>`                 |
+| `EndpointDefinition<T>`              | Full endpoint definition   | `$get: EndpointDefinition<{ data: User[]; query: { page: number } }>` |
+| `_`                                  | Dynamic path segment       | `users: { _: { $get: User } }`                                        |
 
 ## API Reference
 
