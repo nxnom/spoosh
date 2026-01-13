@@ -28,5 +28,5 @@ Static files are generated in the `out` directory.
 | `src/app/(home)` | Landing page |
 | `src/app/docs` | Documentation pages |
 | `src/app/og` | Open Graph image generation |
-| `src/app/llms.txt` | LLM-friendly docs index |
-| `src/app/llms-full.txt` | Full LLM docs |
+| `src/app/llms` | LLM-friendly docs index |
+| `src/app/llms-full` | Full LLM docs |

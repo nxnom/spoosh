@@ -7,7 +7,7 @@ const content = `# Spoosh
 
 ## Docs
 
-- [Full Docs](https://spoosh.dev/llms-full.txt): Full documentation of all features and plugins.
+- [Full Docs](https://spoosh.dev/llms-full): Full documentation of all features and plugins.
 
 ## Getting Started
 
