@@ -10,6 +10,7 @@ import type { PluginExecutor } from "../plugins/executor";
 import type { StateManager } from "../state/manager";
 import type { EventEmitter } from "../events/emitter";
 import { createInitialState } from "../state/manager";
+import { resolveHeadersToRecord } from "../utils";
 
 export type ExecuteOptions = {
   force?: boolean;
@@ -152,6 +153,12 @@ export function createOperationController<TData, TError>(
       if (force) {
         context.forceRefetch = true;
       }
+
+      context.headers = await resolveHeadersToRecord(
+        context.requestOptions.headers
+      );
+
+      context.requestOptions.headers = context.headers;
 
       const coreFetch = async (): Promise<SpooshResponse<TData, TError>> => {
         const cached = stateManager.getCache<TData, TError>(queryKey);

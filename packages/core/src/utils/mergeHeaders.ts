@@ -10,6 +10,22 @@ async function resolveHeaders(
   return headers;
 }
 
+function headersInitToRecord(headers: HeadersInit): Record<string, string> {
+  return Object.fromEntries(new Headers(headers));
+}
+
+/**
+ * Resolves HeadersInitOrGetter to a plain Record<string, string>.
+ * Handles functions, Headers objects, arrays, and plain objects.
+ */
+export async function resolveHeadersToRecord(
+  headers?: HeadersInitOrGetter
+): Promise<Record<string, string>> {
+  const resolved = await resolveHeaders(headers);
+  if (!resolved) return {};
+  return headersInitToRecord(resolved);
+}
+
 export async function mergeHeaders(
   defaultHeaders?: HeadersInitOrGetter,
   requestHeaders?: HeadersInitOrGetter
@@ -25,4 +41,27 @@ export async function mergeHeaders(
     ...Object.fromEntries(new Headers(resolved1)),
     ...Object.fromEntries(new Headers(resolved2)),
   };
+}
+
+export function setHeaders(
+  requestOptions: { headers?: HeadersInitOrGetter },
+  newHeaders: Record<string, string>
+): void {
+  const existing = requestOptions.headers;
+
+  if (
+    !existing ||
+    (typeof existing === "object" &&
+      !Array.isArray(existing) &&
+      !(existing instanceof Headers))
+  ) {
+    requestOptions.headers = {
+      ...(existing as Record<string, string> | undefined),
+      ...newHeaders,
+    };
+  } else {
+    requestOptions.headers = {
+      ...newHeaders,
+    };
+  }
 }

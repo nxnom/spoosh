@@ -55,6 +55,12 @@ export type PluginContext<TData = unknown, TError = unknown> = {
   stateManager: StateManager;
   eventEmitter: EventEmitter;
 
+  /** Resolved headers as a plain object. Modify via setHeaders(). */
+  headers: Record<string, string>;
+
+  /** Add/update headers. Merges with existing headers. */
+  setHeaders: (headers: Record<string, string>) => void;
+
   /** Access other plugins' exported APIs */
   plugins: PluginAccessor;
 
@@ -65,10 +71,10 @@ export type PluginContext<TData = unknown, TError = unknown> = {
   forceRefetch?: boolean;
 };
 
-/** Input type for creating PluginContext (without plugins, which is injected) */
+/** Input type for creating PluginContext (without injected properties) */
 export type PluginContextInput<TData = unknown, TError = unknown> = Omit<
   PluginContext<TData, TError>,
-  "plugins"
+  "plugins" | "setHeaders" | "headers"
 >;
 
 /**

@@ -199,6 +199,11 @@ export function createPluginExecutor(
     createContext<TData, TError>(input: PluginContextInput<TData, TError>) {
       const ctx = input as PluginContext<TData, TError>;
       ctx.plugins = createPluginAccessor(ctx);
+      ctx.headers = {};
+      ctx.setHeaders = (newHeaders) => {
+        ctx.headers = { ...ctx.headers, ...newHeaders };
+        ctx.requestOptions.headers = ctx.headers;
+      };
       return ctx;
     },
   };
