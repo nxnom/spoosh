@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     title: 'Spoosh - Type-Safe API Client',
     description:
       'A type-safe API client with a powerful plugin system. Features caching, invalidation, retry, polling, optimistic updates, and more.',
-    images: ['/og'],
+    images: ['/og/home'],
   },
 };
 

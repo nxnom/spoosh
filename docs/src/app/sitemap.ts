@@ -1,6 +1,8 @@
 import type { MetadataRoute } from 'next';
 import { source } from '@/lib/source';
 
+export const revalidate = false;
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spoosh.dev';
 
 export default function sitemap(): MetadataRoute.Sitemap {

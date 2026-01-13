@@ -40,7 +40,7 @@ export const metadata: Metadata = {
       'A type-safe API client with a powerful plugin system. Features caching, invalidation, retry, polling, and more.',
     images: [
       {
-        url: '/og',
+        url: '/og/home',
         width: 1200,
         height: 630,
         alt: 'Spoosh - Type-Safe API Client',
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     title: 'Spoosh - Type-Safe API Client',
     description:
       'A type-safe API client with a powerful plugin system.',
-    images: ['/og'],
+    images: ['/og/home'],
   },
   robots: {
     index: true,

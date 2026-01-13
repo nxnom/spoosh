@@ -1,3 +1,9 @@
 {
-  "pages": ["index", "getting-started", "core", "plugins"]
+  "pages": [
+    "index",
+    "getting-started",
+    "core",
+    "plugins",
+    "llm"
+  ]
 }

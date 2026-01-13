@@ -1,5 +1,7 @@
 import type { MetadataRoute } from 'next';
 
+export const revalidate = false;
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spoosh.dev';
 
 export default function robots(): MetadataRoute.Robots {
