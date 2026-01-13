@@ -51,7 +51,7 @@ describe("cachePlugin", () => {
       expect(cached?.state.data).toEqual(fetchedData);
     });
 
-    it("should store error in cache after failed fetch", async () => {
+    it("should not cache error responses", async () => {
       const plugin = cachePlugin();
       const stateManager = createStateManager();
       const context = createMockContext({ stateManager });
@@ -61,7 +61,7 @@ describe("cachePlugin", () => {
       await plugin.middleware!(context, next);
 
       const cached = stateManager.getCache(context.queryKey);
-      expect(cached?.state.error).toEqual(error);
+      expect(cached).toBeUndefined();
     });
   });
 
