@@ -1,0 +1,83 @@
+---
+title: Deduplication
+description: Prevent duplicate concurrent requests
+---
+
+The deduplication plugin prevents making the same request multiple times concurrently. If a request is already in flight, subsequent calls reuse the same promise.
+
+This is especially important when using `invalidationPlugin` - when a mutation invalidates multiple queries that share the same endpoint, deduplication ensures only one network request is made.
+
+## Installation
+
+```package-install
+@spoosh/plugin-deduplication
+```
+
+## Usage
+
+```typescript
+import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
+
+const plugins = [
+  cachePlugin({ staleTime: 5000 }),
+  deduplicationPlugin(),
+  invalidationPlugin(),
+];
+```
+
+## Why It Matters
+
+Without deduplication, invalidating queries can cause duplicate requests:
+
+```typescript
+// Multiple components using the same query
+function ComponentA() {
+  const { data } = useRead((api) => api.users.$get());
+}
+
+function ComponentB() {
+  const { data } = useRead((api) => api.users.$get());
+}
+
+// When a mutation invalidates "users", both components would refetch
+// With deduplicationPlugin, only ONE network request is made
+```
+
+## Per-Request Override
+
+```typescript
+// Disable deduplication for this request
+useRead((api) => api.posts.$get(), { dedupe: false });
+```
+
+## Options
+
+### Plugin Config
+
+| Option | Type | Default | Description |
+| ------ | ---- | ------- | ----------- |
+| `read` | `"in-flight" \| false` | `"in-flight"` | Deduplication mode for reads |
+| `write` | `"in-flight" \| false` | `false` | Deduplication mode for writes |
+
+### Per-Request Options
+
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `dedupe` | `"in-flight" \| false` | Override deduplication for this request |
+
+### Modes
+
+| Mode | Description |
+| ---- | ----------- |
+| `"in-flight"` | Reuse existing in-flight request promise if one exists |
+| `false` | Always make a new request |
+
+## Write Deduplication
+
+By default, writes are not deduplicated to avoid unintended side effects. Enable with caution:
+
+```typescript
+// Enable deduplication for writes (use carefully)
+const plugins = [deduplicationPlugin({ write: "in-flight" })];
+```
+

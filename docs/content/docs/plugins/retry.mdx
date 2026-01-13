@@ -1,0 +1,48 @@
+---
+title: Retry
+description: Automatic retry on failure
+---
+
+The retry plugin automatically retries failed requests with configurable attempts and delay.
+
+## Installation
+
+```package-install
+@spoosh/plugin-retry
+```
+
+## Usage
+
+```typescript
+import { retryPlugin } from "@spoosh/plugin-retry";
+
+const plugins = [
+  retryPlugin({ retries: 3, retryDelay: 1000 }), // 3 retries with 1 second delay
+];
+```
+
+## Per-Request Override
+
+```typescript
+// More retries for critical requests
+useRead((api) => api.important.$get(), { retries: 5, retryDelay: 2000 });
+
+// Disable retries for specific requests
+useRead((api) => api.health.$get(), { retries: false });
+```
+
+## Options
+
+### Plugin Config
+
+| Option | Type | Default | Description |
+| ------ | ---- | ------- | ----------- |
+| `retries` | `number \| false` | `3` | Number of retry attempts. Set to `false` to disable. |
+| `retryDelay` | `number` | `1000` | Delay between retries in milliseconds |
+
+### Per-Request Options
+
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `retries` | `number \| false` | Override retry attempts for this request |
+| `retryDelay` | `number` | Override retry delay for this request |

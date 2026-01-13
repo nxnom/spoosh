@@ -7,12 +7,14 @@ const GITHUB_URL = 'https://github.com/nxnom/spoosh';
 const heroCode = `import { createSpoosh } from "@spoosh/core";
 import { createReactSpoosh } from "@spoosh/react";
 import { cachePlugin } from "@spoosh/plugin-cache";
+import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 
 const spoosh = createSpoosh<ApiSchema>({
   baseUrl: "/api",
   plugins: [
     cachePlugin({ staleTime: 5000 }),
+    deduplicationPlugin(), // Prevent duplicate requests
     invalidationPlugin(), // Auto-refresh queries after mutations
   ],
 });

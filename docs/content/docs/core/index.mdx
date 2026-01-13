@@ -37,12 +37,14 @@ Use `createSpoosh` to create your API client with plugins:
 ```typescript
 import { createSpoosh } from "@spoosh/core";
 import { cachePlugin } from "@spoosh/plugin-cache";
+import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 
 const spoosh = createSpoosh<ApiSchema>({
   baseUrl: "/api",
   plugins: [
     cachePlugin({ staleTime: 5000 }),
+    deduplicationPlugin(), // Prevent duplicate requests during invalidation
     invalidationPlugin(),
   ],
 });

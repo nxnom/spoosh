@@ -1,0 +1,59 @@
+---
+title: Initial Data
+description: Provide initial data for queries
+---
+
+The initial data plugin lets you show data immediately before the fetch completes, such as prefetched or server-rendered data.
+
+## Installation
+
+```package-install
+@spoosh/plugin-initial-data
+```
+
+## Usage
+
+```typescript
+import { initialDataPlugin } from "@spoosh/plugin-initial-data";
+
+const plugins = [initialDataPlugin()];
+
+// Show prefetched data immediately, then refetch in background
+const { data, isInitialData } = useRead(
+  (api) => api.posts.$get(),
+  { initialData: prefetchedPosts }
+);
+```
+
+## Without Background Refetch
+
+To skip the background refetch and just use the initial data:
+
+```typescript
+const { data } = useRead(
+  (api) => api.posts.$get(),
+  {
+    initialData: prefetchedPosts,
+    refetchOnInitialData: false,
+  }
+);
+```
+
+## Options
+
+### Per-Request Options
+
+| Option | Type | Default | Description |
+| ------ | ---- | ------- | ----------- |
+| `initialData` | `TData` | - | Data to show immediately on first mount |
+| `refetchOnInitialData` | `boolean` | `true` | Whether to refetch after showing initial data |
+
+### Result
+
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| `isInitialData` | `boolean` | `true` if currently showing initial data (not yet fetched) |
+
+## Server-Side Rendering
+
+For a complete SSR example with Next.js, see [Next.js Plugin - With Initial Data](/docs/plugins/nextjs#with-initial-data).

@@ -1,4 +1,5 @@
 {
   "title": "Core",
+  "defaultOpen": true,
   "pages": ["index", "schema-definition", "client", "response"]
 }

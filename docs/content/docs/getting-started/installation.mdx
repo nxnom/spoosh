@@ -7,81 +7,27 @@ description: Install Spoosh packages for your project
 
 Install the core packages to get started:
 
-```bash
-npm install @spoosh/core @spoosh/react
-```
-
-Or with other package managers:
-
-```bash tab="pnpm"
-pnpm add @spoosh/core @spoosh/react
-```
-
-```bash tab="yarn"
-yarn add @spoosh/core @spoosh/react
-```
-
-```bash tab="bun"
-bun add @spoosh/core @spoosh/react
+```package-install
+@spoosh/core @spoosh/react
 ```
 
 ## Plugins
 
-Install only the plugins you need:
-
-```bash
-# Caching
-npm install @spoosh/plugin-cache
-
-# Automatic retry
-npm install @spoosh/plugin-retry
-
-# Cache invalidation after mutations
-npm install @spoosh/plugin-invalidation
-
-# Optimistic updates
-npm install @spoosh/plugin-optimistic
-
-# Polling
-npm install @spoosh/plugin-polling
-
-# Request debouncing
-npm install @spoosh/plugin-debounce
-
-# Request throttling
-npm install @spoosh/plugin-throttle
-
-# Request deduplication
-npm install @spoosh/plugin-deduplication
-
-# Prefetching
-npm install @spoosh/plugin-prefetch
-
-# Refetch on focus/reconnect
-npm install @spoosh/plugin-refetch
-
-# Initial data
-npm install @spoosh/plugin-initial-data
-
-# Next.js integration
-npm install @spoosh/plugin-nextjs
-
-# Debug logging
-npm install @spoosh/plugin-debug
-```
+Install only the plugins you need. See the [Plugins](/docs/plugins) section for details on each plugin.
 
 ## Recommended Setup
 
 For most projects, we recommend starting with these plugins:
 
-```bash
-npm install @spoosh/core @spoosh/react @spoosh/plugin-cache @spoosh/plugin-retry @spoosh/plugin-invalidation
+```package-install
+@spoosh/core @spoosh/react @spoosh/plugin-cache @spoosh/plugin-deduplication @spoosh/plugin-invalidation @spoosh/plugin-retry
 ```
 
 This gives you:
 - **Caching** - Avoid redundant network requests
-- **Retry** - Automatically retry failed requests
+- **Deduplication** - Prevent duplicate requests when multiple queries invalidate
 - **Invalidation** - Auto-refresh related queries after mutations
+- **Retry** - Automatically retry failed requests
 
 ## Framework Adapters
 
@@ -89,8 +35,8 @@ This gives you:
 
 If you're using Hono on the server, install the type adapter:
 
-```bash
-npm install @spoosh/hono
+```package-install
+@spoosh/hono
 ```
 
 This lets you automatically infer your API schema from Hono routes.
@@ -99,8 +45,8 @@ This lets you automatically infer your API schema from Hono routes.
 
 To generate OpenAPI specs from your schema:
 
-```bash
-npm install @spoosh/openapi
+```package-install
+@spoosh/openapi
 ```
 
 ## TypeScript Configuration

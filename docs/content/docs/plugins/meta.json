@@ -1,0 +1,20 @@
+{
+  "title": "Plugins",
+  "defaultOpen": true,
+  "pages": [
+    "index",
+    "cache",
+    "invalidation",
+    "deduplication",
+    "retry",
+    "optimistic",
+    "polling",
+    "prefetch",
+    "refetch",
+    "debounce",
+    "throttle",
+    "initial-data",
+    "debug",
+    "nextjs"
+  ]
+}

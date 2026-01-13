@@ -1,0 +1,186 @@
+---
+title: Next.js
+description: Server-side cache revalidation
+---
+
+The Next.js plugin revalidates the server-side cache after mutations, keeping your server-rendered pages fresh.
+
+## Installation
+
+```package-install
+@spoosh/plugin-nextjs
+```
+
+> **Note:** This plugin requires `@spoosh/plugin-invalidation` as a peer dependency.
+
+## Setup
+
+First, create a server action:
+
+```typescript title="src/app/actions.ts"
+"use server";
+
+import { revalidateTag, revalidatePath } from "next/cache";
+
+export async function revalidateAction(tags: string[], paths: string[]) {
+  tags.forEach((tag) => revalidateTag(tag));
+  paths.forEach((path) => revalidatePath(path));
+}
+```
+
+Then configure the plugin:
+
+```typescript title="src/api/client.ts"
+import { nextjsPlugin } from "@spoosh/plugin-nextjs";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+import { revalidateAction } from "@/app/actions";
+
+const plugins = [
+  cachePlugin({ staleTime: 5000 }),
+  deduplicationPlugin(),
+  invalidationPlugin(),
+  nextjsPlugin({ serverRevalidator: revalidateAction }),
+];
+```
+
+## Usage
+
+After a successful mutation, cache tags are automatically revalidated on the server:
+
+```typescript
+const { trigger } = useWrite((api) => api.posts.$post);
+
+await trigger({ body: { title: "New Post" } });
+// Server cache for "posts" tag is revalidated
+```
+
+## Revalidate Additional Paths
+
+```typescript
+await trigger({
+  body: { title: "New Post" },
+  revalidatePaths: ["/", "/posts"],
+});
+```
+
+## Skip Revalidation
+
+```typescript
+await trigger({
+  body: { title: "Draft" },
+  serverRevalidate: false,
+});
+```
+
+## Options
+
+### Plugin Config
+
+| Option | Type | Default | Description |
+| ------ | ---- | ------- | ----------- |
+| `serverRevalidator` | `(tags, paths) => void \| Promise` | - | Server action to revalidate cache |
+| `skipServerRevalidation` | `boolean` | `false` | Skip revalidation by default |
+
+### Per-Request Options
+
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `revalidatePaths` | `string[]` | Additional paths to revalidate |
+| `serverRevalidate` | `boolean` | Override whether to trigger server revalidation |
+
+## Choosing the Default Behavior
+
+### Client-Heavy Apps (CSR/SPA)
+
+For apps that primarily fetch data on the client, skip revalidation by default:
+
+```typescript
+const plugins = [
+  nextjsPlugin({
+    serverRevalidator: revalidateAction,
+    skipServerRevalidation: true, // Skip by default
+  }),
+];
+
+// Opt-in when mutation affects server-rendered pages
+await trigger({
+  body: data,
+  serverRevalidate: true,
+});
+```
+
+### Server-Heavy Apps (SSR/RSC)
+
+For apps that rely heavily on server rendering, keep the default behavior:
+
+```typescript
+const plugins = [
+  nextjsPlugin({
+    serverRevalidator: revalidateAction,
+    // skipServerRevalidation: false (default)
+  }),
+];
+
+// Opt-out for client-only state changes
+await trigger({
+  body: { theme: "dark" },
+  serverRevalidate: false,
+});
+```
+
+## With Initial Data
+
+Combine with `initialDataPlugin` for server-rendered pages with client-side hydration:
+
+```typescript title="src/api/server.ts"
+import { createClient } from "@spoosh/core";
+import type { ApiSchema } from "./schema";
+
+export const serverApi = createClient<ApiSchema>({
+  baseUrl: process.env.API_URL!,
+});
+```
+
+```typescript title="src/app/posts/page.tsx"
+import { serverApi } from "@/api/server";
+import { PostList } from "./post-list";
+
+export default async function PostsPage() {
+  const { data: posts } = await serverApi.posts.$get();
+
+  return <PostList initialPosts={posts} />;
+}
+```
+
+```typescript title="src/app/posts/post-list.tsx"
+"use client";
+
+import { useRead, useWrite } from "@/api/client";
+
+export function PostList({ initialPosts }) {
+  const { data, isInitialData } = useRead(
+    (api) => api.posts.$get(),
+    { initialData: initialPosts }
+  );
+
+  const { trigger } = useWrite((api) => api.posts.$post);
+
+  const handleCreate = async () => {
+    await trigger({ body: { title: "New Post" } });
+    // Server cache is revalidated automatically
+    // Client refetches with fresh data
+  };
+
+  return (
+    <div>
+      {isInitialData && <span>Refreshing...</span>}
+      <button onClick={handleCreate}>Create Post</button>
+      <ul>
+        {data?.map((post) => (
+          <li key={post.id}>{post.title}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```

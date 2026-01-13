@@ -13,8 +13,8 @@ This guide will help you set up Spoosh in your React project and make your first
 
 ## Installation
 
-```bash
-npm install @spoosh/core @spoosh/react @spoosh/plugin-cache @spoosh/plugin-invalidation
+```package-install
+@spoosh/core @spoosh/react @spoosh/plugin-cache @spoosh/plugin-deduplication @spoosh/plugin-invalidation
 ```
 
 ## Define Your API Schema
@@ -59,12 +59,14 @@ Set up the Spoosh client with plugins:
 import { createSpoosh } from "@spoosh/core";
 import { createReactSpoosh } from "@spoosh/react";
 import { cachePlugin } from "@spoosh/plugin-cache";
+import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 import type { ApiSchema } from "./schema";
 
 const plugins = [
   cachePlugin({ staleTime: 5000 }),
-  invalidationPlugin(), // Auto-refresh queries after mutations
+  deduplicationPlugin(), // Prevent duplicate requests during invalidation
+  invalidationPlugin(),  // Auto-refresh queries after mutations
 ];
 
 const spoosh = createSpoosh<ApiSchema, Error, typeof plugins>({
@@ -75,7 +77,9 @@ const spoosh = createSpoosh<ApiSchema, Error, typeof plugins>({
 export const { useRead, useWrite } = createReactSpoosh(spoosh);
 ```
 
-> **Why invalidationPlugin?** When you create, update, or delete data with `useWrite`, the invalidation plugin automatically refreshes related queries. No manual cache management needed.
+> **Why these plugins?**
+> - `invalidationPlugin` automatically refreshes related queries after mutations
+> - `deduplicationPlugin` prevents duplicate network requests when multiple queries invalidate at once
 
 ## Use in Components
 

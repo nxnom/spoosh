@@ -43,20 +43,49 @@ await trigger({ body: { title: "New Post" } });
 ```typescript
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 
-const plugins = [invalidationPlugin({ autoInvalidate: "all" })];
+const plugins = [invalidationPlugin()];
 
 // Auto-invalidates all related queries after mutation (default)
 const { trigger } = useWrite((api) => api.posts.$post);
 await trigger({ body: { title: "New Post" } });
+```
 
-// Custom invalidation targets
+## Default Configuration
+
+```typescript
+// Default: invalidate all related tags (full hierarchy)
+invalidationPlugin(); // same as { autoInvalidate: "all" }
+
+// Only invalidate the exact endpoint by default
+invalidationPlugin({ autoInvalidate: "self" });
+
+// Disable auto-invalidation by default (manual only)
+invalidationPlugin({ autoInvalidate: "none" });
+```
+
+## Per-Request Override
+
+```typescript
+// Override to invalidate all related tags
+await trigger({
+  body: { title: "New Post" },
+  autoInvalidate: "all",
+});
+
+// Override to only invalidate the exact endpoint
+await trigger({
+  body: { title: "New Post" },
+  autoInvalidate: "self",
+});
+
+// Disable auto-invalidation and specify custom targets
 await trigger({
   body: { title: "New Post" },
   autoInvalidate: "none",
   invalidate: (api) => [api.posts.$get, api.stats.$get, "dashboard-data"],
 });
 
-// Invalidate specific tags only
+// Add specific tags (works alongside autoInvalidate)
 await trigger({
   body: { title: "New Post" },
   invalidate: ["posts", "user-posts"],

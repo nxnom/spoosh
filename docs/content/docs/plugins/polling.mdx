@@ -1,0 +1,79 @@
+---
+title: Polling
+description: Automatic periodic refetching
+---
+
+The polling plugin automatically refetches data at specified intervals.
+
+## Installation
+
+```package-install
+@spoosh/plugin-polling
+```
+
+## Usage
+
+```typescript
+import { pollingPlugin } from "@spoosh/plugin-polling";
+
+const plugins = [pollingPlugin()];
+
+// Poll every 5 seconds
+useRead((api) => api.notifications.$get(), { pollingInterval: 5000 });
+
+// Disable polling (default)
+useRead((api) => api.posts.$get(), { pollingInterval: false });
+```
+
+## Dynamic Polling
+
+The polling interval can be a function that adjusts based on the response:
+
+```typescript
+useRead((api) => api.jobs[jobId].$get(), {
+  pollingInterval: (data, error) => {
+    // Stop polling when job is complete
+    if (data?.status === "completed") return false;
+
+    // Poll faster while job is running
+    if (data?.status === "running") return 1000;
+
+    // Slower polling on error
+    if (error) return 10000;
+
+    // Default interval
+    return 5000;
+  },
+});
+```
+
+## Options
+
+### Per-Request Options
+
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `pollingInterval` | `number \| false \| (data, error) => number \| false` | Polling interval in ms, `false` to disable, or a function for dynamic intervals |
+
+## Example: Real-Time Dashboard
+
+```typescript
+function Dashboard() {
+  const { data: stats } = useRead(
+    (api) => api.stats.$get(),
+    { pollingInterval: 30000 } // Refresh every 30 seconds
+  );
+
+  const { data: alerts } = useRead(
+    (api) => api.alerts.$get(),
+    { pollingInterval: 5000 } // Check alerts more frequently
+  );
+
+  return (
+    <div>
+      <StatsPanel stats={stats} />
+      <AlertsList alerts={alerts} />
+    </div>
+  );
+}
+```
