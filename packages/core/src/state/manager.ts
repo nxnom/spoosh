@@ -70,7 +70,10 @@ export type StateManager = {
   getSize: () => number;
 
   /** Set a pending promise for a query key (for deduplication) */
-  setPendingPromise: (key: string, promise: Promise<unknown> | undefined) => void;
+  setPendingPromise: (
+    key: string,
+    promise: Promise<unknown> | undefined
+  ) => void;
 
   /** Get a pending promise for a query key */
   getPendingPromise: (key: string) => Promise<unknown> | undefined;

@@ -37,8 +37,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -71,8 +69,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -109,8 +105,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -144,8 +138,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache(customQueryKey, {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 42 },
           error: undefined,
           timestamp: Date.now(),
@@ -180,8 +172,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -227,8 +217,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: cachedData,
           error: undefined,
           timestamp: Date.now(),
@@ -257,8 +245,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -293,8 +279,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: undefined,
           error: cachedError,
           timestamp: Date.now(),
@@ -323,8 +307,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -355,8 +337,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -389,8 +369,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -466,8 +444,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache(oldQueryKey, {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -489,8 +465,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache(newQueryKey, {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 2 },
           error: undefined,
           timestamp: Date.now(),
@@ -529,8 +503,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -572,8 +544,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -616,8 +586,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -659,8 +627,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache(queryKey1, {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -671,8 +637,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache(queryKey2, {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -723,8 +687,6 @@ describe("pollingPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),

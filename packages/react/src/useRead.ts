@@ -4,6 +4,7 @@ import {
   useEffect,
   useCallback,
   useId,
+  useState,
 } from "react";
 import {
   type SpooshResponse,
@@ -182,10 +183,39 @@ export function createUseRead<
       controller.getState
     );
 
+    // Local request state - tracks pending status and errors (not cached)
+    const [requestState, setRequestState] = useState<{
+      isPending: boolean;
+      error: TError | undefined;
+    }>({ isPending: false, error: undefined });
+
     const abortRef = useRef(controller.abort);
     abortRef.current = controller.abort;
 
     const pluginOptsKey = JSON.stringify(pluginOpts);
+
+    // Helper to execute with request state tracking
+    const executeWithTracking = useCallback(
+      async (force = false) => {
+        setRequestState((prev) => ({ ...prev, isPending: true }));
+
+        try {
+          const response = await controller.execute(undefined, { force });
+
+          if (response.error) {
+            setRequestState({ isPending: false, error: response.error });
+          } else {
+            setRequestState({ isPending: false, error: undefined });
+          }
+
+          return response;
+        } catch (err) {
+          setRequestState({ isPending: false, error: err as TError });
+          throw err;
+        }
+      },
+      [controller]
+    );
 
     // Unmount effect - runs on unmount (including StrictMode simulated unmount)
     useEffect(() => {
@@ -209,11 +239,11 @@ export function createUseRead<
         lifecycleRef.current.prevContext = null;
       }
 
-      controller.execute();
+      executeWithTracking(false);
 
       const unsubRefetch = eventEmitter.on("refetch", (event) => {
         if (event.queryKey === queryKey) {
-          controller.execute(undefined, { force: true });
+          executeWithTracking(true);
         }
       });
 
@@ -225,7 +255,7 @@ export function createUseRead<
           );
 
           if (hasMatch) {
-            controller.execute(undefined, { force: true });
+            executeWithTracking(true);
           }
         }
       );
@@ -249,8 +279,8 @@ export function createUseRead<
     }, []);
 
     const refetch = useCallback(() => {
-      return controller.execute(undefined, { force: true });
-    }, []);
+      return executeWithTracking(true);
+    }, [executeWithTracking]);
 
     const entry = stateManager.getCache(queryKey);
     const pluginResultData = entry?.pluginResult
@@ -279,12 +309,18 @@ export function createUseRead<
     const inputField =
       Object.keys(inputInner).length > 0 ? { input: inputInner } : {};
 
+    // Compute loading/fetching from local request state
+    const hasData = state.data !== undefined;
+    const loading = requestState.isPending && !hasData;
+    const fetching = requestState.isPending;
+
     const result = {
-      ...state,
       ...pluginResultData,
       ...inputField,
       data: state.data as TData | undefined,
-      error: state.error as TError | undefined,
+      error: requestState.error ?? (state.error as TError | undefined),
+      loading,
+      fetching,
       abort,
       refetch,
     };

@@ -236,8 +236,6 @@ describe("debugPlugin", () => {
       });
       stateManager.setCache(queryKey, {
         state: {
-          loading: false,
-          fetching: false,
           data: { name: "Cached User" },
           error: undefined,
           timestamp: Date.now(),
@@ -267,8 +265,6 @@ describe("debugPlugin", () => {
       });
       stateManager.setCache(queryKey, {
         state: {
-          loading: false,
-          fetching: false,
           data: { name: "Cached User" },
           error: undefined,
           timestamp: Date.now(),
@@ -415,10 +411,7 @@ describe("debugPlugin", () => {
           queryKey: context.queryKey,
           tags: context.tags,
           requestOptions: context.requestOptions,
-          state: expect.objectContaining({
-            loading: false,
-            fetching: false,
-          }),
+          state: expect.objectContaining({}),
           cacheEntries: expect.any(Array),
         })
       );
@@ -546,8 +539,6 @@ describe("debugPlugin", () => {
     it("should log complete state information", async () => {
       const plugin = debugPlugin({ enabled: true });
       const state: OperationState = {
-        loading: true,
-        fetching: true,
         data: { cached: true },
         error: undefined,
         timestamp: 12345,
@@ -564,8 +555,6 @@ describe("debugPlugin", () => {
       const plugin = debugPlugin({ enabled: true });
       const errorObj = { message: "Previous error" };
       const state: OperationState = {
-        loading: false,
-        fetching: false,
         data: undefined,
         error: errorObj,
         timestamp: 12345,

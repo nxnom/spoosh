@@ -109,8 +109,6 @@ describe("initialDataPlugin", () => {
         context.queryKey,
         expect.objectContaining({
           state: expect.objectContaining({
-            loading: false,
-            fetching: false,
             data: initialData,
             error: undefined,
           }),
@@ -602,8 +600,6 @@ describe("initialDataPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: existingData,
           error: undefined,
           timestamp: Date.now(),
@@ -640,8 +636,6 @@ describe("initialDataPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1, cached: true },
           error: undefined,
           timestamp: Date.now(),

@@ -128,8 +128,6 @@ describe("debouncePlugin", () => {
         '{"method":"GET","path":["users"],"query":{"search":"a"}}',
         {
           state: {
-            loading: false,
-            fetching: false,
             data: [{ id: 1, name: "User A" }],
             error: undefined,
             timestamp: Date.now(),
@@ -153,8 +151,6 @@ describe("debouncePlugin", () => {
         '{"method":"GET","path":["users"],"query":{"search":"ab"}}',
         {
           state: {
-            loading: false,
-            fetching: false,
             data: [{ id: 1, name: "User AB" }],
             error: undefined,
             timestamp: Date.now(),
@@ -191,8 +187,6 @@ describe("debouncePlugin", () => {
 
       stateManager.setCache(queryKey, {
         state: {
-          loading: false,
-          fetching: false,
           data: cachedData,
           error: undefined,
           timestamp: Date.now(),

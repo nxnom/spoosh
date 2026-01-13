@@ -74,8 +74,6 @@ export function debugPlugin(config: DebugPluginConfig = {}): SpooshPlugin<{
       tags: context.tags,
       requestOptions: context.requestOptions,
       state: {
-        loading: context.state.loading,
-        fetching: context.state.fetching,
         data: context.state.data,
         error: context.state.error,
         timestamp: context.state.timestamp,

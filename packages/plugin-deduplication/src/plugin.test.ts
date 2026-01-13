@@ -85,27 +85,18 @@ describe("deduplicationPlugin", () => {
     it("should return cached promise when in-flight request exists", async () => {
       const plugin = deduplicationPlugin();
       const stateManager = createStateManager();
+      const queryKey = '{"method":"GET","path":["users","1"]}';
 
       const inFlightPromise = Promise.resolve({
         data: { id: 1, name: "User" },
         status: 200,
       });
 
-      stateManager.setCache('{"method":"GET","path":["users","1"]}', {
-        state: {
-          loading: true,
-          fetching: true,
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
-        tags: [],
-        promise: inFlightPromise,
-      });
+      stateManager.setPendingPromise(queryKey, inFlightPromise);
 
       const context = createMockContext({
         stateManager,
-        queryKey: '{"method":"GET","path":["users","1"]}',
+        queryKey,
       });
       const next = vi.fn();
 
@@ -118,6 +109,7 @@ describe("deduplicationPlugin", () => {
     it("should share the same promise between concurrent requests", async () => {
       const plugin = deduplicationPlugin();
       const stateManager = createStateManager();
+      const queryKey = '{"method":"GET","path":["users","1"]}';
 
       let resolvePromise: (value: SpooshResponse<unknown, unknown>) => void;
       const sharedPromise = new Promise<SpooshResponse<unknown, unknown>>(
@@ -126,25 +118,15 @@ describe("deduplicationPlugin", () => {
         }
       );
 
-      stateManager.setCache('{"method":"GET","path":["users","1"]}', {
-        state: {
-          loading: true,
-          fetching: true,
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
-        tags: [],
-        promise: sharedPromise,
-      });
+      stateManager.setPendingPromise(queryKey, sharedPromise);
 
       const context1 = createMockContext({
         stateManager,
-        queryKey: '{"method":"GET","path":["users","1"]}',
+        queryKey,
       });
       const context2 = createMockContext({
         stateManager,
-        queryKey: '{"method":"GET","path":["users","1"]}',
+        queryKey,
       });
       const next = vi.fn();
 
@@ -171,17 +153,7 @@ describe("deduplicationPlugin", () => {
       const firstResponse = { data: { id: 1, version: 1 }, status: 200 };
       const firstPromise = Promise.resolve(firstResponse);
 
-      stateManager.setCache(queryKey, {
-        state: {
-          loading: true,
-          fetching: true,
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
-        tags: [],
-        promise: firstPromise,
-      });
+      stateManager.setPendingPromise(queryKey, firstPromise);
 
       const context1 = createMockContext({ stateManager, queryKey });
       const next1 = vi.fn();
@@ -190,10 +162,9 @@ describe("deduplicationPlugin", () => {
       expect(next1).not.toHaveBeenCalled();
       expect(result1).toEqual(firstResponse);
 
+      stateManager.setPendingPromise(queryKey, undefined);
       stateManager.setCache(queryKey, {
         state: {
-          loading: false,
-          fetching: false,
           data: firstResponse.data,
           error: undefined,
           timestamp: Date.now(),
@@ -215,30 +186,21 @@ describe("deduplicationPlugin", () => {
     it("should not dedupe writes by default", async () => {
       const plugin = deduplicationPlugin();
       const stateManager = createStateManager();
+      const queryKey = '{"method":"POST","path":["users"]}';
 
       const inFlightPromise = Promise.resolve({
         data: { id: 1 },
         status: 200,
       });
 
-      stateManager.setCache('{"method":"POST","path":["users"]}', {
-        state: {
-          loading: true,
-          fetching: true,
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
-        tags: [],
-        promise: inFlightPromise,
-      });
+      stateManager.setPendingPromise(queryKey, inFlightPromise);
 
       const context = createMockContext({
         stateManager,
         operationType: "write",
         method: "POST",
         path: ["users"],
-        queryKey: '{"method":"POST","path":["users"]}',
+        queryKey,
       });
       const expectedResponse = { data: { id: 2 }, status: 201 };
       const next = vi.fn().mockResolvedValue(expectedResponse);
@@ -252,30 +214,21 @@ describe("deduplicationPlugin", () => {
     it("should dedupe writes when configured", async () => {
       const plugin = deduplicationPlugin({ write: "in-flight" });
       const stateManager = createStateManager();
+      const queryKey = '{"method":"POST","path":["users"]}';
 
       const inFlightPromise = Promise.resolve({
         data: { id: 1 },
         status: 200,
       });
 
-      stateManager.setCache('{"method":"POST","path":["users"]}', {
-        state: {
-          loading: true,
-          fetching: true,
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
-        tags: [],
-        promise: inFlightPromise,
-      });
+      stateManager.setPendingPromise(queryKey, inFlightPromise);
 
       const context = createMockContext({
         stateManager,
         operationType: "write",
         method: "POST",
         path: ["users"],
-        queryKey: '{"method":"POST","path":["users"]}',
+        queryKey,
       });
       const next = vi.fn();
 
@@ -290,27 +243,18 @@ describe("deduplicationPlugin", () => {
     it("should disable deduplication when dedupe is false in options", async () => {
       const plugin = deduplicationPlugin({ read: "in-flight" });
       const stateManager = createStateManager();
+      const queryKey = '{"method":"GET","path":["users","1"]}';
 
       const inFlightPromise = Promise.resolve({
         data: { id: 1 },
         status: 200,
       });
 
-      stateManager.setCache('{"method":"GET","path":["users","1"]}', {
-        state: {
-          loading: true,
-          fetching: true,
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
-        tags: [],
-        promise: inFlightPromise,
-      });
+      stateManager.setPendingPromise(queryKey, inFlightPromise);
 
       const context = createMockContext({
         stateManager,
-        queryKey: '{"method":"GET","path":["users","1"]}',
+        queryKey,
         pluginOptions: { dedupe: false },
       });
       const expectedResponse = { data: { id: 2 }, status: 200 };
@@ -325,27 +269,18 @@ describe("deduplicationPlugin", () => {
     it("should enable deduplication when dedupe is in-flight in options", async () => {
       const plugin = deduplicationPlugin({ read: false });
       const stateManager = createStateManager();
+      const queryKey = '{"method":"GET","path":["users","1"]}';
 
       const inFlightPromise = Promise.resolve({
         data: { id: 1 },
         status: 200,
       });
 
-      stateManager.setCache('{"method":"GET","path":["users","1"]}', {
-        state: {
-          loading: true,
-          fetching: true,
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
-        tags: [],
-        promise: inFlightPromise,
-      });
+      stateManager.setPendingPromise(queryKey, inFlightPromise);
 
       const context = createMockContext({
         stateManager,
-        queryKey: '{"method":"GET","path":["users","1"]}',
+        queryKey,
         pluginOptions: { dedupe: "in-flight" },
       });
       const next = vi.fn();
@@ -361,29 +296,20 @@ describe("deduplicationPlugin", () => {
     it("should dedupe infiniteRead by default", async () => {
       const plugin = deduplicationPlugin();
       const stateManager = createStateManager();
+      const queryKey = '{"method":"GET","path":["posts"]}';
 
       const inFlightPromise = Promise.resolve({
         data: { items: [1, 2, 3] },
         status: 200,
       });
 
-      stateManager.setCache('{"method":"GET","path":["posts"]}', {
-        state: {
-          loading: true,
-          fetching: true,
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
-        tags: [],
-        promise: inFlightPromise,
-      });
+      stateManager.setPendingPromise(queryKey, inFlightPromise);
 
       const context = createMockContext({
         stateManager,
         operationType: "infiniteRead",
         path: ["posts"],
-        queryKey: '{"method":"GET","path":["posts"]}',
+        queryKey,
       });
       const next = vi.fn();
 
@@ -395,14 +321,12 @@ describe("deduplicationPlugin", () => {
   });
 
   describe("edge cases", () => {
-    it("should call next() when cache entry exists but has no promise", async () => {
+    it("should call next() when cache entry exists but has no pending promise", async () => {
       const plugin = deduplicationPlugin();
       const stateManager = createStateManager();
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),

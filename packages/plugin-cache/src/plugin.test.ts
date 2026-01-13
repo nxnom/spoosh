@@ -72,8 +72,6 @@ describe("cachePlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1, name: "Cached User" },
           error: undefined,
           timestamp: Date.now(),
@@ -105,8 +103,6 @@ describe("cachePlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1, name: "Cached User" },
           error: undefined,
           timestamp: Date.now(),
@@ -140,8 +136,6 @@ describe("cachePlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1, name: "Cached User" },
           error: undefined,
           timestamp: Date.now(),
@@ -177,8 +171,6 @@ describe("cachePlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1, name: "Cached User" },
           error: undefined,
           timestamp: Date.now() - 1,
@@ -211,8 +203,6 @@ describe("cachePlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1, name: "Cached User" },
           error: undefined,
           timestamp: Date.now(),
@@ -246,8 +236,6 @@ describe("cachePlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1, name: "Cached User" },
           error: undefined,
           timestamp: Date.now(),
@@ -291,31 +279,6 @@ describe("cachePlugin", () => {
       expect(cached?.stale).toBe(false);
     });
 
-    it("should set loading and fetching to false after fetch", async () => {
-      const plugin = cachePlugin();
-      const stateManager = createStateManager();
-      const context = createMockContext({
-        stateManager,
-        state: {
-          loading: true,
-          fetching: true,
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
-      });
-      const next = vi.fn().mockResolvedValue({
-        data: { id: 1 },
-        status: 200,
-      });
-
-      await plugin.middleware!(context, next);
-
-      const cached = stateManager.getCache(context.queryKey);
-      expect(cached?.state.loading).toBe(false);
-      expect(cached?.state.fetching).toBe(false);
-    });
-
     it("should update timestamp after successful fetch", async () => {
       vi.setSystemTime(new Date("2024-01-01T12:00:00Z"));
 
@@ -355,8 +318,6 @@ describe("cachePlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: undefined,
           error: { message: "Previous error" },
           timestamp: 0,
@@ -404,8 +365,6 @@ describe("cachePlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: undefined,
           error: undefined,
           timestamp: Date.now(),

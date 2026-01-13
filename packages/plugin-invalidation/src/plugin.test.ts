@@ -55,8 +55,6 @@ describe("invalidationPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: [{ id: 1 }],
           error: undefined,
           timestamp: Date.now(),
@@ -67,8 +65,6 @@ describe("invalidationPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -131,8 +127,6 @@ describe("invalidationPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: [{ id: 1 }],
           error: undefined,
           timestamp: Date.now(),
@@ -143,8 +137,6 @@ describe("invalidationPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: { id: 1 },
           error: undefined,
           timestamp: Date.now(),
@@ -184,8 +176,6 @@ describe("invalidationPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: [{ id: 1 }],
           error: undefined,
           timestamp: Date.now(),
@@ -224,8 +214,6 @@ describe("invalidationPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["posts"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: [{ id: 1 }],
           error: undefined,
           timestamp: Date.now(),
@@ -236,8 +224,6 @@ describe("invalidationPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["comments"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: [{ id: 1 }],
           error: undefined,
           timestamp: Date.now(),
@@ -365,8 +351,6 @@ describe("invalidationPlugin", () => {
 
       stateManager.setCache('{"method":"GET","path":["users"]}', {
         state: {
-          loading: false,
-          fetching: false,
           data: [{ id: 1 }],
           error: undefined,
           timestamp: Date.now(),

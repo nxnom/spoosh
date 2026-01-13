@@ -161,8 +161,15 @@ export function createUseWrite<
       TOptions | undefined
     >(undefined);
 
+    // Local request state - tracks pending status and errors (not cached)
+    const [requestState, setRequestState] = useState<{
+      isPending: boolean;
+      error: TError | undefined;
+    }>({ isPending: false, error: undefined });
+
     const reset = useCallback(() => {
       stateManager.deleteCache(queryKey);
+      setRequestState({ isPending: false, error: undefined });
     }, [queryKey]);
 
     const abort = useCallback(() => {
@@ -174,6 +181,7 @@ export function createUseWrite<
         triggerOptions?: TOptions
       ): Promise<SpooshResponse<TData, TError>> => {
         setLastTriggerOptions(triggerOptions);
+        setRequestState((prev) => ({ ...prev, isPending: true }));
 
         const params = (
           triggerOptions as
@@ -185,7 +193,22 @@ export function createUseWrite<
 
         controller.setPluginOptions({ ...triggerOptions, tags });
 
-        return controller.execute(triggerOptions, { force: true });
+        try {
+          const response = await controller.execute(triggerOptions, {
+            force: true,
+          });
+
+          if (response.error) {
+            setRequestState({ isPending: false, error: response.error });
+          } else {
+            setRequestState({ isPending: false, error: undefined });
+          }
+
+          return response;
+        } catch (err) {
+          setRequestState({ isPending: false, error: err as TError });
+          throw err;
+        }
       },
       [selectedEndpoint.path]
     );
@@ -217,13 +240,16 @@ export function createUseWrite<
     const inputField =
       Object.keys(inputInner).length > 0 ? { input: inputInner } : {};
 
+    // Compute loading from local request state
+    const loading = requestState.isPending;
+
     const result = {
       trigger,
-      ...state,
       ...pluginResultData,
       ...inputField,
       data: state.data as TData | undefined,
-      error: state.error as TError | undefined,
+      error: requestState.error ?? (state.error as TError | undefined),
+      loading,
       reset,
       abort,
     };

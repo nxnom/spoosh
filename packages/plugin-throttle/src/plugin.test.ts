@@ -65,8 +65,6 @@ describe("throttlePlugin", () => {
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
           data: { id: 1, name: "cached" },
-          loading: false,
-          fetching: false,
           error: undefined,
           timestamp: 0,
         },
@@ -102,8 +100,6 @@ describe("throttlePlugin", () => {
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
           data: { cached: true },
-          loading: false,
-          fetching: false,
           error: undefined,
           timestamp: 0,
         },
@@ -141,8 +137,6 @@ describe("throttlePlugin", () => {
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
           data: cachedData,
-          loading: false,
-          fetching: false,
           error: undefined,
           timestamp: Date.now(),
         },
@@ -201,8 +195,6 @@ describe("throttlePlugin", () => {
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
           data: undefined,
-          loading: false,
-          fetching: false,
           error: undefined,
           timestamp: 0,
         },
@@ -237,8 +229,6 @@ describe("throttlePlugin", () => {
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
           data: { cached: true },
-          loading: false,
-          fetching: false,
           error: undefined,
           timestamp: 0,
         },
@@ -294,8 +284,6 @@ describe("throttlePlugin", () => {
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
           data: { cached: true },
-          loading: false,
-          fetching: false,
           error: undefined,
           timestamp: 0,
         },
@@ -330,8 +318,6 @@ describe("throttlePlugin", () => {
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
           data: { cached: true },
-          loading: false,
-          fetching: false,
           error: undefined,
           timestamp: 0,
         },
@@ -374,8 +360,6 @@ describe("throttlePlugin", () => {
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
           data: { id: 1 },
-          loading: false,
-          fetching: false,
           error: undefined,
           timestamp: 0,
         },
@@ -383,8 +367,6 @@ describe("throttlePlugin", () => {
       stateManager.setCache('{"method":"GET","path":["users","2"]}', {
         state: {
           data: { id: 2 },
-          loading: false,
-          fetching: false,
           error: undefined,
           timestamp: 0,
         },
@@ -482,8 +464,6 @@ describe("throttlePlugin", () => {
       stateManager.setCache('{"method":"GET","path":["users","1"]}', {
         state: {
           data: { cached: true },
-          loading: false,
-          fetching: false,
           error: undefined,
           timestamp: 0,
         },
@@ -516,8 +496,6 @@ describe("throttlePlugin", () => {
       stateManager.setCache('{"method":"GET","path":["users"]}', {
         state: {
           data: { items: [1, 2, 3] },
-          loading: false,
-          fetching: false,
           error: undefined,
           timestamp: 0,
         },

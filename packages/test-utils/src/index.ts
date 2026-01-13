@@ -18,8 +18,6 @@ export function createState<TData = unknown, TError = unknown>(
   overrides: Partial<OperationState<TData, TError>> = {}
 ): OperationState<TData, TError> {
   return {
-    loading: false,
-    fetching: false,
     data: undefined as TData | undefined,
     error: undefined as TError | undefined,
     timestamp: 0,

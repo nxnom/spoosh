@@ -46,8 +46,6 @@ function setupCacheEntry(
 ) {
   stateManager.setCache(key, {
     state: {
-      loading: false,
-      fetching: false,
       data,
       error: undefined,
       timestamp: Date.now(),
@@ -799,8 +797,6 @@ describe("optimisticPlugin", () => {
       const cacheKey = '{"method":"$get","path":["posts"]}';
       stateManager.setCache(cacheKey, {
         state: {
-          loading: true,
-          fetching: true,
           data: undefined,
           error: undefined,
           timestamp: Date.now(),

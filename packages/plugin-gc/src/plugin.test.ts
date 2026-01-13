@@ -277,7 +277,7 @@ describe("gcPlugin", () => {
       for (let i = 1; i <= 5; i++) {
         stateManager.setCache(`entry${i}`, {
           state: {
-                data: `${i}`,
+            data: `${i}`,
             error: undefined,
             timestamp: i * 1000,
           },

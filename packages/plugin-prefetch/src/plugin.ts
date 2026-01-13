@@ -9,13 +9,13 @@ import {
   resolvePath,
   resolveTags,
   createInitialState,
-  storePromiseInCache,
 } from "@spoosh/core";
 import type {
   PrefetchPluginConfig,
   PrefetchInstanceApi,
   PrefetchOptions,
 } from "./types";
+import { storePromiseInCache } from "./promise-cache";
 
 /**
  * Provides prefetching capabilities to load data before it's needed.
@@ -150,8 +150,6 @@ export function prefetchPlugin(
             }
           };
 
-          updateState({ fetching: true, loading: true });
-
           try {
             let current: unknown = api;
 
@@ -171,16 +169,8 @@ export function prefetchPlugin(
             const response = await method(mergedOptions);
             pluginContext.response = response;
 
-            if (response.error) {
+            if (response.data !== undefined && !response.error) {
               updateState({
-                fetching: false,
-                loading: false,
-                error: response.error,
-              });
-            } else {
-              updateState({
-                fetching: false,
-                loading: false,
                 data: response.data,
                 error: undefined,
                 timestamp: Date.now(),
@@ -206,22 +196,14 @@ export function prefetchPlugin(
 
             pluginContext.response = errorResponse;
 
-            updateState({
-              fetching: false,
-              loading: false,
-              error: err as TError,
-            });
-
             return errorResponse;
           }
         };
 
-        const existingCache = stateManager.getCache(queryKey);
+        const existingPromise = stateManager.getPendingPromise(queryKey);
 
-        if (existingCache?.promise) {
-          return existingCache.promise as Promise<
-            SpooshResponse<TData, TError>
-          >;
+        if (existingPromise) {
+          return existingPromise as Promise<SpooshResponse<TData, TError>>;
         }
 
         const fetchPromise = pluginExecutor.executeMiddleware(
@@ -233,7 +215,6 @@ export function prefetchPlugin(
         storePromiseInCache(fetchPromise, {
           stateManager,
           queryKey,
-          tags: resolvedTags,
           timeout,
         });
 

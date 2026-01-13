@@ -8,8 +8,6 @@ export interface DebugLogEntry {
   tags: string[];
   requestOptions: unknown;
   state: {
-    loading: boolean;
-    fetching: boolean;
     data: unknown;
     error: unknown;
     timestamp: number;

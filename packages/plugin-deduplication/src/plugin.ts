@@ -40,8 +40,9 @@ export function deduplicationPlugin(
       const dedupeMode = requestOverride ?? defaultMode;
 
       if (dedupeMode === "in-flight") {
-        const cached = context.stateManager.getCache(context.queryKey);
-        const existingPromise = cached?.promise;
+        const existingPromise = context.stateManager.getPendingPromise(
+          context.queryKey
+        );
 
         if (existingPromise) {
           return existingPromise as Promise<

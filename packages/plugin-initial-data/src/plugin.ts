@@ -109,8 +109,6 @@ export function initialDataPlugin(): SpooshPlugin<{
 
       context.stateManager.setCache(context.queryKey, {
         state: {
-          loading: false,
-          fetching: false,
           data: pluginOptions.initialData,
           error: undefined,
           timestamp: Date.now(),

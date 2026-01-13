@@ -116,11 +116,9 @@ describe("prefetchPlugin", () => {
 
       const cached = stateManager.getCache(queryKey);
       expect(cached?.state.data).toEqual({ posts: [{ id: 1 }] });
-      expect(cached?.state.loading).toBe(false);
-      expect(cached?.state.fetching).toBe(false);
     });
 
-    it("should store error in cache when fetch fails", async () => {
+    it("should return error but not cache error data when fetch fails", async () => {
       const plugin = prefetchPlugin();
       const stateManager = createStateManager();
       const eventEmitter = createEventEmitter();
@@ -140,7 +138,11 @@ describe("prefetchPlugin", () => {
         pluginExecutor,
       });
 
-      await prefetch((apiProxy) => (apiProxy as typeof api).posts.$get());
+      const result = await prefetch((apiProxy) =>
+        (apiProxy as typeof api).posts.$get()
+      );
+
+      expect(result.error).toEqual(errorResponse);
 
       const queryKey = stateManager.createQueryKey({
         path: ["posts"],
@@ -149,7 +151,8 @@ describe("prefetchPlugin", () => {
       });
 
       const cached = stateManager.getCache(queryKey);
-      expect(cached?.state.error).toEqual(errorResponse);
+      expect(cached?.state.data).toBeUndefined();
+      expect(cached?.state.error).toBeUndefined();
     });
 
     it("should throw error when selector does not select a $get method", async () => {
@@ -314,17 +317,7 @@ describe("prefetchPlugin", () => {
         options: undefined,
       });
 
-      stateManager.setCache(queryKey, {
-        state: {
-          loading: true,
-          fetching: true,
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
-        tags: [],
-        promise: existingPromise,
-      });
+      stateManager.setPendingPromise(queryKey, existingPromise);
 
       const { prefetch } = plugin.instanceApi!({
         api,
@@ -443,13 +436,11 @@ describe("prefetchPlugin", () => {
 
       await vi.advanceTimersByTimeAsync(1);
 
-      let cached = stateManager.getCache(queryKey);
-      expect(cached?.promise).toBeDefined();
+      expect(stateManager.getPendingPromise(queryKey)).toBeDefined();
 
       await vi.advanceTimersByTimeAsync(30000);
 
-      cached = stateManager.getCache(queryKey);
-      expect(cached?.promise).toBeUndefined();
+      expect(stateManager.getPendingPromise(queryKey)).toBeUndefined();
 
       resolvePromise!({ data: { posts: [] }, status: 200 });
     });
@@ -486,16 +477,13 @@ describe("prefetchPlugin", () => {
 
       await vi.advanceTimersByTimeAsync(1);
 
-      let cached = stateManager.getCache(queryKey);
-      expect(cached?.promise).toBeDefined();
+      expect(stateManager.getPendingPromise(queryKey)).toBeDefined();
 
       await vi.advanceTimersByTimeAsync(4000);
-      cached = stateManager.getCache(queryKey);
-      expect(cached?.promise).toBeDefined();
+      expect(stateManager.getPendingPromise(queryKey)).toBeDefined();
 
       await vi.advanceTimersByTimeAsync(1000);
-      cached = stateManager.getCache(queryKey);
-      expect(cached?.promise).toBeUndefined();
+      expect(stateManager.getPendingPromise(queryKey)).toBeUndefined();
 
       resolvePromise!({ data: { posts: [] }, status: 200 });
     });
@@ -527,8 +515,9 @@ describe("prefetchPlugin", () => {
         options: undefined,
       });
 
+      expect(stateManager.getPendingPromise(queryKey)).toBeUndefined();
+
       const cached = stateManager.getCache(queryKey);
-      expect(cached?.promise).toBeUndefined();
       expect(cached?.state.data).toEqual({ posts: [{ id: 1 }] });
     });
 
@@ -751,9 +740,8 @@ describe("prefetchPlugin", () => {
       });
 
       const cached = stateManager.getCache(queryKey);
-      expect(cached?.state.error).toBe(thrownError);
-      expect(cached?.state.loading).toBe(false);
-      expect(cached?.state.fetching).toBe(false);
+      expect(cached?.state.data).toBeUndefined();
+      expect(cached?.state.error).toBeUndefined();
     });
   });
 });
