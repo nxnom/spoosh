@@ -56,4 +56,15 @@ const { data } = useRead(
 
 ## Server-Side Rendering
 
-For a complete SSR example with Next.js, see [Next.js Plugin - With Initial Data](/docs/plugins/nextjs#with-initial-data).
+`createClient` automatically generates Next.js cache tags from the API path:
+
+```typescript
+import { createClient } from "@spoosh/core";
+
+const api = createClient<ApiSchema>({ baseUrl: process.env.API_URL! });
+
+// Auto-generates: next: { tags: ['posts'] }
+const { data: posts } = await api.posts.$get();
+```
+
+For a complete SSR example with cache invalidation, see [Next.js Plugin - With Initial Data](/docs/plugins/nextjs#with-initial-data).

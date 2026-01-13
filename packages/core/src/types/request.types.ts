@@ -81,7 +81,8 @@ export type FetchExecutor<
   path: string[],
   method: HttpMethod,
   defaultOptions: TOptions,
-  requestOptions?: TRequestOptions
+  requestOptions?: TRequestOptions,
+  nextTags?: boolean
 ) => Promise<SpooshResponse<TData, TError>>;
 
 type TypedParamsOption<TParamNames extends string> = [TParamNames] extends [

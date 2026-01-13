@@ -21,7 +21,7 @@ export function createSpoosh<
     plugins = [] as unknown as TPlugins,
   } = config;
 
-  const api = createProxyHandler(baseUrl, defaultOptions);
+  const api = createProxyHandler({ baseUrl, defaultOptions });
   const stateManager = createStateManager();
   const eventEmitter = createEventEmitter();
   const pluginExecutor = createPluginExecutor([...plugins]);

@@ -114,13 +114,13 @@ const spoosh = createSpoosh<ApiSchema, Error, typeof plugins>({
 
 ## createClient
 
-A lightweight client without plugin support. Use this only for simple scripts or when you don't need React hooks.
+A lightweight client without plugin support. Use this for server-side data fetching in Next.js or simple scripts.
 
 ```typescript
 import { createClient } from "@spoosh/core";
 
 const api = createClient<ApiSchema>({
-  baseUrl: "/api",
+  baseUrl: process.env.API_URL!,
 });
 
 const { data } = await api.users.$get();
@@ -131,3 +131,19 @@ const { data } = await api.users.$get();
 | `baseUrl` | `string` | Base URL for all API requests |
 | `defaultOptions` | `RequestInit` | Default fetch options |
 | `middlewares` | `SpooshMiddleware[]` | Request/response middlewares |
+
+### Next.js Cache Tags
+
+`createClient` automatically generates Next.js cache tags from the API path:
+
+```typescript
+const api = createClient<ApiSchema>({ baseUrl: process.env.API_URL! });
+
+// Auto-generates: next: { tags: ['posts'] }
+await api.posts.$get();
+
+// Auto-generates: next: { tags: ['users', 'users/123', 'users/123/posts'] }
+await api.users[123].posts.$get();
+```
+
+This enables automatic cache invalidation with `revalidateTag()` when using the [Next.js plugin](/docs/plugins/nextjs).

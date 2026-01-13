@@ -106,6 +106,25 @@ type SpooshResponse<TData, TError> = {
 };
 ```
 
+### Next.js Server-Side Usage
+
+When using `createClient`, Next.js cache tags are automatically generated from the API path:
+
+```typescript
+// Server component
+import { createClient } from "@spoosh/core";
+
+const api = createClient<ApiSchema>({ baseUrl: process.env.API_URL! });
+
+// Auto-generates next: { tags: ['posts'] }
+const { data: posts } = await api.posts.$get();
+
+// Auto-generates next: { tags: ['users', 'users/123', 'users/123/posts'] }
+const { data: userPosts } = await api.users[123].posts.$get();
+```
+
+This enables automatic cache invalidation with `revalidateTag()` in Next.js.
+
 ### With Middlewares
 
 ```typescript

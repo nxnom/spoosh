@@ -130,7 +130,9 @@ await trigger({
 
 ## With Initial Data
 
-Combine with `initialDataPlugin` for server-rendered pages with client-side hydration:
+Combine with `initialDataPlugin` for server-rendered pages with client-side hydration.
+
+`createClient` automatically generates Next.js cache tags from the API path, so `revalidateTag()` works seamlessly:
 
 ```typescript title="src/api/server.ts"
 import { createClient } from "@spoosh/core";
@@ -146,6 +148,7 @@ import { serverApi } from "@/api/server";
 import { PostList } from "./post-list";
 
 export default async function PostsPage() {
+  // Auto-generates: next: { tags: ['posts'] }
   const { data: posts } = await serverApi.posts.$get();
 
   return <PostList initialPosts={posts} />;

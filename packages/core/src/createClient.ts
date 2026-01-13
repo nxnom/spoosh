@@ -51,8 +51,9 @@ export function createClient<TSchema, TDefaultError = unknown>(
 
   const optionsWithMiddlewares = { ...defaultOptions, middlewares };
 
-  return createProxyHandler<SpooshClient<TSchema, TDefaultError>>(
+  return createProxyHandler<SpooshClient<TSchema, TDefaultError>>({
     baseUrl,
-    optionsWithMiddlewares
-  );
+    defaultOptions: optionsWithMiddlewares,
+    nextTags: true,
+  });
 }

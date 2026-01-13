@@ -14,6 +14,14 @@ const HTTP_METHODS: Record<string, HttpMethod> = {
   $delete: "DELETE",
 };
 
+export type ProxyHandlerConfig<TOptions = SpooshOptions> = {
+  baseUrl: string;
+  defaultOptions: TOptions;
+  path?: string[];
+  fetchExecutor?: FetchExecutor<TOptions, AnyRequestOptions>;
+  nextTags?: boolean;
+};
+
 /**
  * Creates the real API client proxy that executes actual HTTP requests.
  *
@@ -22,16 +30,13 @@ const HTTP_METHODS: Record<string, HttpMethod> = {
  *
  * Used internally by `createClient` and `createSpoosh` to create typed API clients.
  *
- * @param baseUrl - The base URL for all API requests
- * @param defaultOptions - Default options applied to every request
- * @param path - Current path segments (used internally for recursion)
- * @param fetchExecutor - Function that executes the actual fetch request
+ * @param config - Proxy handler configuration
  *
  * @returns A proxy object typed as TSchema that executes real HTTP requests
  *
  * @example
  * ```ts
- * const api = createProxyHandler<ApiSchema>('/api', {});
+ * const api = createProxyHandler<ApiSchema>({ baseUrl: '/api', defaultOptions: {} });
  *
  * // Accessing api.posts.$get() will:
  * // 1. Build path: ['posts']
@@ -47,15 +52,15 @@ const HTTP_METHODS: Record<string, HttpMethod> = {
 export function createProxyHandler<
   TSchema extends object,
   TOptions = SpooshOptions,
->(
-  baseUrl: string,
-  defaultOptions: TOptions,
-  path: string[] = [],
-  fetchExecutor: FetchExecutor<
-    TOptions,
-    AnyRequestOptions
-  > = executeFetch as FetchExecutor<TOptions, AnyRequestOptions>
-): TSchema {
+>(config: ProxyHandlerConfig<TOptions>): TSchema {
+  const {
+    baseUrl,
+    defaultOptions,
+    path = [],
+    fetchExecutor = executeFetch as FetchExecutor<TOptions, AnyRequestOptions>,
+    nextTags,
+  } = config;
+
   const handler: ProxyHandler<() => void> = {
     get(_target, prop: string | symbol) {
       if (typeof prop === "symbol") return undefined;
@@ -63,15 +68,23 @@ export function createProxyHandler<
       const method = HTTP_METHODS[prop];
       if (method) {
         return (options?: AnyRequestOptions) =>
-          fetchExecutor(baseUrl, path, method, defaultOptions, options);
+          fetchExecutor(
+            baseUrl,
+            path,
+            method,
+            defaultOptions,
+            options,
+            nextTags
+          );
       }
 
-      return createProxyHandler(
+      return createProxyHandler({
         baseUrl,
         defaultOptions,
-        [...path, prop],
-        fetchExecutor
-      );
+        path: [...path, prop],
+        fetchExecutor,
+        nextTags,
+      });
     },
 
     // Handles function call syntax for dynamic segments: api.posts("123"), api.users(userId)
@@ -82,12 +95,13 @@ export function createProxyHandler<
     apply(_target, _thisArg, args: [string]) {
       const [segment] = args;
 
-      return createProxyHandler(
+      return createProxyHandler({
         baseUrl,
         defaultOptions,
-        [...path, segment],
-        fetchExecutor
-      );
+        path: [...path, segment],
+        fetchExecutor,
+        nextTags,
+      });
     },
   };
 
