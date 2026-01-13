@@ -367,18 +367,7 @@ export function createInfiniteReadController<
             } as SpooshResponse<TData, TError>;
           }
 
-          if (response.error) {
-            stateManager.setCache(pageKey, {
-              state: {
-                loading: false,
-                fetching: false,
-                data: undefined,
-                error: response.error,
-                timestamp: Date.now(),
-              },
-              tags,
-            });
-          } else if (response.data !== undefined) {
+          if (response.data !== undefined && !response.error) {
             pageRequests.set(pageKey, mergedRequest);
 
             if (direction === "next") {
@@ -424,17 +413,6 @@ export function createInfiniteReadController<
           };
 
           context.response = errorResponse;
-
-          stateManager.setCache(pageKey, {
-            state: {
-              loading: false,
-              fetching: false,
-              data: undefined,
-              error: err,
-              timestamp: Date.now(),
-            },
-            tags,
-          });
 
           return errorResponse;
         } finally {

@@ -184,6 +184,7 @@ export function createOperationController<TData, TError>(
                 fetching: false,
                 loading: false,
                 error: response.error,
+                timestamp: Date.now(),
               });
             } else {
               updateState({
@@ -209,6 +210,7 @@ export function createOperationController<TData, TError>(
               fetching: false,
               loading: false,
               error: err as TError,
+              timestamp: Date.now(),
             });
 
             return errorResponse;

@@ -65,6 +65,12 @@ export type StateManager = {
   /** Mark all cache entries with matching tags as stale */
   markStale: (tags: string[]) => void;
 
+  /** Get all cache entries */
+  getAllCacheEntries: <TData, TError>() => CacheEntryWithKey<TData, TError>[];
+
+  /** Get the number of cache entries */
+  getSize: () => number;
+
   clear: () => void;
 };
 
@@ -220,6 +226,23 @@ export function createStateManager(): StateManager {
           entry.stale = true;
         }
       });
+    },
+
+    getAllCacheEntries<TData, TError>() {
+      const entries: CacheEntryWithKey<TData, TError>[] = [];
+
+      cache.forEach((entry, key) => {
+        entries.push({
+          key,
+          entry: entry as CacheEntry<TData, TError>,
+        });
+      });
+
+      return entries;
+    },
+
+    getSize() {
+      return cache.size;
     },
 
     clear() {
