@@ -19,6 +19,7 @@ import type {
   Endpoint,
   EndpointWithQuery,
   EndpointWithFormData,
+  EndpointWithUrlEncoded,
 } from "@spoosh/core";
 
 type User = { id: number; name: string; email: string };
@@ -38,6 +39,9 @@ type ApiSchema = {
   };
   upload: {
     $post: EndpointWithFormData<{ url: string }, { file: File }>;
+  };
+  payments: {
+    $post: EndpointWithUrlEncoded<{ id: string }, { amount: number; currency: string }>;
   };
 };
 ```
@@ -89,6 +93,11 @@ await api.users[123].$delete();
 // POST with FormData
 const { data: uploaded } = await api.upload.$post({
   formData: { file: myFile },
+});
+
+// POST with URL-encoded body (auto Content-Type: application/x-www-form-urlencoded)
+const { data: payment } = await api.payments.$post({
+  urlEncoded: { amount: 1000, currency: "usd" },
 });
 ```
 
@@ -172,15 +181,16 @@ const updatedContext = await applyMiddlewares(context, middlewares, "before");
 
 ## Schema Types
 
-| Type                                 | Description                | Example                                                               |
-| ------------------------------------ | -------------------------- | --------------------------------------------------------------------- |
-| `TData`                              | Simple data type (no body) | `$get: User[]`                                                        |
-| `Endpoint<TData>`                    | Explicit endpoint          | `$get: Endpoint<User[]>`                                              |
-| `Endpoint<TData, TBody>`             | Endpoint with JSON body    | `$post: Endpoint<User, CreateUserBody>`                               |
-| `EndpointWithQuery<TData, TQuery>`   | Endpoint with query params | `$get: EndpointWithQuery<User[], { page: number }>`                   |
-| `EndpointWithFormData<TData, TForm>` | Endpoint with form data    | `$post: EndpointWithFormData<Result, { file: File }>`                 |
-| `EndpointDefinition<T>`              | Full endpoint definition   | `$get: EndpointDefinition<{ data: User[]; query: { page: number } }>` |
-| `_`                                  | Dynamic path segment       | `users: { _: { $get: User } }`                                        |
+| Type                                    | Description                   | Example                                                               |
+| --------------------------------------- | ----------------------------- | --------------------------------------------------------------------- |
+| `TData`                                 | Simple data type (no body)    | `$get: User[]`                                                        |
+| `Endpoint<TData>`                       | Explicit endpoint             | `$get: Endpoint<User[]>`                                              |
+| `Endpoint<TData, TBody>`                | Endpoint with JSON body       | `$post: Endpoint<User, CreateUserBody>`                               |
+| `EndpointWithQuery<TData, TQuery>`      | Endpoint with query params    | `$get: EndpointWithQuery<User[], { page: number }>`                   |
+| `EndpointWithFormData<TData, TForm>`    | Endpoint with multipart form  | `$post: EndpointWithFormData<Result, { file: File }>`                 |
+| `EndpointWithUrlEncoded<TData, TBody>`  | Endpoint with URL-encoded body| `$post: EndpointWithUrlEncoded<Result, { amount: number }>`           |
+| `EndpointDefinition<T>`                 | Full endpoint definition      | `$get: EndpointDefinition<{ data: User[]; query: { page: number } }>` |
+| `_`                                     | Dynamic path segment          | `users: { _: { $get: User } }`                                        |
 
 ## API Reference
 

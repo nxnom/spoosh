@@ -34,13 +34,14 @@ export type EndpointTypeInfo = {
     | "Endpoint"
     | "EndpointWithQuery"
     | "EndpointWithFormData"
+    | "EndpointWithUrlEncoded"
     | "void"
     | "simple";
 
   /** Data type (response) */
   dataType: string;
 
-  /** Body type (for Endpoint) */
+  /** Body type (for Endpoint with JSON body) */
   bodyType?: string;
 
   /** Query type (for EndpointWithQuery) */
@@ -48,6 +49,9 @@ export type EndpointTypeInfo = {
 
   /** FormData type (for EndpointWithFormData) */
   formDataType?: string;
+
+  /** URL-encoded type (for EndpointWithUrlEncoded) */
+  urlEncodedType?: string;
 
   /** Error type */
   errorType?: string;

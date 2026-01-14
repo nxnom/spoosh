@@ -15,7 +15,7 @@ npm install @spoosh/openapi
 - **Export**: Generate OpenAPI 3.0 or 3.1 specs from TypeScript Spoosh schemas
 - **Import**: Generate TypeScript Spoosh schemas from OpenAPI 3.0/3.1 specs
 - **JSON & YAML**: Support for both JSON and YAML OpenAPI formats
-- **Type-safe**: Automatic detection of endpoint types (Endpoint, EndpointWithQuery, EndpointWithFormData)
+- **Type-safe**: Automatic detection of endpoint types (Endpoint, EndpointWithQuery, EndpointWithFormData, EndpointWithUrlEncoded)
 - **Error Types**: Extract error types from 4xx/5xx responses
 - **JSDoc Preservation**: Convert OpenAPI descriptions to TypeScript JSDoc comments
 - **File Uploads**: Automatic File type detection for binary formats
@@ -236,6 +236,7 @@ The import feature automatically detects the appropriate Spoosh endpoint type:
 | Query parameters | `EndpointWithQuery<TData, TQuery, TError>` |
 | `multipart/form-data` request body | `EndpointWithFormData<TData, TFormData, TError>` |
 | `application/json` request body | `Endpoint<TData, TBody, TError>` |
+| `application/x-www-form-urlencoded` request body | `EndpointWithUrlEncoded<TData, TBody, TError>` |
 | No response body (204) | `void` |
 | Simple response only | `TData` |
 

@@ -5,6 +5,7 @@ import {
   isJsonBody,
   mergeHeaders,
   objectToFormData,
+  objectToUrlEncoded,
 } from "./utils";
 import type {
   AnyRequestOptions,
@@ -83,6 +84,10 @@ function buildInputFields(
 
   if (requestOptions?.formData !== undefined) {
     fields.formData = requestOptions.formData;
+  }
+
+  if (requestOptions?.urlEncoded !== undefined) {
+    fields.urlEncoded = requestOptions.urlEncoded;
   }
 
   if (requestOptions?.params !== undefined) {
@@ -175,6 +180,17 @@ async function executeCoreFetch<TData, TError>(
     fetchInit.body = objectToFormData(
       requestOptions.formData as Record<string, unknown>
     );
+  } else if (requestOptions?.urlEncoded !== undefined) {
+    fetchInit.body = objectToUrlEncoded(
+      requestOptions.urlEncoded as Record<string, unknown>
+    );
+    headers = await mergeHeaders(headers, {
+      "Content-Type": "application/x-www-form-urlencoded",
+    });
+
+    if (headers) {
+      fetchInit.headers = headers;
+    }
   } else if (requestOptions?.body !== undefined) {
     if (isJsonBody(requestOptions.body)) {
       fetchInit.body = JSON.stringify(requestOptions.body);

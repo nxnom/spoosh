@@ -11,6 +11,7 @@ import type {
   ExtractBody,
   ExtractQuery,
   ExtractFormData,
+  ExtractUrlEncoded,
   HasMethod,
   HasRequiredOptions,
 } from "./endpoint.types";
@@ -28,7 +29,8 @@ type MethodRequestOptions<
   ? RequestOptions<
       ExtractBody<TSchema, TMethod, TDefaultError>,
       ExtractQuery<TSchema, TMethod, TDefaultError>,
-      ExtractFormData<TSchema, TMethod, TDefaultError>
+      ExtractFormData<TSchema, TMethod, TDefaultError>,
+      ExtractUrlEncoded<TSchema, TMethod, TDefaultError>
     > &
       ComputeRequestOptions<
         ExtractMethodOptions<TOptionsMap, TMethod>,
@@ -37,6 +39,7 @@ type MethodRequestOptions<
   : RequestOptions<
       never,
       ExtractQuery<TSchema, TMethod, TDefaultError>,
+      never,
       never
     > &
       ComputeRequestOptions<
@@ -77,6 +80,7 @@ export type MethodFn<
             ExtractQuery<TSchema, TMethod, TDefaultError>,
             ExtractBody<TSchema, TMethod, TDefaultError>,
             ExtractFormData<TSchema, TMethod, TDefaultError>,
+            ExtractUrlEncoded<TSchema, TMethod, TDefaultError>,
             TParamNames
           >
         >
@@ -104,6 +108,7 @@ export type MethodFn<
             ExtractQuery<TSchema, TMethod, TDefaultError>,
             ExtractBody<TSchema, TMethod, TDefaultError>,
             ExtractFormData<TSchema, TMethod, TDefaultError>,
+            ExtractUrlEncoded<TSchema, TMethod, TDefaultError>,
             TParamNames
           >
         >

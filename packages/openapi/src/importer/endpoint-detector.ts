@@ -45,16 +45,27 @@ export function detectEndpointType(
     };
   }
 
-  if (
-    hasRequestBody &&
-    (contentType === "application/json" ||
-      contentType === "application/x-www-form-urlencoded")
-  ) {
-    const bodyType = extractBodyType(operation, ctx, contentType);
+  if (hasRequestBody && contentType === "application/json") {
+    const bodyType = extractBodyType(operation, ctx, "application/json");
     return {
       type: "Endpoint",
       dataType,
       bodyType,
+      errorType,
+      description,
+    };
+  }
+
+  if (hasRequestBody && contentType === "application/x-www-form-urlencoded") {
+    const urlEncodedType = extractBodyType(
+      operation,
+      ctx,
+      "application/x-www-form-urlencoded"
+    );
+    return {
+      type: "EndpointWithUrlEncoded",
+      dataType,
+      urlEncodedType,
       errorType,
       description,
     };

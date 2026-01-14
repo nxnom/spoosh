@@ -87,6 +87,8 @@ function generateImports(
       imports.add("EndpointWithQuery");
     } else if (info.type === "EndpointWithFormData") {
       imports.add("EndpointWithFormData");
+    } else if (info.type === "EndpointWithUrlEncoded") {
+      imports.add("EndpointWithUrlEncoded");
     }
   }
 
@@ -215,6 +217,13 @@ function generateEndpointType(info: EndpointTypeInfo): string {
       return `EndpointWithFormData<${info.dataType}, ${info.formDataType || "FormData"}, ${info.errorType}>`;
     }
     return `EndpointWithFormData<${info.dataType}, ${info.formDataType || "FormData"}>`;
+  }
+
+  if (info.type === "EndpointWithUrlEncoded") {
+    if (info.errorType) {
+      return `EndpointWithUrlEncoded<${info.dataType}, ${info.urlEncodedType || "never"}, ${info.errorType}>`;
+    }
+    return `EndpointWithUrlEncoded<${info.dataType}, ${info.urlEncodedType || "never"}>`;
   }
 
   return info.dataType;

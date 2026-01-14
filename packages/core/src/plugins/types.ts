@@ -303,6 +303,7 @@ export type ResolverContext<
   TBody = unknown,
   TParams = unknown,
   TFormData = unknown,
+  TUrlEncoded = unknown,
 > = {
   schema: TSchema;
   data: TData;
@@ -312,6 +313,7 @@ export type ResolverContext<
     body: TBody;
     params: TParams;
     formData: TFormData;
+    urlEncoded: TUrlEncoded;
   };
 };
 

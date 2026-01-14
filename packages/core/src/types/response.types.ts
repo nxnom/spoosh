@@ -8,6 +8,10 @@ type FormDataField<TFormData> = [TFormData] extends [never]
   ? object
   : { formData: TFormData };
 
+type UrlEncodedField<TUrlEncoded> = [TUrlEncoded] extends [never]
+  ? object
+  : { urlEncoded: TUrlEncoded };
+
 type ParamsField<TParamNames extends string> = [TParamNames] extends [never]
   ? object
   : { params: Record<TParamNames, string | number> };
@@ -16,20 +20,29 @@ type InputFields<
   TQuery,
   TBody,
   TFormData,
+  TUrlEncoded,
   TParamNames extends string,
 > = QueryField<TQuery> &
   BodyField<TBody> &
   FormDataField<TFormData> &
+  UrlEncodedField<TUrlEncoded> &
   ParamsField<TParamNames>;
 
-type InputFieldWrapper<TQuery, TBody, TFormData, TParamNames extends string> = [
+type InputFieldWrapper<
   TQuery,
   TBody,
   TFormData,
-  TParamNames,
-] extends [never, never, never, never]
+  TUrlEncoded,
+  TParamNames extends string,
+> = [TQuery, TBody, TFormData, TUrlEncoded, TParamNames] extends [
+  never,
+  never,
+  never,
+  never,
+  never,
+]
   ? object
-  : { input: InputFields<TQuery, TBody, TFormData, TParamNames> };
+  : { input: InputFields<TQuery, TBody, TFormData, TUrlEncoded, TParamNames> };
 
 export type SpooshResponse<
   TData,
@@ -38,6 +51,7 @@ export type SpooshResponse<
   TQuery = never,
   TBody = never,
   TFormData = never,
+  TUrlEncoded = never,
   TParamNames extends string = never,
 > =
   | ({
@@ -47,7 +61,7 @@ export type SpooshResponse<
       error?: undefined;
       aborted?: false;
       readonly __requestOptions?: TRequestOptions;
-    } & InputFieldWrapper<TQuery, TBody, TFormData, TParamNames>)
+    } & InputFieldWrapper<TQuery, TBody, TFormData, TUrlEncoded, TParamNames>)
   | ({
       status: number;
       data?: undefined;
@@ -55,7 +69,7 @@ export type SpooshResponse<
       error: TError;
       aborted?: boolean;
       readonly __requestOptions?: TRequestOptions;
-    } & InputFieldWrapper<TQuery, TBody, TFormData, TParamNames>);
+    } & InputFieldWrapper<TQuery, TBody, TFormData, TUrlEncoded, TParamNames>);
 
 export type SpooshOptionsExtra<TData = unknown, TError = unknown> = {
   middlewares?: SpooshMiddleware<TData, TError>[];

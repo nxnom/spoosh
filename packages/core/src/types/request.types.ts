@@ -30,19 +30,26 @@ type FormDataOption<TFormData> = [TFormData] extends [never]
   ? object
   : { formData: TFormData };
 
+type UrlEncodedOption<TUrlEncoded> = [TUrlEncoded] extends [never]
+  ? object
+  : { urlEncoded: TUrlEncoded };
+
 export type RequestOptions<
   TBody = never,
   TQuery = never,
   TFormData = never,
+  TUrlEncoded = never,
 > = BaseRequestOptions &
   BodyOption<TBody> &
   QueryOption<TQuery> &
-  FormDataOption<TFormData>;
+  FormDataOption<TFormData> &
+  UrlEncodedOption<TUrlEncoded>;
 
 export type AnyRequestOptions = BaseRequestOptions & {
   body?: unknown;
   query?: Record<string, string | number | boolean | undefined>;
   formData?: Record<string, unknown>;
+  urlEncoded?: Record<string, unknown>;
   params?: Record<string, string | number>;
   signal?: AbortSignal;
 } & Partial<RetryConfig>;

@@ -24,12 +24,19 @@ export type EndpointWithFormData<TData, TFormData, TError = never> = {
   ? { data: TData; formData: TFormData }
   : { data: TData; formData: TFormData; error: TError });
 
+export type EndpointWithUrlEncoded<TData, TUrlEncoded, TError = never> = {
+  [EndpointBrand]: true;
+} & ([TError] extends [never]
+  ? { data: TData; urlEncoded: TUrlEncoded }
+  : { data: TData; urlEncoded: TUrlEncoded; error: TError });
+
 export type EndpointDefinition<
   T extends {
     data: unknown;
     body?: unknown;
     query?: unknown;
     formData?: unknown;
+    urlEncoded?: unknown;
     error?: unknown;
   },
 > = { [EndpointBrand]: true } & T;
@@ -43,6 +50,7 @@ export type NormalizeEndpoint<T, TDefaultError> = T extends {
       body: T extends { body: infer B } ? B : never;
       query: T extends { query: infer Q } ? Q : never;
       formData: T extends { formData: infer F } ? F : never;
+      urlEncoded: T extends { urlEncoded: infer U } ? U : never;
     }
   : {
       data: T;
@@ -50,6 +58,7 @@ export type NormalizeEndpoint<T, TDefaultError> = T extends {
       body: never;
       query: never;
       formData: never;
+      urlEncoded: never;
     };
 
 export type ExtractMethodDef<
@@ -107,6 +116,17 @@ export type ExtractFormData<
     ? F
     : never;
 
+export type ExtractUrlEncoded<
+  TSchema,
+  TMethod extends SchemaMethod,
+  TDefaultError = unknown,
+> =
+  ExtractMethodDef<TSchema, TMethod, TDefaultError> extends {
+    urlEncoded: infer U;
+  }
+    ? U
+    : never;
+
 export type HasMethod<TSchema, TMethod extends SchemaMethod> = TSchema extends {
   [K in TMethod]: unknown;
 }
@@ -119,6 +139,8 @@ export type HasRequiredOptions<
   TDefaultError = unknown,
 > = [ExtractBody<TSchema, TMethod, TDefaultError>] extends [never]
   ? [ExtractFormData<TSchema, TMethod, TDefaultError>] extends [never]
-    ? false
+    ? [ExtractUrlEncoded<TSchema, TMethod, TDefaultError>] extends [never]
+      ? false
+      : true
     : true
   : true;
