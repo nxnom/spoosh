@@ -8,7 +8,9 @@ function stringifyQuery(
       continue;
     }
 
-    parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    parts.push(
+      `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
+    );
   }
 
   return parts.join("&");
