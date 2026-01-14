@@ -137,7 +137,12 @@ function generateBaseType(
   }
 
   if (schema.enum) {
-    return schema.enum.map((v) => JSON.stringify(v)).join(" | ");
+    const sortedEnum = [...schema.enum].sort((a, b) => {
+      const aStr = JSON.stringify(a);
+      const bStr = JSON.stringify(b);
+      return aStr.localeCompare(bStr);
+    });
+    return sortedEnum.map((v) => JSON.stringify(v)).join(" | ");
   }
 
   if (schema.oneOf) {

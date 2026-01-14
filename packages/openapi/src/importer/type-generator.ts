@@ -107,7 +107,11 @@ function generateComponentTypes(
     return "";
   }
 
-  for (const [name, schema] of Object.entries(spec.components.schemas)) {
+  const sortedSchemas = Object.entries(spec.components.schemas).sort((a, b) =>
+    a[0].localeCompare(b[0])
+  );
+
+  for (const [name, schema] of sortedSchemas) {
     const typeDefinition = generateNamedType(name, schema, ctx);
     types.push(typeDefinition);
   }

@@ -80,8 +80,11 @@ export function generateOpenAPISpec(
   }
 
   if (schemas.size > 0) {
+    const sortedSchemas = Array.from(schemas.entries()).sort((a, b) =>
+      a[0].localeCompare(b[0])
+    );
     spec.components = {
-      schemas: Object.fromEntries(schemas),
+      schemas: Object.fromEntries(sortedSchemas),
     };
   }
 

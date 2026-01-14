@@ -1,0 +1,8 @@
+# Build output
+dist/
+
+# Test output
+.tmp-roundtrip/
+
+# Logs
+*.log

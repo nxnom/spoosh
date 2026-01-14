@@ -97,16 +97,22 @@ export function typeToSchema(type: ts.Type, ctx: SchemaContext): JSONSchema {
     }
 
     if (nonNullTypes.every((t) => t.isStringLiteral())) {
+      const enumValues = nonNullTypes
+        .map((t) => (t as ts.StringLiteralType).value)
+        .sort();
       return {
         type: "string",
-        enum: nonNullTypes.map((t) => (t as ts.StringLiteralType).value),
+        enum: enumValues,
       };
     }
 
     if (nonNullTypes.every((t) => t.isNumberLiteral())) {
+      const enumValues = nonNullTypes
+        .map((t) => (t as ts.NumberLiteralType).value)
+        .sort((a, b) => a - b);
       return {
         type: "number",
-        enum: nonNullTypes.map((t) => (t as ts.NumberLiteralType).value),
+        enum: enumValues,
       };
     }
 
@@ -139,8 +145,22 @@ export function typeToSchema(type: ts.Type, ctx: SchemaContext): JSONSchema {
   }
 
   if (type.flags & ts.TypeFlags.Object) {
-    const symbol = type.getSymbol() ?? type.aliasSymbol;
+    const symbol = type.aliasSymbol ?? type.getSymbol();
     const typeName = symbol?.getName();
+
+    const builtInTypes = new Set([
+      "Date",
+      "Record",
+      "Partial",
+      "Required",
+      "Pick",
+      "Omit",
+      "Readonly",
+      "Array",
+      "Map",
+      "Set",
+      "Promise",
+    ]);
 
     if (typeName === "Date") {
       return { type: "string", format: "date-time" };
@@ -149,8 +169,8 @@ export function typeToSchema(type: ts.Type, ctx: SchemaContext): JSONSchema {
     if (
       typeName &&
       typeName !== "__type" &&
-      typeName !== "Array" &&
-      !typeName.startsWith("__")
+      !typeName.startsWith("__") &&
+      !builtInTypes.has(typeName)
     ) {
       if (ctx.visitedTypes.has(typeName)) {
         return { $ref: `#/components/schemas/${typeName}` };
@@ -158,7 +178,10 @@ export function typeToSchema(type: ts.Type, ctx: SchemaContext): JSONSchema {
 
       if (!ctx.schemas.has(typeName)) {
         ctx.visitedTypes.add(typeName);
-        const schema = objectTypeToSchema(type, {
+        const actualType = type.aliasSymbol
+          ? checker.getDeclaredTypeOfSymbol(type.aliasSymbol)
+          : type;
+        const schema = objectTypeToSchema(actualType, {
           ...ctx,
           depth: ctx.depth + 1,
         });
