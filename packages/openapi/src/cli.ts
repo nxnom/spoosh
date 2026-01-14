@@ -4,10 +4,16 @@ import { program } from "commander";
 import fs from "fs";
 import { parseSchema } from "./parser.js";
 import { generateOpenAPISpec } from "./generator.js";
+import { importOpenAPISpec } from "./importer/index.js";
 
 program
   .name("spoosh-openapi")
-  .description("Generate OpenAPI spec from TypeScript API schema")
+  .description("Convert between Spoosh schemas and OpenAPI specs")
+  .version("0.1.0");
+
+program
+  .command("export")
+  .description("Generate OpenAPI spec from Spoosh TypeScript schema")
   .requiredOption(
     "-s, --schema <path>",
     "Path to TypeScript file containing the schema type"
@@ -35,6 +41,30 @@ program
       } else {
         console.log(output);
       }
+    } catch (error) {
+      console.error("Error:", error instanceof Error ? error.message : error);
+      process.exit(1);
+    }
+  });
+
+program
+  .command("import")
+  .description("Generate Spoosh TypeScript schema from OpenAPI spec")
+  .argument("<input>", "Path to OpenAPI spec file (JSON or YAML)")
+  .requiredOption("-o, --output <path>", "Output TypeScript file path")
+  .option("-t, --type-name <name>", "Schema type name", "ApiSchema")
+  .option("--include-imports", "Include Spoosh type imports")
+  .option("--jsdoc", "Include JSDoc comments from descriptions")
+  .action((input, options) => {
+    try {
+      const tsCode = importOpenAPISpec(input, {
+        typeName: options.typeName,
+        includeImports: options.includeImports,
+        jsdoc: options.jsdoc,
+      });
+
+      fs.writeFileSync(options.output, tsCode);
+      console.log(`Spoosh schema written to ${options.output}`);
     } catch (error) {
       console.error("Error:", error instanceof Error ? error.message : error);
       process.exit(1);
