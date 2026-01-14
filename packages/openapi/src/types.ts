@@ -1,5 +1,5 @@
 export type JSONSchema = {
-  type?: string;
+  type?: string | string[];
   items?: JSONSchema;
   properties?: Record<string, JSONSchema>;
   required?: string[];
@@ -70,7 +70,7 @@ export type OpenAPITag = {
 };
 
 export type OpenAPISpec = {
-  openapi: "3.0.0";
+  openapi: "3.0.0" | "3.1.0";
   info: {
     title: string;
     version: string;

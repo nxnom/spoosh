@@ -2,8 +2,7 @@
 
 import { program } from "commander";
 import fs from "fs";
-import { parseSchema } from "./parser.js";
-import { generateOpenAPISpec } from "./generator.js";
+import { parseSchema, generateOpenAPISpec } from "./exporter/index.js";
 import { importOpenAPISpec } from "./importer/index.js";
 
 program
@@ -23,14 +22,27 @@ program
   .option("--title <title>", "API title for OpenAPI info")
   .option("--version <version>", "API version for OpenAPI info", "1.0.0")
   .option("--base-url <url>", "Base URL for servers array")
+  .option(
+    "--openapi-version <version>",
+    "OpenAPI spec version (3.0.0 or 3.1.0)",
+    "3.1.0"
+  )
   .action((options) => {
     try {
-      const { endpoints, schemas } = parseSchema(options.schema, options.type);
+      const openapiVersion =
+        options.openapiVersion === "3.0.0" ? "3.0.0" : "3.1.0";
+
+      const { endpoints, schemas } = parseSchema(
+        options.schema,
+        options.type,
+        openapiVersion
+      );
 
       const spec = generateOpenAPISpec(endpoints, schemas, {
         title: options.title,
         version: options.version,
         baseUrl: options.baseUrl,
+        openapiVersion,
       });
 
       const output = JSON.stringify(spec, null, 2);

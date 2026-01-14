@@ -1,6 +1,6 @@
 import ts from "typescript";
 import path from "path";
-import type { ParsedEndpoint, JSONSchema, OpenAPIParameter } from "./types.js";
+import type { ParsedEndpoint, JSONSchema, OpenAPIParameter } from "../types.js";
 import {
   createSchemaContext,
   typeToSchema,
@@ -27,7 +27,8 @@ export type ParseResult = {
 
 export function parseSchema(
   schemaFilePath: string,
-  typeName: string
+  typeName: string,
+  openapiVersion: "3.0.0" | "3.1.0" = "3.1.0"
 ): ParseResult {
   const absolutePath = path.resolve(schemaFilePath);
   const schemaDir = path.dirname(absolutePath);
@@ -72,7 +73,7 @@ export function parseSchema(
     );
   }
 
-  const ctx = createSchemaContext(checker);
+  const ctx = createSchemaContext(checker, openapiVersion);
   const endpoints: ParsedEndpoint[] = [];
 
   walkSchemaType(schemaType, "", [], ctx, endpoints, checker);

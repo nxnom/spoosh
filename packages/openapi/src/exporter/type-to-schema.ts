@@ -1,5 +1,5 @@
 import ts from "typescript";
-import type { JSONSchema } from "./types.js";
+import type { JSONSchema } from "../types.js";
 
 const MAX_DEPTH = 50;
 
@@ -8,14 +8,19 @@ export type SchemaContext = {
   schemas: Map<string, JSONSchema>;
   visitedTypes: Set<string>;
   depth: number;
+  openapiVersion: "3.0.0" | "3.1.0";
 };
 
-export function createSchemaContext(checker: ts.TypeChecker): SchemaContext {
+export function createSchemaContext(
+  checker: ts.TypeChecker,
+  openapiVersion: "3.0.0" | "3.1.0" = "3.1.0"
+): SchemaContext {
   return {
     checker,
     schemas: new Map(),
     visitedTypes: new Set(),
     depth: 0,
+    openapiVersion,
   };
 }
 
@@ -80,6 +85,14 @@ export function typeToSchema(type: ts.Type, ctx: SchemaContext): JSONSchema {
         ...ctx,
         depth: ctx.depth + 1,
       });
+
+      if (ctx.openapiVersion === "3.1.0") {
+        if (schema.type && typeof schema.type === "string") {
+          return { ...schema, type: [schema.type, "null"] };
+        }
+        return { oneOf: [schema, { type: "null" }] };
+      }
+
       return { ...schema, nullable: true };
     }
 
@@ -95,6 +108,13 @@ export function typeToSchema(type: ts.Type, ctx: SchemaContext): JSONSchema {
         type: "number",
         enum: nonNullTypes.map((t) => (t as ts.NumberLiteralType).value),
       };
+    }
+
+    if (
+      nonNullTypes.length === 2 &&
+      nonNullTypes.every((t) => t.flags & ts.TypeFlags.BooleanLiteral)
+    ) {
+      return { type: "boolean" };
     }
 
     const nextCtx = { ...ctx, depth: ctx.depth + 1 };

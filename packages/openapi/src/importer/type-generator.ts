@@ -128,7 +128,7 @@ function generateSchemaType(
   const typeName = sanitizeTypeName(ctx.options.typeName || "ApiSchema");
   const schemaBody = generateStructureBody(structure, ctx, 1);
 
-  return `type ${typeName} = ${schemaBody};`;
+  return `export type ${typeName} = ${schemaBody};`;
 }
 
 /**

@@ -1,6 +1,6 @@
 # @spoosh/openapi
 
-Bidirectional conversion between Spoosh TypeScript schemas and OpenAPI 3.0 specifications.
+Bidirectional conversion between Spoosh TypeScript schemas and OpenAPI 3.0/3.1 specifications.
 
 **[Documentation](https://spoosh.dev/docs/integrations/openapi)** · **Requirements:** TypeScript >= 5.0
 
@@ -12,8 +12,8 @@ npm install @spoosh/openapi
 
 ## Features
 
-- **Export**: Generate OpenAPI 3.0 specs from TypeScript Spoosh schemas
-- **Import**: Generate TypeScript Spoosh schemas from OpenAPI 3.0 specs
+- **Export**: Generate OpenAPI 3.0 or 3.1 specs from TypeScript Spoosh schemas
+- **Import**: Generate TypeScript Spoosh schemas from OpenAPI 3.0/3.1 specs
 - **JSON & YAML**: Support for both JSON and YAML OpenAPI formats
 - **Type-safe**: Automatic detection of endpoint types (Endpoint, EndpointWithQuery, EndpointWithFormData)
 - **Error Types**: Extract error types from 4xx/5xx responses
@@ -163,14 +163,15 @@ type ApiSchema = {
 npx spoosh-openapi export [options]
 ```
 
-| Option       | Alias | Required | Default     | Description                               |
-| ------------ | ----- | -------- | ----------- | ----------------------------------------- |
-| `--schema`   | `-s`  | Yes      | -           | Path to TypeScript file containing schema |
-| `--type`     | `-t`  | No       | `ApiSchema` | Name of the schema type to use            |
-| `--output`   | `-o`  | No       | stdout      | Output file path                          |
-| `--title`    | -     | No       | -           | API title for OpenAPI info                |
-| `--version`  | -     | No       | `1.0.0`     | API version for OpenAPI info              |
-| `--base-url` | -     | No       | -           | Base URL for servers array                |
+| Option              | Alias | Required | Default     | Description                               |
+| ------------------- | ----- | -------- | ----------- | ----------------------------------------- |
+| `--schema`          | `-s`  | Yes      | -           | Path to TypeScript file containing schema |
+| `--type`            | `-t`  | No       | `ApiSchema` | Name of the schema type to use            |
+| `--output`          | `-o`  | No       | stdout      | Output file path                          |
+| `--title`           | -     | No       | -           | API title for OpenAPI info                |
+| `--version`         | -     | No       | `1.0.0`     | API version for OpenAPI info              |
+| `--base-url`        | -     | No       | -           | Base URL for servers array                |
+| `--openapi-version` | -     | No       | `3.1.0`     | OpenAPI spec version (3.0.0 or 3.1.0)     |
 
 ### Import Command
 

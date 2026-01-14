@@ -5,13 +5,14 @@ import type {
   OpenAPITag,
   ParsedEndpoint,
   JSONSchema,
-} from "./types.js";
+} from "../types.js";
 
 export type GeneratorOptions = {
   title?: string;
   version?: string;
   description?: string;
   baseUrl?: string;
+  openapiVersion?: "3.0.0" | "3.1.0";
 };
 
 export function generateOpenAPISpec(
@@ -19,7 +20,13 @@ export function generateOpenAPISpec(
   schemas: Map<string, JSONSchema>,
   options: GeneratorOptions = {}
 ): OpenAPISpec {
-  const { title = "API", version = "1.0.0", description, baseUrl } = options;
+  const {
+    title = "API",
+    version = "1.0.0",
+    description,
+    baseUrl,
+    openapiVersion = "3.1.0",
+  } = options;
 
   const paths: Record<string, OpenAPIPathItem> = {};
   const tagSet = new Set<string>();
@@ -52,7 +59,7 @@ export function generateOpenAPISpec(
   const tags: OpenAPITag[] = [...tagSet].sort().map((name) => ({ name }));
 
   const spec: OpenAPISpec = {
-    openapi: "3.0.0",
+    openapi: openapiVersion,
     info: {
       title,
       version,
