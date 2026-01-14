@@ -1,0 +1,119 @@
+---
+title: Query String
+description: Nested object serialization for query parameters
+---
+
+The QS plugin serializes nested objects in query parameters using bracket notation, powered by the battle-tested `qs` package.
+
+## Installation
+
+```package-install
+@spoosh/plugin-qs
+```
+
+## Usage
+
+```typescript
+import { qsPlugin } from "@spoosh/plugin-qs";
+
+const plugins = [qsPlugin({ arrayFormat: "brackets" })];
+```
+
+## Example
+
+```typescript
+// Query object
+const query = {
+  pagination: { limit: 10, offset: 0 },
+  filters: { status: "active", tags: ["a", "b"] },
+};
+
+// Serialized result
+// pagination[limit]=10&pagination[offset]=0&filters[status]=active&filters[tags][]=a&filters[tags][]=b
+```
+
+## Per-Request Override
+
+```typescript
+// Use comma-separated arrays for this request
+useRead((api) => api.items.$get({ query }), { arrayFormat: "comma" });
+
+// Use dot notation for nested objects
+useRead((api) => api.search.$get({ query }), { allowDots: true });
+```
+
+## Options
+
+### Plugin Config
+
+| Option        | Type                                             | Default      | Description                          |
+| ------------- | ------------------------------------------------ | ------------ | ------------------------------------ |
+| `arrayFormat` | `"brackets" \| "indices" \| "repeat" \| "comma"` | `"brackets"` | How to serialize arrays              |
+| `allowDots`   | `boolean`                                        | `false`      | Use dot notation instead of brackets |
+| `skipNulls`   | `boolean`                                        | `true`       | Skip null values in serialization    |
+
+### Per-Request Options
+
+| Option        | Type                                             | Description                             |
+| ------------- | ------------------------------------------------ | --------------------------------------- |
+| `arrayFormat` | `"brackets" \| "indices" \| "repeat" \| "comma"` | Override array format for this request  |
+| `allowDots`   | `boolean`                                        | Override dot notation for this request  |
+| `skipNulls`   | `boolean`                                        | Override null handling for this request |
+
+## Array Formats
+
+### brackets (default)
+
+```typescript
+{
+  tags: ["a", "b"];
+}
+// tags[]=a&tags[]=b
+```
+
+### indices
+
+```typescript
+{
+  tags: ["a", "b"];
+}
+// tags[0]=a&tags[1]=b
+```
+
+### repeat
+
+```typescript
+{
+  tags: ["a", "b"];
+}
+// tags=a&tags=b
+```
+
+### comma
+
+```typescript
+{
+  tags: ["a", "b"];
+}
+// tags=a,b
+```
+
+## Dot Notation
+
+```typescript
+// allowDots: false (default)
+{
+  filters: {
+    status: "active";
+  }
+}
+// filters[status]=active
+
+// allowDots: true
+{
+  filters: {
+    status: "active";
+  }
+}
+// filters.status=active
+```

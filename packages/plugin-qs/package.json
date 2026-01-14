@@ -1,0 +1,42 @@
+{
+  "name": "@spoosh/plugin-qs",
+  "version": "0.1.0",
+  "description": "Query string serialization plugin for Spoosh with nested object support",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nxnom/spoosh.git",
+    "directory": "packages/plugin-qs"
+  },
+  "bugs": { "url": "https://github.com/nxnom/spoosh/issues" },
+  "homepage": "https://spoosh.dev/docs/plugins/qs",
+  "publishConfig": { "access": "public" },
+  "keywords": ["spoosh", "plugin", "query-string", "qs", "nested-objects", "api-client"],
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsup --watch",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --max-warnings 0",
+    "format": "prettier --write 'src/**/*.ts'",
+    "prepublishOnly": "npm run build && npm run typecheck && npm run lint"
+  },
+  "dependencies": {
+    "qs": "^6.13.0"
+  },
+  "peerDependencies": {
+    "@spoosh/core": ">=0.1.0"
+  },
+  "devDependencies": {
+    "@spoosh/core": "workspace:*",
+    "@spoosh/test-utils": "workspace:*",
+    "@types/qs": "^6.9.17"
+  }
+}
