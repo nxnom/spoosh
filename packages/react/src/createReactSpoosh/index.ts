@@ -31,7 +31,7 @@ export function createReactSpoosh<
   TApi,
 >(
   instance: SpooshInstanceShape<TApi, TSchema, TDefaultError, TPlugins>
-): SpooshReactHooks<TApi, TDefaultError, TSchema, TPlugins> {
+): SpooshReactHooks<TDefaultError, TSchema, TPlugins> {
   const { api, stateManager, eventEmitter, pluginExecutor } = instance;
 
   const useRead = createUseRead<TSchema, TDefaultError, TPlugins>({
@@ -82,7 +82,7 @@ export function createReactSpoosh<
     useWrite,
     useInfiniteRead,
     ...instanceApis,
-  } as SpooshReactHooks<TApi, TDefaultError, TSchema, TPlugins>;
+  } as SpooshReactHooks<TDefaultError, TSchema, TPlugins>;
 }
 
 export * from "./types";

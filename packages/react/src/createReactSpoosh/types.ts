@@ -9,6 +9,7 @@ import type {
   MergePluginInstanceApi,
   ResolverContext,
   ResolveSchemaTypes,
+  ResolveResultTypes,
 } from "@spoosh/core";
 import type {
   BaseReadOptions,
@@ -25,6 +26,9 @@ import type {
   ExtractMethodData,
   ExtractMethodError,
   AnyInfiniteRequestOptions,
+  ReadApiClient,
+  WriteApiClient,
+  InfiniteReadApiClient,
 } from "../types";
 
 type InferError<T, TDefaultError> = [T] extends [unknown] ? TDefaultError : T;
@@ -54,12 +58,17 @@ type ResolvedReadOptions<
   ReadResolverContext<TSchema, TReadFn, TDefaultError>
 >;
 
-type UseReadFn<TApi, TDefaultError, TSchema, TPlugins extends PluginArray> = <
-  TReadFn extends (api: TApi) => Promise<{ data?: unknown; error?: unknown }>,
+type UseReadFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
+  TReadFn extends (
+    api: ReadApiClient<TSchema, TDefaultError>
+  ) => Promise<{ data?: unknown; error?: unknown }>,
+  TReadOpts extends BaseReadOptions &
+    ResolvedReadOptions<TSchema, TPlugins, TReadFn, TDefaultError> =
+    BaseReadOptions &
+      ResolvedReadOptions<TSchema, TPlugins, TReadFn, TDefaultError>,
 >(
   readFn: TReadFn,
-  readOptions?: BaseReadOptions &
-    ResolvedReadOptions<TSchema, TPlugins, TReadFn, TDefaultError>
+  readOptions?: TReadOpts
 ) => BaseReadResult<
   ExtractMethodData<TReadFn>,
   InferError<ExtractMethodError<TReadFn>, TDefaultError>
@@ -70,14 +79,14 @@ type UseReadFn<TApi, TDefaultError, TSchema, TPlugins extends PluginArray> = <
     ExtractResponseFormData<TReadFn>,
     ExtractResponseParamNames<TReadFn>
   > &
-  MergePluginResults<TPlugins>["read"];
+  ResolveResultTypes<MergePluginResults<TPlugins>["read"], TReadOpts>;
 
-type UseWriteFn<TApi, TDefaultError, TSchema, TPlugins extends PluginArray> = <
+type UseWriteFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
   TMethod extends (
     ...args: never[]
   ) => Promise<SpooshResponse<unknown, unknown>>,
 >(
-  writeFn: (api: TApi) => TMethod
+  writeFn: (api: WriteApiClient<TSchema, TDefaultError>) => TMethod
 ) => BaseWriteResult<
   ExtractMethodData<TMethod>,
   InferError<ExtractMethodError<TMethod>, TDefaultError>,
@@ -114,18 +123,15 @@ type ResolvedInfiniteReadOptions<
   InfiniteReadResolverContext<TSchema, TData, TError, TRequest>
 >;
 
-type UseInfiniteReadFn<
-  TApi,
-  TDefaultError,
-  TSchema,
-  TPlugins extends PluginArray,
-> = <
+type UseInfiniteReadFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
   TData,
   TItem,
   TError = TDefaultError,
   TRequest extends AnyInfiniteRequestOptions = AnyInfiniteRequestOptions,
 >(
-  readFn: (api: TApi) => Promise<SpooshResponse<TData, TError>>,
+  readFn: (
+    api: InfiniteReadApiClient<TSchema, TDefaultError>
+  ) => Promise<SpooshResponse<TData, TError>>,
   readOptions: BaseInfiniteReadOptions<TData, TItem, TRequest> &
     ResolvedInfiniteReadOptions<TSchema, TPlugins, TData, TError, TRequest>
 ) => BaseInfiniteReadResult<TData, TError, TItem> &
@@ -134,13 +140,11 @@ type UseInfiniteReadFn<
 /**
  * Spoosh React hooks interface containing useRead, useWrite, and useInfiniteRead.
  *
- * @template TApi - The API client type
  * @template TDefaultError - The default error type
  * @template TSchema - The API schema type
  * @template TPlugins - The plugins array type
  */
 export type SpooshReactHooks<
-  TApi,
   TDefaultError,
   TSchema,
   TPlugins extends PluginArray,
@@ -162,7 +166,7 @@ export type SpooshReactHooks<
    * );
    * ```
    */
-  useRead: UseReadFn<TApi, TDefaultError, TSchema, TPlugins>;
+  useRead: UseReadFn<TDefaultError, TSchema, TPlugins>;
 
   /**
    * React hook for mutations (POST, PUT, PATCH, DELETE) with manual triggering.
@@ -180,7 +184,7 @@ export type SpooshReactHooks<
    * };
    * ```
    */
-  useWrite: UseWriteFn<TApi, TDefaultError, TSchema, TPlugins>;
+  useWrite: UseWriteFn<TDefaultError, TSchema, TPlugins>;
 
   /**
    * React hook for infinite/paginated data fetching with automatic pagination control.
@@ -201,7 +205,7 @@ export type SpooshReactHooks<
    * );
    * ```
    */
-  useInfiniteRead: UseInfiniteReadFn<TApi, TDefaultError, TSchema, TPlugins>;
+  useInfiniteRead: UseInfiniteReadFn<TDefaultError, TSchema, TPlugins>;
 } & MergePluginInstanceApi<TPlugins, TSchema>;
 
 /**

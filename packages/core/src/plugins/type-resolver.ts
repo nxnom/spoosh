@@ -1,6 +1,7 @@
 import type {
   ResolverContext,
   PluginResolvers,
+  PluginResultResolvers,
   InstanceApiResolvers,
   DataAwareCallback,
   DataAwareTransform,
@@ -57,6 +58,24 @@ export type ResolveSchemaTypes<TOptions, TSchema> = ResolveTypes<
   TOptions,
   ResolverContext<TSchema>
 >;
+
+/**
+ * Resolves plugin result types based on the options passed to the hook.
+ *
+ * This allows plugins to infer result types from the options. For example,
+ * the transform plugin can infer `transformedData` type from the response
+ * transformer's return type.
+ *
+ * @example
+ * ```ts
+ * // Usage in hooks:
+ * type ResolvedResults = ResolveResultTypes<PluginResults["read"], TReadOpts>;
+ * // If TReadOpts has { transform: { response: (d) => { count: number } } }
+ * // Then transformedData will be { count: number } | undefined
+ * ```
+ */
+export type ResolveResultTypes<TResults, TOptions> = TResults &
+  PluginResultResolvers<TOptions>;
 
 /**
  * Resolves instance API types with schema awareness.

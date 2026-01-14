@@ -14,6 +14,7 @@ import {
   type PluginTypeConfig,
   type PluginContext,
   type SelectorResult,
+  type ResolveResultTypes,
   createOperationController,
   createSelectorProxy,
   resolvePath,
@@ -62,9 +63,11 @@ export function createUseRead<
     TReadFn extends (
       api: ReadApiClient<TSchema, TDefaultError>
     ) => Promise<{ data?: unknown; error?: unknown }>,
+    TReadOpts extends BaseReadOptions & PluginOptions["read"] =
+      BaseReadOptions & PluginOptions["read"],
   >(
     readFn: TReadFn,
-    readOptions?: BaseReadOptions & PluginOptions["read"]
+    readOptions?: TReadOpts
   ): BaseReadResult<ExtractData<TReadFn>, InferError<ExtractError<TReadFn>>> &
     ResponseInputFields<
       ExtractResponseQuery<TReadFn>,
@@ -72,7 +75,7 @@ export function createUseRead<
       ExtractResponseFormData<TReadFn>,
       ExtractResponseParamNames<TReadFn>
     > &
-    PluginResults["read"] {
+    ResolveResultTypes<PluginResults["read"], TReadOpts> {
     const {
       enabled = true,
       tags,
@@ -320,6 +323,6 @@ export function createUseRead<
         ExtractResponseFormData<TReadFn>,
         ExtractResponseParamNames<TReadFn>
       > &
-      PluginResults["read"];
+      ResolveResultTypes<PluginResults["read"], TReadOpts>;
   };
 }

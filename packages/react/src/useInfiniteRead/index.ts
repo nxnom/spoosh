@@ -8,6 +8,7 @@ import {
   type PluginContext,
   type InfiniteRequestOptions,
   type SelectorResult,
+  type ResolveResultTypes,
   createInfiniteReadController,
   createSelectorProxy,
   resolvePath,
@@ -41,13 +42,20 @@ export function createUseInfiniteRead<
     TItem,
     TError = TDefaultError,
     TRequest extends AnyInfiniteRequestOptions = AnyInfiniteRequestOptions,
+    TReadOpts extends BaseInfiniteReadOptions<TData, TItem, TRequest> &
+      PluginOptions["infiniteRead"] = BaseInfiniteReadOptions<
+      TData,
+      TItem,
+      TRequest
+    > &
+      PluginOptions["infiniteRead"],
   >(
     readFn: (
       api: InfiniteReadApiClient<TSchema, TDefaultError>
     ) => Promise<SpooshResponse<TData, TError>>,
-    readOptions: BaseInfiniteReadOptions<TData, TItem, TRequest> &
-      PluginOptions["infiniteRead"]
-  ): BaseInfiniteReadResult<TData, TError, TItem> & PluginResults["read"] {
+    readOptions: TReadOpts
+  ): BaseInfiniteReadResult<TData, TError, TItem> &
+    ResolveResultTypes<PluginResults["read"], TReadOpts> {
     const {
       enabled = true,
       tags,
@@ -275,6 +283,6 @@ export function createUseInfiniteRead<
     };
 
     return result as BaseInfiniteReadResult<TData, TError, TItem> &
-      PluginResults["read"];
+      ResolveResultTypes<PluginResults["read"], TReadOpts>;
   };
 }

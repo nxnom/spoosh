@@ -349,6 +349,28 @@ export interface PluginResolvers<TContext extends ResolverContext> {
 }
 
 /**
+ * Registry for plugin result type resolution based on options.
+ * Extend via declaration merging to provide type inference for hook results.
+ *
+ * Unlike PluginResolvers which receives the full context, this receives
+ * the OPTIONS type so plugins can infer result types from what the user passes.
+ *
+ * @example
+ * ```ts
+ * // In your plugin's types file:
+ * declare module '@spoosh/core' {
+ *   interface PluginResultResolvers<TOptions> {
+ *     transformedData: TOptions extends { transform: { response: (...args: never[]) => infer R } }
+ *       ? Awaited<R> | undefined
+ *       : never;
+ *   }
+ * }
+ * ```
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars
+export interface PluginResultResolvers<TOptions> {}
+
+/**
  * Registry for plugin exports. Extend via declaration merging for type-safe access.
  *
  * Plugins can expose functions and variables that other plugins can access
