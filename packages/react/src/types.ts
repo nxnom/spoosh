@@ -184,6 +184,34 @@ export type ExtractMethodOptions<T> = T extends (...args: infer A) => unknown
   ? A[0]
   : never;
 
+export type ExtractMethodQuery<T> =
+  ExtractMethodOptions<T> extends {
+    query: infer Q;
+  }
+    ? Q
+    : never;
+
+export type ExtractMethodBody<T> =
+  ExtractMethodOptions<T> extends {
+    body: infer B;
+  }
+    ? B
+    : never;
+
+export type ExtractMethodFormData<T> =
+  ExtractMethodOptions<T> extends {
+    formData: infer F;
+  }
+    ? F
+    : never;
+
+export type ExtractMethodUrlEncoded<T> =
+  ExtractMethodOptions<T> extends {
+    urlEncoded: infer U;
+  }
+    ? U
+    : never;
+
 type AwaitedReturnType<T> = T extends (...args: never[]) => infer R
   ? Awaited<R>
   : never;

@@ -8,7 +8,6 @@ import type {
   MergePluginResults,
   MergePluginInstanceApi,
   ResolverContext,
-  ResolveSchemaTypes,
   ResolveResultTypes,
 } from "@spoosh/core";
 import type {
@@ -25,6 +24,10 @@ import type {
   WriteResponseInputFields,
   ExtractMethodData,
   ExtractMethodError,
+  ExtractMethodQuery,
+  ExtractMethodBody,
+  ExtractMethodFormData,
+  ExtractMethodUrlEncoded,
   AnyInfiniteRequestOptions,
   ReadApiClient,
   WriteApiClient,
@@ -58,6 +61,29 @@ type ResolvedReadOptions<
   ReadResolverContext<TSchema, TReadFn, TDefaultError>
 >;
 
+type WriteResolverContext<TSchema, TMethod, TDefaultError> = ResolverContext<
+  TSchema,
+  ExtractMethodData<TMethod>,
+  InferError<ExtractMethodError<TMethod>, TDefaultError>,
+  ExtractMethodQuery<TMethod>,
+  ExtractMethodBody<TMethod>,
+  ExtractResponseParamNames<TMethod> extends never
+    ? never
+    : Record<ExtractResponseParamNames<TMethod>, string | number>,
+  ExtractMethodFormData<TMethod>,
+  ExtractMethodUrlEncoded<TMethod>
+>;
+
+type ResolvedWriteOptions<
+  TSchema,
+  TPlugins extends PluginArray,
+  TMethod,
+  TDefaultError,
+> = import("@spoosh/core").ResolveTypes<
+  MergePluginOptions<TPlugins>["write"],
+  WriteResolverContext<TSchema, TMethod, TDefaultError>
+>;
+
 type UseReadFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
   TReadFn extends (
     api: ReadApiClient<TSchema, TDefaultError>
@@ -85,13 +111,18 @@ type UseWriteFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
   TMethod extends (
     ...args: never[]
   ) => Promise<SpooshResponse<unknown, unknown>>,
+  TWriteOpts extends (TMethod extends (options: infer O) => unknown
+    ? O
+    : object) &
+    ResolvedWriteOptions<TSchema, TPlugins, TMethod, TDefaultError> =
+    (TMethod extends (options: infer O) => unknown ? O : object) &
+      ResolvedWriteOptions<TSchema, TPlugins, TMethod, TDefaultError>,
 >(
   writeFn: (api: WriteApiClient<TSchema, TDefaultError>) => TMethod
 ) => BaseWriteResult<
   ExtractMethodData<TMethod>,
   InferError<ExtractMethodError<TMethod>, TDefaultError>,
-  (TMethod extends (options: infer O) => unknown ? O : object) &
-    ResolveSchemaTypes<MergePluginOptions<TPlugins>["write"], TSchema>
+  TWriteOpts
 > &
   WriteResponseInputFields<
     ExtractResponseQuery<TMethod>,
@@ -99,7 +130,7 @@ type UseWriteFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
     ExtractResponseFormData<TMethod>,
     ExtractResponseParamNames<TMethod>
   > &
-  MergePluginResults<TPlugins>["write"];
+  ResolveResultTypes<MergePluginResults<TPlugins>["write"], TWriteOpts>;
 
 type InfiniteReadResolverContext<TSchema, TData, TError, TRequest> =
   ResolverContext<

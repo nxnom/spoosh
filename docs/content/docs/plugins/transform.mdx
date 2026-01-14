@@ -78,6 +78,61 @@ trigger({
 });
 ```
 
+### Response Transforms (useWrite)
+
+Just like `useRead`, response transforms for `useWrite` produce a separate `transformedData` field:
+
+```typescript
+const { trigger, data, transformedData } = useWrite((api) => api.posts.$post);
+
+const response = await trigger({
+  body: { title: "New Post" },
+  transform: {
+    response: (post) => ({
+      // post is typed as the endpoint's response type
+      success: true,
+      postId: post.id,
+      createdAt: new Date(post.timestamp),
+    }),
+  },
+});
+
+// After trigger completes:
+// data = Post (original response, preserved)
+// transformedData = { success: boolean, postId: number, createdAt: Date } | undefined
+```
+
+<Callout type="warning">
+**TypeScript Limitation**: Due to TypeScript's limitations with dynamic trigger options, `transformedData` is typed as `never` in the hook result. You'll need to use type assertion to access it:
+
+```typescript
+const { transformedData } = useWrite((api) => api.posts.$post);
+
+// Type assertion required
+const typed = transformedData as
+  | { success: boolean; postId: number }
+  | undefined;
+```
+
+Alternatively, extract it from the trigger response:
+
+```typescript
+const { trigger } = useWrite((api) => api.posts.$post);
+
+const response = await trigger({
+  body: { title: "New Post" },
+  transform: {
+    response: (post) => ({ success: true, postId: post.id }),
+  },
+});
+
+// Access from response
+const result = response.data; // Post
+// transformedData is available in the hook state after trigger completes
+```
+
+</Callout>
+
 ## Transform Types
 
 ### Query Transform
@@ -252,7 +307,7 @@ const { data, transformedData } = useRead(
 The transform plugin provides full type inference:
 
 ```typescript
-// Response type is inferred from endpoint
+// Response type is inferred from endpoint (useRead)
 const { data, transformedData } = useRead((api) => api.users.$get(), {
   transform: {
     response: (users) => {
@@ -267,6 +322,43 @@ const { data, transformedData } = useRead((api) => api.users.$get(), {
 
 // transformedData is typed as:
 // { activeCount: number; admins: User[] } | undefined
+```
+
+### TypeScript Limitations with useWrite
+
+For `useWrite`, there is a TypeScript limitation where `transformedData` is inferred as `never` in the hook result due to dynamic trigger options:
+
+```typescript
+const { trigger, transformedData } = useWrite((api) => api.posts.$post);
+
+// transformedData is typed as 'never' here because TypeScript cannot infer
+// the type from dynamic trigger options passed later
+
+// ❌ Type error: transformedData is never
+console.log(transformedData.success);
+
+// ✅ Use type assertion
+const typed = transformedData as
+  | { success: boolean; postId: number }
+  | undefined;
+console.log(typed?.success);
+```
+
+This is a known TypeScript limitation with higher-order function type inference. For `useRead`, the options are passed at hook creation time, allowing full type inference. For `useWrite`, options are passed to `trigger` dynamically, which breaks TypeScript's ability to infer the result type.
+
+**Workaround**: Define your transformed type separately:
+
+```typescript
+type TransformedPost = {
+  success: boolean;
+  postId: number;
+  createdAt: Date;
+};
+
+const { trigger, transformedData } = useWrite((api) => api.posts.$post);
+
+// Use type assertion
+const transformed = transformedData as TransformedPost | undefined;
 ```
 
 ## Use Cases

@@ -12,18 +12,23 @@ import {
   type SpooshPlugin,
   type PluginTypeConfig,
   type SelectorResult,
+  type ResolveResultTypes,
+  type ResolverContext,
   createOperationController,
   createSelectorProxy,
   resolvePath,
   resolveTags,
 } from "@spoosh/core";
 import type {
-  ResolveSchemaTypes,
   BaseWriteResult,
   WriteApiClient,
   ExtractMethodData,
   ExtractMethodError,
   ExtractMethodOptions,
+  ExtractMethodQuery,
+  ExtractMethodBody,
+  ExtractMethodFormData,
+  ExtractMethodUrlEncoded,
   ExtractResponseQuery,
   ExtractResponseBody,
   ExtractResponseFormData,
@@ -49,6 +54,27 @@ export function createUseWrite<
 
   type InferError<T> = [T] extends [unknown] ? TDefaultError : T;
 
+  type ExtractParamsRecord<T> =
+    ExtractResponseParamNames<T> extends never
+      ? never
+      : Record<ExtractResponseParamNames<T>, string | number>;
+
+  type WriteResolverContext<TMethod> = ResolverContext<
+    TSchema,
+    ExtractMethodData<TMethod>,
+    InferError<ExtractMethodError<TMethod>>,
+    ExtractMethodQuery<TMethod>,
+    ExtractMethodBody<TMethod>,
+    ExtractParamsRecord<TMethod>,
+    ExtractMethodFormData<TMethod>,
+    ExtractMethodUrlEncoded<TMethod>
+  >;
+
+  type ResolvedWriteOptions<TMethod> = import("@spoosh/core").ResolveTypes<
+    PluginOptions["write"],
+    WriteResolverContext<TMethod>
+  >;
+
   return function useWrite<
     TMethod extends (
       ...args: never[]
@@ -58,8 +84,7 @@ export function createUseWrite<
   ): BaseWriteResult<
     ExtractMethodData<TMethod>,
     InferError<ExtractMethodError<TMethod>>,
-    ExtractMethodOptions<TMethod> &
-      ResolveSchemaTypes<PluginOptions["write"], TSchema>
+    ExtractMethodOptions<TMethod> & ResolvedWriteOptions<TMethod>
   > &
     WriteResponseInputFields<
       ExtractResponseQuery<TMethod>,
@@ -67,11 +92,14 @@ export function createUseWrite<
       ExtractResponseFormData<TMethod>,
       ExtractResponseParamNames<TMethod>
     > &
-    PluginResults["write"] {
+    ResolveResultTypes<
+      PluginResults["write"],
+      ExtractMethodOptions<TMethod> & ResolvedWriteOptions<TMethod>
+    > {
     type TData = ExtractMethodData<TMethod>;
     type TError = InferError<ExtractMethodError<TMethod>>;
     type TOptions = ExtractMethodOptions<TMethod> &
-      ResolveSchemaTypes<PluginOptions["write"], TSchema>;
+      ResolvedWriteOptions<TMethod>;
 
     const hookId = useId();
 
@@ -254,6 +282,6 @@ export function createUseWrite<
         ExtractResponseFormData<TMethod>,
         ExtractResponseParamNames<TMethod>
       > &
-      PluginResults["write"];
+      ResolveResultTypes<PluginResults["write"], TOptions>;
   };
 }
