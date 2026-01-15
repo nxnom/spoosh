@@ -55,23 +55,18 @@ export type ApiSchema = {
 Set up the Spoosh client with plugins:
 
 ```typescript title="src/api/client.ts"
-import { createSpoosh } from "@spoosh/core";
+import { Spoosh } from "@spoosh/core";
 import { createReactSpoosh } from "@spoosh/react";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 import type { ApiSchema } from "./schema";
 
-const plugins = [
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
   deduplicationPlugin(), // Prevent duplicate requests during invalidation
   invalidationPlugin(), // Auto-refresh queries after mutations
-] as const;
-
-const spoosh = createSpoosh<ApiSchema, Error, typeof plugins>({
-  baseUrl: "/api",
-  plugins,
-});
+]);
 
 export const { useRead, useWrite } = createReactSpoosh(spoosh);
 ```

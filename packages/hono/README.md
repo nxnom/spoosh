@@ -46,27 +46,25 @@ export type AppType = typeof app;
 ### Client (Spoosh)
 
 ```typescript
-import { createSpoosh } from "@spoosh/core";
+import { Spoosh } from "@spoosh/core";
 import type { HonoToSpoosh } from "@spoosh/hono";
 import type { AppType } from "./server";
 
 // Transform Hono's type to Spoosh schema
 type ApiSchema = HonoToSpoosh<AppType>;
 
-const client = createSpoosh<ApiSchema>({
-  baseUrl: "http://localhost:3000/api",
-});
+const spoosh = new Spoosh<ApiSchema, Error>("http://localhost:3000/api");
 
 // Fully typed API calls
-const { data: posts } = await client.api.posts.$get();
+const { data: posts } = await spoosh.api.posts.$get();
 // posts is typed as { id: number; title: string }[]
 
-const { data: newPost } = await client.api.posts.$post({
+const { data: newPost } = await spoosh.api.posts.$post({
   body: { title: "New Post" },
 });
 // body is typed, newPost is { id: number; title: string }
 
-const { data: post } = await client.api.posts[1].$get();
+const { data: post } = await spoosh.api.posts[1].$get();
 // post is typed as { id: number; title: string }
 ```
 
@@ -106,5 +104,5 @@ Dynamic segments (`:id`, `:slug`, etc.) are converted to `_` in the schema:
 
 ```typescript
 // Hono route: /users/:userId/posts/:postId
-// Spoosh path: client.api.users[userId].posts[postId].$get()
+// Spoosh path: spoosh.api.users[userId].posts[postId].$get()
 ```

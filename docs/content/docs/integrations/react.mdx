@@ -14,22 +14,17 @@ The `@spoosh/react` package provides React hooks for data fetching with full typ
 ## Setup
 
 ```typescript title="src/api/client.ts"
-import { createSpoosh } from "@spoosh/core";
+import { Spoosh } from "@spoosh/core";
 import { createReactSpoosh } from "@spoosh/react";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
 
-const plugins = [
+const client = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
   invalidationPlugin({ autoInvalidate: "all" }),
   deduplicationPlugin({ read: "in-flight" }),
-] as const;
-
-const client = createSpoosh<ApiSchema, Error, typeof plugins>({
-  baseUrl: "/api",
-  plugins,
-});
+]);
 
 export const { useRead, useWrite, useInfiniteRead } = createReactSpoosh(client);
 ```

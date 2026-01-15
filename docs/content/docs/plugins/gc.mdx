@@ -17,19 +17,18 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 ## Usage
 
 ```typescript
+import { Spoosh } from "@spoosh/core";
+import { cachePlugin } from "@spoosh/plugin-cache";
 import { gcPlugin } from "@spoosh/plugin-gc";
 
-const api = createSpoosh({
-  // ...
-  plugins: [
-    cachePlugin({ staleTime: 5000 }),
-    gcPlugin({
-      maxAge: 30 * 60 * 1000, // Remove entries older than 30 minutes
-      maxEntries: 100, // Keep max 100 entries
-      interval: 60 * 1000, // Run GC every minute
-    }),
-  ],
-});
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  gcPlugin({
+    maxAge: 30 * 60 * 1000, // Remove entries older than 30 minutes
+    maxEntries: 100, // Keep max 100 entries
+    interval: 60 * 1000, // Run GC every minute
+  }),
+]);
 ```
 
 ## Options

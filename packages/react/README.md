@@ -15,18 +15,15 @@ npm install @spoosh/core @spoosh/react
 ### Setup
 
 ```typescript
-import { createSpoosh } from "@spoosh/core";
+import { Spoosh } from "@spoosh/core";
 import { createReactSpoosh } from "@spoosh/react";
 import { cachePlugin } from "@spoosh/plugin-cache";
 
-const plugins = [cachePlugin({ staleTime: 5000 })] as const;
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+]);
 
-const client = createSpoosh<ApiSchema, Error, typeof plugins>({
-  baseUrl: "/api",
-  plugins,
-});
-
-export const { useRead, useWrite, useInfiniteRead } = createReactSpoosh(client);
+export const { useRead, useWrite, useInfiniteRead } = createReactSpoosh(spoosh);
 ```
 
 ### useRead

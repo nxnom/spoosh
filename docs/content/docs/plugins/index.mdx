@@ -15,24 +15,19 @@ Each plugin is a separate package:
 
 ## Using Plugins
 
-Pass plugins to `createSpoosh`:
+Add plugins using the `.use()` method:
 
 ```typescript
-import { createSpoosh } from "@spoosh/core";
+import { Spoosh } from "@spoosh/core";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 import { retryPlugin } from "@spoosh/plugin-retry";
 
-const plugins = [
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
   invalidationPlugin(), // Auto-refresh queries after mutations
   retryPlugin({ retries: 3 }),
-] as const;
-
-const spoosh = createSpoosh<ApiSchema, Error, typeof plugins>({
-  baseUrl: "/api",
-  plugins,
-});
+]);
 ```
 
 ## Available Plugins
@@ -82,19 +77,20 @@ const spoosh = createSpoosh<ApiSchema, Error, typeof plugins>({
 For most applications, we recommend this plugin combination:
 
 ```typescript
+import { Spoosh } from "@spoosh/core";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
 import { retryPlugin } from "@spoosh/plugin-retry";
 import { refetchPlugin } from "@spoosh/plugin-refetch";
 
-const plugins = [
+const client = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
   deduplicationPlugin(),
   invalidationPlugin(),
   retryPlugin({ retries: 3 }),
   refetchPlugin({ refetchOnFocus: true }),
-] as const;
+]);
 ```
 
 This gives you:
@@ -113,13 +109,13 @@ Most plugins work in any order. The exceptions are:
 - **`throttlePlugin`** - should be registered last to block all requests including force fetches
 
 ```typescript
-const plugins = [
+const client = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }), // Early - check cache first
   deduplicationPlugin(),
   invalidationPlugin(),
   retryPlugin(),
   throttlePlugin(), // Last - blocks everything
-] as const;
+]);
 ```
 
 > **Tip:** The `deduplicationPlugin` is especially useful with `invalidationPlugin`. When a mutation invalidates multiple queries with overlapping tags, deduplication ensures only one network request is made per unique endpoint.

@@ -17,7 +17,7 @@ description: A type-safe API client with a powerful plugin system
 ## Quick Example
 
 ```typescript
-import { createSpoosh } from "@spoosh/core";
+import { Spoosh } from "@spoosh/core";
 import { createReactSpoosh } from "@spoosh/react";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
@@ -31,13 +31,10 @@ type ApiSchema = {
 };
 
 // Create the client with plugins
-const spoosh = createSpoosh<ApiSchema>({
-  baseUrl: "/api",
-  plugins: [
-    cachePlugin({ staleTime: 5000 }),
-    invalidationPlugin(), // Auto-refresh queries after mutations
-  ],
-});
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  invalidationPlugin(), // Auto-refresh queries after mutations
+]);
 
 // Export hooks
 export const { useRead, useWrite } = createReactSpoosh(spoosh);

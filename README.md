@@ -45,16 +45,18 @@ await trigger({ body: { title: "New Post" } });
 **Composable Plugin System** — Add only what you need. Each plugin is a separate package with its own types.
 
 ```typescript
+import { Spoosh } from "@spoosh/core";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { retryPlugin } from "@spoosh/plugin-retry";
 
-const plugins = [cachePlugin({ staleTime: 5000 }), retryPlugin({ retries: 3 })] as const;
+const client = new Spoosh<ApiSchema, Error>('/api')
+  .use([cachePlugin({ staleTime: 5000 }), retryPlugin({ retries: 3 })]);
 ```
 
 **Zero Boilerplate** — Define your schema once, get a fully typed client. No code generation required.
 
 ```typescript
-import { createSpoosh, type Endpoint } from "@spoosh/core";
+import { Spoosh, type Endpoint } from "@spoosh/core";
 
 type ApiSchema = {
   posts: {
@@ -64,7 +66,8 @@ type ApiSchema = {
   };
 };
 
-const client = createSpoosh<ApiSchema>({ baseUrl: "/api" });
+const client = new Spoosh<ApiSchema, Error>("/api")
+  .use([/* plugins */]);
 ```
 
 **Server Type Inference** — Use the Hono adapter for automatic client types from your server.
@@ -86,7 +89,7 @@ npm install @spoosh/core @spoosh/react
 ## Quick Start
 
 ```typescript
-import { createSpoosh, type Endpoint } from "@spoosh/core";
+import { Spoosh, type Endpoint } from "@spoosh/core";
 import { cachePlugin } from "@spoosh/plugin-cache";
 
 type ApiSchema = {
@@ -96,12 +99,8 @@ type ApiSchema = {
   };
 };
 
-const plugins = [cachePlugin({ staleTime: 5000 })] as const;
-
-const client = createSpoosh<ApiSchema, Error, typeof plugins>({
-  baseUrl: "/api",
-  plugins,
-});
+const client = new Spoosh<ApiSchema, Error>("/api")
+  .use([cachePlugin({ staleTime: 5000 })]);
 
 // Fully typed API calls
 const { data, error } = await client.api.users.$get();
@@ -154,23 +153,19 @@ function UserList() {
 
 ## Plugin Usage
 
-Plugins extend Spoosh's capabilities. Add them to your client configuration:
+Plugins extend Spoosh's capabilities. Add them using the `.use()` method:
 
 ```typescript
+import { Spoosh } from "@spoosh/core";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { retryPlugin } from "@spoosh/plugin-retry";
 import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
 
-const plugins = [
+const client = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
   retryPlugin({ retries: 3, retryDelay: 1000 }),
   deduplicationPlugin(),
-] as const;
-
-const client = createSpoosh<ApiSchema, Error, typeof plugins>({
-  baseUrl: "/api",
-  plugins,
-});
+]);
 ```
 
 Per-request options are type-safe based on installed plugins:

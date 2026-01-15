@@ -3,64 +3,64 @@ title: Client API
 description: Creating and configuring Spoosh clients
 ---
 
-## createSpoosh
+## Spoosh Class
 
 The primary way to create an API client with full plugin support. Use this with `@spoosh/react` hooks.
 
 ```typescript
-import { createSpoosh } from "@spoosh/core";
+import { Spoosh } from "@spoosh/core";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 
-const plugins = [
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
   invalidationPlugin(),
-] as const;
-
-const spoosh = createSpoosh<ApiSchema, Error, typeof plugins>({
-  baseUrl: "/api",
-  plugins,
-});
+]);
 ```
 
-### Options
+### Constructor Parameters
 
-| Option           | Type             | Description                   |
-| ---------------- | ---------------- | ----------------------------- |
-| `baseUrl`        | `string`         | Base URL for all API requests |
-| `plugins`        | `SpooshPlugin[]` | Array of plugins to use       |
-| `defaultOptions` | `RequestInit`    | Default fetch options         |
+| Parameter        | Type          | Required | Description                   |
+| ---------------- | ------------- | -------- | ----------------------------- |
+| `baseUrl`        | `string`      | Yes      | Base URL for all API requests |
+| `defaultOptions` | `RequestInit` | No       | Default fetch options         |
 
 ### Type Parameters
 
 ```typescript
-createSpoosh<TSchema, TError, TPlugins>({...})
+new Spoosh<TSchema, TError>(baseUrl, defaultOptions);
 ```
 
-| Parameter  | Description                          |
-| ---------- | ------------------------------------ |
-| `TSchema`  | Your API schema type                 |
-| `TError`   | Default error type (e.g., `Error`)   |
-| `TPlugins` | Plugin array type for type inference |
+| Parameter | Description                        |
+| --------- | ---------------------------------- |
+| `TSchema` | Your API schema type               |
+| `TError`  | Default error type (e.g., `Error`) |
+
+### Adding Plugins
+
+Use the `.use()` method to add plugins:
+
+```typescript
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  invalidationPlugin(),
+  retryPlugin({ retries: 3 }),
+]);
+```
 
 ### With React
 
 ```typescript title="src/api/client.ts"
-import { createSpoosh } from "@spoosh/core";
+import { Spoosh } from "@spoosh/core";
 import { createReactSpoosh } from "@spoosh/react";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 import type { ApiSchema } from "./schema";
 
-const plugins = [
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
   invalidationPlugin(),
-] as const;
-
-const spoosh = createSpoosh<ApiSchema, Error, typeof plugins>({
-  baseUrl: "/api",
-  plugins,
-});
+]);
 
 export const { useRead, useWrite, useInfiniteRead } = createReactSpoosh(spoosh);
 ```
@@ -98,16 +98,12 @@ const { data } = await api.users.$get({
 ## Default Options
 
 ```typescript
-const spoosh = createSpoosh<ApiSchema, Error, typeof plugins>({
-  baseUrl: "/api",
-  plugins,
-  defaultOptions: {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
+const spoosh = new Spoosh<ApiSchema, Error>("/api", {
+  credentials: "include",
+  headers: {
+    "Content-Type": "application/json",
   },
-});
+}).use([cachePlugin(), invalidationPlugin()]);
 ```
 
 ---

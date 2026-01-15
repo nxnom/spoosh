@@ -199,15 +199,48 @@ Creates a lightweight type-safe API client.
 | `defaultOptions` | `RequestInit`        | Default fetch options (headers, credentials, etc.) |
 | `middlewares`    | `SpooshMiddleware[]` | Request/response middlewares                       |
 
-### createSpoosh(config)
+### Spoosh (class)
 
-Creates a full-featured client with plugin system. Use this with `@spoosh/react`.
+Creates a full-featured client with plugin system using a clean class-based API. Use this with `@spoosh/react`.
 
-| Option           | Type             | Description                   |
-| ---------------- | ---------------- | ----------------------------- |
-| `baseUrl`        | `string`         | Base URL for all API requests |
-| `plugins`        | `SpooshPlugin[]` | Array of plugins to use       |
-| `defaultOptions` | `RequestInit`    | Default fetch options         |
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { retryPlugin } from "@spoosh/plugin-retry";
+
+const client = new Spoosh<ApiSchema, Error>("/api", {
+  headers: { Authorization: "Bearer token" }
+}).use([
+  cachePlugin({ staleTime: 5000 }),
+  retryPlugin({ retries: 3 })
+]);
+
+const { api } = client;
+const { data } = await api.users.$get();
+```
+
+**Constructor Parameters:**
+
+| Parameter        | Type            | Description                             |
+| ---------------- | --------------- | --------------------------------------- |
+| `baseUrl`        | `string`        | Base URL for all API requests           |
+| `defaultOptions` | `RequestInit`   | (Optional) Default fetch options        |
+
+**Methods:**
+
+| Method | Description |
+| ------ | ----------- |
+| `.use(plugins)` | Add plugins to the client. Returns a new instance with updated types. |
+
+**Properties:**
+
+| Property | Description |
+| -------- | ----------- |
+| `.api` | Type-safe API client for making requests |
+| `.stateManager` | Cache and state management |
+| `.eventEmitter` | Event system for refetch/invalidation |
+| `.pluginExecutor` | Plugin lifecycle management |
+
 
 ## Creating Plugins
 
