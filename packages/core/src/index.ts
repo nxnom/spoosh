@@ -1,4 +1,5 @@
 export { createSpoosh } from "./createSpoosh";
+export { Spoosh } from "./Spoosh";
 export {
   createClient,
   type SpooshClientConfig as ClientConfig,
