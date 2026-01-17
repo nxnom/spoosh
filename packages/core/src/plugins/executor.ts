@@ -182,10 +182,17 @@ export function createPluginExecutor(
 
       for (const plugin of applicablePlugins) {
         if (plugin.onResponse) {
-          await plugin.onResponse(
-            context as PluginContext<unknown, unknown>,
-            response as SpooshResponse<unknown, unknown>
-          );
+          try {
+            await plugin.onResponse(
+              context as PluginContext<unknown, unknown>,
+              response as SpooshResponse<unknown, unknown>
+            );
+          } catch (error) {
+            console.warn(
+              `Plugin "${plugin.name}" onResponse handler threw an error which was ignored.`,
+              error
+            );
+          }
         }
       }
 
