@@ -1,5 +1,11 @@
 # @spoosh/core
 
+## 0.2.2
+
+### Patch Changes
+
+- Auto convert body to FormData when body contains File or Blob objects
+
 ## 0.2.1
 
 ### Patch Changes

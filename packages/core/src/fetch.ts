@@ -1,6 +1,7 @@
 import { applyMiddlewares } from "./middleware";
 import {
   buildUrl,
+  containsFile,
   generateTags,
   isJsonBody,
   mergeHeaders,
@@ -201,6 +202,10 @@ async function executeCoreFetch<TData, TError>(
       if (headers) {
         fetchInit.headers = headers;
       }
+    } else if (containsFile(requestOptions.body)) {
+      fetchInit.body = objectToFormData(
+        requestOptions.body as Record<string, unknown>
+      );
     } else {
       fetchInit.body = requestOptions.body as BodyInit;
     }

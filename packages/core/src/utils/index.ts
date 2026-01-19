@@ -1,6 +1,6 @@
 export { buildUrl } from "./buildUrl";
 export { generateTags } from "./generateTags";
-export { isJsonBody } from "./isJsonBody";
+export { containsFile, isJsonBody } from "./isJsonBody";
 export {
   mergeHeaders,
   setHeaders,
