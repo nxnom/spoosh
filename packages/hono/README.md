@@ -83,12 +83,14 @@ const { data: post } = await spoosh.api.posts[1].$get();
 
 ### HonoToSpoosh<T>
 
-Type utility that transforms a Hono app type into Spoosh's ApiSchema format.
+Type utility that transforms a Hono `hc` client type into Spoosh's ApiSchema format.
 
 ```typescript
 import type { HonoToSpoosh } from "@spoosh/hono";
+import type { hc } from "hono/client";
+import type { AppType } from "./server";
 
-type ApiSchema = HonoToSpoosh<typeof app>;
+type ApiSchema = HonoToSpoosh<ReturnType<typeof hc<AppType>>>;
 ```
 
 **Supported HTTP methods:**
