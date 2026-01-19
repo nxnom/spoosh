@@ -253,7 +253,9 @@ import type { PostsSchema } from "./posts";
 export type ApiSchema = UsersSchema & PostsSchema;
 ```
 
-## Type Inference from Hono
+## Type Inference from Server Frameworks
+
+### Hono
 
 If you're using Hono on the server, you can automatically infer your schema:
 
@@ -266,6 +268,20 @@ type ApiSchema = HonoToSpoosh<ReturnType<typeof hc<AppType>>>;
 ```
 
 See the [Hono Integration](/docs/integrations/hono) guide for details.
+
+### Elysia
+
+If you're using Elysia on the server, you can automatically infer your schema:
+
+```typescript
+import type { ElysiaToSpoosh } from "@spoosh/elysia";
+import { treaty } from "@elysiajs/eden";
+import type { App } from "./server";
+
+type ApiSchema = ElysiaToSpoosh<ReturnType<typeof treaty<App>>>;
+```
+
+See the [Elysia Integration](/docs/integrations/elysia) guide for details.
 
 ## Summary
 

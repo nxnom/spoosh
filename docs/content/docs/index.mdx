@@ -10,7 +10,7 @@ description: A type-safe API client with a powerful plugin system
 - **Type-Safe Schema Definition** - Define your API once, get autocomplete and type checking everywhere
 - **Plugin System** - Extend functionality with caching, retry, polling, optimistic updates, and more
 - **Framework Bindings** - Hooks for React, with more frameworks coming soon
-- **Server Adapters** - First-class support for Hono with automatic type inference
+- **Server Adapters** - First-class support for Hono and Elysia with automatic type inference
 - **Cache Invalidation** - Automatic tag-based cache invalidation after mutations
 - **OpenAPI Conversion** - Bidirectional conversion between TypeScript and OpenAPI 3.0/3.1 specs
 
@@ -65,6 +65,7 @@ function UserList() {
 | `@spoosh/core`    | Core client and plugin system                             |
 | `@spoosh/react`   | React bindings (`useRead`, `useWrite`, `useInfiniteRead`) |
 | `@spoosh/hono`    | Hono type adapter                                         |
+| `@spoosh/elysia`  | Elysia type adapter                                       |
 | `@spoosh/openapi` | Bidirectional OpenAPI converter (import/export)           |
 
 ### Plugins

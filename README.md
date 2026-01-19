@@ -70,7 +70,7 @@ const client = new Spoosh<ApiSchema, Error>("/api")
   .use([/* plugins */]);
 ```
 
-**Server Type Inference** — Use the Hono adapter for automatic client types from your server.
+**Server Type Inference** — Use the Hono or Elysia adapter for automatic client types from your server.
 
 **OpenAPI Generation** — Generate OpenAPI 3.0 specs directly from your TypeScript types.
 
@@ -128,10 +128,11 @@ function UserList() {
 
 | Package                               | Description                                            |
 | ------------------------------------- | ------------------------------------------------------ |
-| [@spoosh/core](./packages/core)       | Core client and plugin system                          |
-| [@spoosh/react](./packages/react)     | React hooks (`useRead`, `useWrite`, `useInfiniteRead`) |
-| [@spoosh/hono](./packages/hono)       | Hono type adapter for server-to-client type inference  |
-| [@spoosh/openapi](./packages/openapi) | Generate OpenAPI specs from TypeScript types           |
+| [@spoosh/core](./packages/core)       | Core client and plugin system                            |
+| [@spoosh/react](./packages/react)     | React hooks (`useRead`, `useWrite`, `useInfiniteRead`)   |
+| [@spoosh/hono](./packages/hono)       | Hono type adapter for server-to-client type inference    |
+| [@spoosh/elysia](./packages/elysia)   | Elysia type adapter for server-to-client type inference  |
+| [@spoosh/openapi](./packages/openapi) | Generate OpenAPI specs from TypeScript types             |
 
 ### Plugins
 
