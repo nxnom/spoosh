@@ -1,0 +1,163 @@
+---
+title: Elysia
+description: Type-safe API client from your Elysia server
+---
+
+The `@spoosh/elysia` package transforms your Elysia Eden Treaty client type into Spoosh's ApiSchema format, giving you end-to-end type safety.
+
+<Callout type="warn">
+  Eden Treaty does not enforce strict types for `body` properties. The object
+  shape is preserved but property values are typed as `any` (e.g., `{"{ name: any }"}`
+  instead of `{"{ name: string }"}`). Response and query types are fully preserved.
+</Callout>
+
+<Callout type="info">
+  For proper type inference, your Elysia routes must use TypeBox schemas for
+  validation. The types are extracted from the Eden Treaty client.
+</Callout>
+
+## Installation
+
+```package-install
+@spoosh/elysia
+```
+
+## Setup
+
+### Server (Elysia)
+
+Define your Elysia routes and export the app type:
+
+```typescript title="server.ts"
+import { Elysia, t } from "elysia";
+
+const app = new Elysia({ prefix: "/api" })
+  .get("/posts", () => {
+    return [
+      { id: 1, title: "Hello World" },
+      { id: 2, title: "Getting Started" },
+    ];
+  })
+  .post(
+    "/posts",
+    ({ body }) => {
+      return { id: 3, title: body.title };
+    },
+    {
+      body: t.Object({ title: t.String() }),
+    }
+  )
+  .get("/posts/:id", ({ params }) => {
+    return { id: Number(params.id), title: "Post Title" };
+  })
+  .delete("/posts/:id", () => {
+    return { success: true };
+  });
+
+// Export the app type for client usage
+export type App = typeof app;
+```
+
+### Client (Spoosh)
+
+Use `ElysiaToSpoosh` with the Eden Treaty client type to convert the Elysia type:
+
+```typescript title="client.ts"
+import { Spoosh } from "@spoosh/core";
+import { createReactSpoosh } from "@spoosh/react";
+import { treaty } from "@elysiajs/eden";
+import type { ElysiaToSpoosh } from "@spoosh/elysia";
+import type { App } from "./server";
+
+type ApiSchema = ElysiaToSpoosh<ReturnType<typeof treaty<App>>>["api"];
+
+const spoosh = new Spoosh<ApiSchema, Error>("http://localhost:3000/api");
+
+export const { useRead, useWrite } = createReactSpoosh(spoosh);
+```
+
+## Usage
+
+All API calls are fully typed:
+
+```typescript
+// GET /api/posts
+const { data: posts } = await api.posts.$get();
+// posts: { id: number; title: string }[]
+
+// POST /api/posts
+const { data: newPost } = await api.posts.$post({
+  body: { title: "New Post" }, // body is typed
+});
+// newPost: { id: number; title: string }
+
+// GET /api/posts/1
+const { data: post } = await api.posts[1].$get();
+// post: { id: number; title: string }
+
+// DELETE /api/posts/1
+await api.posts[1].$delete();
+```
+
+## Type Mapping
+
+| Elysia                   | Spoosh                      |
+| ------------------------ | --------------------------- |
+| Return value             | Response data type          |
+| `body: t.Object({...})`  | Request body type           |
+| `query: t.Object({...})` | Query params type           |
+| `/posts/:id`             | `posts._` (dynamic segment) |
+
+## Path Parameters
+
+Dynamic segments (`:id`, `:slug`, etc.) are converted to `_` in the schema:
+
+```typescript
+// Elysia route: /users/:userId/posts/:postId
+// Spoosh path: api.users[userId].posts[postId].$get()
+```
+
+## Split Routes
+
+`ElysiaToSpoosh` works seamlessly with split routes using `.use()`:
+
+```typescript title="routes/users.ts"
+import { Elysia, t } from "elysia";
+
+export const usersRoutes = new Elysia({ prefix: "/users" })
+  .get("/", () => [])
+  .post("/", ({ body }) => body, { body: t.Object({ name: t.String() }) })
+  .get("/:id", ({ params }) => ({ id: params.id }));
+```
+
+```typescript title="routes/posts.ts"
+import { Elysia, t } from "elysia";
+
+export const postsRoutes = new Elysia({ prefix: "/posts" })
+  .get("/", () => [])
+  .post("/", ({ body }) => body, { body: t.Object({ title: t.String() }) });
+```
+
+```typescript title="app.ts"
+import { Elysia } from "elysia";
+import { usersRoutes } from "./routes/users";
+import { postsRoutes } from "./routes/posts";
+
+const app = new Elysia({ prefix: "/api" })
+  .use(usersRoutes)
+  .use(postsRoutes);
+
+export type App = typeof app;
+```
+
+```typescript title="client.ts"
+import { Spoosh } from "@spoosh/core";
+import { treaty } from "@elysiajs/eden";
+import type { ElysiaToSpoosh } from "@spoosh/elysia";
+import type { App } from "./app";
+
+// Types are correctly inferred from split routes
+type ApiSchema = ElysiaToSpoosh<ReturnType<typeof treaty<App>>>["api"];
+
+const spoosh = new Spoosh<ApiSchema, Error>("/api");
+```

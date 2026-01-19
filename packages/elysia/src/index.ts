@@ -1,3 +1,3 @@
-export type { ElysiaToSpoosh, ElysiaRouteToSpoosh } from "./types";
+export type { ElysiaToSpoosh } from "./types";
 
 export type { Endpoint } from "@spoosh/core";

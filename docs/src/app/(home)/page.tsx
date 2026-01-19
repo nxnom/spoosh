@@ -173,7 +173,7 @@ export default function HomePage() {
 
             <FeatureCard
               title="Framework Adapters"
-              description="First-class support for Hono with automatic type inference from your server routes."
+              description="First-class support for Hono and Elysia with automatic type inference from your server routes."
               icon={
                 <svg
                   className="w-6 h-6"

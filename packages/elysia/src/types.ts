@@ -110,10 +110,6 @@ type HasAnyMethod<T> =
   ? false
   : true;
 
-type NonMethodKeys<T> = {
-  [K in keyof T]: K extends ElysiaMethod | SpooshMethod ? never : K;
-}[keyof T];
-
 type IsDynamicRouteFunction<T> = T extends (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params: any
@@ -134,18 +130,25 @@ type ExtractDynamicRouteReturn<T> = T extends (
 
 type IsDynamicRoute<T> = IsDynamicRouteFunction<T>;
 
-type TransformTreatyClient<T> = (HasAnyMethod<T> extends true
+type FlattenIndex<T> = T extends { index: infer I } ? Omit<T, "index"> & I : T;
+
+type NonIndexKeys<T> = {
+  [K in keyof T]: K extends "index" | ElysiaMethod | SpooshMethod ? never : K;
+}[keyof T];
+
+type TransformTreatyClientImpl<T> = (HasAnyMethod<T> extends true
   ? TransformTreatyMethods<T>
   : object) &
-  (NonMethodKeys<T> extends never
+  (IsDynamicRoute<T> extends true
+    ? { _: TransformTreatyClient<ExtractDynamicRouteReturn<T>> }
+    : object) &
+  (NonIndexKeys<T> extends never
     ? object
     : {
-        [K in NonMethodKeys<T>]: IsDynamicRoute<T[K]> extends true
-          ? { _: TransformTreatyClient<ExtractDynamicRouteReturn<T[K]>> }
-          : TransformTreatyClient<T[K]>;
+        [K in NonIndexKeys<T>]: TransformTreatyClient<T[K]>;
       });
 
-type FlattenIndex<T> = T extends { index: infer I } ? Omit<T, "index"> & I : T;
+type TransformTreatyClient<T> = TransformTreatyClientImpl<FlattenIndex<T>>;
 
 /**
  * Transforms Eden Treaty client type into Spoosh schema format.
@@ -157,30 +160,7 @@ type FlattenIndex<T> = T extends { index: infer I } ? Omit<T, "index"> & I : T;
  * import type { App } from './server';
  *
  * type Client = ReturnType<typeof treaty<App>>;
- * type ApiSchema = ElysiaToSpoosh<Client>['api'];
+ * type ApiSchema = ElysiaToSpoosh<Client>;
  * ```
  */
 export type ElysiaToSpoosh<T> = Simplify<TransformTreatyClient<T>>;
-
-/**
- * Transforms a sub-client (single route group) into Spoosh schema format.
- * Use this for the split-app pattern to avoid TS2589 errors in large apps.
- *
- * @example
- * ```typescript
- * import { treaty } from '@elysiajs/eden';
- * import type { ElysiaRouteToSpoosh } from '@spoosh/elysia';
- *
- * // Split by route group to avoid TS2589
- * import type { usersRoutes } from './routes/users';
- * import type { postsRoutes } from './routes/posts';
- *
- * export type APISchema = {
- *   users: ElysiaRouteToSpoosh<ReturnType<typeof treaty<typeof usersRoutes>>>;
- *   posts: ElysiaRouteToSpoosh<ReturnType<typeof treaty<typeof postsRoutes>>>;
- * };
- *
- * // Usage: api.users.$get(), api.posts.$post(), etc.
- * ```
- */
-export type ElysiaRouteToSpoosh<T> = FlattenIndex<ElysiaToSpoosh<T>>;
