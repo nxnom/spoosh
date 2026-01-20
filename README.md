@@ -19,12 +19,14 @@ Spoosh is a lightweight, type-safe API client framework with a unique plugin arc
 **Type-Safe Routing** — Access your API with natural object syntax. Full autocomplete, zero magic strings.
 
 ```typescript
-// Type-safe path and response types
-const { data } = await client.api.posts[123].comments.$get();
+// Direct usage with variables or literals (simplest)
+const userId = 123;
+const { data } = await client.api.users(userId).posts.$get();
+const { data } = await client.api.posts(456).comments.$get();
 
-// Type-safe dynamic params with function syntax
+// Typed params for explicit parameter names (advanced)
 const { data } = await client.api.users(":userId").posts.$get({
-  params: { userId: "123" }, // params is typed based on the path
+  params: { userId: 123 },
 });
 ```
 
@@ -33,11 +35,12 @@ const { data } = await client.api.users(":userId").posts.$get({
 ```typescript
 // Tags are generated from the path hierarchy:
 // users.$get()           → tags: ["users"]
-// users[123].$get()      → tags: ["users", "users/123"]
-// users[123].posts.$get() → tags: ["users", "users/123", "users/123/posts"]
+// users(123).$get()      → tags: ["users", "users/123"]
+// users(123).posts.$get() → tags: ["users", "users/123", "users/123/posts"]
 
 // When you create a post, related queries are auto-invalidated:
-const { trigger } = useWrite((api) => api.users[123].posts.$post);
+const userId = 123;
+const { trigger } = useWrite((api) => api.users(userId).posts.$post);
 await trigger({ body: { title: "New Post" } });
 // ✓ Automatically invalidates: users, users/123, users/123/posts
 ```
@@ -104,7 +107,7 @@ const client = new Spoosh<ApiSchema, Error>("/api")
 
 // Fully typed API calls
 const { data, error } = await client.api.users.$get();
-const { data: user } = await client.api.users[123].$get();
+const { data: user } = await client.api.users(123).$get();
 ```
 
 ### With React

@@ -13,7 +13,7 @@ Use `useRead` to fetch data:
 import { useRead } from "../api/client";
 
 function UserProfile({ userId }: { userId: number }) {
-  const { data, loading, error } = useRead((api) => api.users[userId].$get());
+  const { data, loading, error } = useRead((api) => api.users(userId).$get());
 
   if (loading) return <Spinner />;
   if (error) return <ErrorMessage error={error} />;
@@ -49,7 +49,7 @@ function SearchUsers({ query }: { query: string }) {
 
 ```tsx
 function UserProfile({ userId }: { userId: number | null }) {
-  const { data, loading } = useRead((api) => api.users[userId!].$get(), {
+  const { data, loading } = useRead((api) => api.users(userId!).$get(), {
     enabled: userId !== null,
   });
 
@@ -100,9 +100,9 @@ function CreateUserForm() {
 
 ```tsx
 function UserActions({ userId }: { userId: number }) {
-  const { trigger: updateUser } = useWrite((api) => api.users[userId].$put);
+  const { trigger: updateUser } = useWrite((api) => api.users(userId).$put);
 
-  const { trigger: deleteUser } = useWrite((api) => api.users[userId].$delete);
+  const { trigger: deleteUser } = useWrite((api) => api.users(userId).$delete);
 
   const handleUpdate = async () => {
     await updateUser({ body: { name: "Updated Name" } });
@@ -123,23 +123,31 @@ function UserActions({ userId }: { userId: number }) {
 
 ## Dynamic Path Parameters
 
-Spoosh supports multiple syntaxes for dynamic path segments:
+Spoosh supports dynamic path segments with direct value passing:
 
 ```tsx
-// Bracket syntax with literal value
-const { data } = useRead((api) => api.users[123].$get());
+// useRead: Direct usage (simplest - pass values directly)
+const { data } = useRead((api) => api.users(123).$get());
 
-// Function syntax with typed params (recommended)
+// useRead: With variables (most common)
+const userId = 123;
+const { data } = useRead((api) => api.users(userId).$get());
+
+// useWrite: Direct usage works the same way
+const { trigger: updateUser } = useWrite((api) => api.users(userId).$put);
+await updateUser({ body: { name: "New Name" } });
+
+// Typed params (advanced - when you need explicit param names)
 const { data } = useRead((api) =>
-  api.users(":userId").$get({ params: { userId: "123" } })
+  api.users(":userId").$get({ params: { userId: 123 } })
 );
 
-// Variable in brackets
-const userId = 123;
-const { data } = useRead((api) => api.users[userId].$get());
+// useWrite with typed params
+const { trigger: deletePost } = useWrite((api) => api.posts(":postId").$delete);
+await deletePost({ params: { postId: 42 } });
 ```
 
-The function syntax `(":userId")` provides the best type inference for params.
+**Recommended:** Use direct value passing `users(userId)` for the simplest and most readable code.
 
 ## Response Format
 

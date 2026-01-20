@@ -77,17 +77,6 @@ export type QuerySchemaHelper<TSchema> = {
 } & (TSchema extends { _: infer D }
     ? HasQueryMethods<D> extends true
       ? {
-          /**
-           * Dynamic path segment placeholder for routes like `/posts/:id`.
-           *
-           * @example
-           * ```ts
-           * // In plugin callback - reference the endpoint
-           * myCallback: (api) => api.posts._.$get
-           * ```
-           */
-          _: QuerySchemaHelper<D>;
-          [key: string]: QuerySchemaHelper<D>;
           [key: number]: QuerySchemaHelper<D>;
         }
       : object

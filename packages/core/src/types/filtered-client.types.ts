@@ -61,7 +61,7 @@ type QueryHttpMethods<
   >;
 };
 
-type ExtractParamName<S extends string> = S extends `:${infer P}` ? P : never;
+type ExtractParamName<S> = S extends `:${infer P}` ? P : never;
 
 type QueryDynamicAccess<
   TSchema,
@@ -72,13 +72,6 @@ type QueryDynamicAccess<
 > = TSchema extends { _: infer D }
   ? HasQueryMethods<D> extends true
     ? {
-        [key: string]: QueryOnlyClient<
-          D,
-          TDefaultError,
-          TOptionsMap,
-          TParamNames | string,
-          TRootSchema
-        >;
         [key: number]: QueryOnlyClient<
           D,
           TDefaultError,
@@ -86,42 +79,13 @@ type QueryDynamicAccess<
           TParamNames | string,
           TRootSchema
         >;
-        <TKey extends string>(
+        <TKey extends string | number>(
           key: TKey
         ): QueryOnlyClient<
           D,
           TDefaultError,
           TOptionsMap,
           TParamNames | ExtractParamName<TKey>,
-          TRootSchema
-        >;
-      }
-    : object
-  : object;
-
-type QueryDynamicKey<
-  TSchema,
-  TDefaultError,
-  TOptionsMap,
-  TParamNames extends string = never,
-  TRootSchema = TSchema,
-> = TSchema extends { _: infer D }
-  ? HasQueryMethods<D> extends true
-    ? {
-        /**
-         * Dynamic path segment placeholder for routes like `/posts/:id`.
-         *
-         * @example
-         * ```ts
-         * useRead((api) => api.posts[123].$get())
-         * useRead((api) => api.posts(':id').$get({ params: { id: 123 } }))
-         * ```
-         */
-        _: QueryOnlyClient<
-          D,
-          TDefaultError,
-          TOptionsMap,
-          TParamNames | string,
           TRootSchema
         >;
       }
@@ -136,13 +100,6 @@ export type QueryOnlyClient<
   TRootSchema = TSchema,
 > = QueryHttpMethods<TSchema, TDefaultError, TOptionsMap, TParamNames> &
   QueryDynamicAccess<
-    TSchema,
-    TDefaultError,
-    TOptionsMap,
-    TParamNames,
-    TRootSchema
-  > &
-  QueryDynamicKey<
     TSchema,
     TDefaultError,
     TOptionsMap,
@@ -185,19 +142,13 @@ type MutationDynamicAccess<
 > = TSchema extends { _: infer D }
   ? HasMutationMethods<D> extends true
     ? {
-        [key: string]: MutationOnlyClient<
-          D,
-          TDefaultError,
-          TOptionsMap,
-          TParamNames | string
-        >;
         [key: number]: MutationOnlyClient<
           D,
           TDefaultError,
           TOptionsMap,
           TParamNames | string
         >;
-        <TKey extends string>(
+        <TKey extends string | number>(
           key: TKey
         ): MutationOnlyClient<
           D,
@@ -209,43 +160,13 @@ type MutationDynamicAccess<
     : object
   : object;
 
-type MutationDynamicKey<
-  TSchema,
-  TDefaultError,
-  TOptionsMap,
-  TParamNames extends string = never,
-> = TSchema extends {
-  _: infer D;
-}
-  ? HasMutationMethods<D> extends true
-    ? {
-        /**
-         * Dynamic path segment placeholder for routes like `/posts/:id`.
-         *
-         * @example
-         * ```ts
-         * const { trigger } = useWrite((api) => api.posts(':id').$delete)
-         * trigger({ params: { id: 123 } })
-         * ```
-         */
-        _: MutationOnlyClient<
-          D,
-          TDefaultError,
-          TOptionsMap,
-          TParamNames | string
-        >;
-      }
-    : object
-  : object;
-
 export type MutationOnlyClient<
   TSchema,
   TDefaultError = unknown,
   TOptionsMap = object,
   TParamNames extends string = never,
 > = MutationHttpMethods<TSchema, TDefaultError, TOptionsMap, TParamNames> &
-  MutationDynamicAccess<TSchema, TDefaultError, TOptionsMap, TParamNames> &
-  MutationDynamicKey<TSchema, TDefaultError, TOptionsMap, TParamNames> & {
+  MutationDynamicAccess<TSchema, TDefaultError, TOptionsMap, TParamNames> & {
     [K in keyof StaticPathKeys<TSchema> as K extends SchemaMethod
       ? never
       : HasMutationMethods<TSchema[K]> extends true

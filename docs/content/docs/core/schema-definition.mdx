@@ -147,7 +147,7 @@ const { data } = await api.payments.$post({
 
 ## Dynamic Path Segments
 
-Use `_` to define dynamic path segments:
+Use `_` in your schema to define dynamic path segments:
 
 ```typescript
 type ApiSchema = {
@@ -161,11 +161,20 @@ type ApiSchema = {
   };
 };
 
-// Usage
+// Direct usage (simplest - pass values directly)
 const { data: users } = await api.users.$get(); // GET /users
-const { data: user } = await api.users[123].$get(); // GET /users/123
-const { data } = await api.users[123].$put({ body: {} }); // PUT /users/123
-await api.users[123].$delete(); // DELETE /users/123
+const { data: user } = await api.users(123).$get(); // GET /users/123
+const { data } = await api.users(123).$put({ body: {} }); // PUT /users/123
+await api.users(123).$delete(); // DELETE /users/123
+
+// With variables
+const userId = 123;
+await api.users(userId).$get();
+
+// Typed params (advanced - explicit param names for type inference)
+const { data } = await api.users(":userId").$get({
+  params: { userId: 123 },
+});
 ```
 
 ### Nested Dynamic Segments
@@ -184,23 +193,64 @@ type ApiSchema = {
   };
 };
 
-// Usage
-await api.users[1].posts.$get(); // GET /users/1/posts
-await api.users[1].posts[42].$get(); // GET /users/1/posts/42
+// Direct usage (simplest)
+await api.users(1).posts.$get(); // GET /users/1/posts
+await api.users(1).posts(42).$get(); // GET /users/1/posts/42
+
+// With variables
+const userId = 1;
+const postId = 42;
+await api.users(userId).posts(postId).$get();
+
+// Typed params (advanced - explicit param names)
+await api
+  .users(":userId")
+  .posts(":postId")
+  .$get({
+    params: { userId: 1, postId: 42 },
+  });
 ```
 
-### Typed Dynamic Params
+### With React Hooks
 
-Use the function syntax for type-safe params:
+Dynamic params work seamlessly with `useRead` and `useWrite`:
 
-```typescript
-// Function syntax (recommended for type safety)
-const { data } = await api.users(":userId").$get({
-  params: { userId: "123" },
-});
+```tsx
+import { useRead, useWrite } from "./api/client";
 
-// Bracket syntax (works but no type inference)
-const { data } = await api.users[userId].$get();
+function UserPostsList({ userId }: { userId: number }) {
+  // Direct usage with useRead
+  const { data: posts } = useRead((api) => api.users(userId).posts.$get());
+
+  // Direct usage with useWrite
+  const { trigger: createPost } = useWrite(
+    (api) => api.users(userId).posts.$post
+  );
+  const { trigger: deletePost } = useWrite(
+    (api) => api.users(userId).posts(":postId").$delete
+  );
+
+  const handleCreatePost = async () => {
+    await createPost({ body: { title: "New Post" } });
+  };
+
+  const handleDeletePost = async (postId: number) => {
+    // Pass postId directly when calling trigger
+    await deletePost({ params: { postId } });
+  };
+
+  return (
+    <div>
+      <button onClick={handleCreatePost}>Create Post</button>
+      {posts?.map((post) => (
+        <div key={post.id}>
+          <h3>{post.title}</h3>
+          <button onClick={() => handleDeletePost(post.id)}>Delete</button>
+        </div>
+      ))}
+    </div>
+  );
+}
 ```
 
 ## HTTP Methods

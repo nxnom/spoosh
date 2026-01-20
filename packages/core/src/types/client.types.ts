@@ -16,7 +16,7 @@ import type {
   HasRequiredOptions,
 } from "./endpoint.types";
 
-type ExtractParamName<S extends string> = S extends `:${infer P}` ? P : never;
+type ExtractParamName<S> = S extends `:${infer P}` ? P : never;
 
 type MethodRequestOptions<
   TSchema,
@@ -151,13 +151,6 @@ type DynamicAccess<
   ExtractDynamicSchema<TSchema> extends never
     ? object
     : {
-        [key: string]: SpooshClient<
-          ExtractDynamicSchema<TSchema>,
-          TDefaultError,
-          TOptionsMap,
-          TParamNames | string,
-          TRootSchema
-        >;
         [key: number]: SpooshClient<
           ExtractDynamicSchema<TSchema>,
           TDefaultError,
@@ -171,11 +164,14 @@ type DynamicAccess<
          *
          * @example
          * ```ts
-         * // Typed params: { userId: string | number }
+         * // With number
+         * await api.users(123).$get()
+         *
+         * // With typed params
          * const { data, params } = await api.users(':userId').$get({ params: { userId: 123 } })
          * ```
          */
-        <TKey extends string>(
+        <TKey extends string | number>(
           key: TKey
         ): SpooshClient<
           ExtractDynamicSchema<TSchema>,
@@ -186,35 +182,6 @@ type DynamicAccess<
         >;
       };
 
-type DynamicKey<
-  TSchema,
-  TDefaultError,
-  TOptionsMap,
-  TParamNames extends string = never,
-  TRootSchema = TSchema,
-> = TSchema extends {
-  _: infer D;
-}
-  ? {
-      /**
-       * Dynamic path segment placeholder for routes like `/posts/:id`.
-       *
-       * @example
-       * ```ts
-       * // Direct client usage
-       * const { data } = await api.posts._.$get({ params: { id: 123 } })
-       * ```
-       */
-      _: SpooshClient<
-        D,
-        TDefaultError,
-        TOptionsMap,
-        TParamNames | string,
-        TRootSchema
-      >;
-    }
-  : object;
-
 export type SpooshClient<
   TSchema,
   TDefaultError = unknown,
@@ -222,8 +189,13 @@ export type SpooshClient<
   TParamNames extends string = never,
   TRootSchema = TSchema,
 > = HttpMethods<TSchema, TDefaultError, TOptionsMap, TParamNames> &
-  DynamicAccess<TSchema, TDefaultError, TOptionsMap, TParamNames, TRootSchema> &
-  DynamicKey<TSchema, TDefaultError, TOptionsMap, TParamNames, TRootSchema> & {
+  DynamicAccess<
+    TSchema,
+    TDefaultError,
+    TOptionsMap,
+    TParamNames,
+    TRootSchema
+  > & {
     [K in keyof StaticPathKeys<TSchema> as K extends SchemaMethod
       ? never
       : K]: SpooshClient<

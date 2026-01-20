@@ -65,25 +65,22 @@ const { data: newUser } = await api.users.$post({
   body: { name: "John", email: "john@example.com" },
 });
 
-// GET /api/users/123 (dynamic segment)
-const { data: user } = await api.users[123].$get();
+// GET /api/users/123 (direct usage - simplest)
+const { data: user } = await api.users(123).$get();
 
-// Type-safe dynamic params with function syntax (recommended - params is typed)
-const { data } = await api.users(":userId").$get({
-  params: { userId: "123" },
-});
-
-// Alternative bracket syntaxes (less recommended):
-// api.users[":userId"].$get() - works but no type inference for params
-// api.users[userId].$get() - works with variable, no type inference
-
-// PUT /api/users/123
-const { data: updated } = await api.users[123].$put({
+// PUT /api/users/123 (with variable)
+const userId = 123;
+const { data: updated } = await api.users(userId).$put({
   body: { name: "John Updated" },
 });
 
 // DELETE /api/users/123
-await api.users[123].$delete();
+await api.users(123).$delete();
+
+// Typed params (advanced - when you need explicit param names)
+const { data } = await api.users(":userId").$get({
+  params: { userId: 123 },
+});
 
 // POST with FormData
 const { data: uploaded } = await api.upload.$post({
@@ -124,7 +121,7 @@ const api = createClient<ApiSchema>({ baseUrl: process.env.API_URL! });
 const { data: posts } = await api.posts.$get();
 
 // Auto-generates next: { tags: ['users', 'users/123', 'users/123/posts'] }
-const { data: userPosts } = await api.users[123].posts.$get();
+const { data: userPosts } = await api.users(123).posts.$get();
 ```
 
 This enables automatic cache invalidation with `revalidateTag()` in Next.js.

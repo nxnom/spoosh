@@ -111,11 +111,52 @@ await api.posts[1].$delete();
 
 ## Path Parameters
 
-Dynamic segments (`:id`, `:slug`, etc.) are converted to `_` in the schema:
+Dynamic segments (`:id`, `:slug`, etc.) are converted to `_` in the schema and accessed with direct usage:
 
 ```typescript
 // Elysia route: /users/:userId/posts/:postId
-// Spoosh path: api.users[userId].posts[postId].$get()
+
+// Direct usage (simplest - pass values directly)
+api.users(123).posts(456).$get();
+
+// With variables
+const userId = 123;
+const postId = 456;
+api.users(userId).posts(postId).$get();
+
+// Typed params (advanced - explicit param names)
+api
+  .users(":userId")
+  .posts(":postId")
+  .$get({
+    params: { userId: 123, postId: 456 },
+  });
+```
+
+### With React Hooks
+
+```tsx
+import { useRead, useWrite } from "./api/client";
+
+function UserProfile({ userId }: { userId: number }) {
+  // Direct usage with useRead
+  const { data: user } = useRead((api) => api.users(userId).$get());
+
+  // Direct usage with useWrite
+  const { trigger: updateUser } = useWrite((api) => api.users(userId).$put);
+  const { trigger: deleteUser } = useWrite((api) => api.users(userId).$delete);
+
+  const handleUpdate = async () => {
+    await updateUser({ body: { name: "Updated" } });
+  };
+
+  return (
+    <div>
+      <h1>{user?.name}</h1>
+      <button onClick={handleUpdate}>Update</button>
+    </div>
+  );
+}
 ```
 
 ## Split Routes

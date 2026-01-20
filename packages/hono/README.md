@@ -65,8 +65,13 @@ const { data: newPost } = await spoosh.api.posts.$post({
 });
 // body is typed, newPost is { id: number; title: string }
 
-const { data: post } = await spoosh.api.posts[1].$get();
+// Dynamic segment with direct usage (simplest)
+const { data: post } = await spoosh.api.posts(1).$get();
 // post is typed as { id: number; title: string }
+
+// With variable
+const postId = 1;
+const { data } = await spoosh.api.posts(postId).$get();
 ```
 
 ## Type Mapping
@@ -103,11 +108,23 @@ type ApiSchema = HonoToSpoosh<ReturnType<typeof hc<AppType>>>;
 
 **Path parameters:**
 
-Dynamic segments (`:id`, `:slug`, etc.) are converted to `_` in the schema:
+Dynamic segments (`:id`, `:slug`, etc.) are converted to `_` in the schema and accessed via direct usage:
 
 ```typescript
 // Hono route: /users/:userId/posts/:postId
-// Spoosh path: spoosh.api.users[userId].posts[postId].$get()
+
+// Direct usage (simplest - pass values directly)
+spoosh.api.users(123).posts(456).$get();
+
+// With variables
+const userId = 123;
+const postId = 456;
+spoosh.api.users(userId).posts(postId).$get();
+
+// Typed params (advanced - explicit param names)
+spoosh.api.users(":userId").posts(":postId").$get({
+  params: { userId: 123, postId: 456 },
+});
 ```
 
 ### HonoRouteToSpoosh<T>

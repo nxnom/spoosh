@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/hono",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "license": "MIT",
   "description": "Hono server adapter for Spoosh API definitions",
   "keywords": [
@@ -41,7 +41,7 @@
     "format": "prettier --write 'src/**/*.ts'"
   },
   "peerDependencies": {
-    "@spoosh/core": ">=0.2.1",
+    "@spoosh/core": ">=0.3.0",
     "hono": ">=4.0.0"
   },
   "devDependencies": {

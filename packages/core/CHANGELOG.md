@@ -1,5 +1,11 @@
 # @spoosh/core
 
+## 0.3.0
+
+### Minor Changes
+
+- - Strict typescript allowing `_` syntax for dynamic path segments
+
 ## 0.2.2
 
 ### Patch Changes

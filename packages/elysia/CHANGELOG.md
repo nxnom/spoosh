@@ -1,5 +1,12 @@
 # @spoosh/elysia
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @spoosh/core@0.3.0
+
 ## 0.1.0
 
 ### Features

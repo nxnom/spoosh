@@ -1,5 +1,12 @@
 # @spoosh/hono
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @spoosh/core@0.3.0
+
 ## 0.2.0
 
 ## Breaking Changes

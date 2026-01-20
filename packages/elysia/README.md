@@ -68,8 +68,13 @@ const { data: newPost } = await spoosh.posts.$post({
 });
 // body is typed, newPost is { id: number; title: string }
 
-const { data: post } = await spoosh.posts[1].$get();
+// Dynamic segment with direct usage (simplest)
+const { data: post } = await spoosh.posts(1).$get();
 // post is typed as { id: number; title: string }
+
+// With variable
+const postId = 1;
+const { data } = await spoosh.posts(postId).$get();
 ```
 
 ## Type Mapping
@@ -105,11 +110,23 @@ type ApiSchema = ElysiaToSpoosh<ReturnType<typeof treaty<App>>>["api"];
 
 **Path parameters:**
 
-Dynamic segments (`:id`, `:slug`, etc.) are converted to `_` in the schema:
+Dynamic segments (`:id`, `:slug`, etc.) are converted to `_` in the schema and accessed via direct usage:
 
 ```typescript
 // Elysia route: /users/:userId/posts/:postId
-// Spoosh path: spoosh.users[userId].posts[postId].$get()
+
+// Direct usage (simplest - pass values directly)
+spoosh.users(123).posts(456).$get();
+
+// With variables
+const userId = 123;
+const postId = 456;
+spoosh.users(userId).posts(postId).$get();
+
+// Typed params (advanced - explicit param names)
+spoosh.users(":userId").posts(":postId").$get({
+  params: { userId: 123, postId: 456 },
+});
 ```
 
 ## Split Routes
