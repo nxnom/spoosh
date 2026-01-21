@@ -1,0 +1,95 @@
+---
+title: Debounce
+description: Delay requests until input stops changing
+---
+
+The debounce plugin delays requests until the user stops typing or changing input. This prevents excessive API calls during rapid input.
+
+## Installation
+
+```package-install
+@spoosh/plugin-debounce
+```
+
+## Usage
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { debouncePlugin } from "@spoosh/plugin-debounce";
+
+const client = new Spoosh<ApiSchema, Error>("/api").use([debouncePlugin()]);
+
+// Wait 300ms after typing stops before fetching
+const results = injectRead(
+  (api) => api.search.$get({ query: { q: searchTerm() } }),
+  { debounce: 300 }
+);
+```
+
+## Conditional Debounce
+
+Only debounce when specific fields change:
+
+```typescript
+const results = injectRead(
+  (api) => api.search.$get({ query: { q: searchTerm(), page: page() } }),
+  {
+    debounce: ({ prevQuery }) => (prevQuery?.q !== searchTerm() ? 300 : 0),
+  }
+);
+```
+
+In this example, debounce is applied when the search query changes, but not when only the page changes.
+
+## Options
+
+### Per-Request Options
+
+| Option     | Type                            | Description                                                |
+| ---------- | ------------------------------- | ---------------------------------------------------------- |
+| `debounce` | `number \| (context) => number` | Milliseconds to wait, or function for conditional debounce |
+
+### Debounce Function Context
+
+When using a function, you receive:
+
+| Property       | Type      | Description               |
+| -------------- | --------- | ------------------------- |
+| `prevQuery`    | `object`  | Previous query parameters |
+| `prevBody`     | `unknown` | Previous request body     |
+| `prevParams`   | `object`  | Previous path parameters  |
+| `prevFormData` | `object`  | Previous form data        |
+
+## Example: Search Input
+
+```typescript
+@Component({
+  selector: "app-search-page",
+  template: `
+    <div>
+      <input
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+        placeholder="Search..."
+      />
+      @if (results.loading()) {
+        <app-spinner />
+      }
+      @for (result of results.data(); track result.id) {
+        <app-search-result [result]="result" />
+      }
+    </div>
+  `,
+})
+export class SearchPageComponent {
+  searchTerm = signal("");
+
+  results = injectRead(
+    (api) => api.search.$get({ query: { q: this.searchTerm() } }),
+    {
+      enabled: this.searchTerm().length > 0,
+      debounce: 300,
+    }
+  );
+}
+```

@@ -1,0 +1,481 @@
+---
+title: OpenAPI
+description: Generate type-safe TypeScript clients from OpenAPI specs, or export your schemas as OpenAPI documentation
+---
+
+The `@spoosh/openapi` package provides bidirectional conversion between OpenAPI 3.0/3.1 specifications and TypeScript Spoosh schemas.
+
+## Features
+
+- **Import**: Generate TypeScript Spoosh schemas from OpenAPI 3.0/3.1 specs (JSON & YAML)
+- **Export**: Generate OpenAPI 3.0 or 3.1 specs from TypeScript Spoosh schemas
+- **Type-safe**: Automatic detection of endpoint types, query params, request bodies, and responses
+- **Error Types**: Extract error types from 4xx/5xx responses with automatic union types
+- **JSDoc Preservation**: Convert OpenAPI descriptions to TypeScript comments
+- **File Upload Detection**: Automatic conversion of binary formats to File type
+
+## Installation
+
+```package-install
+@spoosh/openapi
+```
+
+## Import: OpenAPI to Spoosh
+
+Generate TypeScript Spoosh schemas from existing OpenAPI specifications. Perfect for integrating with third-party APIs or migrating from OpenAPI-based tools.
+
+### CLI Usage
+
+```bash
+# Import from JSON
+npx spoosh-openapi import openapi.json -o ./src/schema.ts --include-imports
+
+# Import from YAML
+npx spoosh-openapi import openapi.yaml -o ./src/schema.ts --include-imports
+
+# Custom options
+npx spoosh-openapi import \
+  ./docs/openapi.json \
+  --output ./src/api-schema.ts \
+  --type-name MyApiSchema \
+  --include-imports \
+  --jsdoc
+```
+
+### Input: OpenAPI Spec
+
+```json title="openapi.json"
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/posts": {
+      "get": {
+        "description": "Retrieve all posts",
+        "parameters": [
+          { "name": "userId", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Post" }
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreatePostBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Post" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/posts/{postId}": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Post" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Post": {
+        "type": "object",
+        "required": ["id", "title"],
+        "properties": {
+          "id": { "type": "integer", "description": "Unique identifier" },
+          "title": { "type": "string" },
+          "desc": { "type": "string" }
+        }
+      },
+      "CreatePostBody": {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string" },
+          "desc": { "type": "string" }
+        }
+      }
+    }
+  }
+}
+```
+
+### Generated Output
+
+```typescript title="src/schema.ts"
+import type { Endpoint } from "@spoosh/core";
+
+/** Unique identifier */
+type Post = {
+  /** Unique identifier */
+  id: number;
+  title: string;
+  desc?: string;
+};
+
+type CreatePostBody = {
+  title: string;
+  desc?: string;
+};
+
+type ApiSchema = {
+  posts: {
+    /** Retrieve all posts */
+    $get: Endpoint<{
+      data: Post[];
+      query: { userId?: number };
+      error: { error?: string };
+    }>;
+    $post: Endpoint<{ data: Post; body: CreatePostBody }>;
+    _: {
+      $get: Post;
+    };
+  };
+};
+```
+
+### Import CLI Options
+
+| Option              | Alias | Required | Default     | Description                                                    |
+| ------------------- | ----- | -------- | ----------- | -------------------------------------------------------------- |
+| `<input>`           | -     | Yes      | -           | Path to OpenAPI spec (JSON or YAML)                            |
+| `--output`          | `-o`  | Yes      | -           | Output TypeScript file path                                    |
+| `--type-name`       | `-t`  | No       | `ApiSchema` | Schema type name                                               |
+| `--include-imports` | -     | No       | `false`     | Include Spoosh type imports                                    |
+| `--jsdoc`           | -     | No       | `false`     | Include JSDoc comments from OpenAPI descriptions and summaries |
+
+## Type Detection
+
+The import feature generates the unified `Endpoint` type with appropriate fields:
+
+| OpenAPI Pattern                    | Spoosh Type                                      | Example                     |
+| ---------------------------------- | ------------------------------------------------ | --------------------------- |
+| Query parameters                   | `Endpoint<{ data: TData; query: TQuery }>`       | GET with `?page=1&limit=10` |
+| `multipart/form-data` request body | `Endpoint<{ data: TData; formData: TFormData }>` | POST with file upload       |
+| `application/json` request body    | `Endpoint<{ data: TData; body: TBody }>`         | POST/PUT with JSON          |
+| No response body (204)             | `void`                                           | DELETE operation            |
+| Simple response only               | `TData`                                          | Simple GET returning data   |
+
+### Path Conversion
+
+OpenAPI paths are converted to nested Spoosh structure:
+
+```
+/posts              -> { posts: { $get: ... } }
+/posts/{postId}     -> { posts: { _: { $get: ... } } }
+/posts/{id}/comments -> { posts: { _: { comments: { $get: ... } } } }
+```
+
+Dynamic segments (`{paramName}`) are mapped to the underscore `_` key in Spoosh.
+
+### Error Type Extraction
+
+Error types are automatically extracted from 4xx and 5xx response schemas. Responses with only descriptions (no schemas) are ignored.
+
+```json
+{
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": { "schema": { ... } }
+      }
+    },
+    "400": {
+      "description": "Bad request"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "system_message": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Generated:
+
+```typescript
+// Only 500 has a schema, so only that is included
+$post: Endpoint<{ data: Data; body: Body; error: { system_message?: string } }>;
+
+// If no error responses have schemas, no error field is added
+$get: Data;
+```
+
+Multiple error schemas are automatically unioned:
+
+```typescript
+// Both 400 and 500 have schemas
+$post: Endpoint<{
+  data: Data;
+  body: Body;
+  error: { error?: string } | { system_message?: string };
+}>;
+```
+
+### File Upload Detection
+
+Binary formats are automatically converted to `File` type:
+
+```json
+{
+  "requestBody": {
+    "content": {
+      "multipart/form-data": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "file": { "type": "string", "format": "binary" },
+            "title": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Generated:
+
+```typescript
+$post: Endpoint<{ data: Response; formData: { file: File; title: string } }>;
+```
+
+## Export: Spoosh to OpenAPI
+
+Generate OpenAPI specifications from your TypeScript Spoosh schema for documentation or API contract sharing.
+
+### CLI Usage
+
+```bash
+# Basic usage
+npx spoosh-openapi export -s ./src/schema.ts -o openapi.json
+
+# With custom options
+npx spoosh-openapi export \
+  --schema ./src/api-schema.ts \
+  --type MyApiSchema \
+  --output ./docs/openapi.json \
+  --title "My API" \
+  --version "2.0.0" \
+  --base-url "https://api.example.com"
+```
+
+### Schema File
+
+```typescript title="src/schema.ts"
+import type { Endpoint } from "@spoosh/core";
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+interface CreateUserBody {
+  name: string;
+  email: string;
+}
+
+export type ApiSchema = {
+  users: {
+    $get: Endpoint<{ data: User[]; query: { page?: number; limit?: number } }>;
+    $post: Endpoint<{ data: User; body: CreateUserBody }>;
+    _: {
+      $get: User;
+      $put: Endpoint<{ data: User; body: Partial<CreateUserBody> }>;
+      $delete: void;
+    };
+  };
+  health: {
+    $get: { status: string };
+  };
+};
+```
+
+### Generated Output
+
+```json
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "My API",
+    "version": "2.0.0"
+  },
+  "servers": [{ "url": "https://api.example.com" }],
+  "paths": {
+    "/users": {
+      "get": {
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "number" } },
+          { "name": "limit", "in": "query", "schema": { "type": "number" } }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/User" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Export CLI Options
+
+| Option              | Alias | Required | Default     | Description                               |
+| ------------------- | ----- | -------- | ----------- | ----------------------------------------- |
+| `--schema`          | `-s`  | Yes      | -           | Path to TypeScript file containing schema |
+| `--type`            | `-t`  | No       | `ApiSchema` | Name of the schema type to use            |
+| `--output`          | `-o`  | No       | stdout      | Output file path                          |
+| `--title`           | -     | No       | -           | API title for OpenAPI info                |
+| `--version`         | -     | No       | `1.0.0`     | API version for OpenAPI info              |
+| `--base-url`        | -     | No       | -           | Base URL for servers array                |
+| `--openapi-version` | -     | No       | `3.1.0`     | OpenAPI spec version (3.0.0 or 3.1.0)     |
+
+## Programmatic Usage
+
+### Import API
+
+```typescript
+import {
+  importOpenAPISpec,
+  loadOpenAPISpec,
+  generateSpooshSchema,
+} from "@spoosh/openapi";
+
+// High-level API (load + generate)
+const tsCode = importOpenAPISpec("./openapi.json", {
+  typeName: "ApiSchema",
+  includeImports: true,
+  jsdoc: true,
+});
+
+// Or use low-level APIs for more control
+const spec = loadOpenAPISpec("./openapi.json");
+const schema = generateSpooshSchema(spec, {
+  typeName: "ApiSchema",
+  includeImports: true,
+});
+
+console.log(schema);
+```
+
+### Export API
+
+```typescript
+import { parseSchema, generateOpenAPISpec } from "@spoosh/openapi";
+
+const { endpoints, schemas } = parseSchema("./src/schema.ts", "ApiSchema");
+
+const spec = generateOpenAPISpec(endpoints, schemas, {
+  title: "My API",
+  version: "1.0.0",
+  baseUrl: "https://api.example.com",
+});
+
+console.log(JSON.stringify(spec, null, 2));
+```
+
+## Use Cases
+
+### 1. Import Existing APIs
+
+Generate type-safe Spoosh clients from existing API documentation:
+
+```bash
+# Import from public API
+npx spoosh-openapi import https://api.example.com/openapi.json -o ./src/api-schema.ts --include-imports
+
+# Import from local file
+npx spoosh-openapi import ./docs/openapi.json -o ./src/schema.ts --include-imports --jsdoc
+```
+
+### 2. Migration from OpenAPI
+
+Migrate from OpenAPI-based tools to Spoosh while preserving types:
+
+```bash
+# Convert OpenAPI to Spoosh
+npx spoosh-openapi import old-api.json -o ./src/schema.ts --include-imports
+
+# Use with Spoosh client
+import { Spoosh } from "@spoosh/core";
+import type { ApiSchema } from "./schema";
+
+const client = new Spoosh<ApiSchema, Error>("https://api.example.com");
+```
+
+### 3. Generate Documentation
+
+Export your Spoosh schema to OpenAPI for use with documentation tools like Swagger UI or Redoc:
+
+```bash
+npx spoosh-openapi export -s ./src/schema.ts -o ./docs/openapi.json --title "My API" --version "1.0.0"
+```
+
+### 4. Contract Testing
+
+Ensure your implementation matches your OpenAPI contract:
+
+```typescript
+import { parseSchema, generateOpenAPISpec } from "@spoosh/openapi";
+import fs from "fs";
+
+const { endpoints, schemas } = parseSchema("./src/schema.ts", "ApiSchema");
+const generated = generateOpenAPISpec(endpoints, schemas);
+const contract = JSON.parse(fs.readFileSync("./openapi.json", "utf-8"));
+
+// Compare and validate
+expect(generated.paths).toEqual(contract.paths);
+```

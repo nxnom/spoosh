@@ -1,0 +1,302 @@
+---
+title: Hono
+description: Type-safe API client from your Hono server
+---
+
+The `@spoosh/hono` package transforms your Hono app type into Spoosh's ApiSchema format, giving you end-to-end type safety.
+
+<Callout type="info">
+  For proper type inference, your Hono routes must follow the [Hono RPC
+  guide](https://hono.dev/docs/guides/rpc). Chain your routes directly on the
+  app instance and export the app type.
+</Callout>
+
+## Installation
+
+```package-install
+@spoosh/hono
+```
+
+## Setup
+
+### Server (Hono)
+
+Define your Hono routes and export the app type:
+
+```typescript title="server.ts"
+import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
+
+const app = new Hono()
+  .basePath("/api")
+  .get("/posts", (c) => {
+    return c.json([
+      { id: 1, title: "Hello World" },
+      { id: 2, title: "Getting Started" },
+    ]);
+  })
+  .post("/posts", zValidator("json", z.object({ title: z.string() })), (c) => {
+    const body = c.req.valid("json");
+    return c.json({ id: 3, title: body.title });
+  })
+  .get("/posts/:id", (c) => {
+    const id = c.req.param("id");
+    return c.json({ id: Number(id), title: "Post Title" });
+  })
+  .delete("/posts/:id", (c) => {
+    return c.json({ success: true });
+  });
+
+// Export the app type for client usage
+export type AppType = typeof app;
+```
+
+### Client (Spoosh)
+
+Use `HonoToSpoosh` with the `hc` client type to convert the Hono type:
+
+```typescript title="client.ts"
+import { Spoosh } from "@spoosh/core";
+import { createAngularSpoosh } from "@spoosh/angular";
+import type { HonoToSpoosh } from "@spoosh/hono";
+import type { hc } from "hono/client";
+import type { AppType } from "./server";
+
+type ApiSchema = HonoToSpoosh<ReturnType<typeof hc<AppType>>>;
+
+const spoosh = new Spoosh<ApiSchema, Error>("http://localhost:3000/api");
+
+export const { injectRead, injectWrite } = createAngularSpoosh(spoosh);
+```
+
+## Usage
+
+All API calls are fully typed:
+
+```typescript
+// GET /api/posts
+const { data: posts } = await api.posts.$get();
+// posts: { id: number; title: string }[]
+
+// POST /api/posts
+const { data: newPost } = await api.posts.$post({
+  body: { title: "New Post" }, // body is typed
+});
+// newPost: { id: number; title: string }
+
+// GET /api/posts/1
+const { data: post } = await api.posts(1).$get();
+// post: { id: number; title: string }
+
+// DELETE /api/posts/1
+await api.posts(1).$delete();
+```
+
+## Type Mapping
+
+| Hono                          | Spoosh                      |
+| ----------------------------- | --------------------------- |
+| `c.json(data)`                | Response data type          |
+| `zValidator("json", schema)`  | Request body type           |
+| `zValidator("query", schema)` | Query params type           |
+| `zValidator("form", schema)`  | Form data type              |
+| `/posts/:id`                  | `posts._` (dynamic segment) |
+
+## Path Parameters
+
+Dynamic segments (`:id`, `:slug`, etc.) are converted to `_` in the schema and accessed with direct usage:
+
+```typescript
+// Hono route: /users/:userId/posts/:postId
+
+// Direct usage (simplest - pass values directly)
+api.users(123).posts(456).$get();
+
+// With variables
+const userId = 123;
+const postId = 456;
+api.users(userId).posts(postId).$get();
+
+// Typed params (advanced - explicit param names)
+api
+  .users(":userId")
+  .posts(":postId")
+  .$get({
+    params: { userId: 123, postId: 456 },
+  });
+```
+
+### With Angular
+
+```typescript
+import { Component, inject, input } from "@angular/core";
+import { injectRead, injectWrite } from "./api/client";
+
+@Component({
+  selector: "app-user-profile",
+  template: `
+    <div>
+      <h1>{{ user()?.name }}</h1>
+      <button (click)="handleUpdate()">Update</button>
+    </div>
+  `,
+})
+export class UserProfileComponent {
+  userId = input.required<number>();
+
+  user = injectRead((api) => api.users(this.userId()).$get());
+
+  updateUser = injectWrite((api) => api.users(this.userId()).$put);
+  deleteUser = injectWrite((api) => api.users(this.userId()).$delete);
+
+  async handleUpdate() {
+    await this.updateUser.trigger({ body: { name: "Updated" } });
+  }
+}
+```
+
+## Handling Large Apps (TS2589)
+
+When your Hono app has many routes (20+), you may encounter TypeScript error TS2589:
+
+```
+Type instantiation is excessively deep and possibly infinite.
+```
+
+<Callout type="warn">
+  This is a known TypeScript limitation with deeply nested type transformations.
+  The solution is to split your routes and transform them separately.
+</Callout>
+
+### Solution: Split-App Pattern
+
+Instead of using `HonoToSpoosh` with your entire app type, split your routes into separate groups and use `HonoRouteToSpoosh` with the `hc` client type.
+
+#### Step 1: Organize routes into separate files
+
+```typescript title="routes/users.ts"
+import { Hono } from "hono";
+
+export const usersRoutes = new Hono()
+  .get("/", (c) => c.json([]))
+  .post("/", (c) => c.json({}))
+  .get("/:id", (c) => c.json({}));
+```
+
+```typescript title="routes/posts.ts"
+import { Hono } from "hono";
+
+export const postsRoutes = new Hono()
+  .get("/", (c) => c.json([]))
+  .post("/", (c) => c.json({}));
+```
+
+#### Step 2: Mount routes in your main app
+
+```typescript title="app.ts"
+import { Hono } from "hono";
+import { usersRoutes } from "./routes/users";
+import { postsRoutes } from "./routes/posts";
+
+const app = new Hono()
+  .basePath("/api")
+  .route("/users", usersRoutes)
+  .route("/posts", postsRoutes);
+
+export default app;
+```
+
+#### Step 3: Define schema using `HonoRouteToSpoosh`
+
+```typescript title="client.ts"
+import { Spoosh } from "@spoosh/core";
+import { createAngularSpoosh } from "@spoosh/angular";
+import type { HonoRouteToSpoosh } from "@spoosh/hono";
+import type { hc } from "hono/client";
+import type { usersRoutes } from "./routes/users";
+import type { postsRoutes } from "./routes/posts";
+
+// Pre-compute each route type separately (helps TypeScript caching)
+type UsersSchema = HonoRouteToSpoosh<ReturnType<typeof hc<typeof usersRoutes>>>;
+type PostsSchema = HonoRouteToSpoosh<ReturnType<typeof hc<typeof postsRoutes>>>;
+
+type ApiSchema = {
+  users: UsersSchema;
+  posts: PostsSchema;
+};
+
+const spoosh = new Spoosh<ApiSchema, Error>("/api");
+
+export const { injectRead, injectWrite } = createAngularSpoosh(spoosh);
+```
+
+### Why use `hc` client types?
+
+Using `typeof hc<typeof routes>` instead of `typeof app` is recommended because:
+
+| Benefit                     | Description                                                          |
+| --------------------------- | -------------------------------------------------------------------- |
+| **Version stability**       | The `hc` client type structure is more stable across Hono versions   |
+| **Isolated transformation** | Each route group is transformed independently, reducing type depth   |
+| **Better caching**          | TypeScript can cache intermediate type computations more effectively |
+
+### Splitting Complex Route Groups
+
+If a single route group is still causing TS2589, split it further by route pattern:
+
+```typescript title="routes/bookings.ts"
+// Root-level routes
+export const bookingsRootRoutes = new Hono()
+  .get("/", (c) => c.json([]))
+  .post("/", (c) => c.json({}))
+  .post("/summary", (c) => c.json({}));
+
+// Routes with :id parameter
+export const bookingByIdRoutes = new Hono()
+  .get("/:id", (c) => c.json({}))
+  .patch("/:id", (c) => c.json({}))
+  .post("/:id/confirm", (c) => c.json({}));
+```
+
+```typescript title="app.ts"
+// Mount both on the same path
+const app = new Hono()
+  .route("/bookings", bookingsRootRoutes)
+  .route("/bookings", bookingByIdRoutes);
+```
+
+```typescript title="client.ts"
+// Merge the types with intersection
+type BookingsRoot = HonoRouteToSpoosh<
+  ReturnType<typeof hc<typeof bookingsRootRoutes>>
+>;
+type BookingById = HonoRouteToSpoosh<
+  ReturnType<typeof hc<typeof bookingByIdRoutes>>
+>;
+
+type ApiSchema = {
+  bookings: BookingsRoot & BookingById;
+};
+```
+
+<Callout type="tip">
+  Pre-computing types as separate type aliases (like `BookingsRoot` and
+  `BookingById`) helps TypeScript's type caching, which can prevent the deep
+  instantiation issue even when combining them with intersection.
+</Callout>
+
+### Last Resort: `@ts-expect-error`
+
+In rare cases, even after splitting routes, certain endpoints may still trigger TS2589. When this happens, you can use `@ts-expect-error` as a targeted workaround:
+
+```typescript
+// @ts-expect-error TS2589 - complex endpoint type
+const updateBooking = injectWrite((api) => api.bookings(":id").confirm.$post);
+```
+
+<Callout type="warn">
+  Only use `@ts-expect-error` for specific problematic endpoints, not as a
+  blanket solution. The type safety still works at runtime—this just suppresses
+  the compile-time error for that particular usage.
+</Callout>

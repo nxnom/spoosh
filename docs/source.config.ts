@@ -7,8 +7,21 @@ import {
 import { transformerTwoslash } from "fumadocs-twoslash";
 import { rehypeCodeDefaultOptions } from "fumadocs-core/mdx-plugins";
 
-export const docs = defineDocs({
-  dir: "content/docs",
+export const reactDocs = defineDocs({
+  dir: "content/react",
+  docs: {
+    schema: frontmatterSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
+  },
+  meta: {
+    schema: metaSchema,
+  },
+});
+
+export const angularDocs = defineDocs({
+  dir: "content/angular",
   docs: {
     schema: frontmatterSchema,
     postprocess: {

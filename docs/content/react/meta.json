@@ -1,0 +1,11 @@
+{
+  "title": "React",
+  "pages": [
+    "index",
+    "getting-started",
+    "core",
+    "hooks",
+    "plugins",
+    "integrations"
+  ]
+}

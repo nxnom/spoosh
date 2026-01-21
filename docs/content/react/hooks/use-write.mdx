@@ -1,0 +1,88 @@
+---
+title: useWrite
+description: Trigger mutations with loading and error states
+---
+
+Trigger mutations with loading and error states. The callback **selects** the API method (no parentheses).
+
+## Basic Usage
+
+```typescript
+function CreateUser() {
+  const { trigger, loading, error } = useWrite(
+    (api) => api.users.$post
+  );
+
+  const handleSubmit = async (formData: CreateUserBody) => {
+    const result = await trigger({ body: formData });
+
+    if (result.data) {
+      console.log("Created:", result.data);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* form fields */}
+      <button disabled={loading}>
+        {loading ? "Creating..." : "Create User"}
+      </button>
+    </form>
+  );
+}
+```
+
+## With Invalidation
+
+```typescript
+const { trigger } = useWrite((api) => api.posts.$post);
+
+await trigger({
+  body: { title: "New Post", content: "..." },
+  invalidate: (api) => [api.posts.$get],
+});
+```
+
+## Returns
+
+| Property  | Type                   | Description                                            |
+| --------- | ---------------------- | ------------------------------------------------------ |
+| `trigger` | `(options) => Promise` | Execute the mutation                                   |
+| `data`    | `TData \| undefined`   | Response data                                          |
+| `error`   | `TError \| undefined`  | Error if request failed                                |
+| `loading` | `boolean`              | True while mutation is in progress                     |
+| `reset`   | `() => void`           | Clear mutation state (data, error, loading) to initial |
+| `abort`   | `() => void`           | Abort current request                                  |
+| `input`   | `object \| undefined`  | The last trigger input                                 |
+| `meta`    | `object`               | Plugin-provided metadata                               |
+
+## Trigger Options
+
+| Option           | Type                               | Description                 |
+| ---------------- | ---------------------------------- | --------------------------- |
+| `body`           | `TBody`                            | Request body                |
+| `query`          | `TQuery`                           | Query parameters            |
+| `params`         | `Record<string, string \| number>` | Path parameters             |
+| `autoInvalidate` | `"all" \| "self" \| "none"`        | Auto invalidation mode      |
+| `invalidate`     | `(api) => Selector[] \| string[]`  | Manual invalidation targets |
+| `dedupe`         | `"in-flight" \| false`             | Request deduplication mode  |
+
+## Resetting Mutation State
+
+Use `reset()` to clear mutation state (useful for dismissing notifications):
+
+```typescript
+function CreatePost() {
+  const { trigger, data, error, reset } = useWrite((api) => api.posts.$post);
+
+  return (
+    <div>
+      {data && <SuccessAlert onClose={reset}>Post created!</SuccessAlert>}
+      {error && <ErrorAlert onClose={reset}>{error.message}</ErrorAlert>}
+      <button onClick={() => trigger({ body: { title: "New Post" } })}>
+        Create Post
+      </button>
+    </div>
+  );
+}
+```

@@ -1,0 +1,352 @@
+---
+title: Schema Definition
+description: Define type-safe API schemas with TypeScript
+---
+
+Spoosh uses TypeScript types to define your API structure. This gives you full autocomplete and type checking for all API calls.
+
+## Basic Schema
+
+Define your API schema as a nested type structure:
+
+```typescript
+import type { Endpoint } from "@spoosh/core";
+
+type User = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+type ApiSchema = {
+  users: {
+    $get: Endpoint<{ data: User[] }>;
+    $post: Endpoint<{ data: User; body: { name: string; email: string } }>;
+  };
+};
+```
+
+## Endpoint Types
+
+### Endpoint\<\{ data \}\>
+
+For endpoints that only return data:
+
+```ts twoslash
+// @noErrors
+import type { Endpoint } from "@spoosh/core";
+import { createClient } from "@spoosh/core";
+
+type User = { id: number; name: string; email: string };
+type ApiSchema = {
+  users: {
+    $get: Endpoint<{ data: User[] }>;
+  };
+};
+
+const api = createClient<ApiSchema>({ baseUrl: "/api" });
+// ---cut---
+const { data } = await api.users.$get();
+```
+
+### Endpoint\<\{ data; body \}\>
+
+Endpoint with a request body:
+
+```ts twoslash
+// @noErrors
+import type { Endpoint } from "@spoosh/core";
+import { createClient } from "@spoosh/core";
+
+type User = { id: number; name: string; email: string };
+type ApiSchema = {
+  users: {
+    $post: Endpoint<{ data: User; body: { name: string; email: string } }>;
+  };
+};
+
+const api = createClient<ApiSchema>({ baseUrl: "/api" });
+// ---cut---
+const { data } = await api.users.$post({
+  body: { name: "John", email: "john@example.com" },
+});
+```
+
+### Endpoint\<\{ data; query \}\>
+
+Endpoint with query parameters:
+
+```ts twoslash
+// @noErrors
+import type { Endpoint } from "@spoosh/core";
+import { createClient } from "@spoosh/core";
+
+type User = { id: number; name: string; email: string };
+type ApiSchema = {
+  users: {
+    $get: Endpoint<{ data: User[]; query: { page?: number; limit?: number } }>;
+  };
+};
+
+const api = createClient<ApiSchema>({ baseUrl: "/api" });
+// ---cut---
+const { data } = await api.users.$get({
+  query: { page: 1, limit: 10 },
+});
+```
+
+### Endpoint\<\{ data; formData \}\>
+
+Endpoint that accepts form data:
+
+```ts twoslash
+// @noErrors
+import type { Endpoint } from "@spoosh/core";
+import { createClient } from "@spoosh/core";
+
+type ApiSchema = {
+  users: {
+    avatar: {
+      $post: Endpoint<{ data: { url: string }; formData: { file: File } }>;
+    };
+  };
+};
+
+const api = createClient<ApiSchema>({ baseUrl: "/api" });
+declare const myFile: File;
+// ---cut---
+const { data } = await api.users.avatar.$post({
+  formData: { file: myFile },
+});
+```
+
+### Endpoint\<\{ data; urlEncoded \}\>
+
+Endpoint with URL-encoded body:
+
+```ts twoslash
+// @noErrors
+import type { Endpoint } from "@spoosh/core";
+import { createClient } from "@spoosh/core";
+
+type ApiSchema = {
+  payments: {
+    $post: Endpoint<{
+      data: { id: string };
+      urlEncoded: { amount: number; currency: string };
+    }>;
+  };
+};
+
+const api = createClient<ApiSchema>({ baseUrl: "/api" });
+// ---cut---
+const { data } = await api.payments.$post({
+  urlEncoded: { amount: 1000, currency: "usd" },
+});
+```
+
+## Dynamic Path Segments
+
+Use `_` in your schema to define dynamic path segments:
+
+```typescript
+type ApiSchema = {
+  users: {
+    $get: Endpoint<{ data: User[] }>;
+    _: {
+      $get: Endpoint<{ data: User }>;
+      $put: Endpoint<{ data: User; body: Partial<User> }>;
+      $delete: void;
+    };
+  };
+};
+
+// Direct usage (simplest - pass values directly)
+const { data: users } = await api.users.$get(); // GET /users
+const { data: user } = await api.users(123).$get(); // GET /users/123
+const { data } = await api.users(123).$put({ body: {} }); // PUT /users/123
+await api.users(123).$delete(); // DELETE /users/123
+
+// With variables
+const userId = 123;
+await api.users(userId).$get();
+
+// Typed params (advanced - explicit param names for type inference)
+const { data } = await api.users(":userId").$get({
+  params: { userId: 123 },
+});
+```
+
+### Nested Dynamic Segments
+
+```typescript
+type ApiSchema = {
+  users: {
+    _: {
+      posts: {
+        $get: Endpoint<{ data: Post[] }>;
+        _: {
+          $get: Endpoint<{ data: Post }>;
+        };
+      };
+    };
+  };
+};
+
+// Direct usage (simplest)
+await api.users(1).posts.$get(); // GET /users/1/posts
+await api.users(1).posts(42).$get(); // GET /users/1/posts/42
+
+// With variables
+const userId = 1;
+const postId = 42;
+await api.users(userId).posts(postId).$get();
+
+// Typed params (advanced - explicit param names)
+await api
+  .users(":userId")
+  .posts(":postId")
+  .$get({
+    params: { userId: 1, postId: 42 },
+  });
+```
+
+### With Angular Injection Functions
+
+Dynamic params work seamlessly with `injectRead` and `injectWrite`:
+
+```typescript
+import { Component, input, computed } from "@angular/core";
+import { injectRead, injectWrite } from "./api/client";
+
+@Component({
+  selector: "app-user-posts-list",
+  template: `
+    <div>
+      <button (click)="handleCreatePost()">Create Post</button>
+      @for (post of posts(); track post.id) {
+        <div>
+          <h3>{{ post.title }}</h3>
+          <button (click)="handleDeletePost(post.id)">Delete</button>
+        </div>
+      }
+    </div>
+  `,
+})
+export class UserPostsListComponent {
+  userId = input.required<number>();
+
+  private userPosts = injectRead((api) =>
+    api.users(this.userId()).posts.$get()
+  );
+  posts = computed(() => this.userPosts.data());
+
+  private createPost = injectWrite(
+    (api) => api.users(this.userId()).posts.$post
+  );
+  private deletePost = injectWrite(
+    (api) => api.users(this.userId()).posts(":postId").$delete
+  );
+
+  async handleCreatePost() {
+    await this.createPost.trigger({ body: { title: "New Post" } });
+  }
+
+  async handleDeletePost(postId: number) {
+    await this.deletePost.trigger({ params: { postId } });
+  }
+}
+```
+
+## HTTP Methods
+
+Spoosh supports all common HTTP methods:
+
+| Method    | Type       | Description    |
+| --------- | ---------- | -------------- |
+| `$get`    | `Endpoint` | GET request    |
+| `$post`   | `Endpoint` | POST request   |
+| `$put`    | `Endpoint` | PUT request    |
+| `$patch`  | `Endpoint` | PATCH request  |
+| `$delete` | `Endpoint` | DELETE request |
+
+## Schema Organization
+
+For larger APIs, organize your schema into separate files:
+
+```typescript title="src/api/schema/users.ts"
+import type { Endpoint } from "@spoosh/core";
+
+export type UsersSchema = {
+  users: {
+    $get: Endpoint<{ data: User[]; query: { page?: number } }>;
+    $post: Endpoint<{ data: User; body: CreateUserBody }>;
+    _: {
+      $get: User;
+      $put: Endpoint<{ data: User; body: UpdateUserBody }>;
+      $delete: void;
+    };
+  };
+};
+```
+
+```typescript title="src/api/schema/posts.ts"
+import type { Endpoint } from "@spoosh/core";
+
+export type PostsSchema = {
+  posts: {
+    $get: Endpoint<{ data: Post[] }>;
+    $post: Endpoint<{ data: Post; body: CreatePostBody }>;
+  };
+};
+```
+
+```typescript title="src/api/schema/index.ts"
+import type { UsersSchema } from "./users";
+import type { PostsSchema } from "./posts";
+
+export type ApiSchema = UsersSchema & PostsSchema;
+```
+
+## Type Inference from Server Frameworks
+
+### Hono
+
+If you're using Hono on the server, you can automatically infer your schema:
+
+```typescript
+import type { HonoToSpoosh } from "@spoosh/hono";
+import type { hc } from "hono/client";
+import type { AppType } from "./server";
+
+type ApiSchema = HonoToSpoosh<ReturnType<typeof hc<AppType>>>;
+```
+
+See the [Hono Integration](/angular/docs/integrations/hono) guide for details.
+
+### Elysia
+
+If you're using Elysia on the server, you can automatically infer your schema:
+
+```typescript
+import type { ElysiaToSpoosh } from "@spoosh/elysia";
+import { treaty } from "@elysiajs/eden";
+import type { App } from "./server";
+
+type ApiSchema = ElysiaToSpoosh<ReturnType<typeof treaty<App>>>;
+```
+
+See the [Elysia Integration](/angular/docs/integrations/elysia) guide for details.
+
+## Summary
+
+| Type                             | Description                | Example                                                             |
+| -------------------------------- | -------------------------- | ------------------------------------------------------------------- |
+| `Endpoint<{ data }>`             | Endpoint with data only    | `$get: Endpoint<{ data: User[] }>`                                  |
+| `Endpoint<{ data; body }>`       | Endpoint with JSON body    | `$post: Endpoint<{ data: User; body: CreateUserBody }>`             |
+| `Endpoint<{ data; query }>`      | Endpoint with query params | `$get: Endpoint<{ data: User[]; query: { page: number } }>`         |
+| `Endpoint<{ data; formData }>`   | Endpoint with form data    | `$post: Endpoint<{ data: Result; formData: { file: File } }>`       |
+| `Endpoint<{ data; urlEncoded }>` | Endpoint with URL-encoded  | `$post: Endpoint<{ data: Result; urlEncoded: { amount: number } }>` |
+| `Endpoint<{ data; error }>`      | Endpoint with typed error  | `$get: Endpoint<{ data: User; error: ApiError }>`                   |
+| `void`                           | No response body           | `$delete: void`                                                     |
+| `_`                              | Dynamic path segment       | `users: { _: { $get: Endpoint<{ data: User }> } }`                  |

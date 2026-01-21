@@ -1,10 +1,20 @@
-import { getLLMText, source } from "@/lib/source";
+import { getLLMText, reactSource, angularSource } from "@/lib/source";
 
 export const revalidate = false;
 
 export async function GET() {
-  const scan = source.getPages().map(getLLMText);
-  const scanned = await Promise.all(scan);
+  const reactPages = reactSource.getPages().map(getLLMText);
+  const angularPages = angularSource.getPages().map(getLLMText);
 
-  return new Response(scanned.join("\n\n"));
+  const reactScanned = await Promise.all(reactPages);
+  const angularScanned = await Promise.all(angularPages);
+
+  const content = [
+    "# React Documentation\n",
+    ...reactScanned,
+    "\n\n# Angular Documentation\n",
+    ...angularScanned,
+  ].join("\n\n");
+
+  return new Response(content);
 }

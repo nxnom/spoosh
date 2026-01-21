@@ -3,7 +3,7 @@
 ## 0.1.2
 
 - Fix allowing invalid properties in `injectInfiniteRead` options.
- 
+
 ## 0.1.1
 
 ### Patch Changes

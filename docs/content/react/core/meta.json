@@ -1,0 +1,5 @@
+{
+  "title": "Core",
+  "defaultOpen": false,
+  "pages": ["index", "schema-definition", "client", "response"]
+}

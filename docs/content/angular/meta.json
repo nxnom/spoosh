@@ -1,0 +1,11 @@
+{
+  "title": "Angular",
+  "pages": [
+    "index",
+    "getting-started",
+    "core",
+    "injects",
+    "plugins",
+    "integrations"
+  ]
+}

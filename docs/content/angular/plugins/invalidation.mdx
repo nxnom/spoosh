@@ -1,0 +1,164 @@
+---
+title: Invalidation
+description: Auto-invalidate queries after mutations
+---
+
+The invalidation plugin automatically refreshes related queries after mutations succeed. This keeps your UI in sync without manual refetching.
+
+## Installation
+
+```package-install
+@spoosh/plugin-invalidation
+```
+
+## Usage
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+
+const client = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  deduplicationPlugin(),
+  invalidationPlugin(),
+]);
+```
+
+## Default Configuration
+
+```typescript
+// Default: invalidate all related tags (full hierarchy)
+invalidationPlugin(); // same as { autoInvalidate: "all" }
+
+// Only invalidate the exact endpoint by default
+invalidationPlugin({ autoInvalidate: "self" });
+
+// Disable auto-invalidation by default (manual only)
+invalidationPlugin({ autoInvalidate: "none" });
+```
+
+## How It Works
+
+Tags are automatically generated from the API path hierarchy:
+
+```typescript
+// Query tags are generated from the path:
+injectRead((api) => api.users.$get());
+// → tags: ["users"]
+
+injectRead((api) => api.users(123).$get());
+// → tags: ["users", "users/123"]
+
+injectRead((api) => api.users(123).posts.$get());
+// → tags: ["users", "users/123", "users/123/posts"]
+```
+
+### Custom Tags on Queries
+
+You can override or extend auto-generated tags:
+
+```typescript
+// Override auto-generated tags
+const users = injectRead((api) => api.users.$get(), {
+  tags: ["custom-users"], // replaces auto-generated tags
+});
+
+// Extend auto-generated tags
+const usersWithDashboard = injectRead((api) => api.users.$get(), {
+  additionalTags: ["dashboard-data"], // adds to auto-generated tags
+});
+```
+
+When a mutation succeeds, related queries are automatically invalidated:
+
+```typescript
+const createPost = injectWrite((api) => api.users(123).posts.$post);
+
+await createPost.trigger({ body: { title: "New Post" } });
+// ✓ Invalidates: "users", "users/123", "users/123/posts"
+// All queries matching these tags will refetch automatically
+```
+
+## Per-Request Override
+
+Override the default invalidation behavior for specific mutations:
+
+```typescript
+const createPost = injectWrite((api) => api.posts.$post);
+
+// Override to invalidate all related tags
+await createPost.trigger({
+  body: { title: "New Post" },
+  autoInvalidate: "all",
+});
+
+// Override to only invalidate the exact endpoint
+await createPost.trigger({
+  body: { title: "New Post" },
+  autoInvalidate: "self",
+});
+
+// Disable auto-invalidation and specify custom targets
+await createPost.trigger({
+  body: { title: "New Post" },
+  autoInvalidate: "none",
+  invalidate: (api) => [api.posts.$get, api.stats.$get, "dashboard-data"],
+});
+
+// Add specific tags (works alongside autoInvalidate)
+await createPost.trigger({
+  body: { title: "New Post" },
+  invalidate: ["posts", "user-posts"],
+});
+```
+
+## Options
+
+### Plugin Config
+
+| Option           | Type                        | Default | Description                        |
+| ---------------- | --------------------------- | ------- | ---------------------------------- |
+| `autoInvalidate` | `"all" \| "self" \| "none"` | `"all"` | Default auto-invalidation behavior |
+
+### Per-Request Options
+
+| Option           | Type                           | Description                              |
+| ---------------- | ------------------------------ | ---------------------------------------- |
+| `autoInvalidate` | `"all" \| "self" \| "none"`    | Override auto-invalidation behavior      |
+| `invalidate`     | `string[] \| ((api) => [...])` | Specific tags or endpoints to invalidate |
+
+## Auto-Invalidate Modes
+
+| Mode     | Description                                       |
+| -------- | ------------------------------------------------- |
+| `"all"`  | Invalidate all tags from path hierarchy (default) |
+| `"self"` | Only invalidate the exact endpoint tag            |
+| `"none"` | Disable auto-invalidation (manual only)           |
+
+## Example
+
+```typescript
+// Path: users/123/posts
+// Mode "all" invalidates: ["users", "users/123", "users/123/posts"]
+// Mode "self" invalidates: ["users/123/posts"]
+// Mode "none" invalidates: nothing (unless manually specified)
+```
+
+## Combining with Deduplication
+
+When invalidation triggers multiple queries to refetch, some may share the same endpoint. Use `deduplicationPlugin` to prevent duplicate network requests:
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+
+const client = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  deduplicationPlugin(),
+  invalidationPlugin(),
+]);
+```

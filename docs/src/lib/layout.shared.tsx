@@ -1,9 +1,10 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 import { Logo } from "@/components/logo";
+import type { Framework } from "@/lib/source";
 
 const GITHUB_URL = "https://github.com/nxnom/spoosh";
 
-export function baseOptions(): BaseLayoutProps {
+export function baseOptions(framework?: Framework): BaseLayoutProps {
   return {
     nav: {
       title: (
@@ -12,6 +13,7 @@ export function baseOptions(): BaseLayoutProps {
           <span className="font-semibold">Spoosh</span>
         </>
       ),
+      url: "/",
     },
     themeSwitch: {
       enabled: true,
@@ -20,7 +22,7 @@ export function baseOptions(): BaseLayoutProps {
     links: [
       {
         text: "Documentation",
-        url: "/docs",
+        url: framework ? `/${framework}/docs` : "/react/docs",
         active: "nested-url",
       },
       {

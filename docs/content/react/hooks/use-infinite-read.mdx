@@ -1,0 +1,94 @@
+---
+title: useInfiniteRead
+description: Bidirectional paginated data fetching with infinite scroll support
+---
+
+Bidirectional paginated data fetching with infinite scroll support.
+
+## Basic Usage
+
+```typescript
+function PostList() {
+  const {
+    data,
+    loading,
+    canFetchNext,
+    canFetchPrev,
+    fetchNext,
+    fetchPrev,
+    fetchingNext,
+    fetchingPrev,
+  } = useInfiniteRead(
+    (api) => api.posts.paginated.$get({ query: { page: 1 } }),
+    {
+      canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
+      nextPageRequest: ({ response, request }) => ({
+        query: { ...request.query, page: (response?.meta.page ?? 0) + 1 },
+      }),
+      merger: (allResponses) => allResponses.flatMap((r) => r.items),
+      canFetchPrev: ({ response }) => (response?.meta.page ?? 1) > 1,
+      prevPageRequest: ({ response, request }) => ({
+        query: { ...request.query, page: (response?.meta.page ?? 2) - 1 },
+      }),
+    }
+  );
+
+  return (
+    <div>
+      {canFetchPrev && (
+        <button onClick={fetchPrev} disabled={fetchingPrev}>
+          Load Previous
+        </button>
+      )}
+
+      {data?.map((post) => <PostCard key={post.id} post={post} />)}
+
+      {canFetchNext && (
+        <button onClick={fetchNext} disabled={fetchingNext}>
+          Load More
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+## Options
+
+| Option            | Type                         | Required | Description                     |
+| ----------------- | ---------------------------- | -------- | ------------------------------- |
+| `canFetchNext`    | `(ctx) => boolean`           | Yes      | Check if next page exists       |
+| `nextPageRequest` | `(ctx) => Partial<TRequest>` | Yes      | Build request for next page     |
+| `merger`          | `(allResponses) => TItem[]`  | Yes      | Merge all responses into items  |
+| `canFetchPrev`    | `(ctx) => boolean`           | No       | Check if previous page exists   |
+| `prevPageRequest` | `(ctx) => Partial<TRequest>` | No       | Build request for previous page |
+| `enabled`         | `boolean`                    | No       | Whether to fetch automatically  |
+
+## Context Object
+
+```typescript
+type Context<TData, TRequest> = {
+  response: TData | undefined;
+  allResponses: TData[];
+  request: TRequest;
+};
+```
+
+## Returns
+
+| Property       | Type                   | Description                     |
+| -------------- | ---------------------- | ------------------------------- |
+| `data`         | `TItem[] \| undefined` | Merged items from all responses |
+| `allResponses` | `TData[] \| undefined` | Array of all raw responses      |
+| `loading`      | `boolean`              | True during initial load        |
+| `fetching`     | `boolean`              | True during any fetch           |
+| `fetchingNext` | `boolean`              | True while fetching next page   |
+| `fetchingPrev` | `boolean`              | True while fetching previous    |
+| `canFetchNext` | `boolean`              | Whether next page exists        |
+| `canFetchPrev` | `boolean`              | Whether previous page exists    |
+| `fetchNext`    | `() => Promise<void>`  | Fetch the next page             |
+| `fetchPrev`    | `() => Promise<void>`  | Fetch the previous page         |
+| `refetch`      | `() => Promise<void>`  | Refetch all pages               |
+| `abort`        | `() => void`           | Abort current request           |
+| `error`        | `TError \| undefined`  | Error if request failed         |
+| `meta`         | `object`               | Plugin-provided metadata        |

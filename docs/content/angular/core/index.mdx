@@ -1,0 +1,60 @@
+---
+title: Core Concepts
+description: Understanding the fundamentals of Spoosh
+---
+
+The `@spoosh/core` package provides the foundation for building type-safe API clients. This section covers the core concepts you need to understand.
+
+## Overview
+
+Spoosh is built around a few key concepts:
+
+1. **Schema Definition** - Define your API structure with TypeScript types
+2. **Client Creation** - Create a client instance with the `Spoosh` class
+3. **Plugins** - Extend functionality with caching, retry, invalidation, and more
+4. **Response Format** - Consistent response structure across all requests
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                      Your App                           │
+├─────────────────────────────────────────────────────────┤
+│  injectRead / injectWrite / injectInfiniteRead          │
+│                   (@spoosh/angular)                     │
+├─────────────────────────────────────────────────────────┤
+│     Plugins (cache, invalidation, retry, etc.)          │
+├─────────────────────────────────────────────────────────┤
+│                Spoosh (@spoosh/core)                    │
+├─────────────────────────────────────────────────────────┤
+│                      fetch API                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Creating a Client
+
+Use the `Spoosh` class to create your API client with plugins:
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  deduplicationPlugin(), // Prevent duplicate requests during invalidation
+  invalidationPlugin(),
+]);
+```
+
+> **Note:** There's also `createClient` for simple use cases without plugins, but the `Spoosh` class is recommended for most applications.
+
+## Next Steps
+
+<Cards>
+  <Card title="Schema Definition" href="/angular/docs/core/schema-definition" />
+  <Card title="Client API" href="/angular/docs/core/client" />
+  <Card title="Response Format" href="/angular/docs/core/response" />
+  <Card title="Plugins" href="/angular/docs/plugins" />
+</Cards>

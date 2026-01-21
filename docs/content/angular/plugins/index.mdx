@@ -1,0 +1,135 @@
+---
+title: Plugin System
+description: Extend Spoosh with powerful plugins
+---
+
+Plugins are the heart of Spoosh. They extend the core functionality with features like caching, automatic retries, cache invalidation, and optimistic updates.
+
+## Installing Plugins
+
+Each plugin is a separate package:
+
+```package-install
+@spoosh/plugin-cache @spoosh/plugin-invalidation @spoosh/plugin-retry
+```
+
+## Using Plugins
+
+Add plugins using the `.use()` method:
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+import { retryPlugin } from "@spoosh/plugin-retry";
+
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  invalidationPlugin(), // Auto-refresh queries after mutations
+  retryPlugin({ retries: 3 }),
+]);
+```
+
+## Available Plugins
+
+### Essential
+
+| Plugin                                               | Package                        | Description                                   |
+| ---------------------------------------------------- | ------------------------------ | --------------------------------------------- |
+| [Cache](/angular/docs/plugins/cache)                 | `@spoosh/plugin-cache`         | Response caching with configurable stale time |
+| [Invalidation](/angular/docs/plugins/invalidation)   | `@spoosh/plugin-invalidation`  | Auto-invalidate queries after mutations       |
+| [Deduplication](/angular/docs/plugins/deduplication) | `@spoosh/plugin-deduplication` | Prevent duplicate concurrent requests         |
+| [Retry](/angular/docs/plugins/retry)                 | `@spoosh/plugin-retry`         | Automatic retry on failure                    |
+
+### Data Management
+
+| Plugin                                             | Package                       | Description                                |
+| -------------------------------------------------- | ----------------------------- | ------------------------------------------ |
+| [Optimistic](/angular/docs/plugins/optimistic)     | `@spoosh/plugin-optimistic`   | Instant UI updates with automatic rollback |
+| [Initial Data](/angular/docs/plugins/initial-data) | `@spoosh/plugin-initial-data` | Provide initial data for queries           |
+| [Prefetch](/angular/docs/plugins/prefetch)         | `@spoosh/plugin-prefetch`     | Preload data before it's needed            |
+
+### Request Control
+
+| Plugin                                     | Package                   | Description                               |
+| ------------------------------------------ | ------------------------- | ----------------------------------------- |
+| [Polling](/angular/docs/plugins/polling)   | `@spoosh/plugin-polling`  | Automatic periodic refetching             |
+| [Refetch](/angular/docs/plugins/refetch)   | `@spoosh/plugin-refetch`  | Refetch on window focus/network reconnect |
+| [Debounce](/angular/docs/plugins/debounce) | `@spoosh/plugin-debounce` | Delay requests until input stops changing |
+| [Throttle](/angular/docs/plugins/throttle) | `@spoosh/plugin-throttle` | Limit request frequency                   |
+
+### Data Transformation
+
+| Plugin                                       | Package                    | Description                                  |
+| -------------------------------------------- | -------------------------- | -------------------------------------------- |
+| [QS](/angular/docs/plugins/qs)               | `@spoosh/plugin-qs`        | Nested object serialization for query params |
+| [Transform](/angular/docs/plugins/transform) | `@spoosh/plugin-transform` | Transform request and response data          |
+
+### Development
+
+| Plugin                               | Package                | Description         |
+| ------------------------------------ | ---------------------- | ------------------- |
+| [Debug](/angular/docs/plugins/debug) | `@spoosh/plugin-debug` | Development logging |
+
+## Recommended Setup
+
+For most applications, we recommend this plugin combination:
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
+import { retryPlugin } from "@spoosh/plugin-retry";
+import { refetchPlugin } from "@spoosh/plugin-refetch";
+
+const client = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  deduplicationPlugin(),
+  invalidationPlugin(),
+  retryPlugin({ retries: 3 }),
+  refetchPlugin({ refetchOnFocus: true }),
+]);
+```
+
+This gives you:
+
+- **Caching** - Avoid redundant network requests
+- **Deduplication** - Prevent duplicate requests when multiple queries invalidate at once
+- **Auto-invalidation** - Queries refresh automatically after mutations
+- **Retry** - Automatic recovery from transient failures
+- **Refetch** - Fresh data when users return to your app
+
+## Plugin Order
+
+Most plugins work in any order. The exceptions are:
+
+- **`cachePlugin`** - should be registered early to check cache before making requests
+- **`throttlePlugin`** - should be registered last to block all requests including force fetches
+
+```typescript
+const client = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }), // Early - check cache first
+  deduplicationPlugin(),
+  invalidationPlugin(),
+  retryPlugin(),
+  throttlePlugin(), // Last - blocks everything
+]);
+```
+
+> **Tip:** The `deduplicationPlugin` is especially useful with `invalidationPlugin`. When a mutation invalidates multiple queries with overlapping tags, deduplication ensures only one network request is made per unique endpoint.
+
+## Per-Request Options
+
+Most plugins support per-request overrides:
+
+```typescript
+// Override cache time for this query
+injectRead((api) => api.users.$get(), { staleTime: 60000 });
+
+// Disable retries for this query
+injectRead((api) => api.health.$get(), { retries: false });
+
+// Custom polling interval
+injectRead((api) => api.notifications.$get(), { pollingInterval: 5000 });
+```

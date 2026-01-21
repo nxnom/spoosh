@@ -1,0 +1,183 @@
+---
+title: Response Format
+description: Understanding the SpooshResponse structure
+---
+
+All Spoosh API calls return a consistent `SpooshResponse` object. This makes error handling predictable across your application.
+
+## Response Structure
+
+```typescript
+type SpooshResponse<TData, TError> =
+  | {
+      status: number;
+      data: TData;
+      error?: undefined;
+      headers?: Headers;
+      aborted?: false;
+    }
+  | {
+      status: number;
+      data?: undefined;
+      error: TError;
+      headers?: Headers;
+      aborted?: boolean;
+    };
+```
+
+Every response includes:
+
+| Field     | Type                   | Description                        |
+| --------- | ---------------------- | ---------------------------------- |
+| `status`  | `number`               | HTTP status code                   |
+| `data`    | `TData \| undefined`   | Response data (present on success) |
+| `error`   | `TError \| undefined`  | Error object (present on failure)  |
+| `headers` | `Headers \| undefined` | Response headers                   |
+| `aborted` | `boolean \| undefined` | True if request was aborted        |
+
+## Handling Responses
+
+The injection functions automatically parse the response and provide separate `data` and `error` signals:
+
+```typescript
+import { Component, computed } from "@angular/core";
+import { injectRead } from "./api/client";
+
+@Component({
+  selector: "app-user-profile",
+  template: `
+    @if (loading()) {
+      <app-spinner />
+    } @else if (error()) {
+      <app-error [message]="error()!.message" />
+    } @else {
+      <div>{{ data()?.name }}</div>
+    }
+  `,
+})
+export class UserProfileComponent {
+  private user = injectRead((api) => api.users(1).$get());
+
+  data = computed(() => this.user.data());
+  error = computed(() => this.user.error());
+  loading = computed(() => this.user.loading());
+}
+```
+
+## Aborting Requests
+
+All injection functions return an `abort` function to cancel in-flight requests:
+
+```typescript
+import { Component, signal, computed } from "@angular/core";
+import { injectRead } from "./api/client";
+
+@Component({
+  selector: "app-search-users",
+  template: `
+    <div>
+      <input [value]="searchTerm()" (input)="onSearchInput($event)" />
+      @if (loading()) {
+        <button (click)="abort()">Cancel</button>
+      }
+      @for (user of data(); track user.id) {
+        <app-user-card [user]="user" />
+      }
+    </div>
+  `,
+})
+export class SearchUsersComponent {
+  searchTerm = signal("");
+
+  private searchResults = injectRead(
+    (api) => api.search.$get({ query: { q: this.searchTerm() } }),
+    { enabled: () => this.searchTerm().length > 0 }
+  );
+
+  data = computed(() => this.searchResults.data());
+  loading = computed(() => this.searchResults.loading());
+  abort = () => this.searchResults.abort();
+
+  onSearchInput(event: Event) {
+    this.searchTerm.set((event.target as HTMLInputElement).value);
+  }
+}
+```
+
+### injectWrite Abort
+
+```typescript
+import { Component, computed } from "@angular/core";
+import { injectWrite } from "./api/client";
+
+@Component({
+  selector: "app-create-post",
+  template: `
+    <div>
+      <button (click)="handleSubmit()" [disabled]="loading()">Submit</button>
+      @if (loading()) {
+        <button (click)="abort()">Cancel</button>
+      }
+    </div>
+  `,
+})
+export class CreatePostComponent {
+  private createPost = injectWrite((api, data) =>
+    api.posts.$post({ body: data })
+  );
+
+  loading = computed(() => this.createPost.loading());
+  abort = () => this.createPost.abort();
+
+  async handleSubmit() {
+    await this.createPost.trigger({
+      title: "New Post",
+      content: "...",
+    });
+  }
+}
+```
+
+### injectInfiniteRead Abort
+
+```typescript
+import { Component, computed } from "@angular/core";
+import { injectInfiniteRead } from "./api/client";
+
+@Component({
+  selector: "app-post-feed",
+  template: `
+    <div>
+      @if (loading()) {
+        <button (click)="abort()">Cancel Loading</button>
+      }
+      <!-- ... -->
+    </div>
+  `,
+})
+export class PostFeedComponent {
+  private posts = injectInfiniteRead(
+    (api, { pageParam }) => api.posts.$get({ query: { cursor: pageParam } }),
+    { getNextPageParam: (lastPage) => lastPage.nextCursor }
+  );
+
+  data = computed(() => this.posts.data());
+  loading = computed(() => this.posts.loading());
+  abort = () => this.posts.abort();
+  fetchNext = () => this.posts.fetchNext();
+}
+```
+
+## Input Echo
+
+The response includes the input that was sent with the request:
+
+```typescript
+const createUser = injectWrite((api) =>
+  api.users.$post({ body: { name: "John", email: "john@example.com" } })
+);
+
+// response.input?.body contains { name: "John", email: "john@example.com" }
+```
+
+This is useful for optimistic updates and debugging.

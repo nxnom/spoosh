@@ -1,0 +1,80 @@
+---
+title: injectRead
+description: Fetch data with automatic caching and refetching using Signals
+---
+
+Fetch data with automatic caching and refetching. Returns Angular Signals for reactive data binding. The callback **calls** the API method.
+
+## Basic Usage
+
+```typescript
+@Component({
+  selector: "app-user-list",
+  template: `
+    @if (loading()) {
+      <div>Loading...</div>
+    } @else if (error()) {
+      <div>Error: {{ error()?.message }}</div>
+    } @else {
+      <ul>
+        @for (user of data(); track user.id) {
+          <li>{{ user.name }}</li>
+        }
+      </ul>
+    }
+  `,
+})
+export class UserListComponent {
+  private users = injectRead((api) => api.users.$get());
+
+  data = this.users.data;
+  loading = this.users.loading;
+  error = this.users.error;
+}
+```
+
+## With Query Parameters
+
+```typescript
+@Component({
+  selector: "app-user-list",
+  template: `...`,
+})
+export class UserListComponent {
+  private isReady = signal(false);
+
+  private users = injectRead(
+    (api) => api.users.$get({ query: { page: 1, limit: 10 } }),
+    {
+      enabled: this.isReady,
+      additionalTags: ["custom-tag"],
+    }
+  );
+
+  data = this.users.data;
+  input = this.users.input;
+}
+```
+
+## Options
+
+| Option           | Type                      | Default       | Description                        |
+| ---------------- | ------------------------- | ------------- | ---------------------------------- |
+| `enabled`        | `boolean \| Signal<bool>` | `true`        | Whether to fetch automatically     |
+| `tags`           | `string[]`                | -             | Override auto-generated cache tags |
+| `additionalTags` | `string[]`                | -             | Add extra cache tags               |
+| `dedupe`         | `"in-flight" \| false`    | `"in-flight"` | Request deduplication mode         |
+| + plugin options | -                         | -             | Options from installed plugins     |
+
+## Returns
+
+| Property   | Type                          | Description                             |
+| ---------- | ----------------------------- | --------------------------------------- |
+| `data`     | `Signal<TData \| undefined>`  | Response data signal                    |
+| `error`    | `Signal<TError \| undefined>` | Error signal if request failed          |
+| `loading`  | `Signal<boolean>`             | Signal true during initial load         |
+| `fetching` | `Signal<boolean>`             | Signal true during any fetch            |
+| `refetch`  | `() => Promise`               | Manually trigger refetch                |
+| `abort`    | `() => void`                  | Abort current request                   |
+| `input`    | `Signal<object>`              | The request input (query, body, params) |
+| `meta`     | `Signal<object>`              | Plugin-provided metadata                |

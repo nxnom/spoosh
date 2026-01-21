@@ -1,0 +1,130 @@
+---
+title: Client API
+description: Creating and configuring Spoosh clients
+---
+
+## Spoosh Class
+
+The primary way to create an API client with full plugin support. Use this with `@spoosh/angular` injection functions.
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  invalidationPlugin(),
+]);
+```
+
+### Constructor Parameters
+
+| Parameter        | Type          | Required | Description                   |
+| ---------------- | ------------- | -------- | ----------------------------- |
+| `baseUrl`        | `string`      | Yes      | Base URL for all API requests |
+| `defaultOptions` | `RequestInit` | No       | Default fetch options         |
+
+### Type Parameters
+
+```typescript
+new Spoosh<TSchema, TError>(baseUrl, defaultOptions);
+```
+
+| Parameter | Description                        |
+| --------- | ---------------------------------- |
+| `TSchema` | Your API schema type               |
+| `TError`  | Default error type (e.g., `Error`) |
+
+### Adding Plugins
+
+Use the `.use()` method to add plugins:
+
+```typescript
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  invalidationPlugin(),
+  retryPlugin({ retries: 3 }),
+]);
+```
+
+### With Angular
+
+```typescript title="src/api/client.ts"
+import { Spoosh } from "@spoosh/core";
+import { createAngularSpoosh } from "@spoosh/angular";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+import type { ApiSchema } from "./schema";
+
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  invalidationPlugin(),
+]);
+
+export const { injectRead, injectWrite, injectInfiniteRead } =
+  createAngularSpoosh(spoosh);
+```
+
+## Request Options
+
+All API calls accept optional request configuration:
+
+```typescript
+const { data } = await api.users.$get({
+  query: { page: 1, limit: 10 },
+  headers: { Authorization: "Bearer token" },
+});
+```
+
+| Option     | Description                            |
+| ---------- | -------------------------------------- |
+| `query`    | Query parameters                       |
+| `body`     | Request body (POST, PUT, PATCH)        |
+| `formData` | Form data for file uploads             |
+| `params`   | Path parameters (with function syntax) |
+| `headers`  | Additional headers                     |
+
+## Per-Request Headers
+
+```typescript
+const { data } = await api.users.$get({
+  headers: {
+    Authorization: `Bearer ${token}`,
+    "X-Custom-Header": "value",
+  },
+});
+```
+
+## Default Options
+
+```typescript
+const spoosh = new Spoosh<ApiSchema, Error>("/api", {
+  credentials: "include",
+  headers: {
+    "Content-Type": "application/json",
+  },
+}).use([cachePlugin(), invalidationPlugin()]);
+```
+
+---
+
+## createClient
+
+A lightweight client without plugin support. Use this for server-side data fetching or simple scripts.
+
+```typescript
+import { createClient } from "@spoosh/core";
+
+const api = createClient<ApiSchema>({
+  baseUrl: process.env.API_URL!,
+});
+
+const { data } = await api.users.$get();
+```
+
+| Option           | Type                 | Description                   |
+| ---------------- | -------------------- | ----------------------------- |
+| `baseUrl`        | `string`             | Base URL for all API requests |
+| `defaultOptions` | `RequestInit`        | Default fetch options         |
+| `middlewares`    | `SpooshMiddleware[]` | Request/response middlewares  |

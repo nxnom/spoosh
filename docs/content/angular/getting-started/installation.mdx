@@ -1,0 +1,76 @@
+---
+title: Installation
+description: Install Spoosh packages for your project
+---
+
+## Core Packages
+
+Install the core packages to get started:
+
+```package-install
+@spoosh/core @spoosh/angular
+```
+
+## Plugins
+
+Install only the plugins you need. See the [Plugins](/angular/docs/plugins) section for details on each plugin.
+
+## Recommended Setup
+
+For most projects, we recommend starting with these plugins:
+
+```package-install
+@spoosh/core @spoosh/angular @spoosh/plugin-cache @spoosh/plugin-deduplication @spoosh/plugin-invalidation @spoosh/plugin-retry
+```
+
+This gives you:
+
+- **Caching** - Avoid redundant network requests
+- **Deduplication** - Prevent duplicate requests when multiple queries invalidate
+- **Invalidation** - Auto-refresh related queries after mutations
+- **Retry** - Automatically retry failed requests
+
+## Framework Adapters
+
+### Hono
+
+If you're using Hono on the server, install the type adapter:
+
+```package-install
+@spoosh/hono
+```
+
+This lets you automatically infer your API schema from Hono routes.
+
+### Elysia
+
+If you're using Elysia on the server, install the type adapter:
+
+```package-install
+@spoosh/elysia
+```
+
+This lets you automatically infer your API schema from Elysia routes.
+
+### OpenAPI
+
+To generate OpenAPI specs from your schema:
+
+```package-install
+@spoosh/openapi
+```
+
+## TypeScript Configuration
+
+Spoosh requires TypeScript 5.0 or later. Ensure your `tsconfig.json` has strict mode enabled for the best type inference:
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler"
+  }
+}
+```

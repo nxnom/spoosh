@@ -1,0 +1,104 @@
+---
+title: Deduplication
+description: Prevent duplicate concurrent requests
+---
+
+The deduplication plugin prevents making the same request multiple times concurrently. If a request is already in flight, subsequent calls reuse the same promise.
+
+This is especially important when using `invalidationPlugin` - when a mutation invalidates multiple queries that share the same endpoint, deduplication ensures only one network request is made.
+
+## Installation
+
+```package-install
+@spoosh/plugin-deduplication
+```
+
+## Usage
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+
+const client = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  deduplicationPlugin(),
+  invalidationPlugin(),
+]);
+```
+
+## Why It Matters
+
+Without deduplication, invalidating queries can cause duplicate requests:
+
+```typescript
+@Component({
+  selector: "app-component-a",
+  template: `
+    @if (users.data()) {
+      <div>{{ users.data() | json }}</div>
+    }
+  `,
+})
+export class ComponentA {
+  users = injectRead((api) => api.users.$get());
+}
+
+@Component({
+  selector: "app-component-b",
+  template: `
+    @if (users.data()) {
+      <div>{{ users.data() | json }}</div>
+    }
+  `,
+})
+export class ComponentB {
+  users = injectRead((api) => api.users.$get());
+}
+
+// When a mutation invalidates "users", both components would refetch
+// With deduplicationPlugin, only ONE network request is made
+```
+
+## Per-Request Override
+
+```typescript
+// Disable deduplication for this request
+injectRead((api) => api.posts.$get(), { dedupe: false });
+```
+
+## Options
+
+### Plugin Config
+
+| Option  | Type                   | Default       | Description                   |
+| ------- | ---------------------- | ------------- | ----------------------------- |
+| `read`  | `"in-flight" \| false` | `"in-flight"` | Deduplication mode for reads  |
+| `write` | `"in-flight" \| false` | `false`       | Deduplication mode for writes |
+
+### Per-Request Options
+
+| Option   | Type                   | Description                             |
+| -------- | ---------------------- | --------------------------------------- |
+| `dedupe` | `"in-flight" \| false` | Override deduplication for this request |
+
+### Modes
+
+| Mode          | Description                                            |
+| ------------- | ------------------------------------------------------ |
+| `"in-flight"` | Reuse existing in-flight request promise if one exists |
+| `false`       | Always make a new request                              |
+
+## Write Deduplication
+
+By default, writes are not deduplicated to avoid unintended side effects. Enable with caution:
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
+
+const client = new Spoosh<ApiSchema, Error>("/api").use([
+  deduplicationPlugin({ write: "in-flight" }),
+]);
+```

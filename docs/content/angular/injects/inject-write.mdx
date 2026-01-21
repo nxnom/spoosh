@@ -1,0 +1,114 @@
+---
+title: injectWrite
+description: Trigger mutations with loading and error states using Signals
+---
+
+Trigger mutations with loading and error states. Returns Angular Signals for reactive state binding. The callback **selects** the API method (no parentheses).
+
+## Basic Usage
+
+```typescript
+@Component({
+  selector: "app-create-user",
+  template: `
+    <form (ngSubmit)="handleSubmit()">
+      <!-- form fields -->
+      <button [disabled]="loading()">
+        {{ loading() ? "Creating..." : "Create User" }}
+      </button>
+    </form>
+  `,
+})
+export class CreateUserComponent {
+  private createUser = injectWrite((api) => api.users.$post);
+
+  loading = this.createUser.loading;
+  error = this.createUser.error;
+
+  async handleSubmit() {
+    const formData: CreateUserBody = {
+      /* form data */
+    };
+    const result = await this.createUser.trigger({ body: formData });
+
+    if (result.data) {
+      console.log("Created:", result.data);
+    }
+  }
+}
+```
+
+## With Invalidation
+
+```typescript
+@Component({
+  selector: "app-create-post",
+  template: `...`,
+})
+export class CreatePostComponent {
+  private createPost = injectWrite((api) => api.posts.$post);
+
+  async handleCreate() {
+    await this.createPost.trigger({
+      body: { title: "New Post", content: "..." },
+      invalidate: (api) => [api.posts.$get],
+    });
+  }
+}
+```
+
+## Returns
+
+| Property  | Type                          | Description                                            |
+| --------- | ----------------------------- | ------------------------------------------------------ |
+| `trigger` | `(options) => Promise`        | Execute the mutation                                   |
+| `data`    | `Signal<TData \| undefined>`  | Response data signal                                   |
+| `error`   | `Signal<TError \| undefined>` | Error signal if request failed                         |
+| `loading` | `Signal<boolean>`             | Signal true while mutation is in progress              |
+| `reset`   | `() => void`                  | Clear mutation state (data, error, loading) to initial |
+| `abort`   | `() => void`                  | Abort current request                                  |
+| `input`   | `Signal<object \| undefined>` | The last trigger input signal                          |
+| `meta`    | `Signal<object>`              | Plugin-provided metadata                               |
+
+## Trigger Options
+
+| Option           | Type                               | Description                 |
+| ---------------- | ---------------------------------- | --------------------------- |
+| `body`           | `TBody`                            | Request body                |
+| `query`          | `TQuery`                           | Query parameters            |
+| `params`         | `Record<string, string \| number>` | Path parameters             |
+| `autoInvalidate` | `"all" \| "self" \| "none"`        | Auto invalidation mode      |
+| `invalidate`     | `(api) => Selector[] \| string[]`  | Manual invalidation targets |
+| `dedupe`         | `"in-flight" \| false`             | Request deduplication mode  |
+
+## Resetting Mutation State
+
+Use `reset()` to clear mutation state (useful for dismissing notifications):
+
+```typescript
+@Component({
+  selector: "app-create-post",
+  template: `
+    @if (data()) {
+      <app-success-alert (close)="reset()">Post created!</app-success-alert>
+    }
+    @if (error()) {
+      <app-error-alert (close)="reset()">{{
+        error()?.message
+      }}</app-error-alert>
+    }
+    <button (click)="createPost()">Create Post</button>
+  `,
+})
+export class CreatePostComponent {
+  private createPost = injectWrite((api) => api.posts.$post);
+
+  data = this.createPost.data;
+  error = this.createPost.error;
+  reset = this.createPost.reset;
+
+  handleCreate() {
+    this.createPost.trigger({ body: { title: "New Post" } });
+  }
+}
+```

@@ -1,0 +1,57 @@
+---
+title: Initial Data
+description: Provide initial data for queries
+---
+
+The initial data plugin lets you show data immediately before the fetch completes, such as prefetched or server-rendered data.
+
+## Installation
+
+```package-install
+@spoosh/plugin-initial-data
+```
+
+## Usage
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { initialDataPlugin } from "@spoosh/plugin-initial-data";
+
+const client = new Spoosh<ApiSchema, Error>("/api").use([initialDataPlugin()]);
+```
+
+Show prefetched data immediately, then refetch in background:
+
+```typescript
+const posts = injectRead((api) => api.posts.$get(), {
+  initialData: prefetchedPosts,
+});
+
+// Access via posts.meta().isInitialData
+```
+
+## Without Background Refetch
+
+To skip the background refetch and just use the initial data:
+
+```typescript
+const posts = injectRead((api) => api.posts.$get(), {
+  initialData: prefetchedPosts,
+  refetchOnInitialData: false,
+});
+```
+
+## Options
+
+### Per-Request Options
+
+| Option                 | Type      | Default | Description                                   |
+| ---------------------- | --------- | ------- | --------------------------------------------- |
+| `initialData`          | `TData`   | -       | Data to show immediately on first mount       |
+| `refetchOnInitialData` | `boolean` | `true`  | Whether to refetch after showing initial data |
+
+### Result
+
+| Property               | Type      | Description                                                |
+| ---------------------- | --------- | ---------------------------------------------------------- |
+| `meta().isInitialData` | `boolean` | `true` if currently showing initial data (not yet fetched) |

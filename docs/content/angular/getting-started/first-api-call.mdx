@@ -1,0 +1,214 @@
+---
+title: First API Call
+description: Make your first type-safe API call with Spoosh
+---
+
+This guide walks through making different types of API calls with Spoosh.
+
+## Reading Data
+
+Use `injectRead` to fetch data:
+
+```typescript
+import { Component, input } from "@angular/core";
+import { injectRead } from "../api/client";
+
+@Component({
+  selector: "app-user-profile",
+  template: `
+    @if (user.loading()) {
+      <app-spinner />
+    } @else if (user.error()) {
+      <app-error-message [error]="user.error()!" />
+    } @else {
+      <div>
+        <h1>{{ user.data()?.name }}</h1>
+        <p>{{ user.data()?.email }}</p>
+      </div>
+    }
+  `,
+})
+export class UserProfileComponent {
+  userId = input.required<number>();
+
+  user = injectRead((api) => api.users(this.userId()).$get());
+}
+```
+
+### With Query Parameters
+
+```typescript
+import { Component, input } from "@angular/core";
+import { injectRead } from "../api/client";
+
+@Component({
+  selector: "app-search-users",
+  template: `
+    <ul>
+      @for (user of searchResults.data(); track user.id) {
+        <li>{{ user.name }}</li>
+      }
+    </ul>
+  `,
+})
+export class SearchUsersComponent {
+  searchTerm = input.required<string>();
+
+  searchResults = injectRead((api) =>
+    api.search.$get({ query: { q: this.searchTerm(), page: 1 } })
+  );
+}
+```
+
+### Conditional Fetching
+
+```typescript
+import { Component, input } from "@angular/core";
+import { injectRead } from "../api/client";
+
+@Component({
+  selector: "app-user-profile",
+  template: `...`,
+})
+export class UserProfileComponent {
+  userId = input<number | null>(null);
+
+  user = injectRead((api) => api.users(this.userId()!).$get(), {
+    enabled: () => this.userId() !== null,
+  });
+}
+```
+
+## Writing Data
+
+Use `injectWrite` for mutations (POST, PUT, DELETE):
+
+```typescript
+import { Component } from "@angular/core";
+import { injectWrite } from "../api/client";
+
+@Component({
+  selector: "app-create-user-form",
+  template: `
+    <form (ngSubmit)="handleSubmit($event)">
+      <input name="name" placeholder="Name" required #nameInput />
+      <input
+        name="email"
+        type="email"
+        placeholder="Email"
+        required
+        #emailInput
+      />
+      <button type="submit" [disabled]="createUser.loading()">
+        {{ createUser.loading() ? "Creating..." : "Create User" }}
+      </button>
+      @if (createUser.error()) {
+        <p class="error">{{ createUser.error()!.message }}</p>
+      }
+    </form>
+  `,
+})
+export class CreateUserFormComponent {
+  createUser = injectWrite((api) => api.users.$post);
+
+  async handleSubmit(event: SubmitEvent) {
+    event.preventDefault();
+    const form = event.target as HTMLFormElement;
+    const formData = new FormData(form);
+
+    const result = await this.createUser.trigger({
+      body: {
+        name: formData.get("name") as string,
+        email: formData.get("email") as string,
+      },
+    });
+
+    if (result.data) {
+      console.log("Created user:", result.data);
+    }
+  }
+}
+```
+
+### Update and Delete
+
+```typescript
+import { Component, input } from "@angular/core";
+import { injectWrite } from "../api/client";
+
+@Component({
+  selector: "app-user-actions",
+  template: `
+    <div>
+      <button (click)="handleUpdate()">Update</button>
+      <button (click)="handleDelete()">Delete</button>
+    </div>
+  `,
+})
+export class UserActionsComponent {
+  userId = input.required<number>();
+
+  updateUser = injectWrite((api) => api.users(this.userId()).$put);
+
+  deleteUser = injectWrite((api) => api.users(this.userId()).$delete);
+
+  async handleUpdate() {
+    await this.updateUser.trigger({ body: { name: "Updated Name" } });
+  }
+
+  async handleDelete() {
+    await this.deleteUser.trigger();
+  }
+}
+```
+
+## Dynamic Path Parameters
+
+Spoosh supports dynamic path segments with direct value passing:
+
+```typescript
+// injectRead: Direct usage (simplest - pass values directly)
+user = injectRead((api) => api.users(123).$get());
+
+// injectRead: With variables (most common)
+userId = input.required<number>();
+user = injectRead((api) => api.users(this.userId()).$get());
+
+// injectWrite: Direct usage works the same way
+userId = input.required<number>();
+updateUser = injectWrite((api) => api.users(this.userId()).$put);
+// Usage: await this.updateUser.trigger({ body: { name: "New Name" } });
+
+// Typed params (advanced - when you need explicit param names)
+user = injectRead((api) =>
+  api.users(":userId").$get({ params: { userId: 123 } })
+);
+
+// injectWrite with typed params
+deletePost = injectWrite((api) => api.posts(":postId").$delete);
+// Usage: await this.deletePost.trigger({ params: { postId: 42 } });
+```
+
+**Recommended:** Use direct value passing `users(userId)` for the simplest and most readable code.
+
+## Response Format
+
+All API calls return a `SpooshResponse`:
+
+```typescript
+type SpooshResponse<TData, TError> = {
+  status: number; // HTTP status code
+  data: TData | undefined; // Response data (if successful)
+  error: TError | undefined; // Error data (if failed)
+  headers?: Headers; // Response headers
+  aborted?: boolean; // True if request was aborted
+};
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="injectRead" href="/angular/docs/angular/inject-read" />
+  <Card title="injectWrite" href="/angular/docs/angular/inject-write" />
+  <Card title="Plugins" href="/angular/docs/plugins" />
+</Cards>

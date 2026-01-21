@@ -1,5 +1,0 @@
-{
-  "title": "Integrations",
-  "defaultOpen": false,
-  "pages": ["react", "hono", "elysia", "openapi"]
-}

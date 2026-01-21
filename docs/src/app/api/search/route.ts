@@ -1,9 +1,14 @@
-import { source } from "@/lib/source";
+import { reactSource, angularSource } from "@/lib/source";
 import { createFromSource } from "fumadocs-core/search/server";
 
 export const revalidate = false;
 
-export const { staticGET: GET } = createFromSource(source, {
-  // https://docs.orama.com/docs/orama-js/supported-languages
+const reactSearch = createFromSource(reactSource, {
   language: "english",
 });
+
+const angularSearch = createFromSource(angularSource, {
+  language: "english",
+});
+
+export const { staticGET: GET } = reactSearch;

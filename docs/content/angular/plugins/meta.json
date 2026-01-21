@@ -1,0 +1,22 @@
+{
+  "title": "Plugins",
+  "defaultOpen": false,
+  "pages": [
+    "index",
+    "cache",
+    "invalidation",
+    "deduplication",
+    "retry",
+    "optimistic",
+    "polling",
+    "prefetch",
+    "refetch",
+    "debounce",
+    "throttle",
+    "initial-data",
+    "qs",
+    "transform",
+    "gc",
+    "debug"
+  ]
+}

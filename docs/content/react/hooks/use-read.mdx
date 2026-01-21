@@ -1,0 +1,60 @@
+---
+title: useRead
+description: Fetch data with automatic caching and refetching
+---
+
+Fetch data with automatic caching and refetching. The callback **calls** the API method.
+
+## Basic Usage
+
+```typescript
+function UserList() {
+  const { data, loading, error, refetch } = useRead(
+    (api) => api.users.$get()
+  );
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <ul>
+      {data?.map((user) => <li key={user.id}>{user.name}</li>)}
+    </ul>
+  );
+}
+```
+
+## With Query Parameters
+
+```typescript
+const { data, input } = useRead(
+  (api) => api.users.$get({ query: { page: 1, limit: 10 } }),
+  {
+    enabled: isReady,
+    additionalTags: ["custom-tag"],
+  }
+);
+```
+
+## Options
+
+| Option           | Type                   | Default       | Description                        |
+| ---------------- | ---------------------- | ------------- | ---------------------------------- |
+| `enabled`        | `boolean`              | `true`        | Whether to fetch automatically     |
+| `tags`           | `string[]`             | -             | Override auto-generated cache tags |
+| `additionalTags` | `string[]`             | -             | Add extra cache tags               |
+| `dedupe`         | `"in-flight" \| false` | `"in-flight"` | Request deduplication mode         |
+| + plugin options | -                      | -             | Options from installed plugins     |
+
+## Returns
+
+| Property   | Type                  | Description                             |
+| ---------- | --------------------- | --------------------------------------- |
+| `data`     | `TData \| undefined`  | Response data                           |
+| `error`    | `TError \| undefined` | Error if request failed                 |
+| `loading`  | `boolean`             | True during initial load                |
+| `fetching` | `boolean`             | True during any fetch                   |
+| `refetch`  | `() => Promise`       | Manually trigger refetch                |
+| `abort`    | `() => void`          | Abort current request                   |
+| `input`    | `object`              | The request input (query, body, params) |
+| `meta`     | `object`              | Plugin-provided metadata                |

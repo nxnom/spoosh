@@ -1,0 +1,123 @@
+---
+title: Quick Start
+description: Get up and running with Spoosh in minutes
+---
+
+This guide will help you set up Spoosh and make your first type-safe API call.
+
+## Prerequisites
+
+- Node.js 18+
+- TypeScript 5.0+
+- Angular 17+
+
+## Installation
+
+```package-install
+@spoosh/core @spoosh/angular @spoosh/plugin-cache @spoosh/plugin-deduplication @spoosh/plugin-invalidation
+```
+
+## Define Your API Schema
+
+Create a file to define your API types:
+
+```typescript title="src/api/schema.ts"
+import type { Endpoint } from "@spoosh/core";
+
+type User = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+type CreateUserBody = {
+  name: string;
+  email: string;
+};
+
+export type ApiSchema = {
+  users: {
+    $get: Endpoint<{ data: User[] }>;
+    $post: Endpoint<{ data: User; body: CreateUserBody }>;
+    _: {
+      $get: Endpoint<{ data: User }>;
+      $put: Endpoint<{ data: User; body: Partial<CreateUserBody> }>;
+      $delete: void;
+    };
+  };
+  search: {
+    $get: Endpoint<{ data: User[]; query: { q: string; page?: number } }>;
+  };
+};
+```
+
+## Create the Client
+
+Set up the Spoosh client with plugins:
+
+```typescript title="src/api/client.ts"
+import { Spoosh } from "@spoosh/core";
+import { createAngularSpoosh } from "@spoosh/angular";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+import type { ApiSchema } from "./schema";
+
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  deduplicationPlugin(), // Prevent duplicate requests during invalidation
+  invalidationPlugin(), // Auto-refresh queries after mutations
+]);
+
+export const { injectRead, injectWrite } = createAngularSpoosh(spoosh);
+```
+
+> **Why these plugins?**
+>
+> - `invalidationPlugin` automatically refreshes related queries after mutations
+> - `deduplicationPlugin` prevents duplicate network requests when multiple queries invalidate at once
+
+## Use in Components
+
+Now you can use the inject functions in your components:
+
+```typescript title="src/app/components/user-list.component.ts"
+import { Component } from "@angular/core";
+import { injectRead } from "../api/client";
+
+@Component({
+  selector: "app-user-list",
+  template: `
+    @if (query.loading()) {
+      <div>Loading...</div>
+    } @else if (query.error()) {
+      <div>Error: {{ query.error()!.message }}</div>
+    } @else {
+      <div>
+        <button (click)="query.refetch()">Refresh</button>
+        <ul>
+          @for (user of query.data(); track user.id) {
+            <li>{{ user.name }}</li>
+          }
+        </ul>
+      </div>
+    }
+  `,
+})
+export class UserListComponent {
+  query = injectRead((api) => api.users.$get());
+}
+```
+
+## Next Steps
+
+<Cards>
+  <Card
+    title="Installation"
+    href="/angular/docs/getting-started/installation"
+  />
+  <Card
+    title="First API Call"
+    href="/angular/docs/getting-started/first-api-call"
+  />
+</Cards>

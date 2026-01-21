@@ -1,0 +1,144 @@
+---
+title: Angular Injects
+description: Angular inject functions for data fetching with Signals
+---
+
+The `@spoosh/angular` package provides Angular inject functions for data fetching with full type safety and Signals support.
+
+## Installation
+
+```package-install
+@spoosh/core @spoosh/angular
+```
+
+## Setup
+
+```typescript title="src/api/client.ts"
+import { Spoosh } from "@spoosh/core";
+import { createAngularSpoosh } from "@spoosh/angular";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
+
+const client = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  invalidationPlugin({ autoInvalidate: "all" }),
+  deduplicationPlugin({ read: "in-flight" }),
+]);
+
+export const { injectRead, injectWrite, injectInfiniteRead } =
+  createAngularSpoosh(client);
+```
+
+## Automatic Tag Generation
+
+Spoosh automatically generates cache tags from API paths. These tags enable precise cache invalidation.
+
+```typescript
+// api.users.$get()        → tags: ["users"]
+// api.users(1).$get()     → tags: ["users", "users/1"]
+// api.posts(5).comments.$get() → tags: ["posts", "posts/5", "posts/5/comments"]
+```
+
+Tags are hierarchical. Invalidating `"users"` will refetch all queries under `/users/*`, while invalidating `"users/1"` only affects that specific user.
+
+### Custom Tags
+
+Override or extend auto-generated tags:
+
+```typescript
+const users = injectRead((api) => api.users.$get(), {
+  tags: ["custom-users"], // overrides auto-generated tags
+  additionalTags: ["dashboard-data"], // adds to auto-generated tags
+});
+```
+
+## Cache Invalidation
+
+The `invalidationPlugin` automatically refetches stale queries after mutations.
+
+### Auto Invalidation Modes
+
+| Mode     | Description                                         |
+| -------- | --------------------------------------------------- |
+| `"all"`  | Invalidates all tags of the mutation path (default) |
+| `"self"` | Only invalidates the exact path                     |
+| `"none"` | No automatic invalidation                           |
+
+```typescript
+const createPost = injectWrite((api) => api.posts.$post);
+
+await createPost.trigger({
+  body: { title: "New Post" },
+  autoInvalidate: "all",
+});
+```
+
+### Manual Invalidation
+
+Target specific queries to invalidate:
+
+```typescript
+const createPost = injectWrite((api) => api.posts.$post);
+
+await createPost.trigger({
+  body: { title: "New Post" },
+  autoInvalidate: "none",
+  invalidate: (api) => [
+    api.posts.$get, // invalidates "posts"
+    api.users(userId).stats.$get, // invalidates "users/{userId}/stats"
+  ],
+});
+```
+
+You can also pass tag strings directly:
+
+```typescript
+await createPost.trigger({
+  body: { title: "New Post" },
+  invalidate: ["posts", "dashboard"], // invalidates all queries with these tags
+});
+```
+
+## Request Deduplication
+
+The `deduplicationPlugin` prevents duplicate network requests when the same query is called multiple times simultaneously.
+
+### Deduplication Modes
+
+| Mode          | Description                                                            |
+| ------------- | ---------------------------------------------------------------------- |
+| `"in-flight"` | Reuse pending request if same query is in progress (default for reads) |
+| `false`       | Disable deduplication                                                  |
+
+```typescript
+const users = injectRead((api) => api.users.$get(), { dedupe: "in-flight" });
+```
+
+When multiple components call the same query simultaneously, only one network request is made:
+
+```typescript
+@Component({
+  selector: "app-header",
+  template: `<div>{{ user()?.name }}</div>`,
+})
+export class HeaderComponent {
+  private currentUser = injectRead((api) => api.me.$get());
+  user = this.currentUser.data;
+}
+
+@Component({
+  selector: "app-sidebar",
+  template: `<nav>{{ user()?.email }}</nav>`,
+})
+export class SidebarComponent {
+  private currentUser = injectRead((api) => api.me.$get());
+  user = this.currentUser.data;
+}
+```
+
+## Available Inject Functions
+
+- [injectRead](/angular/docs/injects/inject-read) - Fetch data with automatic caching
+- [injectWrite](/angular/docs/injects/inject-write) - Trigger mutations with loading states
+- [injectInfiniteRead](/angular/docs/injects/inject-infinite-read) - Paginated data fetching

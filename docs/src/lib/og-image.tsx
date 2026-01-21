@@ -1,9 +1,11 @@
 export function OGImage({
   title,
   description,
+  badge,
 }: {
   title: string;
   description?: string;
+  badge?: string;
 }) {
   return (
     <div
@@ -68,6 +70,22 @@ export function OGImage({
           gap: "20px",
         }}
       >
+        {badge && (
+          <span
+            style={{
+              fontSize: "18px",
+              fontWeight: 600,
+              color: "#a855f7",
+              background: "rgba(168, 85, 247, 0.15)",
+              padding: "6px 16px",
+              borderRadius: "9999px",
+              marginBottom: "12px",
+            }}
+          >
+            {badge}
+          </span>
+        )}
+
         <h1
           style={{
             fontSize: title.length > 30 ? "56px" : "64px",

@@ -1,0 +1,60 @@
+---
+title: Refetch
+description: Refetch on window focus and network reconnect
+---
+
+The refetch plugin automatically refetches queries when the user returns to your app or their network reconnects.
+
+## Installation
+
+```package-install
+@spoosh/plugin-refetch
+```
+
+## Usage
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { refetchPlugin } from "@spoosh/plugin-refetch";
+
+const client = new Spoosh<ApiSchema, Error>("/api").use([
+  refetchPlugin({
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  }),
+]);
+```
+
+When enabled, queries automatically refetch:
+
+- When the browser tab regains focus
+- When the network comes back online
+
+## Per-Request Override
+
+```typescript
+// Disable focus refetch for this query
+injectRead((api) => api.settings.$get(), { refetchOnFocus: false });
+
+// Enable reconnect refetch only
+injectRead((api) => api.user.$get(), {
+  refetchOnFocus: false,
+  refetchOnReconnect: true,
+});
+```
+
+## Options
+
+### Plugin Config
+
+| Option               | Type      | Default | Description                       |
+| -------------------- | --------- | ------- | --------------------------------- |
+| `refetchOnFocus`     | `boolean` | `false` | Refetch when window regains focus |
+| `refetchOnReconnect` | `boolean` | `false` | Refetch when network reconnects   |
+
+### Per-Request Options
+
+| Option               | Type      | Description                         |
+| -------------------- | --------- | ----------------------------------- |
+| `refetchOnFocus`     | `boolean` | Override focus refetch behavior     |
+| `refetchOnReconnect` | `boolean` | Override reconnect refetch behavior |
