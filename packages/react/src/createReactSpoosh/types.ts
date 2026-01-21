@@ -88,17 +88,18 @@ type UseReadFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
   TReadFn extends (
     api: ReadApiClient<TSchema, TDefaultError>
   ) => Promise<{ data?: unknown; error?: unknown }>,
-  TReadOpts extends BaseReadOptions &
-    ResolvedReadOptions<TSchema, TPlugins, TReadFn, TDefaultError> =
-    BaseReadOptions &
-      ResolvedReadOptions<TSchema, TPlugins, TReadFn, TDefaultError>,
 >(
   readFn: TReadFn,
-  readOptions?: TReadOpts
+  readOptions?: BaseReadOptions &
+    ResolvedReadOptions<TSchema, TPlugins, TReadFn, TDefaultError>
 ) => BaseReadResult<
   ExtractMethodData<TReadFn>,
   InferError<ExtractMethodError<TReadFn>, TDefaultError>,
-  ResolveResultTypes<MergePluginResults<TPlugins>["read"], TReadOpts>
+  ResolveResultTypes<
+    MergePluginResults<TPlugins>["read"],
+    BaseReadOptions &
+      ResolvedReadOptions<TSchema, TPlugins, TReadFn, TDefaultError>
+  >
 > &
   ResponseInputFields<
     ExtractResponseQuery<TReadFn>,

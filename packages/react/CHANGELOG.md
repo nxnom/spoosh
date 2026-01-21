@@ -1,5 +1,9 @@
 # @spoosh/react
 
+## 0.2.1
+
+- Fix `useRead` allow passing extra properties to config
+
 ## 0.2.0
 
 ### Minor Changes
