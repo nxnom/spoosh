@@ -1,5 +1,13 @@
 # @spoosh/plugin-optimistic
 
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @spoosh/core@0.4.0
+  - @spoosh/plugin-invalidation@1.0.0
+
 ## 0.1.2
 
 ### Patch Changes

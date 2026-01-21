@@ -1,5 +1,12 @@
 # @spoosh/plugin-throttle
 
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies
+  - @spoosh/core@0.4.0
+
 ## 0.1.3
 
 - Use `stableKey` insteads of `queryKey` to throttle requests. Now it only check `paths` and `method` not the query params.

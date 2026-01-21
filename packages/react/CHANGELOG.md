@@ -1,5 +1,20 @@
 # @spoosh/react
 
+## 0.2.0
+
+### Minor Changes
+
+- Change core package as peer dependencies
+
+## Breaking Changes
+
+- Move plugin returned data to `meta` field in hook return object.
+
+### Patch Changes
+
+- Updated dependencies
+  - @spoosh/core@0.4.0
+
 ## 0.1.4
 
 ### Patch Changes

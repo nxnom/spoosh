@@ -1,5 +1,11 @@
 # @spoosh/core
 
+## 0.4.0
+
+### Breaking Changes
+
+- Remove bracket syntax for dynamic paths
+
 ## 0.3.0
 
 ### Minor Changes
