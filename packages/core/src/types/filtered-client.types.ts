@@ -72,13 +72,6 @@ type QueryDynamicAccess<
 > = TSchema extends { _: infer D }
   ? HasQueryMethods<D> extends true
     ? {
-        [key: number]: QueryOnlyClient<
-          D,
-          TDefaultError,
-          TOptionsMap,
-          TParamNames | string,
-          TRootSchema
-        >;
         <TKey extends string | number>(
           key: TKey
         ): QueryOnlyClient<
@@ -142,12 +135,6 @@ type MutationDynamicAccess<
 > = TSchema extends { _: infer D }
   ? HasMutationMethods<D> extends true
     ? {
-        [key: number]: MutationOnlyClient<
-          D,
-          TDefaultError,
-          TOptionsMap,
-          TParamNames | string
-        >;
         <TKey extends string | number>(
           key: TKey
         ): MutationOnlyClient<

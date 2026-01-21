@@ -14,7 +14,6 @@ import {
   type PluginContext,
   type InfiniteRequestOptions,
   type SelectorResult,
-  type ResolveResultTypes,
   createInfiniteReadController,
   createSelectorProxy,
   resolvePath,

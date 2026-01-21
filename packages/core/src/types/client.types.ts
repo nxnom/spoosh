@@ -151,13 +151,6 @@ type DynamicAccess<
   ExtractDynamicSchema<TSchema> extends never
     ? object
     : {
-        [key: number]: SpooshClient<
-          ExtractDynamicSchema<TSchema>,
-          TDefaultError,
-          TOptionsMap,
-          TParamNames | string,
-          TRootSchema
-        >;
         /**
          * Dynamic path segment with typed param name.
          * Use `:paramName` format to get typed params in the response.
