@@ -126,6 +126,7 @@ importers:
       '@angular/core':
         specifier: '>=16.0.0'
         version: 21.1.0(rxjs@7.8.2)
+    devDependencies:
       '@spoosh/core':
         specifier: workspace:*
         version: link:../core
