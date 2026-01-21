@@ -32,22 +32,24 @@ const query = {
 };
 
 // Serialized result
-// pagination[limit]=10&pagination[offset]=0&filters[status]=active&filters[tags][]=a&filters[tags][]=b
+// pagination[limit]=10&pagination[offset]=0&filters[status]=active&filters[tags][]=a,b
 ```
 
 ## Per-Request Override
 
 ```typescript
 // Use comma-separated arrays for this request
-useRead((api) => api.items.$get({ query }), { arrayFormat: "comma" });
+useRead((api) => api.items.$get({ query }), { qs: { arrayFormat: "comma" } });
 
 // Use dot notation for nested objects
-useRead((api) => api.search.$get({ query }), { allowDots: true });
+useRead((api) => api.search.$get({ query }), { qs: { allowDots: true } });
 ```
 
 ## Options
 
 ### Plugin Config
+
+Accepts all [`qs` stringify options](https://github.com/ljharb/qs#stringifying). Common options:
 
 | Option        | Type                                             | Default      | Description                          |
 | ------------- | ------------------------------------------------ | ------------ | ------------------------------------ |
@@ -57,11 +59,11 @@ useRead((api) => api.search.$get({ query }), { allowDots: true });
 
 ### Per-Request Options
 
-| Option        | Type                                             | Description                             |
-| ------------- | ------------------------------------------------ | --------------------------------------- |
-| `arrayFormat` | `"brackets" \| "indices" \| "repeat" \| "comma"` | Override array format for this request  |
-| `allowDots`   | `boolean`                                        | Override dot notation for this request  |
-| `skipNulls`   | `boolean`                                        | Override null handling for this request |
+Same options as plugin config, nested under `qs`:
+
+```typescript
+useRead((api) => api.items.$get({ query }), { qs: { arrayFormat: "comma" } });
+```
 
 ## Array Formats
 
@@ -71,7 +73,7 @@ useRead((api) => api.search.$get({ query }), { allowDots: true });
 {
   tags: ["a", "b"];
 }
-// tags[]=a&tags[]=b
+// tags[]=a,b
 ```
 
 ### indices
@@ -89,7 +91,7 @@ useRead((api) => api.search.$get({ query }), { allowDots: true });
 {
   tags: ["a", "b"];
 }
-// tags=a&tags=b
+// tags=a,b
 ```
 
 ### comma

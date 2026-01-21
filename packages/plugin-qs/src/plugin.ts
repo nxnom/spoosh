@@ -3,12 +3,18 @@ import qs from "qs";
 
 import type {
   QsPluginConfig,
-  QsReadOptions,
-  QsWriteOptions,
-  QsInfiniteReadOptions,
+  QsReadHookOptions,
+  QsWriteHookOptions,
+  QsInfiniteReadHookOptions,
   QsReadResult,
   QsWriteResult,
 } from "./types";
+
+const DEFAULT_OPTIONS = {
+  arrayFormat: "brackets",
+  allowDots: false,
+  skipNulls: true,
+} as const;
 
 /**
  * Enables nested object serialization in query parameters using bracket notation.
@@ -35,19 +41,12 @@ import type {
  * ```
  */
 export function qsPlugin(config: QsPluginConfig = {}): SpooshPlugin<{
-  readOptions: QsReadOptions;
-  writeOptions: QsWriteOptions;
-  infiniteReadOptions: QsInfiniteReadOptions;
+  readOptions: QsReadHookOptions;
+  writeOptions: QsWriteHookOptions;
+  infiniteReadOptions: QsInfiniteReadHookOptions;
   readResult: QsReadResult;
   writeResult: QsWriteResult;
 }> {
-  const {
-    arrayFormat: defaultArrayFormat = "brackets",
-    allowDots: defaultAllowDots = false,
-    skipNulls: defaultSkipNulls = true,
-    options: additionalOptions = {},
-  } = config;
-
   return {
     name: "spoosh:qs",
     operations: ["read", "write", "infiniteRead"],
@@ -59,17 +58,14 @@ export function qsPlugin(config: QsPluginConfig = {}): SpooshPlugin<{
         return next();
       }
 
-      const pluginOptions = context.pluginOptions as QsReadOptions | undefined;
-
-      const arrayFormat = pluginOptions?.arrayFormat ?? defaultArrayFormat;
-      const allowDots = pluginOptions?.allowDots ?? defaultAllowDots;
-      const skipNulls = pluginOptions?.skipNulls ?? defaultSkipNulls;
+      const pluginOptions = (
+        context.pluginOptions as QsReadHookOptions | undefined
+      )?.qs;
 
       const stringified = qs.stringify(query, {
-        ...additionalOptions,
-        arrayFormat,
-        allowDots,
-        skipNulls,
+        ...DEFAULT_OPTIONS,
+        ...config,
+        ...pluginOptions,
         encode: false,
       });
 

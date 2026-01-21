@@ -197,7 +197,7 @@ describe("qsPlugin", () => {
         requestOptions: {
           query: { tags: ["a", "b"] },
         },
-        pluginOptions: { arrayFormat: "comma" },
+        pluginOptions: { qs: { arrayFormat: "comma" } },
       });
       const next = vi.fn().mockResolvedValue({ data: {}, status: 200 });
 
@@ -214,7 +214,7 @@ describe("qsPlugin", () => {
         requestOptions: {
           query: { filters: { status: "active" } },
         },
-        pluginOptions: { allowDots: true },
+        pluginOptions: { qs: { allowDots: true } },
       });
       const next = vi.fn().mockResolvedValue({ data: {}, status: 200 });
 

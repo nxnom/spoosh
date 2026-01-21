@@ -26,7 +26,7 @@ const query = {
 };
 
 useRead((api) => api.items.$get({ query }));
-// Result: pagination[limit]=10&pagination[offset]=0&filters[status]=active&filters[tags][]=a&filters[tags][]=b
+// Result: pagination[limit]=10&pagination[offset]=0&filters[status]=active&filters[tags][]=a,b
 ```
 
 ## Features
@@ -40,12 +40,13 @@ useRead((api) => api.items.$get({ query }));
 
 ## Plugin Config
 
+Accepts all [`qs` stringify options](https://github.com/ljharb/qs#stringifying). Common options:
+
 | Option        | Type                                             | Default      | Description                          |
 | ------------- | ------------------------------------------------ | ------------ | ------------------------------------ |
 | `arrayFormat` | `"brackets" \| "indices" \| "repeat" \| "comma"` | `"brackets"` | How to serialize arrays              |
 | `allowDots`   | `boolean`                                        | `false`      | Use dot notation instead of brackets |
 | `skipNulls`   | `boolean`                                        | `true`       | Skip null values in serialization    |
-| `options`     | `IStringifyOptions`                              | `{}`         | Additional qs stringify options      |
 
 ## Per-Request Options
 
@@ -53,13 +54,13 @@ Override plugin defaults for specific requests:
 
 ```typescript
 // Use comma-separated arrays for this request
-useRead((api) => api.items.$get({ query }), { arrayFormat: "comma" });
+useRead((api) => api.items.$get({ query }), { qs: { arrayFormat: "comma" } });
 
 // Use dot notation for nested objects
-useRead((api) => api.search.$get({ query }), { allowDots: true });
+useRead((api) => api.search.$get({ query }), { qs: { allowDots: true } });
 
 // Include null values for this request
-useRead((api) => api.data.$get({ query }), { skipNulls: false });
+useRead((api) => api.data.$get({ query }), { qs: { skipNulls: false } });
 ```
 
 ## Array Formats
@@ -70,7 +71,7 @@ useRead((api) => api.data.$get({ query }), { skipNulls: false });
 {
   tags: ["a", "b"];
 }
-// tags[]=a&tags[]=b
+// tags[]=a,b
 ```
 
 ### indices
@@ -88,7 +89,7 @@ useRead((api) => api.data.$get({ query }), { skipNulls: false });
 {
   tags: ["a", "b"];
 }
-// tags=a&tags=b
+// tags=a,b
 ```
 
 ### comma

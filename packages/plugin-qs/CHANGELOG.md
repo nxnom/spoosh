@@ -1,5 +1,12 @@
 # @spoosh/plugin-qs
 
+## 0.2.0
+
+### Breaking Changes
+
+- Pass `qs` options directly to request options insteads of nesting under `config`
+- Per-request `qs` options must be pass in `qs` property of request options
+
 ## 0.1.3
 
 ### Patch Changes
