@@ -87,22 +87,22 @@ export function createInjectWrite<
     TMethod extends (
       ...args: never[]
     ) => Promise<SpooshResponse<unknown, unknown>>,
+    TWriteOpts extends ExtractMethodOptions<TMethod> &
+      ResolvedWriteOptions<TMethod> = ExtractMethodOptions<TMethod> &
+      ResolvedWriteOptions<TMethod>,
   >(
     writeFn: (api: WriteApiClient<TSchema, TDefaultError>) => TMethod
   ): BaseWriteResult<
     ExtractMethodData<TMethod>,
     InferError<ExtractMethodError<TMethod>>,
-    ExtractMethodOptions<TMethod> & ResolvedWriteOptions<TMethod>
+    TWriteOpts,
+    ResolveResultTypes<PluginResults["write"], TWriteOpts>
   > &
     WriteResponseInputFields<
       ExtractResponseQuery<TMethod>,
       ExtractResponseBody<TMethod>,
       ExtractResponseFormData<TMethod>,
       ExtractResponseParamNames<TMethod>
-    > &
-    ResolveResultTypes<
-      PluginResults["write"],
-      ExtractMethodOptions<TMethod> & ResolvedWriteOptions<TMethod>
     > {
     const destroyRef = inject(DestroyRef);
 
@@ -173,11 +173,18 @@ export function createInjectWrite<
     const errorSignal = signal<TError | undefined>(undefined);
     const loadingSignal = signal(false);
     const lastTriggerOptionsSignal = signal<TOptions | undefined>(undefined);
+    const metaSignal = signal<Record<string, unknown>>({});
 
     const subscription = controller.subscribe(() => {
       const state = controller.getState();
       dataSignal.set(state.data as TData | undefined);
       errorSignal.set(state.error as TError | undefined);
+
+      const entry = stateManager.getCache(queryKey);
+      const newMeta = entry?.pluginResult
+        ? Object.fromEntries(entry.pluginResult)
+        : {};
+      metaSignal.set(newMeta);
     });
 
     destroyRef.onDestroy(() => {
@@ -230,11 +237,6 @@ export function createInjectWrite<
       }
     };
 
-    const entry = stateManager.getCache(queryKey);
-    const pluginResultData = entry?.pluginResult
-      ? Object.fromEntries(entry.pluginResult)
-      : {};
-
     const inputSignal = signal<{
       query?: unknown;
       body?: unknown;
@@ -272,7 +274,9 @@ export function createInjectWrite<
 
     const result = {
       trigger,
-      ...pluginResultData,
+      meta: metaSignal as unknown as Signal<
+        ResolveResultTypes<PluginResults["write"], TOptions>
+      >,
       input: inputSignal as Signal<{
         query?: ExtractResponseQuery<TMethod>;
         body?: ExtractResponseBody<TMethod>;
@@ -286,13 +290,17 @@ export function createInjectWrite<
       abort,
     };
 
-    return result as unknown as BaseWriteResult<TData, TError, TOptions> &
+    return result as unknown as BaseWriteResult<
+      TData,
+      TError,
+      TOptions,
+      ResolveResultTypes<PluginResults["write"], TOptions>
+    > &
       WriteResponseInputFields<
         ExtractResponseQuery<TMethod>,
         ExtractResponseBody<TMethod>,
         ExtractResponseFormData<TMethod>,
         ExtractResponseParamNames<TMethod>
-      > &
-      ResolveResultTypes<PluginResults["write"], TOptions>;
+      >;
   };
 }

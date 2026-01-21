@@ -14,8 +14,8 @@ import {
   type PluginTypeConfig,
   type PluginContext,
   type SelectorResult,
-  type ResolveResultTypes,
   type ResolveTypes,
+  type ResolveResultTypes,
   type ResolverContext,
   createOperationController,
   createSelectorProxy,
@@ -80,17 +80,22 @@ export function createInjectRead<
     TReadFn extends (
       api: ReadApiClient<TSchema, TDefaultError>
     ) => Promise<{ data?: unknown; error?: unknown }>,
+    TReadOpts extends ResolvedReadOptions<TReadFn> =
+      ResolvedReadOptions<TReadFn>,
   >(
     readFn: TReadFn,
-    readOptions?: ResolvedReadOptions<TReadFn>
-  ): BaseReadResult<ExtractData<TReadFn>, InferError<ExtractError<TReadFn>>> &
+    readOptions?: TReadOpts
+  ): BaseReadResult<
+    ExtractData<TReadFn>,
+    InferError<ExtractError<TReadFn>>,
+    ResolveResultTypes<PluginResults["read"], TReadOpts>
+  > &
     ResponseInputFields<
       ExtractResponseQuery<TReadFn>,
       ExtractResponseBody<TReadFn>,
       ExtractResponseFormData<TReadFn>,
       ExtractResponseParamNames<TReadFn>
-    > &
-    ResolveResultTypes<PluginResults["read"], ResolvedReadOptions<TReadFn>> {
+    > {
     const destroyRef = inject(DestroyRef);
 
     type TData = ExtractData<TReadFn>;
@@ -111,6 +116,7 @@ export function createInjectRead<
     const loadingSignal = signal(true);
     const fetchingSignal = signal(false);
     const inputSignal = signal<Record<string, unknown>>({});
+    const metaSignal = signal<Record<string, unknown>>({});
 
     let currentController: ReturnType<
       typeof createOperationController<TData, TError>
@@ -272,6 +278,12 @@ export function createInjectRead<
             const state = controller.getState();
             dataSignal.set(state.data as TData | undefined);
             errorSignal.set(state.error as TError | undefined);
+
+            const entry = stateManager.getCache(queryKey);
+            const newMeta = entry?.pluginResult
+              ? Object.fromEntries(entry.pluginResult)
+              : {};
+            metaSignal.set(newMeta);
           });
 
           currentController = controller;
@@ -360,15 +372,10 @@ export function createInjectRead<
       return Promise.resolve({ data: undefined, error: undefined });
     };
 
-    const entry = currentQueryKey
-      ? stateManager.getCache(currentQueryKey)
-      : null;
-    const pluginResultData = entry?.pluginResult
-      ? Object.fromEntries(entry.pluginResult)
-      : {};
-
     const result = {
-      ...pluginResultData,
+      meta: metaSignal as unknown as Signal<
+        ResolveResultTypes<PluginResults["read"], TReadOpts>
+      >,
       get input() {
         return inputSignal();
       },
@@ -380,13 +387,16 @@ export function createInjectRead<
       refetch,
     };
 
-    return result as unknown as BaseReadResult<TData, TError> &
+    return result as unknown as BaseReadResult<
+      TData,
+      TError,
+      ResolveResultTypes<PluginResults["read"], TReadOpts>
+    > &
       ResponseInputFields<
         ExtractResponseQuery<TReadFn>,
         ExtractResponseBody<TReadFn>,
         ExtractResponseFormData<TReadFn>,
         ExtractResponseParamNames<TReadFn>
-      > &
-      ResolveResultTypes<PluginResults["read"], ResolvedReadOptions<TReadFn>>;
+      >;
   };
 }

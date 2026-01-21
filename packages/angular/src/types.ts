@@ -36,20 +36,31 @@ export interface BaseReadOptions {
   additionalTags?: string[];
 }
 
-export interface BaseReadResult<TData, TError> {
+export interface BaseReadResult<
+  TData,
+  TError,
+  TPluginResult = Record<string, unknown>,
+> {
   data: Signal<TData | undefined>;
   error: Signal<TError | undefined>;
   loading: Signal<boolean>;
   fetching: Signal<boolean>;
+  meta: Signal<TPluginResult>;
   abort: () => void;
   refetch: () => Promise<SpooshResponse<TData, TError>>;
 }
 
-export interface BaseWriteResult<TData, TError, TOptions> {
+export interface BaseWriteResult<
+  TData,
+  TError,
+  TOptions,
+  TPluginResult = Record<string, unknown>,
+> {
   trigger: (options?: TOptions) => Promise<SpooshResponse<TData, TError>>;
   data: Signal<TData | undefined>;
   error: Signal<TError | undefined>;
   loading: Signal<boolean>;
+  meta: Signal<TPluginResult>;
   reset: () => void;
   abort: () => void;
 }
@@ -72,7 +83,12 @@ export interface BaseInfiniteReadOptions<
   merger: (responses: TData[]) => TItem[];
 }
 
-export interface BaseInfiniteReadResult<TData, TError, TItem> {
+export interface BaseInfiniteReadResult<
+  TData,
+  TError,
+  TItem,
+  TPluginResult = Record<string, unknown>,
+> {
   data: Signal<TItem[] | undefined>;
   allResponses: Signal<TData[] | undefined>;
   error: Signal<TError | undefined>;
@@ -82,6 +98,7 @@ export interface BaseInfiniteReadResult<TData, TError, TItem> {
   fetchingPrev: Signal<boolean>;
   canFetchNext: Signal<boolean>;
   canFetchPrev: Signal<boolean>;
+  meta: Signal<TPluginResult>;
   fetchNext: () => Promise<void>;
   fetchPrev: () => Promise<void>;
   refetch: () => Promise<void>;

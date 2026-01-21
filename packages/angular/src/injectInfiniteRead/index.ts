@@ -15,8 +15,8 @@ import {
   type PluginTypeConfig,
   type InfiniteRequestOptions,
   type SelectorResult,
-  type ResolveResultTypes,
   type ResolveTypes,
+  type ResolveResultTypes,
   type ResolverContext,
   type PluginContext,
   createInfiniteReadController,
@@ -99,9 +99,9 @@ export function createInjectInfiniteRead<
   ): BaseInfiniteReadResult<
     ExtractData<TReadFn>,
     InferError<ExtractError<TReadFn>>,
-    ExtractMergerItem<TReadOpts>
-  > &
-    ResolveResultTypes<PluginResults["read"], TReadOpts> {
+    ExtractMergerItem<TReadOpts>,
+    ResolveResultTypes<PluginResults["read"], TReadOpts>
+  > {
     type TData = ExtractData<TReadFn>;
     type TError = InferError<ExtractError<TReadFn>>;
     type TItem = ExtractMergerItem<TReadOpts>;
@@ -242,6 +242,13 @@ export function createInjectInfiniteRead<
     const loadingSignal = signal(false);
     const canFetchNextSignal = signal(false);
     const canFetchPrevSignal = signal(false);
+    const metaSignal = signal<Record<string, unknown>>({});
+
+    const queryKey = stateManager.createQueryKey({
+      path: capturedCall.path,
+      method: capturedCall.method,
+      options: baseOptionsForKey,
+    });
 
     const subscription = controller.subscribe(() => {
       const state = controller.getState();
@@ -250,6 +257,12 @@ export function createInjectInfiniteRead<
       errorSignal.set(state.error);
       canFetchNextSignal.set(state.canFetchNext);
       canFetchPrevSignal.set(state.canFetchPrev);
+
+      const entry = stateManager.getCache(queryKey);
+      const newMeta = entry?.pluginResult
+        ? Object.fromEntries(entry.pluginResult)
+        : {};
+      metaSignal.set(newMeta);
     });
 
     const fetchingNextSignal = signal(false);
@@ -389,6 +402,9 @@ export function createInjectInfiniteRead<
     );
 
     const result = {
+      meta: metaSignal as unknown as Signal<
+        ResolveResultTypes<PluginResults["read"], TReadOpts>
+      >,
       data: dataSignal as Signal<TItem[] | undefined>,
       allResponses: allResponsesSignal as Signal<TData[] | undefined>,
       error: errorSignal as Signal<TError | undefined>,
@@ -404,7 +420,11 @@ export function createInjectInfiniteRead<
       abort,
     };
 
-    return result as unknown as BaseInfiniteReadResult<TData, TError, TItem> &
-      ResolveResultTypes<PluginResults["read"], TReadOpts>;
+    return result as unknown as BaseInfiniteReadResult<
+      TData,
+      TError,
+      TItem,
+      ResolveResultTypes<PluginResults["read"], TReadOpts>
+    >;
   };
 }
