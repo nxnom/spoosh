@@ -16,6 +16,8 @@ import {
   type InfiniteRequestOptions,
   type SelectorResult,
   type ResolveResultTypes,
+  type ResolveTypes,
+  type ResolverContext,
   type PluginContext,
   createInfiniteReadController,
   createSelectorProxy,
@@ -70,22 +72,27 @@ export function createInjectInfiniteRead<
     ? I
     : unknown;
 
+  type ResolvedInfiniteReadOptions<TReadFn, TRequest> = BaseInfiniteReadOptions<
+    ExtractData<TReadFn>,
+    unknown,
+    TRequest
+  > &
+    ResolveTypes<
+      PluginOptions["read"],
+      ResolverContext<
+        TSchema,
+        ExtractData<TReadFn>,
+        InferError<ExtractError<TReadFn>>
+      >
+    >;
+
   return function injectInfiniteRead<
     TReadFn extends (
       api: ReadApiClient<TSchema, TDefaultError>
     ) => Promise<SpooshResponse<unknown, unknown>>,
     TRequest extends AnyInfiniteRequestOptions = AnyInfiniteRequestOptions,
-    TReadOpts extends BaseInfiniteReadOptions<
-      ExtractData<TReadFn>,
-      unknown,
-      TRequest
-    > &
-      PluginOptions["read"] = BaseInfiniteReadOptions<
-      ExtractData<TReadFn>,
-      unknown,
-      TRequest
-    > &
-      PluginOptions["read"],
+    TReadOpts extends ResolvedInfiniteReadOptions<TReadFn, TRequest> =
+      ResolvedInfiniteReadOptions<TReadFn, TRequest>,
   >(
     readFn: TReadFn,
     readOptions: TReadOpts
@@ -229,7 +236,6 @@ export function createInjectInfiniteRead<
 
     controller.setPluginOptions(pluginOpts);
 
-    const initialEnabled = getEnabled();
     const dataSignal = signal<TItem[] | undefined>(undefined);
     const allResponsesSignal = signal<TData[] | undefined>(undefined);
     const errorSignal = signal<TError | undefined>(undefined);

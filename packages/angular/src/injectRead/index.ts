@@ -15,6 +15,8 @@ import {
   type PluginContext,
   type SelectorResult,
   type ResolveResultTypes,
+  type ResolveTypes,
+  type ResolverContext,
   createOperationController,
   createSelectorProxy,
   resolvePath,
@@ -64,15 +66,23 @@ export function createInjectRead<
       : unknown
     : unknown;
 
+  type ResolvedReadOptions<TReadFn> = BaseReadOptions &
+    ResolveTypes<
+      PluginOptions["read"],
+      ResolverContext<
+        TSchema,
+        ExtractData<TReadFn>,
+        InferError<ExtractError<TReadFn>>
+      >
+    >;
+
   return function injectRead<
     TReadFn extends (
       api: ReadApiClient<TSchema, TDefaultError>
     ) => Promise<{ data?: unknown; error?: unknown }>,
-    TReadOpts extends BaseReadOptions & PluginOptions["read"] =
-      BaseReadOptions & PluginOptions["read"],
   >(
     readFn: TReadFn,
-    readOptions?: TReadOpts
+    readOptions?: ResolvedReadOptions<TReadFn>
   ): BaseReadResult<ExtractData<TReadFn>, InferError<ExtractError<TReadFn>>> &
     ResponseInputFields<
       ExtractResponseQuery<TReadFn>,
@@ -80,7 +90,7 @@ export function createInjectRead<
       ExtractResponseFormData<TReadFn>,
       ExtractResponseParamNames<TReadFn>
     > &
-    ResolveResultTypes<PluginResults["read"], TReadOpts> {
+    ResolveResultTypes<PluginResults["read"], ResolvedReadOptions<TReadFn>> {
     const destroyRef = inject(DestroyRef);
 
     type TData = ExtractData<TReadFn>;
@@ -223,7 +233,6 @@ export function createInjectRead<
         if (queryKeyChanged) {
           if (currentController && initialized) {
             prevContext = currentController.getContext();
-            currentController.unmount();
           }
 
           if (currentSubscription) {
@@ -378,6 +387,6 @@ export function createInjectRead<
         ExtractResponseFormData<TReadFn>,
         ExtractResponseParamNames<TReadFn>
       > &
-      ResolveResultTypes<PluginResults["read"], TReadOpts>;
+      ResolveResultTypes<PluginResults["read"], ResolvedReadOptions<TReadFn>>;
   };
 }
