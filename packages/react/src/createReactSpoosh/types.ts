@@ -97,15 +97,15 @@ type UseReadFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
   readOptions?: TReadOpts
 ) => BaseReadResult<
   ExtractMethodData<TReadFn>,
-  InferError<ExtractMethodError<TReadFn>, TDefaultError>
+  InferError<ExtractMethodError<TReadFn>, TDefaultError>,
+  ResolveResultTypes<MergePluginResults<TPlugins>["read"], TReadOpts>
 > &
   ResponseInputFields<
     ExtractResponseQuery<TReadFn>,
     ExtractResponseBody<TReadFn>,
     ExtractResponseFormData<TReadFn>,
     ExtractResponseParamNames<TReadFn>
-  > &
-  ResolveResultTypes<MergePluginResults<TPlugins>["read"], TReadOpts>;
+  >;
 
 type UseWriteFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
   TMethod extends (
@@ -122,15 +122,15 @@ type UseWriteFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
 ) => BaseWriteResult<
   ExtractMethodData<TMethod>,
   InferError<ExtractMethodError<TMethod>, TDefaultError>,
-  TWriteOpts
+  TWriteOpts,
+  ResolveResultTypes<MergePluginResults<TPlugins>["write"], TWriteOpts>
 > &
   WriteResponseInputFields<
     ExtractResponseQuery<TMethod>,
     ExtractResponseBody<TMethod>,
     ExtractResponseFormData<TMethod>,
     ExtractResponseParamNames<TMethod>
-  > &
-  ResolveResultTypes<MergePluginResults<TPlugins>["write"], TWriteOpts>;
+  >;
 
 type InfiniteReadResolverContext<TSchema, TData, TError, TRequest> =
   ResolverContext<
@@ -165,8 +165,12 @@ type UseInfiniteReadFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
   ) => Promise<SpooshResponse<TData, TError>>,
   readOptions: BaseInfiniteReadOptions<TData, TItem, TRequest> &
     ResolvedInfiniteReadOptions<TSchema, TPlugins, TData, TError, TRequest>
-) => BaseInfiniteReadResult<TData, TError, TItem> &
-  MergePluginResults<TPlugins>["read"];
+) => BaseInfiniteReadResult<
+  TData,
+  TError,
+  TItem,
+  MergePluginResults<TPlugins>["read"]
+>;
 
 /**
  * Spoosh React hooks interface containing useRead, useWrite, and useInfiniteRead.

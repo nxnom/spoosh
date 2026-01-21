@@ -48,20 +48,13 @@ export function createUseInfiniteRead<
     TItem,
     TError = TDefaultError,
     TRequest extends AnyInfiniteRequestOptions = AnyInfiniteRequestOptions,
-    TReadOpts extends BaseInfiniteReadOptions<TData, TItem, TRequest> &
-      PluginOptions["infiniteRead"] = BaseInfiniteReadOptions<
-      TData,
-      TItem,
-      TRequest
-    > &
-      PluginOptions["infiniteRead"],
   >(
     readFn: (
       api: InfiniteReadApiClient<TSchema, TDefaultError>
     ) => Promise<SpooshResponse<TData, TError>>,
-    readOptions: TReadOpts
-  ): BaseInfiniteReadResult<TData, TError, TItem> &
-    ResolveResultTypes<PluginResults["read"], TReadOpts> {
+    readOptions: BaseInfiniteReadOptions<TData, TItem, TRequest> &
+      PluginOptions["infiniteRead"]
+  ): BaseInfiniteReadResult<TData, TError, TItem, PluginResults["read"]> {
     const {
       enabled = true,
       tags,
@@ -279,7 +272,13 @@ export function createUseInfiniteRead<
       controller.update(prevContext);
     }, [JSON.stringify(pluginOpts)]);
 
+    const entry = stateManager.getCache(queryKey);
+    const pluginResultData = entry?.pluginResult
+      ? Object.fromEntries(entry.pluginResult)
+      : {};
+
     const result = {
+      meta: pluginResultData,
       data: state.data,
       allResponses: state.allResponses,
       loading,
@@ -295,7 +294,11 @@ export function createUseInfiniteRead<
       error: state.error,
     };
 
-    return result as BaseInfiniteReadResult<TData, TError, TItem> &
-      ResolveResultTypes<PluginResults["read"], TReadOpts>;
+    return result as BaseInfiniteReadResult<
+      TData,
+      TError,
+      TItem,
+      PluginResults["read"]
+    >;
   };
 }

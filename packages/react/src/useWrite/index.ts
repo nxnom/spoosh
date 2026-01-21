@@ -84,17 +84,17 @@ export function createUseWrite<
   ): BaseWriteResult<
     ExtractMethodData<TMethod>,
     InferError<ExtractMethodError<TMethod>>,
-    ExtractMethodOptions<TMethod> & ResolvedWriteOptions<TMethod>
+    ExtractMethodOptions<TMethod> & ResolvedWriteOptions<TMethod>,
+    ResolveResultTypes<
+      PluginResults["write"],
+      ExtractMethodOptions<TMethod> & ResolvedWriteOptions<TMethod>
+    >
   > &
     WriteResponseInputFields<
       ExtractResponseQuery<TMethod>,
       ExtractResponseBody<TMethod>,
       ExtractResponseFormData<TMethod>,
       ExtractResponseParamNames<TMethod>
-    > &
-    ResolveResultTypes<
-      PluginResults["write"],
-      ExtractMethodOptions<TMethod> & ResolvedWriteOptions<TMethod>
     > {
     type TData = ExtractMethodData<TMethod>;
     type TError = InferError<ExtractMethodError<TMethod>>;
@@ -266,7 +266,7 @@ export function createUseWrite<
 
     const result = {
       trigger,
-      ...pluginResultData,
+      meta: pluginResultData,
       ...inputField,
       data: state.data as TData | undefined,
       error: requestState.error ?? (state.error as TError | undefined),
@@ -275,13 +275,17 @@ export function createUseWrite<
       abort,
     };
 
-    return result as unknown as BaseWriteResult<TData, TError, TOptions> &
+    return result as unknown as BaseWriteResult<
+      TData,
+      TError,
+      TOptions,
+      ResolveResultTypes<PluginResults["write"], TOptions>
+    > &
       WriteResponseInputFields<
         ExtractResponseQuery<TMethod>,
         ExtractResponseBody<TMethod>,
         ExtractResponseFormData<TMethod>,
         ExtractResponseParamNames<TMethod>
-      > &
-      ResolveResultTypes<PluginResults["write"], TOptions>;
+      >;
   };
 }

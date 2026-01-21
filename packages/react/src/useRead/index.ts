@@ -68,14 +68,17 @@ export function createUseRead<
   >(
     readFn: TReadFn,
     readOptions?: TReadOpts
-  ): BaseReadResult<ExtractData<TReadFn>, InferError<ExtractError<TReadFn>>> &
+  ): BaseReadResult<
+    ExtractData<TReadFn>,
+    InferError<ExtractError<TReadFn>>,
+    ResolveResultTypes<PluginResults["read"], TReadOpts>
+  > &
     ResponseInputFields<
       ExtractResponseQuery<TReadFn>,
       ExtractResponseBody<TReadFn>,
       ExtractResponseFormData<TReadFn>,
       ExtractResponseParamNames<TReadFn>
-    > &
-    ResolveResultTypes<PluginResults["read"], TReadOpts> {
+    > {
     const {
       enabled = true,
       tags,
@@ -310,7 +313,7 @@ export function createUseRead<
     const fetching = requestState.isPending;
 
     const result = {
-      ...pluginResultData,
+      meta: pluginResultData,
       ...inputField,
       data: state.data as TData | undefined,
       error: requestState.error ?? (state.error as TError | undefined),
@@ -320,13 +323,16 @@ export function createUseRead<
       refetch,
     };
 
-    return result as unknown as BaseReadResult<TData, TError> &
+    return result as unknown as BaseReadResult<
+      TData,
+      TError,
+      ResolveResultTypes<PluginResults["read"], TReadOpts>
+    > &
       ResponseInputFields<
         ExtractResponseQuery<TReadFn>,
         ExtractResponseBody<TReadFn>,
         ExtractResponseFormData<TReadFn>,
         ExtractResponseParamNames<TReadFn>
-      > &
-      ResolveResultTypes<PluginResults["read"], TReadOpts>;
+      >;
   };
 }

@@ -53,8 +53,13 @@ export type { ResolveSchemaTypes, ResolveTypes, ResolverContext };
  *
  * @template TData - The response data type
  * @template TError - The error type
+ * @template TPluginResult - Plugin-provided result fields
  */
-export type BaseReadResult<TData, TError> = {
+export type BaseReadResult<
+  TData,
+  TError,
+  TPluginResult = Record<string, unknown>,
+> = {
   /** True during the initial load (no data yet) */
   loading: boolean;
 
@@ -66,6 +71,9 @@ export type BaseReadResult<TData, TError> = {
 
   /** Error from the last failed request */
   error: TError | undefined;
+
+  /** Plugin-provided metadata */
+  meta: TPluginResult;
 
   /** Abort the current fetch operation */
   abort: () => void;
@@ -80,8 +88,14 @@ export type BaseReadResult<TData, TError> = {
  * @template TData - The response data type
  * @template TError - The error type
  * @template TOptions - The trigger options type
+ * @template TPluginResult - Plugin-provided result fields
  */
-export type BaseWriteResult<TData, TError, TOptions> = {
+export type BaseWriteResult<
+  TData,
+  TError,
+  TOptions,
+  TPluginResult = Record<string, unknown>,
+> = {
   /** Execute the mutation with optional options */
   trigger: (options?: TOptions) => Promise<SpooshResponse<TData, TError>>;
 
@@ -93,6 +107,9 @@ export type BaseWriteResult<TData, TError, TOptions> = {
 
   /** Error from the last failed request */
   error: TError | undefined;
+
+  /** Plugin-provided metadata */
+  meta: TPluginResult;
 
   /** Reset the state to initial values */
   reset: () => void;
@@ -352,8 +369,14 @@ export type BaseInfiniteReadOptions<
  * @template TData - The response data type for each page
  * @template TError - The error type
  * @template TItem - The item type after merging all responses
+ * @template TPluginResult - Plugin-provided result fields
  */
-export type BaseInfiniteReadResult<TData, TError, TItem> = {
+export type BaseInfiniteReadResult<
+  TData,
+  TError,
+  TItem,
+  TPluginResult = Record<string, unknown>,
+> = {
   /** Merged items from all fetched responses */
   data: TItem[] | undefined;
 
@@ -377,6 +400,9 @@ export type BaseInfiniteReadResult<TData, TError, TItem> = {
 
   /** Whether there's a previous page available to fetch */
   canFetchPrev: boolean;
+
+  /** Plugin-provided metadata */
+  meta: TPluginResult;
 
   /** Fetch the next page */
   fetchNext: () => Promise<void>;
