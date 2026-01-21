@@ -1,0 +1,49 @@
+{
+  "name": "@spoosh/angular",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Angular signals integration for Spoosh API client",
+  "keywords": [
+    "spoosh",
+    "angular",
+    "signals",
+    "api-client",
+    "injectRead",
+    "injectWrite"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nxnom/spoosh.git",
+    "directory": "packages/angular"
+  },
+  "bugs": {
+    "url": "https://github.com/nxnom/spoosh/issues"
+  },
+  "homepage": "https://spoosh.dev/docs/integrations/angular",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsup --watch",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --max-warnings 0",
+    "format": "prettier --write 'src/**/*.ts'"
+  },
+  "dependencies": {
+    "@spoosh/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@angular/core": ">=16.0.0"
+  }
+}
