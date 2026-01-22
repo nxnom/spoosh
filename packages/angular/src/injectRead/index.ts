@@ -123,9 +123,11 @@ export function createInjectRead<
     > | null = null;
     let currentQueryKey: string | null = null;
     let currentSubscription: (() => void) | null = null;
+    let currentResolvedTags: string[] = [];
     let prevContext: PluginContext<TData, TError> | null = null;
-    let initialized = false;
     let isMounted = false;
+
+    const hookId = `angular-${Math.random().toString(36).slice(2)}`;
 
     const captureSelector = () => {
       const selectorResult: SelectorResult = {
@@ -143,6 +145,64 @@ export function createInjectRead<
       (readFn as (api: unknown) => unknown)(selectorProxy);
 
       return selectorResult;
+    };
+
+    const createController = (
+      capturedCall: NonNullable<SelectorResult["call"]>,
+      resolvedPath: string[],
+      resolvedTags: string[],
+      queryKey: string
+    ) => {
+      if (currentSubscription) {
+        currentSubscription();
+      }
+
+      const controller = createOperationController<TData, TError>({
+        operationType: "read",
+        path: capturedCall.path,
+        method: capturedCall.method as "GET",
+        tags: resolvedTags,
+        requestOptions: capturedCall.options as
+          | Record<string, unknown>
+          | undefined,
+        stateManager,
+        eventEmitter,
+        pluginExecutor,
+        hookId,
+        fetchFn: async (fetchOpts: unknown) => {
+          let current: unknown = api;
+
+          for (const segment of resolvedPath) {
+            current = (current as Record<string, unknown>)[segment];
+          }
+
+          const method = (current as Record<string, unknown>)[
+            capturedCall.method
+          ] as (o?: unknown) => Promise<SpooshResponse<TData, TError>>;
+
+          return method(fetchOpts);
+        },
+      });
+
+      controller.setPluginOptions(pluginOpts);
+
+      currentSubscription = controller.subscribe(() => {
+        const state = controller.getState();
+        dataSignal.set(state.data as TData | undefined);
+        errorSignal.set(state.error as TError | undefined);
+
+        const entry = stateManager.getCache(queryKey);
+        const newMeta = entry?.pluginResult
+          ? Object.fromEntries(entry.pluginResult)
+          : {};
+        metaSignal.set(newMeta);
+      });
+
+      currentController = controller;
+      currentQueryKey = queryKey;
+      currentResolvedTags = resolvedTags;
+
+      return controller;
     };
 
     const executeWithTracking = async (
@@ -175,6 +235,43 @@ export function createInjectRead<
         fetchingSignal.set(false);
       }
     };
+
+    // Initialize controller synchronously so refetch() works immediately
+    const initialSelectorResult = captureSelector();
+    const initialCapturedCall = initialSelectorResult.call;
+
+    if (!initialCapturedCall) {
+      throw new Error(
+        "injectRead requires calling an HTTP method ($get). " +
+          "Example: injectRead((api) => api.posts.$get())"
+      );
+    }
+
+    const initialRequestOptions = initialCapturedCall.options as
+      | { params?: Record<string, string | number> }
+      | undefined;
+
+    const initialResolvedPath = resolvePath(
+      initialCapturedCall.path,
+      initialRequestOptions?.params
+    );
+    const initialResolvedTags = resolveTags(
+      { tags, additionalTags },
+      initialResolvedPath
+    );
+    const initialQueryKey = stateManager.createQueryKey({
+      path: initialCapturedCall.path,
+      method: initialCapturedCall.method,
+      options: initialCapturedCall.options,
+    });
+
+    createController(
+      initialCapturedCall,
+      initialResolvedPath,
+      initialResolvedTags,
+      initialQueryKey
+    );
+    loadingSignal.set(false);
 
     let wasEnabled = false;
 
@@ -238,61 +335,23 @@ export function createInjectRead<
         wasEnabled = isEnabled;
 
         if (queryKeyChanged) {
-          if (currentController && initialized) {
+          if (currentController) {
             prevContext = currentController.getContext();
+
+            if (isMounted) {
+              currentController.unmount();
+              isMounted = false;
+            }
           }
 
-          if (currentSubscription) {
-            currentSubscription();
-          }
+          const controller = createController(
+            capturedCall,
+            resolvedPath,
+            resolvedTags,
+            queryKey
+          );
 
-          const controller = createOperationController<TData, TError>({
-            operationType: "read",
-            path: capturedCall.path,
-            method: capturedCall.method as "GET",
-            tags: resolvedTags,
-            requestOptions: capturedCall.options as
-              | Record<string, unknown>
-              | undefined,
-            stateManager,
-            eventEmitter,
-            pluginExecutor,
-            hookId: `angular-${Math.random().toString(36).slice(2)}`,
-            fetchFn: async (fetchOpts: unknown) => {
-              let current: unknown = api;
-
-              for (const segment of resolvedPath) {
-                current = (current as Record<string, unknown>)[segment];
-              }
-
-              const method = (current as Record<string, unknown>)[
-                capturedCall.method
-              ] as (o?: unknown) => Promise<SpooshResponse<TData, TError>>;
-
-              return method(fetchOpts);
-            },
-          });
-
-          controller.setPluginOptions(pluginOpts);
-
-          currentSubscription = controller.subscribe(() => {
-            const state = controller.getState();
-            dataSignal.set(state.data as TData | undefined);
-            errorSignal.set(state.error as TError | undefined);
-
-            const entry = stateManager.getCache(queryKey);
-            const newMeta = entry?.pluginResult
-              ? Object.fromEntries(entry.pluginResult)
-              : {};
-            metaSignal.set(newMeta);
-          });
-
-          currentController = controller;
-          currentQueryKey = queryKey;
-
-          if (!initialized) {
-            initialized = true;
-          } else if (prevContext) {
+          if (prevContext) {
             controller.update(prevContext);
             prevContext = null;
           }
@@ -341,7 +400,7 @@ export function createInjectRead<
           "invalidate",
           (invalidatedTags: string[]) => {
             const hasMatch = invalidatedTags.some((tag: string) =>
-              resolvedTags.includes(tag)
+              currentResolvedTags.includes(tag)
             );
 
             if (hasMatch && currentController) {
@@ -376,6 +435,12 @@ export function createInjectRead<
 
     const refetch = () => {
       if (currentController) {
+        // Mount if not already mounted (allows manual fetch when enabled: false)
+        if (!isMounted) {
+          currentController.mount();
+          isMounted = true;
+        }
+
         return executeWithTracking(currentController, true);
       }
 

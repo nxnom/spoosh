@@ -199,6 +199,167 @@ export function createInjectInfiniteRead<
       }
     };
 
+    const createController = (
+      capturedCall: NonNullable<SelectorResult["call"]>,
+      resolvedTags: string[],
+      queryKey: string
+    ) => {
+      if (currentSubscription) {
+        currentSubscription();
+      }
+
+      if (unsubInvalidate) {
+        unsubInvalidate();
+      }
+
+      const requestOptions = capturedCall.options as
+        | {
+            params?: Record<string, string | number>;
+            query?: Record<string, unknown>;
+            body?: unknown;
+          }
+        | undefined;
+
+      const baseOptionsForKey = {
+        ...(capturedCall.options as object),
+        query: undefined,
+        params: undefined,
+        body: undefined,
+      };
+
+      const initialRequest: InfiniteRequestOptions = {
+        query: requestOptions?.query,
+        params: requestOptions?.params,
+        body: requestOptions?.body,
+      };
+
+      const controller = createInfiniteReadController<
+        TData,
+        TItem,
+        TError,
+        TRequest
+      >({
+        path: capturedCall.path,
+        method: capturedCall.method as "GET",
+        tags: resolvedTags,
+        initialRequest,
+        baseOptionsForKey,
+        canFetchNext: (ctx: PageContext<TData, TRequest>) =>
+          callbackRefs.canFetchNext(ctx),
+        canFetchPrev: canFetchPrev
+          ? (ctx: PageContext<TData, TRequest>) =>
+              callbackRefs.canFetchPrev?.(ctx) ?? false
+          : undefined,
+        nextPageRequest: (ctx: PageContext<TData, TRequest>) =>
+          callbackRefs.nextPageRequest(ctx),
+        prevPageRequest: prevPageRequest
+          ? (ctx: PageContext<TData, TRequest>) =>
+              callbackRefs.prevPageRequest?.(ctx) ?? {}
+          : undefined,
+        merger: (responses: TData[]) =>
+          callbackRefs.merger(responses) as TItem[],
+        stateManager,
+        eventEmitter,
+        pluginExecutor,
+        hookId,
+        fetchFn: async (
+          opts: InfiniteRequestOptions,
+          abortSignal: AbortSignal
+        ) => {
+          const fetchPath = resolvePath(capturedCall.path, opts.params);
+
+          let current: unknown = api;
+
+          for (const segment of fetchPath) {
+            current = (current as Record<string, unknown>)[segment];
+          }
+
+          const method = (current as Record<string, unknown>)[
+            capturedCall.method
+          ] as (opts?: unknown) => Promise<SpooshResponse<TData, TError>>;
+
+          const fetchOptions = {
+            ...(capturedCall.options as object),
+            query: opts.query,
+            params: opts.params,
+            body: opts.body,
+            signal: abortSignal,
+          };
+
+          return method(fetchOptions);
+        },
+      });
+
+      controller.setPluginOptions(pluginOpts);
+
+      currentSubscription = controller.subscribe(() => {
+        const state = controller.getState();
+        dataSignal.set(state.data);
+        allResponsesSignal.set(state.allResponses);
+        errorSignal.set(state.error);
+        canFetchNextSignal.set(state.canFetchNext);
+        canFetchPrevSignal.set(state.canFetchPrev);
+
+        const entry = stateManager.getCache(queryKey);
+        const newMeta = entry?.pluginResult
+          ? Object.fromEntries(entry.pluginResult)
+          : {};
+        metaSignal.set(newMeta);
+      });
+
+      currentController = controller;
+      currentQueryKey = queryKey;
+      currentResolvedTags = resolvedTags;
+
+      unsubInvalidate = eventEmitter.on(
+        "invalidate",
+        (invalidatedTags: string[]) => {
+          if (!getEnabled() || !currentController) return;
+
+          const hasMatch = invalidatedTags.some((tag: string) =>
+            currentResolvedTags.includes(tag)
+          );
+
+          if (hasMatch) {
+            loadingSignal.set(true);
+            currentController.refetch().finally(() => {
+              updateSignalsFromState();
+              loadingSignal.set(false);
+            });
+          }
+        }
+      );
+
+      return controller;
+    };
+
+    // Initialize controller synchronously so refetch/fetchNext/fetchPrev work immediately
+    const initialCapturedCall = captureSelector();
+    const initialRequestOptions = initialCapturedCall.options as
+      | { params?: Record<string, string | number> }
+      | undefined;
+    const initialResolvedPath = resolvePath(
+      initialCapturedCall.path,
+      initialRequestOptions?.params
+    );
+    const initialResolvedTags = resolveTags(
+      { tags, additionalTags },
+      initialResolvedPath
+    );
+    const initialBaseOptionsForKey = {
+      ...(initialCapturedCall.options as object),
+      query: undefined,
+      params: undefined,
+      body: undefined,
+    };
+    const initialQueryKey = stateManager.createQueryKey({
+      path: initialCapturedCall.path,
+      method: initialCapturedCall.method,
+      options: initialBaseOptionsForKey,
+    });
+
+    createController(initialCapturedCall, initialResolvedTags, initialQueryKey);
+
     effect(
       () => {
         const isEnabled = getEnabled();
@@ -253,124 +414,26 @@ export function createInjectInfiniteRead<
             isMounted = false;
           }
 
-          if (currentSubscription) {
-            currentSubscription();
-          }
-
-          if (unsubInvalidate) {
-            unsubInvalidate();
-          }
-
-          const initialRequest: InfiniteRequestOptions = {
-            query: requestOptions?.query,
-            params: requestOptions?.params,
-            body: requestOptions?.body,
-          };
-
-          const controller = createInfiniteReadController<
-            TData,
-            TItem,
-            TError,
-            TRequest
-          >({
-            path: capturedCall.path,
-            method: capturedCall.method as "GET",
-            tags: resolvedTags,
-            initialRequest,
-            baseOptionsForKey,
-            canFetchNext: (ctx: PageContext<TData, TRequest>) =>
-              callbackRefs.canFetchNext(ctx),
-            canFetchPrev: canFetchPrev
-              ? (ctx: PageContext<TData, TRequest>) =>
-                  callbackRefs.canFetchPrev?.(ctx) ?? false
-              : undefined,
-            nextPageRequest: (ctx: PageContext<TData, TRequest>) =>
-              callbackRefs.nextPageRequest(ctx),
-            prevPageRequest: prevPageRequest
-              ? (ctx: PageContext<TData, TRequest>) =>
-                  callbackRefs.prevPageRequest?.(ctx) ?? {}
-              : undefined,
-            merger: (responses: TData[]) =>
-              callbackRefs.merger(responses) as TItem[],
-            stateManager,
-            eventEmitter,
-            pluginExecutor,
-            hookId,
-            fetchFn: async (
-              opts: InfiniteRequestOptions,
-              abortSignal: AbortSignal
-            ) => {
-              const fetchPath = resolvePath(capturedCall.path, opts.params);
-
-              let current: unknown = api;
-
-              for (const segment of fetchPath) {
-                current = (current as Record<string, unknown>)[segment];
-              }
-
-              const method = (current as Record<string, unknown>)[
-                capturedCall.method
-              ] as (opts?: unknown) => Promise<SpooshResponse<TData, TError>>;
-
-              const fetchOptions = {
-                ...(capturedCall.options as object),
-                query: opts.query,
-                params: opts.params,
-                body: opts.body,
-                signal: abortSignal,
-              };
-
-              return method(fetchOptions);
-            },
-          });
-
-          controller.setPluginOptions(pluginOpts);
-
-          currentSubscription = controller.subscribe(() => {
-            const state = controller.getState();
-            dataSignal.set(state.data);
-            allResponsesSignal.set(state.allResponses);
-            errorSignal.set(state.error);
-            canFetchNextSignal.set(state.canFetchNext);
-            canFetchPrevSignal.set(state.canFetchPrev);
-
-            const entry = stateManager.getCache(queryKey);
-            const newMeta = entry?.pluginResult
-              ? Object.fromEntries(entry.pluginResult)
-              : {};
-            metaSignal.set(newMeta);
-          });
-
-          currentController = controller;
-          currentQueryKey = queryKey;
-          currentResolvedTags = resolvedTags;
-
-          unsubInvalidate = eventEmitter.on(
-            "invalidate",
-            (invalidatedTags: string[]) => {
-              if (!getEnabled() || !currentController) return;
-
-              const hasMatch = invalidatedTags.some((tag: string) =>
-                currentResolvedTags.includes(tag)
-              );
-
-              if (hasMatch) {
-                loadingSignal.set(true);
-                currentController.refetch().finally(() => {
-                  updateSignalsFromState();
-                  loadingSignal.set(false);
-                });
-              }
-            }
+          const controller = createController(
+            capturedCall,
+            resolvedTags,
+            queryKey
           );
-
-          controller.mount();
-          isMounted = true;
 
           if (prevContext) {
             controller.update(prevContext);
             prevContext = null;
           }
+
+          controller.mount();
+          isMounted = true;
+
+          untracked(() => {
+            triggerFetch();
+          });
+        } else if (!isMounted && currentController) {
+          currentController.mount();
+          isMounted = true;
 
           untracked(() => {
             triggerFetch();
@@ -395,7 +458,13 @@ export function createInjectInfiniteRead<
     });
 
     const fetchNext = async () => {
-      if (!getEnabled() || !currentController) return;
+      if (!currentController) return;
+
+      // Mount if not already mounted (allows manual fetch when enabled: false)
+      if (!isMounted) {
+        currentController.mount();
+        isMounted = true;
+      }
 
       fetchingNextSignal.set(true);
 
@@ -408,7 +477,13 @@ export function createInjectInfiniteRead<
     };
 
     const fetchPrev = async () => {
-      if (!getEnabled() || !currentController) return;
+      if (!currentController) return;
+
+      // Mount if not already mounted (allows manual fetch when enabled: false)
+      if (!isMounted) {
+        currentController.mount();
+        isMounted = true;
+      }
 
       fetchingPrevSignal.set(true);
 
@@ -421,7 +496,13 @@ export function createInjectInfiniteRead<
     };
 
     const refetch = async () => {
-      if (!getEnabled() || !currentController) return;
+      if (!currentController) return;
+
+      // Mount if not already mounted (allows manual fetch when enabled: false)
+      if (!isMounted) {
+        currentController.mount();
+        isMounted = true;
+      }
 
       loadingSignal.set(true);
 
