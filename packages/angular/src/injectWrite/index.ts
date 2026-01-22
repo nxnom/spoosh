@@ -111,63 +111,37 @@ export function createInjectWrite<
     type TOptions = ExtractMethodOptions<TMethod> &
       ResolvedWriteOptions<TMethod>;
 
-    const selectorResult: SelectorResult = {
-      call: null,
-      selector: null,
+    const captureSelector = () => {
+      const selectorResult: SelectorResult = {
+        call: null,
+        selector: null,
+      };
+
+      const selectorProxy = createSelectorProxy<TSchema>(
+        (result: SelectorResult) => {
+          selectorResult.call = result.call;
+          selectorResult.selector = result.selector;
+        }
+      );
+
+      (writeFn as (api: unknown) => unknown)(selectorProxy);
+
+      if (!selectorResult.selector) {
+        throw new Error(
+          "injectWrite requires selecting an HTTP method ($post, $put, $patch, $delete). " +
+            "Example: injectWrite((api) => api.posts.$post)"
+        );
+      }
+
+      return selectorResult.selector;
     };
 
-    const selectorProxy = createSelectorProxy<TSchema>(
-      (result: SelectorResult) => {
-        selectorResult.call = result.call;
-        selectorResult.selector = result.selector;
-      }
-    );
-
-    (writeFn as (api: unknown) => unknown)(selectorProxy);
-
-    const selectedEndpoint = selectorResult.selector;
-
-    if (!selectedEndpoint) {
-      throw new Error(
-        "injectWrite requires selecting an HTTP method ($post, $put, $patch, $delete). " +
-          "Example: injectWrite((api) => api.posts.$post)"
-      );
-    }
-
-    const queryKey = stateManager.createQueryKey({
-      path: selectedEndpoint.path,
-      method: selectedEndpoint.method,
-      options: undefined,
-    });
-
-    const controller = createOperationController<TData, TError>({
-      operationType: "write",
-      path: selectedEndpoint.path,
-      method: selectedEndpoint.method as "POST" | "PUT" | "PATCH" | "DELETE",
-      tags: [],
-      stateManager,
-      eventEmitter,
-      pluginExecutor,
-      hookId: `angular-${Math.random().toString(36).slice(2)}`,
-      fetchFn: async (fetchOpts: unknown) => {
-        const params = (
-          fetchOpts as { params?: Record<string, string | number> }
-        )?.params;
-        const resolvedPath = resolvePath(selectedEndpoint.path, params);
-
-        let current: unknown = api;
-
-        for (const segment of resolvedPath) {
-          current = (current as Record<string, unknown>)[segment];
-        }
-
-        const method = (current as Record<string, unknown>)[
-          selectedEndpoint.method
-        ] as (o?: unknown) => Promise<SpooshResponse<TData, TError>>;
-
-        return method(fetchOpts);
-      },
-    });
+    const hookId = `angular-${Math.random().toString(36).slice(2)}`;
+    let currentQueryKey: string | null = null;
+    let currentController: ReturnType<
+      typeof createOperationController<TData, TError>
+    > | null = null;
+    let currentSubscription: (() => void) | null = null;
 
     const dataSignal = signal<TData | undefined>(undefined);
     const errorSignal = signal<TError | undefined>(undefined);
@@ -175,37 +149,30 @@ export function createInjectWrite<
     const lastTriggerOptionsSignal = signal<TOptions | undefined>(undefined);
     const metaSignal = signal<Record<string, unknown>>({});
 
-    const subscription = controller.subscribe(() => {
-      const state = controller.getState();
-      dataSignal.set(state.data as TData | undefined);
-      errorSignal.set(state.error as TError | undefined);
-
-      const entry = stateManager.getCache(queryKey);
-      const newMeta = entry?.pluginResult
-        ? Object.fromEntries(entry.pluginResult)
-        : {};
-      metaSignal.set(newMeta);
-    });
-
     destroyRef.onDestroy(() => {
-      subscription();
+      if (currentSubscription) {
+        currentSubscription();
+      }
     });
 
     const reset = () => {
-      stateManager.deleteCache(queryKey);
+      if (currentQueryKey) {
+        stateManager.deleteCache(currentQueryKey);
+      }
+
+      dataSignal.set(undefined);
       errorSignal.set(undefined);
       loadingSignal.set(false);
     };
 
     const abort = () => {
-      controller.abort();
+      currentController?.abort();
     };
 
     const trigger = async (
       triggerOptions?: TOptions
     ): Promise<SpooshResponse<TData, TError>> => {
-      lastTriggerOptionsSignal.set(triggerOptions);
-      loadingSignal.set(true);
+      const selectedEndpoint = captureSelector();
 
       const params = (
         triggerOptions as
@@ -215,10 +182,79 @@ export function createInjectWrite<
       const resolvedPath = resolvePath(selectedEndpoint.path, params);
       const tags = resolveTags(triggerOptions, resolvedPath);
 
-      controller.setPluginOptions({ ...triggerOptions, tags });
+      const queryKey = stateManager.createQueryKey({
+        path: selectedEndpoint.path,
+        method: selectedEndpoint.method,
+        options: triggerOptions,
+      });
+
+      const needsNewController =
+        !currentController || currentQueryKey !== queryKey;
+
+      if (needsNewController) {
+        if (currentSubscription) {
+          currentSubscription();
+        }
+
+        const controller = createOperationController<TData, TError>({
+          operationType: "write",
+          path: selectedEndpoint.path,
+          method: selectedEndpoint.method as
+            | "POST"
+            | "PUT"
+            | "PATCH"
+            | "DELETE",
+          tags,
+          stateManager,
+          eventEmitter,
+          pluginExecutor,
+          hookId,
+          fetchFn: async (fetchOpts: unknown) => {
+            const fetchParams = (
+              fetchOpts as { params?: Record<string, string | number> }
+            )?.params;
+            const fetchResolvedPath = resolvePath(
+              selectedEndpoint.path,
+              fetchParams
+            );
+
+            let current: unknown = api;
+
+            for (const segment of fetchResolvedPath) {
+              current = (current as Record<string, unknown>)[segment];
+            }
+
+            const method = (current as Record<string, unknown>)[
+              selectedEndpoint.method
+            ] as (o?: unknown) => Promise<SpooshResponse<TData, TError>>;
+
+            return method(fetchOpts);
+          },
+        });
+
+        currentSubscription = controller.subscribe(() => {
+          const state = controller.getState();
+          dataSignal.set(state.data as TData | undefined);
+          errorSignal.set(state.error as TError | undefined);
+
+          const entry = stateManager.getCache(queryKey);
+          const newMeta = entry?.pluginResult
+            ? Object.fromEntries(entry.pluginResult)
+            : {};
+          metaSignal.set(newMeta);
+        });
+
+        currentController = controller;
+        currentQueryKey = queryKey;
+      }
+
+      lastTriggerOptionsSignal.set(triggerOptions);
+      loadingSignal.set(true);
+
+      currentController!.setPluginOptions({ ...triggerOptions, tags });
 
       try {
-        const response = await controller.execute(triggerOptions, {
+        const response = await currentController!.execute(triggerOptions, {
           force: true,
         });
 
