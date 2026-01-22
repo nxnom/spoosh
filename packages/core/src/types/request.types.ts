@@ -20,19 +20,29 @@ type BaseRequestOptions = {
   signal?: AbortSignal;
 };
 
-type BodyOption<TBody> = [TBody] extends [never] ? object : { body: TBody };
+type BodyOption<TBody> = [TBody] extends [never]
+  ? object
+  : undefined extends TBody
+    ? { body?: Exclude<TBody, undefined> }
+    : { body: TBody };
 
 type QueryOption<TQuery> = [TQuery] extends [never]
   ? object
-  : { query: TQuery };
+  : undefined extends TQuery
+    ? { query?: Exclude<TQuery, undefined> }
+    : { query: TQuery };
 
 type FormDataOption<TFormData> = [TFormData] extends [never]
   ? object
-  : { formData: TFormData };
+  : undefined extends TFormData
+    ? { formData?: Exclude<TFormData, undefined> }
+    : { formData: TFormData };
 
 type UrlEncodedOption<TUrlEncoded> = [TUrlEncoded] extends [never]
   ? object
-  : { urlEncoded: TUrlEncoded };
+  : undefined extends TUrlEncoded
+    ? { urlEncoded?: Exclude<TUrlEncoded, undefined> }
+    : { urlEncoded: TUrlEncoded };
 
 export type RequestOptions<
   TBody = never,

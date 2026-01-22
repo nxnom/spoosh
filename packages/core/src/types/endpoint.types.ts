@@ -40,16 +40,20 @@ export type Endpoint<
   },
 > = { [EndpointBrand]: true } & T;
 
+type ExtractProperty<T, K extends string, TDefault = never> = K extends keyof T
+  ? T[K]
+  : TDefault;
+
 export type NormalizeEndpoint<T, TDefaultError> = T extends {
   [EndpointBrand]: true;
 }
   ? {
-      data: T extends { data: infer D } ? D : never;
-      error: T extends { error: infer E } ? E : TDefaultError;
-      body: T extends { body: infer B } ? B : never;
-      query: T extends { query: infer Q } ? Q : never;
-      formData: T extends { formData: infer F } ? F : never;
-      urlEncoded: T extends { urlEncoded: infer U } ? U : never;
+      data: ExtractProperty<T, "data">;
+      error: ExtractProperty<T, "error", TDefaultError>;
+      body: ExtractProperty<T, "body">;
+      query: ExtractProperty<T, "query">;
+      formData: ExtractProperty<T, "formData">;
+      urlEncoded: ExtractProperty<T, "urlEncoded">;
     }
   : {
       data: T;

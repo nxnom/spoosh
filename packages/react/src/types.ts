@@ -120,15 +120,21 @@ export type BaseWriteResult<
 
 type OptionalQueryField<TQuery> = [TQuery] extends [never]
   ? object
-  : { query: TQuery };
+  : undefined extends TQuery
+    ? { query?: Exclude<TQuery, undefined> }
+    : { query: TQuery };
 
 type OptionalBodyField<TBody> = [TBody] extends [never]
   ? object
-  : { body: TBody };
+  : undefined extends TBody
+    ? { body?: Exclude<TBody, undefined> }
+    : { body: TBody };
 
 type OptionalFormDataField<TFormData> = [TFormData] extends [never]
   ? object
-  : { formData: TFormData };
+  : undefined extends TFormData
+    ? { formData?: Exclude<TFormData, undefined> }
+    : { formData: TFormData };
 
 type OptionalParamsField<TParamNames extends string> = [TParamNames] extends [
   never,
@@ -263,13 +269,23 @@ export type ExtractResponseParamNames<T> =
       : never
     : never;
 
-type QueryField<TQuery> = [TQuery] extends [never] ? object : { query: TQuery };
+type QueryField<TQuery> = [TQuery] extends [never]
+  ? object
+  : undefined extends TQuery
+    ? { query?: Exclude<TQuery, undefined> }
+    : { query: TQuery };
 
-type BodyField<TBody> = [TBody] extends [never] ? object : { body: TBody };
+type BodyField<TBody> = [TBody] extends [never]
+  ? object
+  : undefined extends TBody
+    ? { body?: Exclude<TBody, undefined> }
+    : { body: TBody };
 
 type FormDataField<TFormData> = [TFormData] extends [never]
   ? object
-  : { formData: TFormData };
+  : undefined extends TFormData
+    ? { formData?: Exclude<TFormData, undefined> }
+    : { formData: TFormData };
 
 type ParamsField<TParamNames extends string> = [TParamNames] extends [never]
   ? object
