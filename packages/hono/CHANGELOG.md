@@ -1,5 +1,11 @@
 # @spoosh/hono
 
+## 0.2.4
+
+### Patch Changes
+
+- Fix homepage URL to point to correct documentation path
+
 ## 0.2.3
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-retry",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Automatic retry plugin for Spoosh with configurable attempts and delay",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/docs/plugins/retry",
+  "homepage": "https://spoosh.dev/react/docs/plugins/retry",
   "publishConfig": {
     "access": "public"
   },

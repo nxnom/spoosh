@@ -1,5 +1,11 @@
 # @spoosh/plugin-refetch
 
+## 0.1.4
+
+### Patch Changes
+
+- Fix homepage URL to point to correct documentation path
+
 ## 0.1.3
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-debug",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Debug plugin for Spoosh - logs detailed request lifecycle information",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/docs/plugins/debug",
+  "homepage": "https://spoosh.dev/react/docs/plugins/debug",
   "publishConfig": {
     "access": "public"
   },

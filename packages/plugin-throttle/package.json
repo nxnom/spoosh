@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-throttle",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Request throttling plugin for Spoosh - limits request frequency",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/docs/plugins/throttle",
+  "homepage": "https://spoosh.dev/react/docs/plugins/throttle",
   "publishConfig": {
     "access": "public"
   },

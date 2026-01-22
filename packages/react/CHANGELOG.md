@@ -1,5 +1,11 @@
 # @spoosh/react
 
+## 0.2.2
+
+### Patch Changes
+
+- Fix homepage URL to point to correct documentation path
+
 ## 0.2.1
 
 - Fix `useRead` allow passing extra properties to config

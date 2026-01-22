@@ -1,5 +1,11 @@
 # @spoosh/core
 
+## 0.4.2
+
+### Patch Changes
+
+- Fix homepage URL to point to correct documentation path
+
 ## 0.4.1
 
 ### Patch Changes

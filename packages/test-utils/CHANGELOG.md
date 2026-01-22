@@ -1,5 +1,11 @@
 # @spoosh/test-utils
 
+## 0.1.5
+
+### Patch Changes
+
+- Bump version for consistency
+
 ## 0.1.4
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @spoosh/openapi
 
+## 0.1.2
+
+### Patch Changes
+
+- Fix homepage URL to point to correct documentation path
+
 ## 0.1.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @spoosh/plugin-qs
 
+## 0.2.1
+
+### Patch Changes
+
+- Fix homepage URL to point to correct documentation path
+
 ## 0.2.0
 
 ### Breaking Changes

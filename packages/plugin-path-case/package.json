@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-path-case",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Path case transformation plugin for Spoosh - enables camelCase API paths with automatic conversion to kebab-case, snake_case, etc.",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/docs/plugins/path-case",
+  "homepage": "https://spoosh.dev/react/docs/plugins/path-case",
   "publishConfig": {
     "access": "public"
   },

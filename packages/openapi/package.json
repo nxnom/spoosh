@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/openapi",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "description": "OpenAPI schema generator for Spoosh API definitions",
   "keywords": [
@@ -19,7 +19,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/docs/integrations/openapi",
+  "homepage": "https://spoosh.dev/react/docs/integrations/openapi",
   "publishConfig": {
     "access": "public"
   },
