@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-optimistic",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Optimistic updates plugin for Spoosh - instant UI updates with automatic rollback",
   "license": "MIT",
   "repository": {
@@ -41,7 +41,7 @@
   },
   "peerDependencies": {
     "@spoosh/core": ">=0.4.0",
-    "@spoosh/plugin-invalidation": ">=1.0.0"
+    "@spoosh/plugin-invalidation": ">=0.1.0"
   },
   "devDependencies": {
     "@spoosh/core": "workspace:*",

@@ -1,5 +1,11 @@
 # @spoosh/plugin-optimistic
 
+## 0.1.5
+
+### Patch Changes
+
+- Hotfix for peer dependency versions @spoosh/plugin-invalidation@0.1.0
+
 ## 0.1.4
 
 ### Patch Changes
