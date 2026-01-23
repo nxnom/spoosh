@@ -34,6 +34,13 @@ export type InvalidationReadResult = object;
 
 export type InvalidationWriteResult = object;
 
+export type InvalidateFn<TSchema> = (tags: InvalidateOption<TSchema>) => void;
+
+export interface InvalidationInstanceApi {
+  /** Manually invalidate cache entries by tags. Useful for external events like WebSocket messages. */
+  invalidate: InvalidateFn<unknown>;
+}
+
 export interface InvalidationPluginExports {
   /** Set the default autoInvalidate behavior for this mutation */
   setAutoInvalidateDefault: (value: AutoInvalidate) => void;
@@ -46,5 +53,9 @@ declare module "@spoosh/core" {
 
   interface PluginResolvers<TContext> {
     invalidate: InvalidateOption<TContext["schema"]> | undefined;
+  }
+
+  interface InstanceApiResolvers<TSchema> {
+    invalidate: InvalidateFn<TSchema>;
   }
 }

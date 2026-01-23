@@ -113,3 +113,28 @@ await trigger({
 | `"all"`  | Invalidate all tags from path hierarchy | `users/123/posts` → `users`, `users/123`, `users/123/posts` |
 | `"self"` | Only invalidate the exact endpoint tag  | `users/123/posts` → `users/123/posts`                       |
 | `"none"` | Disable auto-invalidation (manual only) | No automatic invalidation                                   |
+
+## Instance API
+
+The plugin exposes `invalidate` for manually triggering cache invalidation outside of mutations:
+
+```typescript
+import { createReactSpoosh } from "@spoosh/react";
+
+const { useRead, invalidate } = createReactSpoosh(client);
+
+// Invalidate with string array
+invalidate(["users", "posts"]);
+
+// Invalidate with callback (type-safe API selector)
+invalidate((api) => [api.users.$get, api.posts.$get, "custom-tag"]);
+
+// Useful for external events like WebSocket messages
+socket.on("data-changed", (tags) => {
+  invalidate(tags);
+});
+```
+
+| Method           | Description                                                        |
+| ---------------- | ------------------------------------------------------------------ |
+| `invalidate` | Manually invalidate cache entries by tags or API selector callback |

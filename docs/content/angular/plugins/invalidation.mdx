@@ -146,6 +146,45 @@ await createPost.trigger({
 // Mode "none" invalidates: nothing (unless manually specified)
 ```
 
+## Manual Invalidation
+
+The plugin exposes `invalidate` for manually triggering cache invalidation outside of mutations. This is useful for external events like WebSocket messages or other state changes.
+
+```typescript
+import { createAngularSpoosh } from "@spoosh/angular";
+
+const { injectRead, invalidate } = createAngularSpoosh(client);
+
+// Invalidate with string array
+invalidate(["users", "posts"]);
+
+// Invalidate with callback (type-safe API selector)
+invalidate((api) => [api.users.$get, api.posts.$get, "custom-tag"]);
+```
+
+### WebSocket Example
+
+```typescript
+import { Component, inject, OnInit, OnDestroy } from "@angular/core";
+import { invalidate } from "./spoosh";
+
+@Component({
+  selector: "app-dashboard",
+  template: `<div>...</div>`,
+})
+export class DashboardComponent implements OnInit, OnDestroy {
+  ngOnInit() {
+    this.socket.on("data-changed", (tags: string[]) => {
+      invalidate(tags);
+    });
+  }
+
+  ngOnDestroy() {
+    this.socket.off("data-changed");
+  }
+}
+```
+
 ## Combining with Deduplication
 
 When invalidation triggers multiple queries to refetch, some may share the same endpoint. Use `deduplicationPlugin` to prevent duplicate network requests:
