@@ -1,4 +1,8 @@
-import type { SpooshPlugin, PluginContext } from "@spoosh/core";
+import type {
+  SpooshPlugin,
+  PluginContext,
+  InstanceApiContext,
+} from "@spoosh/core";
 import {
   createSelectorProxy,
   extractPathFromSelector,
@@ -14,9 +18,40 @@ import type {
   InvalidationWriteResult,
   AutoInvalidate,
   InvalidationPluginExports,
+  InvalidationInstanceApi,
+  InvalidateOption,
 } from "./types";
 
 const INVALIDATION_DEFAULT_KEY = "invalidation:autoInvalidateDefault";
+
+function resolveTagsFromOption(
+  invalidate: InvalidateOption<unknown>
+): string[] {
+  const tags: string[] = [];
+
+  if (Array.isArray(invalidate)) {
+    tags.push(...invalidate);
+  } else {
+    const proxy = createSelectorProxy<never>();
+    const invalidationTargets = invalidate(proxy as never);
+
+    for (const target of invalidationTargets) {
+      if (typeof target === "string") {
+        tags.push(target);
+      } else {
+        const path = extractPathFromSelector(target);
+        const derivedTags = generateTags(path);
+        const exactTag = derivedTags[derivedTags.length - 1];
+
+        if (exactTag) {
+          tags.push(exactTag);
+        }
+      }
+    }
+  }
+
+  return tags;
+}
 
 function resolveInvalidateTags(
   context: PluginContext,
@@ -29,26 +64,7 @@ function resolveInvalidateTags(
   const tags: string[] = [];
 
   if (pluginOptions?.invalidate) {
-    if (Array.isArray(pluginOptions.invalidate)) {
-      tags.push(...pluginOptions.invalidate);
-    } else {
-      const proxy = createSelectorProxy<never>();
-      const invalidationTargets = pluginOptions.invalidate(proxy as never);
-
-      for (const target of invalidationTargets) {
-        if (typeof target === "string") {
-          tags.push(target);
-        } else {
-          const path = extractPathFromSelector(target);
-          const derivedTags = generateTags(path);
-          const exactTag = derivedTags[derivedTags.length - 1];
-
-          if (exactTag) {
-            tags.push(exactTag);
-          }
-        }
-      }
-    }
+    tags.push(...resolveTagsFromOption(pluginOptions.invalidate));
   }
 
   const overrideDefault = context.metadata.get(INVALIDATION_DEFAULT_KEY) as
@@ -101,6 +117,7 @@ export function invalidationPlugin(
   infiniteReadOptions: InvalidationInfiniteReadOptions;
   readResult: InvalidationReadResult;
   writeResult: InvalidationWriteResult;
+  instanceApi: InvalidationInstanceApi;
 }> {
   const { autoInvalidate: defaultAutoInvalidate = "all" } = config;
 
@@ -125,6 +142,21 @@ export function invalidationPlugin(
           context.eventEmitter.emit("invalidate", tags);
         }
       }
+    },
+
+    instanceApi(context: InstanceApiContext) {
+      const { stateManager, eventEmitter } = context;
+
+      const invalidate = (input: InvalidateOption<unknown>): void => {
+        const tags = resolveTagsFromOption(input);
+
+        if (tags.length > 0) {
+          stateManager.markStale(tags);
+          eventEmitter.emit("invalidate", tags);
+        }
+      };
+
+      return { invalidate };
     },
   };
 }

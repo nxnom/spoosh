@@ -146,6 +146,41 @@ await trigger({
 // Mode "none" invalidates: nothing (unless manually specified)
 ```
 
+## Manual Invalidation
+
+The plugin exposes `invalidate` for manually triggering cache invalidation outside of mutations. This is useful for external events like WebSocket messages or other state changes.
+
+```typescript
+import { createReactSpoosh } from "@spoosh/react";
+
+const { useRead, invalidate } = createReactSpoosh(client);
+
+// Invalidate with string array
+invalidate(["users", "posts"]);
+
+// Invalidate with callback (type-safe API selector)
+invalidate((api) => [api.users.$get, api.posts.$get, "custom-tag"]);
+```
+
+### WebSocket Example
+
+```typescript
+import { useEffect } from "react";
+import { invalidate } from "./spoosh";
+
+function Dashboard() {
+  useEffect(() => {
+    socket.on("data-changed", (tags: string[]) => {
+      invalidate(tags);
+    });
+
+    return () => socket.off("data-changed");
+  }, []);
+
+  return <div>...</div>;
+}
+```
+
 ## Combining with Deduplication
 
 When invalidation triggers multiple queries to refetch, some may share the same endpoint. Use `deduplicationPlugin` to prevent duplicate network requests:

@@ -1,4 +1,8 @@
-import type { SpooshResponse } from "@spoosh/core";
+import type {
+  SpooshResponse,
+  StateManager,
+  InstanceApiContext,
+} from "@spoosh/core";
 import {
   createMockContext,
   createStateManager,
@@ -6,7 +10,24 @@ import {
 } from "@spoosh/test-utils";
 
 import { invalidationPlugin } from "./plugin";
-import type { InvalidationPluginExports } from "./types";
+import type {
+  InvalidationPluginExports,
+  InvalidationInstanceApi,
+} from "./types";
+
+function createMockInstanceApiContext(
+  stateManager?: StateManager
+): InstanceApiContext {
+  return {
+    api: {},
+    stateManager: stateManager ?? createStateManager(),
+    eventEmitter: createEventEmitter(),
+    pluginExecutor: {
+      executeMiddleware: vi.fn(),
+      createContext: vi.fn(),
+    },
+  } as unknown as InstanceApiContext;
+}
 
 describe("invalidationPlugin", () => {
   describe("plugin configuration", () => {
@@ -461,6 +482,199 @@ describe("invalidationPlugin", () => {
       plugin.onResponse!(context, response);
 
       expect(invalidateHandler).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("instanceApi", () => {
+    it("should have instanceApi defined", () => {
+      const plugin = invalidationPlugin();
+      expect(plugin.instanceApi).toBeDefined();
+    });
+
+    it("should return invalidate function", () => {
+      const plugin = invalidationPlugin();
+      const context = createMockInstanceApiContext();
+      const instanceApi = plugin.instanceApi!(
+        context
+      ) as InvalidationInstanceApi;
+
+      expect(instanceApi.invalidate).toBeDefined();
+      expect(typeof instanceApi.invalidate).toBe("function");
+    });
+
+    it("should mark cache entries as stale when invalidate is called", () => {
+      const plugin = invalidationPlugin();
+      const stateManager = createStateManager();
+
+      stateManager.setCache('{"method":"GET","path":["users"]}', {
+        state: {
+          data: [{ id: 1 }],
+          error: undefined,
+          timestamp: Date.now(),
+        },
+        tags: ["users"],
+        stale: false,
+      });
+
+      stateManager.setCache('{"method":"GET","path":["posts"]}', {
+        state: {
+          data: [{ id: 1 }],
+          error: undefined,
+          timestamp: Date.now(),
+        },
+        tags: ["posts"],
+        stale: false,
+      });
+
+      const context = createMockInstanceApiContext(stateManager);
+      const instanceApi = plugin.instanceApi!(
+        context
+      ) as InvalidationInstanceApi;
+
+      instanceApi.invalidate(["users"]);
+
+      const usersEntry = stateManager.getCache(
+        '{"method":"GET","path":["users"]}'
+      );
+      const postsEntry = stateManager.getCache(
+        '{"method":"GET","path":["posts"]}'
+      );
+      expect(usersEntry?.stale).toBe(true);
+      expect(postsEntry?.stale).toBe(false);
+    });
+
+    it("should emit invalidate event when invalidate is called", () => {
+      const plugin = invalidationPlugin();
+      const stateManager = createStateManager();
+      const eventEmitter = createEventEmitter();
+
+      const invalidateHandler = vi.fn();
+      eventEmitter.on("invalidate", invalidateHandler);
+
+      const context = {
+        api: {},
+        stateManager,
+        eventEmitter,
+        pluginExecutor: {
+          executeMiddleware: vi.fn(),
+          createContext: vi.fn(),
+        },
+      } as unknown as InstanceApiContext;
+
+      const instanceApi = plugin.instanceApi!(
+        context
+      ) as InvalidationInstanceApi;
+
+      instanceApi.invalidate(["users", "posts"]);
+
+      expect(invalidateHandler).toHaveBeenCalledWith(["users", "posts"]);
+    });
+
+    it("should not emit event when empty array is passed", () => {
+      const plugin = invalidationPlugin();
+      const stateManager = createStateManager();
+      const eventEmitter = createEventEmitter();
+
+      const invalidateHandler = vi.fn();
+      eventEmitter.on("invalidate", invalidateHandler);
+
+      const context = {
+        api: {},
+        stateManager,
+        eventEmitter,
+        pluginExecutor: {
+          executeMiddleware: vi.fn(),
+          createContext: vi.fn(),
+        },
+      } as unknown as InstanceApiContext;
+
+      const instanceApi = plugin.instanceApi!(
+        context
+      ) as InvalidationInstanceApi;
+
+      instanceApi.invalidate([]);
+
+      expect(invalidateHandler).not.toHaveBeenCalled();
+    });
+
+    it("should accept callback function and resolve tags from selectors", () => {
+      const plugin = invalidationPlugin();
+      const stateManager = createStateManager();
+      const eventEmitter = createEventEmitter();
+
+      stateManager.setCache('{"method":"GET","path":["users"]}', {
+        state: {
+          data: [{ id: 1 }],
+          error: undefined,
+          timestamp: Date.now(),
+        },
+        tags: ["users"],
+        stale: false,
+      });
+
+      const invalidateHandler = vi.fn();
+      eventEmitter.on("invalidate", invalidateHandler);
+
+      const context = {
+        api: {},
+        stateManager,
+        eventEmitter,
+        pluginExecutor: {
+          executeMiddleware: vi.fn(),
+          createContext: vi.fn(),
+        },
+      } as unknown as InstanceApiContext;
+
+      const instanceApi = plugin.instanceApi!(
+        context
+      ) as InvalidationInstanceApi;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      instanceApi.invalidate((api: any) => [api.users.$get, "custom-tag"]);
+
+      expect(invalidateHandler).toHaveBeenCalledWith(["users", "custom-tag"]);
+      const usersEntry = stateManager.getCache(
+        '{"method":"GET","path":["users"]}'
+      );
+      expect(usersEntry?.stale).toBe(true);
+    });
+
+    it("should accept callback with nested path selectors", () => {
+      const plugin = invalidationPlugin();
+      const stateManager = createStateManager();
+      const eventEmitter = createEventEmitter();
+
+      stateManager.setCache('{"method":"GET","path":["users","123","posts"]}', {
+        state: {
+          data: [{ id: 1 }],
+          error: undefined,
+          timestamp: Date.now(),
+        },
+        tags: ["users", "users/123", "users/123/posts"],
+        stale: false,
+      });
+
+      const invalidateHandler = vi.fn();
+      eventEmitter.on("invalidate", invalidateHandler);
+
+      const context = {
+        api: {},
+        stateManager,
+        eventEmitter,
+        pluginExecutor: {
+          executeMiddleware: vi.fn(),
+          createContext: vi.fn(),
+        },
+      } as unknown as InstanceApiContext;
+
+      const instanceApi = plugin.instanceApi!(
+        context
+      ) as InvalidationInstanceApi;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      instanceApi.invalidate((api: any) => [api.users(123).posts.$get]);
+
+      expect(invalidateHandler).toHaveBeenCalledWith(["users/123/posts"]);
     });
   });
 });
