@@ -1,7 +1,15 @@
-/llms
+/angular/llms
   Content-Type: text/plain; charset=utf-8
   Content-Disposition: inline
 
-/llms-full
+/angular/llms-full
+  Content-Type: text/plain; charset=utf-8
+  Content-Disposition: inline
+
+/react/llms
+  Content-Type: text/plain; charset=utf-8
+  Content-Disposition: inline
+
+/react/llms-full
   Content-Type: text/plain; charset=utf-8
   Content-Disposition: inline
