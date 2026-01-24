@@ -11,13 +11,11 @@ import type {
 type RequestOptionsSnapshot = {
   query?: Record<string, unknown>;
   params?: Record<string, string | number>;
-  body?: unknown;
 };
 
 type PrevContext = {
   prevQuery?: Record<string, unknown>;
   prevParams?: Record<string, string | number>;
-  prevBody?: unknown;
 };
 
 function resolveDebounceMs(
@@ -94,7 +92,6 @@ export function debouncePlugin(): SpooshPlugin<{
       const currentRequest: RequestOptionsSnapshot = {
         query: opts?.query,
         params: opts?.params,
-        body: opts?.body,
       };
 
       const prevRequest = prevRequests.get(stableKey);
@@ -107,10 +104,6 @@ export function debouncePlugin(): SpooshPlugin<{
 
       if (prevRequest?.params !== undefined) {
         prevContext.prevParams = prevRequest.params;
-      }
-
-      if (prevRequest?.body !== undefined) {
-        prevContext.prevBody = prevRequest.body;
       }
 
       const debounceMs = resolveDebounceMs(debounceOption, prevContext);
