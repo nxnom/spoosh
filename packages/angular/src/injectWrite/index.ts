@@ -18,10 +18,8 @@ import type {
   WriteApiClient,
   ExtractMethodQuery,
   ExtractMethodBody,
-  ExtractMethodFormData,
   ExtractResponseQuery,
   ExtractResponseBody,
-  ExtractResponseFormData,
   ExtractResponseParamNames,
   WriteResponseInputFields,
   SpooshInstanceShape,
@@ -73,9 +71,7 @@ export function createInjectWrite<
     InferError<ExtractMethodError<TMethod>>,
     ExtractMethodQuery<TMethod>,
     ExtractMethodBody<TMethod>,
-    ExtractParamsRecord<TMethod>,
-    ExtractMethodFormData<TMethod>,
-    never
+    ExtractParamsRecord<TMethod>
   >;
 
   type ResolvedWriteOptions<TMethod> = import("@spoosh/core").ResolveTypes<
@@ -101,7 +97,6 @@ export function createInjectWrite<
     WriteResponseInputFields<
       ExtractResponseQuery<TMethod>,
       ExtractResponseBody<TMethod>,
-      ExtractResponseFormData<TMethod>,
       ExtractResponseParamNames<TMethod>
     > {
     const destroyRef = inject(DestroyRef);
@@ -128,8 +123,8 @@ export function createInjectWrite<
 
       if (!selectorResult.selector) {
         throw new Error(
-          "injectWrite requires selecting an HTTP method ($post, $put, $patch, $delete). " +
-            "Example: injectWrite((api) => api.posts.$post)"
+          "injectWrite requires selecting an HTTP method (POST, PUT, PATCH, DELETE). " +
+            'Example: injectWrite((api) => api("posts").POST)'
         );
       }
 
@@ -179,11 +174,12 @@ export function createInjectWrite<
           | { params?: Record<string, string | number> }
           | undefined
       )?.params;
-      const resolvedPath = resolvePath(selectedEndpoint.path, params);
+      const pathSegments = selectedEndpoint.path.split("/").filter(Boolean);
+      const resolvedPath = resolvePath(pathSegments, params);
       const tags = resolveTags(triggerOptions, resolvedPath);
 
       const queryKey = stateManager.createQueryKey({
-        path: selectedEndpoint.path,
+        path: pathSegments,
         method: selectedEndpoint.method,
         options: triggerOptions,
       });
@@ -198,7 +194,7 @@ export function createInjectWrite<
 
         const controller = createOperationController<TData, TError>({
           operationType: "write",
-          path: selectedEndpoint.path,
+          path: pathSegments,
           method: selectedEndpoint.method as
             | "POST"
             | "PUT"
@@ -210,23 +206,12 @@ export function createInjectWrite<
           pluginExecutor,
           hookId,
           fetchFn: async (fetchOpts: unknown) => {
-            const fetchParams = (
-              fetchOpts as { params?: Record<string, string | number> }
-            )?.params;
-            const fetchResolvedPath = resolvePath(
-              selectedEndpoint.path,
-              fetchParams
-            );
-
-            let current: unknown = api;
-
-            for (const segment of fetchResolvedPath) {
-              current = (current as Record<string, unknown>)[segment];
-            }
-
-            const method = (current as Record<string, unknown>)[
-              selectedEndpoint.method
-            ] as (o?: unknown) => Promise<SpooshResponse<TData, TError>>;
+            const pathMethods = (
+              api as (path: string) => Record<string, unknown>
+            )(selectedEndpoint.path);
+            const method = pathMethods[selectedEndpoint.method] as (
+              o?: unknown
+            ) => Promise<SpooshResponse<TData, TError>>;
 
             return method(fetchOpts);
           },
@@ -274,7 +259,6 @@ export function createInjectWrite<
     const inputSignal = signal<{
       query?: unknown;
       body?: unknown;
-      formData?: unknown;
       params?: unknown;
     }>({});
 
@@ -291,10 +275,6 @@ export function createInjectWrite<
 
         if (opts?.body !== undefined) {
           inputInner.body = opts.body;
-        }
-
-        if (opts?.formData !== undefined) {
-          inputInner.formData = opts.formData;
         }
 
         if (opts?.params !== undefined) {
@@ -314,7 +294,6 @@ export function createInjectWrite<
       input: inputSignal as Signal<{
         query?: ExtractResponseQuery<TMethod>;
         body?: ExtractResponseBody<TMethod>;
-        formData?: ExtractResponseFormData<TMethod>;
         params?: Record<ExtractResponseParamNames<TMethod>, string | number>;
       }>,
       data: dataSignal as Signal<TData | undefined>,
@@ -333,7 +312,6 @@ export function createInjectWrite<
       WriteResponseInputFields<
         ExtractResponseQuery<TMethod>,
         ExtractResponseBody<TMethod>,
-        ExtractResponseFormData<TMethod>,
         ExtractResponseParamNames<TMethod>
       >;
   };

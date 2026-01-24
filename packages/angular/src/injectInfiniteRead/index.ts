@@ -137,8 +137,8 @@ export function createInjectInfiniteRead<
 
       if (!selectorResult.call) {
         throw new Error(
-          "injectInfiniteRead requires calling an HTTP method ($get). " +
-            "Example: injectInfiniteRead((api) => api.posts.$get())"
+          "injectInfiniteRead requires calling an HTTP method (GET). " +
+            'Example: injectInfiniteRead((api) => api("posts").GET())'
         );
       }
 
@@ -220,6 +220,8 @@ export function createInjectInfiniteRead<
           }
         | undefined;
 
+      const pathSegments = capturedCall.path.split("/").filter(Boolean);
+
       const baseOptionsForKey = {
         ...(capturedCall.options as object),
         query: undefined,
@@ -239,7 +241,7 @@ export function createInjectInfiniteRead<
         TError,
         TRequest
       >({
-        path: capturedCall.path,
+        path: pathSegments,
         method: capturedCall.method as "GET",
         tags: resolvedTags,
         initialRequest,
@@ -266,17 +268,12 @@ export function createInjectInfiniteRead<
           opts: InfiniteRequestOptions,
           abortSignal: AbortSignal
         ) => {
-          const fetchPath = resolvePath(capturedCall.path, opts.params);
-
-          let current: unknown = api;
-
-          for (const segment of fetchPath) {
-            current = (current as Record<string, unknown>)[segment];
-          }
-
-          const method = (current as Record<string, unknown>)[
-            capturedCall.method
-          ] as (opts?: unknown) => Promise<SpooshResponse<TData, TError>>;
+          const pathMethods = (
+            api as (path: string) => Record<string, unknown>
+          )(capturedCall.path);
+          const method = pathMethods[capturedCall.method] as (
+            opts?: unknown
+          ) => Promise<SpooshResponse<TData, TError>>;
 
           const fetchOptions = {
             ...(capturedCall.options as object),
@@ -336,8 +333,11 @@ export function createInjectInfiniteRead<
     const initialRequestOptions = initialCapturedCall.options as
       | { params?: Record<string, string | number> }
       | undefined;
+    const initialPathSegments = initialCapturedCall.path
+      .split("/")
+      .filter(Boolean);
     const initialResolvedPath = resolvePath(
-      initialCapturedCall.path,
+      initialPathSegments,
       initialRequestOptions?.params
     );
     const initialResolvedTags = resolveTags(
@@ -351,7 +351,7 @@ export function createInjectInfiniteRead<
       body: undefined,
     };
     const initialQueryKey = stateManager.createQueryKey({
-      path: initialCapturedCall.path,
+      path: initialPathSegments,
       method: initialCapturedCall.method,
       options: initialBaseOptionsForKey,
     });
@@ -371,10 +371,8 @@ export function createInjectInfiniteRead<
             }
           | undefined;
 
-        const resolvedPath = resolvePath(
-          capturedCall.path,
-          requestOptions?.params
-        );
+        const pathSegments = capturedCall.path.split("/").filter(Boolean);
+        const resolvedPath = resolvePath(pathSegments, requestOptions?.params);
         const resolvedTags = resolveTags(
           { tags, additionalTags },
           resolvedPath
@@ -388,7 +386,7 @@ export function createInjectInfiniteRead<
         };
 
         const queryKey = stateManager.createQueryKey({
-          path: capturedCall.path,
+          path: pathSegments,
           method: capturedCall.method,
           options: baseOptionsForKey,
         });

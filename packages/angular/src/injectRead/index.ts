@@ -28,7 +28,6 @@ import type {
   ReadApiClient,
   ExtractResponseQuery,
   ExtractResponseBody,
-  ExtractResponseFormData,
   ExtractResponseParamNames,
   ResponseInputFields,
   SpooshInstanceShape,
@@ -93,7 +92,6 @@ export function createInjectRead<
     ResponseInputFields<
       ExtractResponseQuery<TReadFn>,
       ExtractResponseBody<TReadFn>,
-      ExtractResponseFormData<TReadFn>,
       ExtractResponseParamNames<TReadFn>
     > {
     const destroyRef = inject(DestroyRef);
@@ -149,7 +147,6 @@ export function createInjectRead<
 
     const createController = (
       capturedCall: NonNullable<SelectorResult["call"]>,
-      resolvedPath: string[],
       resolvedTags: string[],
       queryKey: string
     ) => {
@@ -157,9 +154,11 @@ export function createInjectRead<
         currentSubscription();
       }
 
+      const pathSegments = capturedCall.path.split("/").filter(Boolean);
+
       const controller = createOperationController<TData, TError>({
         operationType: "read",
-        path: capturedCall.path,
+        path: pathSegments,
         method: capturedCall.method as "GET",
         tags: resolvedTags,
         requestOptions: capturedCall.options as
@@ -170,15 +169,12 @@ export function createInjectRead<
         pluginExecutor,
         hookId,
         fetchFn: async (fetchOpts: unknown) => {
-          let current: unknown = api;
-
-          for (const segment of resolvedPath) {
-            current = (current as Record<string, unknown>)[segment];
-          }
-
-          const method = (current as Record<string, unknown>)[
-            capturedCall.method
-          ] as (o?: unknown) => Promise<SpooshResponse<TData, TError>>;
+          const pathMethods = (
+            api as (path: string) => Record<string, unknown>
+          )(capturedCall.path);
+          const method = pathMethods[capturedCall.method] as (
+            o?: unknown
+          ) => Promise<SpooshResponse<TData, TError>>;
 
           return method(fetchOpts);
         },
@@ -240,8 +236,8 @@ export function createInjectRead<
 
     if (!initialCapturedCall) {
       throw new Error(
-        "injectRead requires calling an HTTP method ($get). " +
-          "Example: injectRead((api) => api.posts.$get())"
+        "injectRead requires calling an HTTP method (GET). " +
+          'Example: injectRead((api) => api("posts").GET())'
       );
     }
 
@@ -249,8 +245,11 @@ export function createInjectRead<
       | { params?: Record<string, string | number> }
       | undefined;
 
+    const initialPathSegments = initialCapturedCall.path
+      .split("/")
+      .filter(Boolean);
     const initialResolvedPath = resolvePath(
-      initialCapturedCall.path,
+      initialPathSegments,
       initialRequestOptions?.params
     );
     const initialResolvedTags = resolveTags(
@@ -258,17 +257,12 @@ export function createInjectRead<
       initialResolvedPath
     );
     const initialQueryKey = stateManager.createQueryKey({
-      path: initialCapturedCall.path,
+      path: initialPathSegments,
       method: initialCapturedCall.method,
       options: initialCapturedCall.options,
     });
 
-    createController(
-      initialCapturedCall,
-      initialResolvedPath,
-      initialResolvedTags,
-      initialQueryKey
-    );
+    createController(initialCapturedCall, initialResolvedTags, initialQueryKey);
     loadingSignal.set(false);
 
     let wasEnabled = false;
@@ -281,8 +275,8 @@ export function createInjectRead<
 
         if (!capturedCall) {
           throw new Error(
-            "injectRead requires calling an HTTP method ($get). " +
-              "Example: injectRead((api) => api.posts.$get())"
+            "injectRead requires calling an HTTP method (GET). " +
+              'Example: injectRead((api) => api("posts").GET())'
           );
         }
 
@@ -290,17 +284,15 @@ export function createInjectRead<
           | { params?: Record<string, string | number> }
           | undefined;
 
-        const resolvedPath = resolvePath(
-          capturedCall.path,
-          requestOptions?.params
-        );
+        const pathSegments = capturedCall.path.split("/").filter(Boolean);
+        const resolvedPath = resolvePath(pathSegments, requestOptions?.params);
         const resolvedTags = resolveTags(
           { tags, additionalTags },
           resolvedPath
         );
 
         const queryKey = stateManager.createQueryKey({
-          path: capturedCall.path,
+          path: pathSegments,
           method: capturedCall.method,
           options: capturedCall.options,
         });
@@ -316,10 +308,6 @@ export function createInjectRead<
 
         if (opts?.body !== undefined) {
           inputInner.body = opts.body;
-        }
-
-        if (opts?.formData !== undefined) {
-          inputInner.formData = opts.formData;
         }
 
         if (opts?.params !== undefined) {
@@ -344,7 +332,6 @@ export function createInjectRead<
 
           const controller = createController(
             capturedCall,
-            resolvedPath,
             resolvedTags,
             queryKey
           );
@@ -468,7 +455,6 @@ export function createInjectRead<
       ResponseInputFields<
         ExtractResponseQuery<TReadFn>,
         ExtractResponseBody<TReadFn>,
-        ExtractResponseFormData<TReadFn>,
         ExtractResponseParamNames<TReadFn>
       >;
   };
