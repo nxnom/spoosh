@@ -2,31 +2,11 @@ import type { ResolverContext } from "@spoosh/core";
 
 export type MaybePromise<T> = T | Promise<T>;
 
-/** Suggests keys from TIn but all optional and any type, plus allows extra keys */
-type FlexibleOutput<TIn> = { [K in keyof TIn]?: unknown } & Record<
-  string,
-  unknown
->;
-
-export type QueryTransformer<TIn = unknown> = (
-  query: TIn
-) => MaybePromise<FlexibleOutput<TIn> | undefined>;
-
-export type BodyTransformer<TIn = unknown> = (
-  body: TIn
-) => MaybePromise<FlexibleOutput<TIn> | undefined>;
-
 export type ResponseTransformer<TIn = unknown, TOut = unknown> = (
   response: TIn
 ) => MaybePromise<TOut>;
 
 export interface TransformConfig {
-  /** Transform query parameters before request. Return undefined to remove query. */
-  query?: QueryTransformer;
-
-  /** Transform JSON body before request. Return undefined to remove body. */
-  body?: BodyTransformer;
-
   /** Transform response data after request. Returns transformedData (can be any type). */
   response?: ResponseTransformer<unknown, unknown>;
 }
@@ -81,12 +61,6 @@ export type TransformResultField<TOptions> = [
   : { transformedData: InferTransformedData<TOptions> | undefined };
 
 type ResolvedTransformConfig<TContext extends ResolverContext> = {
-  /** Transform query parameters before request. Return undefined to remove query. */
-  query?: QueryTransformer<TContext["input"]["query"]>;
-
-  /** Transform JSON body before request. Return undefined to remove body. */
-  body?: BodyTransformer<TContext["input"]["body"]>;
-
   /** Transform response data after request. Returns transformedData (can be any type). */
   response?: ResponseTransformer<TContext["data"], unknown>;
 };
