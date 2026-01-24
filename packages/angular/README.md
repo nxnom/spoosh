@@ -48,7 +48,7 @@ Fetch data with automatic caching and refetching using Angular signals.
   `,
 })
 export class UserListComponent {
-  users = injectRead((api) => api.users.$get());
+  users = injectRead((api) => api("users").GET());
 }
 
 // With options
@@ -58,15 +58,19 @@ export class UserListComponent {
 
   // Recommended: Pass signal directly (shorter syntax)
   users = injectRead(
-    (api) => api.users.$get({ query: { page: 1 } }),
+    (api) => api("users").GET({ query: { page: 1 } }),
     {
       staleTime: 10000,
       enabled: this.isReady,
     }
   );
 
-  // Also works: Arrow function wrapper
-  // enabled: () => this.isReady(),
+  // With path parameters
+  userId = signal(123);
+  user = injectRead(
+    (api) => api("users/:id").GET({ params: { id: this.userId() } }),
+    { enabled: () => this.userId() !== null }
+  );
 }
 ```
 
@@ -88,7 +92,7 @@ Trigger mutations with loading and error states.
 export class CreateUserComponent {
   title = signal("");
 
-  createUser = injectWrite((api) => api.users.$post);
+  createUser = injectWrite((api) => api("users").POST);
 
   async handleSubmit() {
     const result = await this.createUser.trigger({
@@ -99,6 +103,16 @@ export class CreateUserComponent {
       // Success
     }
   }
+}
+
+// With path parameters
+updateUser = injectWrite((api) => api("users/:id").PUT);
+
+async updateUserName(userId: number, name: string) {
+  await this.updateUser.trigger({
+    params: { id: userId },
+    body: { name },
+  });
 }
 ```
 
@@ -127,26 +141,29 @@ Bidirectional paginated data fetching with infinite scroll support.
   `,
 })
 export class PostListComponent {
-  posts = injectInfiniteRead((api) => api.posts.$get({ query: { page: 1 } }), {
-    // Required: Check if next page exists
-    canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
+  posts = injectInfiniteRead(
+    (api) => api("posts").GET({ query: { page: 1 } }),
+    {
+      // Required: Check if next page exists
+      canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
 
-    // Required: Build request for next page
-    nextPageRequest: ({ response, request }) => ({
-      query: { ...request.query, page: (response?.meta.page ?? 0) + 1 },
-    }),
+      // Required: Build request for next page
+      nextPageRequest: ({ response, request }) => ({
+        query: { ...request.query, page: (response?.meta.page ?? 0) + 1 },
+      }),
 
-    // Required: Merge all responses into items
-    merger: (allResponses) => allResponses.flatMap((r) => r.items),
+      // Required: Merge all responses into items
+      merger: (allResponses) => allResponses.flatMap((r) => r.items),
 
-    // Optional: Check if previous page exists
-    canFetchPrev: ({ response }) => (response?.meta.page ?? 1) > 1,
+      // Optional: Check if previous page exists
+      canFetchPrev: ({ response }) => (response?.meta.page ?? 1) > 1,
 
-    // Optional: Build request for previous page
-    prevPageRequest: ({ response, request }) => ({
-      query: { ...request.query, page: (response?.meta.page ?? 2) - 1 },
-    }),
-  });
+      // Optional: Build request for previous page
+      prevPageRequest: ({ response, request }) => ({
+        query: { ...request.query, page: (response?.meta.page ?? 2) - 1 },
+      }),
+    }
+  );
 }
 ```
 

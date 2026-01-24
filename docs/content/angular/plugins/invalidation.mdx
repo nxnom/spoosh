@@ -45,13 +45,13 @@ Tags are automatically generated from the API path hierarchy:
 
 ```typescript
 // Query tags are generated from the path:
-injectRead((api) => api.users.$get());
+injectRead((api) => api("users").GET());
 // → tags: ["users"]
 
-injectRead((api) => api.users(123).$get());
+injectRead((api) => api("users/:id").GET({ params: { id: 123 } }));
 // → tags: ["users", "users/123"]
 
-injectRead((api) => api.users(123).posts.$get());
+injectRead((api) => api("users/:id/posts").GET({ params: { id: 123 } }));
 // → tags: ["users", "users/123", "users/123/posts"]
 ```
 
@@ -61,12 +61,12 @@ You can override or extend auto-generated tags:
 
 ```typescript
 // Override auto-generated tags
-const users = injectRead((api) => api.users.$get(), {
+const users = injectRead((api) => api("users").GET(), {
   tags: ["custom-users"], // replaces auto-generated tags
 });
 
 // Extend auto-generated tags
-const usersWithDashboard = injectRead((api) => api.users.$get(), {
+const usersWithDashboard = injectRead((api) => api("users").GET(), {
   additionalTags: ["dashboard-data"], // adds to auto-generated tags
 });
 ```
@@ -74,9 +74,9 @@ const usersWithDashboard = injectRead((api) => api.users.$get(), {
 When a mutation succeeds, related queries are automatically invalidated:
 
 ```typescript
-const createPost = injectWrite((api) => api.users(123).posts.$post);
+const createPost = injectWrite((api) => api("users/:id/posts").POST);
 
-await createPost.trigger({ body: { title: "New Post" } });
+await createPost.trigger({ params: { id: 123 }, body: { title: "New Post" } });
 // ✓ Invalidates: "users", "users/123", "users/123/posts"
 // All queries matching these tags will refetch automatically
 ```
@@ -86,7 +86,7 @@ await createPost.trigger({ body: { title: "New Post" } });
 Override the default invalidation behavior for specific mutations:
 
 ```typescript
-const createPost = injectWrite((api) => api.posts.$post);
+const createPost = injectWrite((api) => api("posts").POST);
 
 // Override to invalidate all related tags
 await createPost.trigger({
@@ -104,7 +104,7 @@ await createPost.trigger({
 await createPost.trigger({
   body: { title: "New Post" },
   autoInvalidate: "none",
-  invalidate: (api) => [api.posts.$get, api.stats.$get, "dashboard-data"],
+  invalidate: (api) => [api("posts").GET, api("stats").GET, "dashboard-data"],
 });
 
 // Add specific tags (works alongside autoInvalidate)
@@ -159,7 +159,7 @@ const { injectRead, invalidate } = createAngularSpoosh(client);
 invalidate(["users", "posts"]);
 
 // Invalidate with callback (type-safe API selector)
-invalidate((api) => [api.users.$get, api.posts.$get, "custom-tag"]);
+invalidate((api) => [api("users").GET, api("posts").GET, "custom-tag"]);
 ```
 
 ### WebSocket Example

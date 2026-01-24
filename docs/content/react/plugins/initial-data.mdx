@@ -23,7 +23,7 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([initialDataPlugin()]);
 Show prefetched data immediately, then refetch in background:
 
 ```typescript
-const { data, meta } = useRead((api) => api.posts.$get(), {
+const { data, meta } = useRead((api) => api("posts").GET(), {
   initialData: prefetchedPosts,
 });
 
@@ -35,7 +35,7 @@ const { data, meta } = useRead((api) => api.posts.$get(), {
 To skip the background refetch and just use the initial data:
 
 ```typescript
-const { data } = useRead((api) => api.posts.$get(), {
+const { data } = useRead((api) => api("posts").GET(), {
   initialData: prefetchedPosts,
   refetchOnInitialData: false,
 });
@@ -66,7 +66,7 @@ import { createClient } from "@spoosh/core";
 const api = createClient<ApiSchema>({ baseUrl: process.env.API_URL! });
 
 // Auto-generates: next: { tags: ['posts'] }
-const { data: posts } = await api.posts.$get();
+const { data: posts } = await api("posts").GET();
 ```
 
 For a complete SSR example with cache invalidation, see [Next.js Plugin - With Initial Data](/docs/plugins/nextjs#with-initial-data).

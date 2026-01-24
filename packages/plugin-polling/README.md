@@ -19,13 +19,13 @@ import { pollingPlugin } from "@spoosh/plugin-polling";
 const client = new Spoosh<ApiSchema, Error>("/api").use([pollingPlugin()]);
 
 // Static polling interval (5 seconds)
-useRead((api) => api.posts.$get(), { pollingInterval: 5000 });
+useRead((api) => api("posts").GET(), { pollingInterval: 5000 });
 
 // Disable polling (Default behavior)
-useRead((api) => api.posts.$get(), { pollingInterval: false });
+useRead((api) => api("posts").GET(), { pollingInterval: false });
 
 // Dynamic polling interval based on data/error
-useRead((api) => api.booking(123).$get(), {
+useRead((api) => api("booking/:id").GET({ params: { id: 123 } }), {
   pollingInterval: (data, error) => {
     if (error) return 10000; // Slower polling on error
     if (data?.status === "pending") return 1000; // Fast polling for pending
@@ -47,7 +47,7 @@ useRead((api) => api.booking(123).$get(), {
 The polling interval can be a function that receives the current data and error, allowing you to adjust the polling rate based on the response:
 
 ```typescript
-useRead((api) => api.jobs(":id").$get({ id: jobId }), {
+useRead((api) => api("jobs/:id").GET({ params: { id: jobId } }), {
   pollingInterval: (data) => {
     // Stop polling when job is complete
     if (data?.status === "completed") return false;

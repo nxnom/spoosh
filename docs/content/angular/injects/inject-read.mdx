@@ -25,7 +25,7 @@ Fetch data with automatic caching and refetching. Returns Angular Signals for re
   `,
 })
 export class UserListComponent {
-  private users = injectRead((api) => api.users.$get());
+  private users = injectRead((api) => api("users").GET());
 
   data = this.users.data;
   loading = this.users.loading;
@@ -44,7 +44,7 @@ export class UserListComponent {
   private isReady = signal(false);
 
   private users = injectRead(
-    (api) => api.users.$get({ query: { page: 1, limit: 10 } }),
+    (api) => api("users").GET({ query: { page: 1, limit: 10 } }),
     {
       enabled: this.isReady,
       additionalTags: ["custom-tag"],

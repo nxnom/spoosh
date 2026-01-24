@@ -41,7 +41,9 @@ The hooks automatically parse the response and provide separate `data` and `erro
 
 ```typescript
 function UserProfile() {
-  const { data, error, loading } = useRead((api) => api.users(1).$get());
+  const { data, error, loading } = useRead((api) =>
+    api("users/:id").GET({ params: { id: 1 } })
+  );
 
   if (loading) return <Spinner />;
   if (error) return <Error message={error.message} />;
@@ -57,7 +59,7 @@ All hooks return an `abort` function to cancel in-flight requests:
 ```typescript
 function SearchUsers() {
   const { data, loading, abort } = useRead(
-    (api) => api.search.$get({ query: { q: searchTerm } }),
+    (api) => api("search").GET({ query: { q: searchTerm } }),
     { enabled: searchTerm.length > 0 }
   );
 
@@ -78,8 +80,8 @@ function SearchUsers() {
 
 ```typescript
 function CreatePost() {
-  const { trigger, loading, abort } = useWrite(
-    (api, data) => api.posts.$post({ body: data })
+  const { trigger, loading, abort } = useWrite((api, data) =>
+    api("posts").POST({ body: data })
   );
 
   const handleSubmit = async () => {
@@ -100,7 +102,7 @@ function CreatePost() {
 ```typescript
 function PostFeed() {
   const { data, loading, abort, fetchNext } = useInfiniteRead(
-    (api, { pageParam }) => api.posts.$get({ query: { cursor: pageParam } }),
+    (api, { pageParam }) => api("posts").GET({ query: { cursor: pageParam } }),
     { getNextPageParam: (lastPage) => lastPage.nextCursor }
   );
 
@@ -119,7 +121,7 @@ The response includes the input that was sent with the request:
 
 ```typescript
 const { data } = useRead((api) =>
-  api.users.$post({ body: { name: "John", email: "john@example.com" } })
+  api("users").POST({ body: { name: "John", email: "john@example.com" } })
 );
 
 // response.input?.body contains { name: "John", email: "john@example.com" }

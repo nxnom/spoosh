@@ -21,7 +21,7 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([
   throttlePlugin(),
 ]);
 
-const { data } = useRead((api) => api.expensive.$get(), { throttle: 1000 });
+const { data } = useRead((api) => api("expensive").GET(), { throttle: 1000 });
 ```
 
 ## Options

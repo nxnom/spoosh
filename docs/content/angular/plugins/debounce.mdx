@@ -21,7 +21,7 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([debouncePlugin()]);
 
 // Wait 300ms after typing stops before fetching
 const results = injectRead(
-  (api) => api.search.$get({ query: { q: searchTerm() } }),
+  (api) => api("search").GET({ query: { q: searchTerm() } }),
   { debounce: 300 }
 );
 ```
@@ -32,7 +32,7 @@ Only debounce when specific fields change:
 
 ```typescript
 const results = injectRead(
-  (api) => api.search.$get({ query: { q: searchTerm(), page: page() } }),
+  (api) => api("search").GET({ query: { q: searchTerm(), page: page() } }),
   {
     debounce: ({ prevQuery }) => (prevQuery?.q !== searchTerm() ? 300 : 0),
   }
@@ -85,7 +85,7 @@ export class SearchPageComponent {
   searchTerm = signal("");
 
   results = injectRead(
-    (api) => api.search.$get({ query: { q: this.searchTerm() } }),
+    (api) => api("search").GET({ query: { q: this.searchTerm() } }),
     {
       enabled: this.searchTerm().length > 0,
       debounce: 300,

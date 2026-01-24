@@ -13,37 +13,39 @@ Spoosh uses a tag-based caching system. Each query is automatically tagged based
 
 ```typescript
 // Query tags are automatically generated from the path:
-useRead((api) => api.users.$get());
+useRead((api) => api("users").GET());
 // → tags: ["users"]
 
-useRead((api) => api.users(123).$get());
+useRead((api) => api("users/:id").GET({ params: { id: 123 } }));
 // → tags: ["users", "users/123"]
 
-useRead((api) => api.users(123).posts.$get());
+useRead((api) => api("users/:id/posts").GET({ params: { id: 123 } }));
 // → tags: ["users", "users/123", "users/123/posts"]
 ```
 
 When you mutate data, Spoosh automatically invalidates related queries based on these tags. Create a post for user 123? Every query that depends on that user's data refreshes automatically.
 
 ```typescript
-const { trigger } = useWrite((api) => api.users(123).posts.$post);
+const { trigger } = useWrite((api) => api("users/:id/posts").POST);
 
 // This mutation automatically invalidates:
 // - users
 // - users/123
 // - users/123/posts
-await trigger({ body: newPost });
+await trigger({ params: { id: 123 }, body: newPost });
 ```
 
 ### Type-Safe Routing with Zero Strings
 
-Define your API schema once, then use a proxy-based API that gives you autocomplete for every endpoint, parameter, and response.
+Define your API schema once, then use a function-based API that gives you autocomplete for every endpoint, parameter, and response.
 
 ```typescript
-// Fully typed, no string URLs
-const { data: user } = useRead((api) => api.users(123).$get());
+// Fully typed paths
+const { data: user } = useRead((api) =>
+  api("users/:id").GET({ params: { id: 123 } })
+);
 const { data: posts } = useRead((api) =>
-  api.users(123).posts.$get({ query: { page: 1 } })
+  api("users/:id/posts").GET({ params: { id: 123 }, query: { page: 1 } })
 );
 ```
 
@@ -55,19 +57,19 @@ You can also specify custom tags manually:
 
 ```typescript
 // Override auto-generated tags
-const { data } = useRead((api) => api.users.$get(), {
+const { data } = useRead((api) => api("users").GET(), {
   tags: ["custom-users"], // replaces auto-generated tags
 });
 
 // Or extend auto-generated tags
-const { data } = useRead((api) => api.users.$get(), {
+const { data } = useRead((api) => api("users").GET(), {
   additionalTags: ["dashboard-data"], // adds to auto-generated tags
 });
 
 // On mutations, specify which tags to invalidate
 await trigger({
   body: { title: "New Post" },
-  invalidate: (api) => [api.posts.$get, api.stats.$get, "custom-tag"],
+  invalidate: (api) => [api("posts").GET, api("stats").GET, "custom-tag"],
 });
 ```
 
@@ -88,7 +90,7 @@ const spoosh = new Spoosh<API, Error>("/api").use([
 ]);
 
 // Options are typed based on installed plugins
-useRead((api) => api.users.$get(), {
+useRead((api) => api("users").GET(), {
   staleTime: 10000, // ✓ Known from cachePlugin
   retries: 5, // ✓ Known from retryPlugin
   interval: 60000, // ✓ Known from pollingPlugin

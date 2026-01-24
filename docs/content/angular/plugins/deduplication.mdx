@@ -42,7 +42,7 @@ Without deduplication, invalidating queries can cause duplicate requests:
   `,
 })
 export class ComponentA {
-  users = injectRead((api) => api.users.$get());
+  users = injectRead((api) => api("users").GET());
 }
 
 @Component({
@@ -54,7 +54,7 @@ export class ComponentA {
   `,
 })
 export class ComponentB {
-  users = injectRead((api) => api.users.$get());
+  users = injectRead((api) => api("users").GET());
 }
 
 // When a mutation invalidates "users", both components would refetch
@@ -65,7 +65,7 @@ export class ComponentB {
 
 ```typescript
 // Disable deduplication for this request
-injectRead((api) => api.posts.$get(), { dedupe: false });
+injectRead((api) => api("posts").GET(), { dedupe: false });
 ```
 
 ## Options

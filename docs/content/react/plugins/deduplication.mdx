@@ -35,11 +35,11 @@ Without deduplication, invalidating queries can cause duplicate requests:
 ```typescript
 // Multiple components using the same query
 function ComponentA() {
-  const { data } = useRead((api) => api.users.$get());
+  const { data } = useRead((api) => api("users").GET());
 }
 
 function ComponentB() {
-  const { data } = useRead((api) => api.users.$get());
+  const { data } = useRead((api) => api("users").GET());
 }
 
 // When a mutation invalidates "users", both components would refetch
@@ -50,7 +50,7 @@ function ComponentB() {
 
 ```typescript
 // Disable deduplication for this request
-useRead((api) => api.posts.$get(), { dedupe: false });
+useRead((api) => api("posts").GET(), { dedupe: false });
 ```
 
 ## Options

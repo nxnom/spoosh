@@ -127,11 +127,11 @@ Most plugins support per-request overrides:
 
 ```typescript
 // Override cache time for this query
-useRead((api) => api.users.$get(), { staleTime: 60000 });
+useRead((api) => api("users").GET(), { staleTime: 60000 });
 
 // Disable retries for this query
-useRead((api) => api.health.$get(), { retries: false });
+useRead((api) => api("health").GET(), { retries: false });
 
 // Custom polling interval
-useRead((api) => api.notifications.$get(), { pollingInterval: 5000 });
+useRead((api) => api("notifications").GET(), { pollingInterval: 5000 });
 ```

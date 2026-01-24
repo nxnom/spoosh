@@ -20,10 +20,10 @@ import { pollingPlugin } from "@spoosh/plugin-polling";
 const client = new Spoosh<ApiSchema, Error>("/api").use([pollingPlugin()]);
 
 // Poll every 5 seconds
-useRead((api) => api.notifications.$get(), { pollingInterval: 5000 });
+useRead((api) => api("notifications").GET(), { pollingInterval: 5000 });
 
 // Disable polling (default)
-useRead((api) => api.posts.$get(), { pollingInterval: false });
+useRead((api) => api("posts").GET(), { pollingInterval: false });
 ```
 
 ## Dynamic Polling
@@ -31,7 +31,7 @@ useRead((api) => api.posts.$get(), { pollingInterval: false });
 The polling interval can be a function that adjusts based on the response:
 
 ```typescript
-useRead((api) => api.jobs(jobId).$get(), {
+useRead((api) => api("jobs/:id").GET({ params: { id: jobId } }), {
   pollingInterval: (data, error) => {
     // Stop polling when job is complete
     if (data?.status === "completed") return false;
@@ -61,12 +61,12 @@ useRead((api) => api.jobs(jobId).$get(), {
 ```typescript
 function Dashboard() {
   const { data: stats } = useRead(
-    (api) => api.stats.$get(),
+    (api) => api("stats").GET(),
     { pollingInterval: 30000 } // Refresh every 30 seconds
   );
 
   const { data: alerts } = useRead(
-    (api) => api.alerts.$get(),
+    (api) => api("alerts").GET(),
     { pollingInterval: 5000 } // Check alerts more frequently
   );
 

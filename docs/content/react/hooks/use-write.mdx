@@ -10,7 +10,7 @@ Trigger mutations with loading and error states. The callback **selects** the AP
 ```typescript
 function CreateUser() {
   const { trigger, loading, error } = useWrite(
-    (api) => api.users.$post
+    (api) => api("users").POST
   );
 
   const handleSubmit = async (formData: CreateUserBody) => {
@@ -35,11 +35,11 @@ function CreateUser() {
 ## With Invalidation
 
 ```typescript
-const { trigger } = useWrite((api) => api.posts.$post);
+const { trigger } = useWrite((api) => api("posts").POST);
 
 await trigger({
   body: { title: "New Post", content: "..." },
-  invalidate: (api) => [api.posts.$get],
+  invalidate: (api) => [api("posts").GET],
 });
 ```
 
@@ -73,7 +73,7 @@ Use `reset()` to clear mutation state (useful for dismissing notifications):
 
 ```typescript
 function CreatePost() {
-  const { trigger, data, error, reset } = useWrite((api) => api.posts.$post);
+  const { trigger, data, error, reset } = useWrite((api) => api("posts").POST);
 
   return (
     <div>

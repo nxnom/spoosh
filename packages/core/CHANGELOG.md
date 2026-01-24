@@ -30,7 +30,7 @@ const { data } = await api.posts._.$get({ params: { id: 1 } });
 
 ```typescript
 type ApiSchema = {
-  "posts": { GET: { data: Post[] } };
+  posts: { GET: { data: Post[] } };
   "posts/:id": { GET: { data: Post } };
 };
 

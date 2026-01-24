@@ -18,11 +18,11 @@ import { initialDataPlugin } from "@spoosh/plugin-initial-data";
 
 const client = new Spoosh<ApiSchema, Error>("/api").use([initialDataPlugin()]);
 
-const { data, isInitialData } = useRead((api) => api.posts.$get(), {
+const { data, isInitialData } = useRead((api) => api("posts").GET(), {
   initialData: prefetchedPosts,
 });
 
-const { data } = useRead((api) => api.posts.$get(), {
+const { data } = useRead((api) => api("posts").GET(), {
   initialData: prefetchedPosts,
   refetchOnInitialData: false,
 });

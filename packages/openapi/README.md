@@ -15,7 +15,7 @@ npm install @spoosh/openapi
 - **Export**: Generate OpenAPI 3.0 or 3.1 specs from TypeScript Spoosh schemas
 - **Import**: Generate TypeScript Spoosh schemas from OpenAPI 3.0/3.1 specs
 - **JSON & YAML**: Support for both JSON and YAML OpenAPI formats
-- **Type-safe**: Unified `Endpoint<{ data; body?; query?; formData?; urlEncoded?; error? }>` type
+- **Type-safe**: Path-based schema with `{ data; body?; query?; error? }` structure
 - **Error Types**: Extract error types from 4xx/5xx responses
 - **JSDoc Preservation**: Convert OpenAPI descriptions to TypeScript JSDoc comments
 - **File Uploads**: Automatic File type detection for binary formats
@@ -44,8 +44,6 @@ npx spoosh-openapi export \
 
 ```typescript
 // src/schema.ts
-import type { Endpoint } from "@spoosh/core";
-
 interface User {
   id: number;
   name: string;
@@ -59,16 +57,16 @@ interface CreateUserBody {
 
 export type ApiSchema = {
   users: {
-    $get: Endpoint<{ data: User[]; query: { page?: number; limit?: number } }>;
-    $post: Endpoint<{ data: User; body: CreateUserBody }>;
-    _: {
-      $get: User;
-      $put: Endpoint<{ data: User; body: Partial<CreateUserBody> }>;
-      $delete: void;
-    };
+    GET: { data: User[]; query: { page?: number; limit?: number } };
+    POST: { data: User; body: CreateUserBody };
+  };
+  "users/:id": {
+    GET: { data: User };
+    PUT: { data: User; body: Partial<CreateUserBody> };
+    DELETE: { data: void };
   };
   health: {
-    $get: { status: string };
+    GET: { data: { status: string } };
   };
 };
 ```
@@ -139,8 +137,6 @@ npx spoosh-openapi import \
 #### Generated Output
 
 ```typescript
-import type { Endpoint } from "@spoosh/core";
-
 type Post = {
   id: number;
   title: string;
@@ -150,7 +146,7 @@ type Post = {
 type ApiSchema = {
   posts: {
     /** Retrieve all posts */
-    $get: Endpoint<{ data: Post[]; query: { userId?: number } }>;
+    GET: { data: Post[]; query: { userId?: number } };
   };
 };
 ```
@@ -233,16 +229,16 @@ console.log(schema);
 
 ## Type Detection
 
-The import feature generates the unified `Endpoint` type with appropriate fields:
+The import feature generates endpoint types with appropriate fields:
 
-| OpenAPI Pattern                                  | Spoosh Type                                      |
-| ------------------------------------------------ | ------------------------------------------------ |
-| Query parameters                                 | `Endpoint<{ data: TData; query: TQuery }>`       |
-| `multipart/form-data` request body               | `Endpoint<{ data: TData; formData: TFormData }>` |
-| `application/json` request body                  | `Endpoint<{ data: TData; body: TBody }>`         |
-| `application/x-www-form-urlencoded` request body | `Endpoint<{ data: TData; urlEncoded: TBody }>`   |
-| No response body (204)                           | `void`                                           |
-| Simple response only                             | `TData`                                          |
+| OpenAPI Pattern                                  | Spoosh Type                      |
+| ------------------------------------------------ | -------------------------------- |
+| Query parameters                                 | `{ data: TData; query: TQuery }` |
+| `multipart/form-data` request body               | `{ data: TData; body: TBody }`   |
+| `application/json` request body                  | `{ data: TData; body: TBody }`   |
+| `application/x-www-form-urlencoded` request body | `{ data: TData; body: TBody }`   |
+| No response body (204)                           | `{ data: void }`                 |
+| Simple response only                             | `{ data: TData }`                |
 
 ### Error Type Extraction
 
@@ -281,25 +277,25 @@ Generated types:
 
 ```typescript
 // Only 500 has a schema, so only that is included
-$post: Endpoint<{
+POST: {
   data: User;
   body: CreateUserBody;
   error: { system_message?: string };
-}>;
+};
 
 // If no error responses have schemas, no error type is added
-$get: User;
+GET: { data: User };
 ```
 
 Multiple error schemas are automatically unioned:
 
 ```typescript
 // 400 and 500 both have schemas
-$post: Endpoint<{
+POST: {
   data: User;
   body: Body;
   error: { error?: string } | { system_message?: string };
-}>;
+};
 ```
 
 ## License

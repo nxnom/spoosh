@@ -30,7 +30,7 @@ Bidirectional paginated data fetching with infinite scroll support. Returns Angu
 })
 export class PostListComponent {
   private posts = injectInfiniteRead(
-    (api) => api.posts.paginated.$get({ query: { page: 1 } }),
+    (api) => api("posts/paginated").GET({ query: { page: 1 } }),
     {
       canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
       nextPageRequest: ({ response, request }) => ({

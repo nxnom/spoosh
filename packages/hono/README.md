@@ -57,32 +57,32 @@ type ApiSchema = HonoToSpoosh<ReturnType<typeof hc<AppType>>>;
 const spoosh = new Spoosh<ApiSchema, Error>("http://localhost:3000/api");
 
 // Fully typed API calls
-const { data: posts } = await spoosh.api.posts.$get();
+const { data: posts } = await spoosh.api("posts").GET();
 // posts is typed as { id: number; title: string }[]
 
-const { data: newPost } = await spoosh.api.posts.$post({
+const { data: newPost } = await spoosh.api("posts").POST({
   body: { title: "New Post" },
 });
 // body is typed, newPost is { id: number; title: string }
 
-// Dynamic segment with direct usage (simplest)
-const { data: post } = await spoosh.api.posts(1).$get();
+// Dynamic segment with params
+const { data: post } = await spoosh.api("posts/:id").GET({ params: { id: 1 } });
 // post is typed as { id: number; title: string }
 
 // With variable
 const postId = 1;
-const { data } = await spoosh.api.posts(postId).$get();
+const { data } = await spoosh.api("posts/:id").GET({ params: { id: postId } });
 ```
 
 ## Type Mapping
 
-| Hono                          | Spoosh                      |
-| ----------------------------- | --------------------------- |
-| `c.json(data)`                | Response data type          |
-| `zValidator("json", schema)`  | Request body type           |
-| `zValidator("query", schema)` | Query params type           |
-| `zValidator("form", schema)`  | Form data type              |
-| `/posts/:id`                  | `posts._` (dynamic segment) |
+| Hono                          | Spoosh                           |
+| ----------------------------- | -------------------------------- |
+| `c.json(data)`                | Response data type               |
+| `zValidator("json", schema)`  | Request body type                |
+| `zValidator("query", schema)` | Query params type                |
+| `zValidator("form", schema)`  | Form data type                   |
+| `/posts/:id`                  | `"posts/:id"` (path with params) |
 
 ## API Reference
 
@@ -100,34 +100,30 @@ type ApiSchema = HonoToSpoosh<ReturnType<typeof hc<AppType>>>;
 
 **Supported HTTP methods:**
 
-- `$get`
-- `$post`
-- `$put`
-- `$patch`
-- `$delete`
+- `GET`
+- `POST`
+- `PUT`
+- `PATCH`
+- `DELETE`
 
 **Path parameters:**
 
-Dynamic segments (`:id`, `:slug`, etc.) are converted to `_` in the schema and accessed via direct usage:
+Dynamic segments (`:id`, `:slug`, etc.) are preserved in the path and accessed via the `params` option:
 
 ```typescript
 // Hono route: /users/:userId/posts/:postId
 
-// Direct usage (simplest - pass values directly)
-spoosh.api.users(123).posts(456).$get();
+// Access with params object
+spoosh.api("users/:userId/posts/:postId").GET({
+  params: { userId: 123, postId: 456 },
+});
 
 // With variables
 const userId = 123;
 const postId = 456;
-spoosh.api.users(userId).posts(postId).$get();
-
-// Typed params (advanced - explicit param names)
-spoosh.api
-  .users(":userId")
-  .posts(":postId")
-  .$get({
-    params: { userId: 123, postId: 456 },
-  });
+spoosh.api("users/:userId/posts/:postId").GET({
+  params: { userId, postId },
+});
 ```
 
 ### HonoRouteToSpoosh<T>
@@ -140,10 +136,11 @@ import type { hc } from "hono/client";
 import type { usersRoutes } from "./routes/users";
 import type { postsRoutes } from "./routes/posts";
 
-type ApiSchema = {
-  users: HonoRouteToSpoosh<ReturnType<typeof hc<typeof usersRoutes>>>;
-  posts: HonoRouteToSpoosh<ReturnType<typeof hc<typeof postsRoutes>>>;
-};
+type UsersSchema = HonoRouteToSpoosh<ReturnType<typeof hc<typeof usersRoutes>>>;
+type PostsSchema = HonoRouteToSpoosh<ReturnType<typeof hc<typeof postsRoutes>>>;
+
+// Merge into single schema with proper prefixes
+type ApiSchema = UsersSchema & PostsSchema;
 ```
 
 ## Handling Large Apps (TS2589)
@@ -195,10 +192,8 @@ import type { postsRoutes } from "./routes/posts";
 type UsersSchema = HonoRouteToSpoosh<ReturnType<typeof hc<typeof usersRoutes>>>;
 type PostsSchema = HonoRouteToSpoosh<ReturnType<typeof hc<typeof postsRoutes>>>;
 
-type ApiSchema = {
-  users: UsersSchema;
-  posts: PostsSchema;
-};
+// Merge schemas
+type ApiSchema = UsersSchema & PostsSchema;
 ```
 
 ### Why use `hc` client types?
@@ -224,7 +219,7 @@ const bookingByIdRoutes = new Hono()
   .patch("/:id", (c) => c.json({}))
   .delete("/:id", (c) => c.json({}));
 
-// In your schema, merge the types
+// Merge the types
 type BookingsRoot = HonoRouteToSpoosh<
   ReturnType<typeof hc<typeof bookingsRootRoutes>>
 >;
@@ -232,9 +227,7 @@ type BookingById = HonoRouteToSpoosh<
   ReturnType<typeof hc<typeof bookingByIdRoutes>>
 >;
 
-type ApiSchema = {
-  bookings: BookingsRoot & BookingById;
-};
+type ApiSchema = BookingsRoot & BookingById;
 ```
 
 ### Last Resort: `@ts-expect-error`
@@ -243,7 +236,7 @@ In rare cases, even after splitting routes, certain endpoints may still trigger 
 
 ```typescript
 // @ts-expect-error TS2589 - complex endpoint type
-const { trigger } = useWrite((api) => api.bookings(":id").confirm.$post);
+const { trigger } = useWrite((api) => api("bookings/:id/confirm").POST);
 ```
 
 > **Note:** Only use `@ts-expect-error` for specific problematic endpoints, not as a blanket solution. The type safety still works at runtime—this just suppresses the compile-time error for that particular usage.

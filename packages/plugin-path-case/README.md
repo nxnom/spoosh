@@ -10,8 +10,8 @@ When your API uses kebab-case or snake_case URLs, you're forced to write ugly br
 
 ```typescript
 // Ugly bracket notation
-api["user-profiles"]["profile-settings"].$get();
-api["blog-posts"](":postId")["related-articles"].$get();
+api("user-profiles/profile-settings").GET();
+api("blog-posts/:postId/related-articles").GET({ params: { postId } });
 ```
 
 ## The Solution
@@ -19,9 +19,9 @@ api["blog-posts"](":postId")["related-articles"].$get();
 With `pathCasePlugin`, write clean camelCase:
 
 ```typescript
-// Clean dot notation
-api.userProfiles.profileSettings.$get();
-api.blogPosts(":postId").relatedArticles.$get();
+// Clean camelCase paths
+api("userProfiles/profileSettings").GET();
+api("blogPosts/:postId/relatedArticles").GET({ params: { postId } });
 // HTTP: GET /blog-posts/123/related-articles
 ```
 
@@ -48,7 +48,9 @@ const client = new Spoosh<CamelCaseKeys<ApiSchema>, Error>("/api").use([
 const { useRead, useWrite } = createReactSpoosh(client);
 
 // Now use camelCase everywhere!
-useRead((api) => api.blogPosts(postId).relatedArticles.$get());
+useRead((api) =>
+  api("blogPosts/:postId/relatedArticles").GET({ params: { postId } })
+);
 ```
 
 ## Options

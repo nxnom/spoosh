@@ -25,7 +25,7 @@ const query = {
   filters: { status: "active", tags: ["a", "b"] },
 };
 
-useRead((api) => api.items.$get({ query }));
+useRead((api) => api("items").GET({ query }));
 // Result: pagination[limit]=10&pagination[offset]=0&filters[status]=active&filters[tags][]=a,b
 ```
 
@@ -54,13 +54,13 @@ Override plugin defaults for specific requests:
 
 ```typescript
 // Use comma-separated arrays for this request
-useRead((api) => api.items.$get({ query }), { qs: { arrayFormat: "comma" } });
+useRead((api) => api("items").GET({ query }), { qs: { arrayFormat: "comma" } });
 
 // Use dot notation for nested objects
-useRead((api) => api.search.$get({ query }), { qs: { allowDots: true } });
+useRead((api) => api("search").GET({ query }), { qs: { allowDots: true } });
 
 // Include null values for this request
-useRead((api) => api.data.$get({ query }), { qs: { skipNulls: false } });
+useRead((api) => api("data").GET({ query }), { qs: { skipNulls: false } });
 ```
 
 ## Array Formats

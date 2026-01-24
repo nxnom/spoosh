@@ -19,7 +19,7 @@ function PostList() {
     fetchingNext,
     fetchingPrev,
   } = useInfiniteRead(
-    (api) => api.posts.paginated.$get({ query: { page: 1 } }),
+    (api) => api("posts/paginated").GET({ query: { page: 1 } }),
     {
       canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
       nextPageRequest: ({ response, request }) => ({

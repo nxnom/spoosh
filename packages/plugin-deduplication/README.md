@@ -24,7 +24,7 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([
   deduplicationPlugin({ write: "in-flight" }),
 ]);
 
-useRead((api) => api.posts.$get(), { dedupe: false });
+useRead((api) => api("posts").GET(), { dedupe: false });
 ```
 
 ## Options

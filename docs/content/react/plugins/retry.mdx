@@ -26,10 +26,10 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([
 
 ```typescript
 // More retries for critical requests
-useRead((api) => api.important.$get(), { retries: 5, retryDelay: 2000 });
+useRead((api) => api("important").GET(), { retries: 5, retryDelay: 2000 });
 
 // Disable retries for specific requests
-useRead((api) => api.health.$get(), { retries: false });
+useRead((api) => api("health").GET(), { retries: false });
 ```
 
 ## Options

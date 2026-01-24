@@ -3,7 +3,7 @@ title: Transform
 description: Transform request and response data with full type inference
 ---
 
-The Transform plugin enables per-request transformation of query, body, formData, urlEncoded, and response data. All transforms are defined at the hook level for full type inference.
+The Transform plugin enables per-request transformation of query, body, and response data. All transforms are defined at the hook level for full type inference.
 
 ## Installation
 
@@ -27,7 +27,7 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([transformPlugin()]);
 Transform request data in hook options:
 
 ```typescript
-const { data } = useRead((api) => api.posts.$get({ query: { page: 1 } }), {
+const { data } = useRead((api) => api("posts").GET({ query: { page: 1 } }), {
   transform: {
     query: (q) => {
       // q is typed based on the endpoint schema
@@ -43,7 +43,7 @@ const { data } = useRead((api) => api.posts.$get({ query: { page: 1 } }), {
 Response transforms produce a separate `transformedData` field in `meta` while preserving the original `data`:
 
 ```typescript
-const { data, meta } = useRead((api) => api.posts.$get(), {
+const { data, meta } = useRead((api) => api("posts").GET(), {
   transform: {
     response: (posts) => ({
       // posts is typed as the endpoint's response type
@@ -65,7 +65,7 @@ The `meta.transformedData` type is automatically inferred from your transformer'
 Transform request data in trigger options:
 
 ```typescript
-const { trigger } = useWrite((api) => api.posts.$post);
+const { trigger } = useWrite((api) => api("posts").POST);
 
 trigger({
   body: { title: "New Post" },
@@ -84,7 +84,7 @@ trigger({
 Just like `useRead`, response transforms for `useWrite` produce a separate `transformedData` field in `meta`:
 
 ```typescript
-const { trigger, data, meta } = useWrite((api) => api.posts.$post);
+const { trigger, data, meta } = useWrite((api) => api("posts").POST);
 
 const response = await trigger({
   body: { title: "New Post" },
@@ -107,7 +107,7 @@ const response = await trigger({
 **TypeScript Limitation**: Due to TypeScript's limitations with dynamic trigger options, `meta.transformedData` is typed as `never` in the hook result. You'll need to use type assertion to access it:
 
 ```typescript
-const { meta } = useWrite((api) => api.posts.$post);
+const { meta } = useWrite((api) => api("posts").POST);
 
 // Type assertion required
 const typed = meta.transformedData as
@@ -118,7 +118,7 @@ const typed = meta.transformedData as
 Alternatively, extract it from the trigger response:
 
 ```typescript
-const { trigger } = useWrite((api) => api.posts.$post);
+const { trigger } = useWrite((api) => api("posts").POST);
 
 const response = await trigger({
   body: { title: "New Post" },
@@ -142,7 +142,7 @@ Transform query parameters before the request:
 
 ```typescript
 const { data } = useRead(
-  (api) => api.users.$get({ query: { status: "all", page: 1 } }),
+  (api) => api("users").GET({ query: { status: "all", page: 1 } }),
   {
     transform: {
       query: (query) => {
@@ -163,7 +163,7 @@ const { data } = useRead(
 Transform JSON body before the request:
 
 ```typescript
-const { trigger } = useWrite((api) => api.posts.$post);
+const { trigger } = useWrite((api) => api("posts").POST);
 
 trigger({
   body: { title: "Hello" },
@@ -177,50 +177,12 @@ trigger({
 });
 ```
 
-### FormData Transform
-
-Transform form data before the request:
-
-```typescript
-const { trigger } = useWrite((api) => api.files.$post);
-
-trigger({
-  formData: { file: selectedFile },
-  transform: {
-    formData: (fd) => ({
-      ...fd,
-      uploadedBy: currentUser.id,
-      source: "web",
-    }),
-  },
-});
-```
-
-### URL-Encoded Transform
-
-Transform URL-encoded data before the request:
-
-```typescript
-const { trigger } = useWrite((api) => api.auth.token.$post);
-
-trigger({
-  urlEncoded: { client_id: "abc" },
-  transform: {
-    urlEncoded: (data) => ({
-      ...data,
-      grant_type: "client_credentials",
-      scope: "read write",
-    }),
-  },
-});
-```
-
 ### Response Transform
 
 Transform and analyze response data:
 
 ```typescript
-const { data, meta } = useRead((api) => api.analytics.$get(), {
+const { data, meta } = useRead((api) => api("analytics").GET(), {
   transform: {
     response: (analytics) => ({
       totalViews: analytics.reduce((sum, a) => sum + a.views, 0),
@@ -240,7 +202,7 @@ const { data, meta } = useRead((api) => api.analytics.$get(), {
 All transform functions support async operations:
 
 ```typescript
-const { data } = useRead((api) => api.posts.$get(), {
+const { data } = useRead((api) => api("posts").GET(), {
   transform: {
     query: async (query) => {
       const token = await getAuthToken();
@@ -256,7 +218,7 @@ Return `undefined` to remove the data entirely:
 
 ```typescript
 const { data } = useRead(
-  (api) => api.search.$get({ query: { q: "", filters: {} } }),
+  (api) => api("search").GET({ query: { q: "", filters: {} } }),
   {
     transform: {
       query: (query) => {
@@ -290,7 +252,7 @@ Apply multiple transforms in a single request:
 
 ```typescript
 const { data, meta } = useRead(
-  (api) => api.posts.$get({ query: { page: 1 } }),
+  (api) => api("posts").GET({ query: { page: 1 } }),
   {
     transform: {
       query: (q) => ({ ...q, limit: 20 }),
@@ -309,7 +271,7 @@ The transform plugin provides full type inference:
 
 ```typescript
 // Response type is inferred from endpoint (useRead)
-const { data, meta } = useRead((api) => api.users.$get(), {
+const { data, meta } = useRead((api) => api("users").GET(), {
   transform: {
     response: (users) => {
       // 'users' is typed as User[]
@@ -330,7 +292,7 @@ const { data, meta } = useRead((api) => api.users.$get(), {
 For `useWrite`, there is a TypeScript limitation where `meta.transformedData` is inferred as `never` in the hook result due to dynamic trigger options:
 
 ```typescript
-const { trigger, meta } = useWrite((api) => api.posts.$post);
+const { trigger, meta } = useWrite((api) => api("posts").POST);
 
 // meta.transformedData is typed as 'never' here because TypeScript cannot infer
 // the type from dynamic trigger options passed later
@@ -356,7 +318,7 @@ type TransformedPost = {
   createdAt: Date;
 };
 
-const { trigger, meta } = useWrite((api) => api.posts.$post);
+const { trigger, meta } = useWrite((api) => api("posts").POST);
 
 // Use type assertion
 const transformed = meta.transformedData as TransformedPost | undefined;
@@ -367,7 +329,7 @@ const transformed = meta.transformedData as TransformedPost | undefined;
 ### Compute Derived Data
 
 ```typescript
-const { data, meta } = useRead((api) => api.orders.$get(), {
+const { data, meta } = useRead((api) => api("orders").GET(), {
   transform: {
     response: (orders) => ({
       total: orders.reduce((sum, o) => sum + o.amount, 0),
@@ -382,7 +344,7 @@ const { data, meta } = useRead((api) => api.orders.$get(), {
 ### Filter Empty Query Params
 
 ```typescript
-const { data } = useRead((api) => api.search.$get({ query: filters }), {
+const { data } = useRead((api) => api("search").GET({ query: filters }), {
   transform: {
     query: (query) =>
       Object.fromEntries(
@@ -397,7 +359,7 @@ const { data } = useRead((api) => api.search.$get({ query: filters }), {
 ### Add Request Metadata
 
 ```typescript
-const { trigger } = useWrite((api) => api.events.$post);
+const { trigger } = useWrite((api) => api("events").POST);
 
 trigger({
   body: eventData,

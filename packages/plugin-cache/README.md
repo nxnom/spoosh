@@ -21,7 +21,7 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([
 ]);
 
 // Per-query override
-useRead((api) => api.posts.$get(), { staleTime: 10000 });
+useRead((api) => api("posts").GET(), { staleTime: 10000 });
 ```
 
 ## Options
@@ -53,6 +53,6 @@ function handleLogout() {
 }
 ```
 
-| Method       | Description                                             |
-| ------------ | ------------------------------------------------------- |
+| Method       | Description                                              |
+| ------------ | -------------------------------------------------------- |
 | `clearCache` | Clears all cached data. Useful for logout/user switching |

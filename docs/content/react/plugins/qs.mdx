@@ -39,10 +39,10 @@ const query = {
 
 ```typescript
 // Use comma-separated arrays for this request
-useRead((api) => api.items.$get({ query }), { qs: { arrayFormat: "comma" } });
+useRead((api) => api("items").GET({ query }), { qs: { arrayFormat: "comma" } });
 
 // Use dot notation for nested objects
-useRead((api) => api.search.$get({ query }), { qs: { allowDots: true } });
+useRead((api) => api("search").GET({ query }), { qs: { allowDots: true } });
 ```
 
 ## Options
@@ -62,7 +62,7 @@ Accepts all [`qs` stringify options](https://github.com/ljharb/qs#stringifying).
 Same options as plugin config, nested under `qs`:
 
 ```typescript
-useRead((api) => api.items.$get({ query }), { qs: { arrayFormat: "comma" } });
+useRead((api) => api("items").GET({ query }), { qs: { arrayFormat: "comma" } });
 ```
 
 ## Array Formats

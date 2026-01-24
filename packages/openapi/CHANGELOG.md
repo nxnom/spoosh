@@ -26,7 +26,7 @@
 
 ```typescript
 type ApiSchema = {
-  "pet": { GET: { data: Pet[] }; POST: { data: Pet; body: CreatePet } };
+  pet: { GET: { data: Pet[] }; POST: { data: Pet; body: CreatePet } };
   "pet/:petId": { GET: { data: Pet }; DELETE: { data: void } };
 };
 ```

@@ -33,7 +33,7 @@ Fetch data with automatic caching and refetching.
 ```typescript
 function UserList() {
   const { data, loading, error, refetch } = useRead(
-    (api) => api.users.$get()
+    (api) => api("users").GET()
   );
 
   if (loading) return <div>Loading...</div>;
@@ -48,11 +48,17 @@ function UserList() {
 
 // With options
 const { data } = useRead(
-  (api) => api.users.$get({ query: { page: 1 } }),
+  (api) => api("users").GET({ query: { page: 1 } }),
   {
     staleTime: 10000,
     enabled: isReady,
   }
+);
+
+// With path parameters
+const { data: user } = useRead(
+  (api) => api("users/:id").GET({ params: { id: userId } }),
+  { enabled: !!userId }
 );
 ```
 
@@ -63,7 +69,7 @@ Trigger mutations with loading and error states.
 ```typescript
 function CreateUser() {
   const { trigger, loading, error } = useWrite(
-    (api) => api.users.$post
+    (api) => api("users").POST
   );
 
   const handleSubmit = async (data: CreateUserBody) => {
@@ -82,6 +88,14 @@ function CreateUser() {
     </form>
   );
 }
+
+// With path parameters
+const updateUser = useWrite((api) => api("users/:id").PUT);
+
+await updateUser.trigger({
+  params: { id: userId },
+  body: { name: "Updated Name" },
+});
 ```
 
 ### useInfiniteRead
@@ -101,7 +115,7 @@ function PostList() {
     fetchingNext,
     fetchingPrev,
   } = useInfiniteRead(
-    (api) => api.posts.$get({ query: { page: 1 } }),
+    (api) => api("posts").GET({ query: { page: 1 } }),
     {
       // Required: Check if next page exists
       canFetchNext: ({ response }) => response?.meta.hasMore ?? false,

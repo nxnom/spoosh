@@ -31,7 +31,9 @@ import { injectRead } from "../api/client";
 export class UserProfileComponent {
   userId = input.required<number>();
 
-  user = injectRead((api) => api.users(this.userId()).$get());
+  user = injectRead((api) =>
+    api("users/:id").GET({ params: { id: this.userId() } })
+  );
 }
 ```
 
@@ -55,7 +57,7 @@ export class SearchUsersComponent {
   searchTerm = input.required<string>();
 
   searchResults = injectRead((api) =>
-    api.search.$get({ query: { q: this.searchTerm(), page: 1 } })
+    api("search").GET({ query: { q: this.searchTerm(), page: 1 } })
   );
 }
 ```
@@ -73,9 +75,12 @@ import { injectRead } from "../api/client";
 export class UserProfileComponent {
   userId = input<number | null>(null);
 
-  user = injectRead((api) => api.users(this.userId()!).$get(), {
-    enabled: () => this.userId() !== null,
-  });
+  user = injectRead(
+    (api) => api("users/:id").GET({ params: { id: this.userId()! } }),
+    {
+      enabled: () => this.userId() !== null,
+    }
+  );
 }
 ```
 
@@ -109,7 +114,7 @@ import { injectWrite } from "../api/client";
   `,
 })
 export class CreateUserFormComponent {
-  createUser = injectWrite((api) => api.users.$post);
+  createUser = injectWrite((api) => api("users").POST);
 
   async handleSubmit(event: SubmitEvent) {
     event.preventDefault();
@@ -148,48 +153,48 @@ import { injectWrite } from "../api/client";
 export class UserActionsComponent {
   userId = input.required<number>();
 
-  updateUser = injectWrite((api) => api.users(this.userId()).$put);
+  updateUser = injectWrite((api) => api("users/:id").PUT);
 
-  deleteUser = injectWrite((api) => api.users(this.userId()).$delete);
+  deleteUser = injectWrite((api) => api("users/:id").DELETE);
 
   async handleUpdate() {
-    await this.updateUser.trigger({ body: { name: "Updated Name" } });
+    await this.updateUser.trigger({
+      params: { id: this.userId() },
+      body: { name: "Updated Name" },
+    });
   }
 
   async handleDelete() {
-    await this.deleteUser.trigger();
+    await this.deleteUser.trigger({ params: { id: this.userId() } });
   }
 }
 ```
 
 ## Dynamic Path Parameters
 
-Spoosh supports dynamic path segments with direct value passing:
+Spoosh supports dynamic path segments with path-based syntax:
 
 ```typescript
-// injectRead: Direct usage (simplest - pass values directly)
-user = injectRead((api) => api.users(123).$get());
+// injectRead: With params object
+user = injectRead((api) => api("users/:id").GET({ params: { id: 123 } }));
 
-// injectRead: With variables (most common)
+// injectRead: With reactive values
 userId = input.required<number>();
-user = injectRead((api) => api.users(this.userId()).$get());
-
-// injectWrite: Direct usage works the same way
-userId = input.required<number>();
-updateUser = injectWrite((api) => api.users(this.userId()).$put);
-// Usage: await this.updateUser.trigger({ body: { name: "New Name" } });
-
-// Typed params (advanced - when you need explicit param names)
 user = injectRead((api) =>
-  api.users(":userId").$get({ params: { userId: 123 } })
+  api("users/:id").GET({ params: { id: this.userId() } })
 );
 
-// injectWrite with typed params
-deletePost = injectWrite((api) => api.posts(":postId").$delete);
-// Usage: await this.deletePost.trigger({ params: { postId: 42 } });
+// injectWrite: Pass params when triggering
+userId = input.required<number>();
+updateUser = injectWrite((api) => api("users/:id").PUT);
+// Usage: await this.updateUser.trigger({ params: { id: this.userId() }, body: { name: "New Name" } });
+
+// Multiple params
+deletePost = injectWrite((api) => api("users/:userId/posts/:postId").DELETE);
+// Usage: await this.deletePost.trigger({ params: { userId: 1, postId: 42 } });
 ```
 
-**Recommended:** Use direct value passing `users(userId)` for the simplest and most readable code.
+**Recommended:** Use the path-based syntax `api("users/:id").GET({ params: { id } })` for clear and type-safe code.
 
 ## Response Format
 

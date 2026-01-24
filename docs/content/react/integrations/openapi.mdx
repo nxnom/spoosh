@@ -139,8 +139,6 @@ npx spoosh-openapi import \
 ### Generated Output
 
 ```typescript title="src/schema.ts"
-import type { Endpoint } from "@spoosh/core";
-
 /** Unique identifier */
 type Post = {
   /** Unique identifier */
@@ -157,15 +155,15 @@ type CreatePostBody = {
 type ApiSchema = {
   posts: {
     /** Retrieve all posts */
-    $get: Endpoint<{
+    GET: {
       data: Post[];
       query: { userId?: number };
       error: { error?: string };
-    }>;
-    $post: Endpoint<{ data: Post; body: CreatePostBody }>;
-    _: {
-      $get: Post;
     };
+    POST: { data: Post; body: CreatePostBody };
+  };
+  "posts/:postId": {
+    GET: { data: Post };
   };
 };
 ```
@@ -182,27 +180,28 @@ type ApiSchema = {
 
 ## Type Detection
 
-The import feature generates the unified `Endpoint` type with appropriate fields:
+The import feature generates endpoint types with appropriate fields:
 
-| OpenAPI Pattern                    | Spoosh Type                                      | Example                     |
-| ---------------------------------- | ------------------------------------------------ | --------------------------- |
-| Query parameters                   | `Endpoint<{ data: TData; query: TQuery }>`       | GET with `?page=1&limit=10` |
-| `multipart/form-data` request body | `Endpoint<{ data: TData; formData: TFormData }>` | POST with file upload       |
-| `application/json` request body    | `Endpoint<{ data: TData; body: TBody }>`         | POST/PUT with JSON          |
-| No response body (204)             | `void`                                           | DELETE operation            |
-| Simple response only               | `TData`                                          | Simple GET returning data   |
+| OpenAPI Pattern                             | Spoosh Type                        | Example                     |
+| ------------------------------------------- | ---------------------------------- | --------------------------- |
+| Query parameters                            | `\{ data: TData; query: TQuery \}` | GET with `?page=1&limit=10` |
+| `multipart/form-data` request body          | `\{ data: TData; body: TBody \}`   | POST with file upload       |
+| `application/x-www-form-urlencoded` request | `\{ data: TData; body: TBody \}`   | POST with form data         |
+| `application/json` request body             | `\{ data: TData; body: TBody \}`   | POST/PUT with JSON          |
+| No response body (204)                      | `void`                             | DELETE operation            |
+| Simple response only                        | `TData`                            | Simple GET returning data   |
 
 ### Path Conversion
 
-OpenAPI paths are converted to nested Spoosh structure:
+OpenAPI paths are converted to flat Spoosh structure:
 
 ```
-/posts              → { posts: { $get: ... } }
-/posts/{postId}     → { posts: { _: { $get: ... } } }
-/posts/{id}/comments → { posts: { _: { comments: { $get: ... } } } }
+/posts              → { posts: { GET: ... } }
+/posts/{postId}     → { "posts/:postId": { GET: ... } }
+/posts/{id}/comments → { "posts/:id/comments": { GET: ... } }
 ```
 
-Dynamic segments (`{paramName}`) are mapped to the underscore `_` key in Spoosh.
+Dynamic segments (`{paramName}`) are converted to colon notation (`:paramName`) in the path key.
 
 ### Error Type Extraction
 
@@ -239,21 +238,21 @@ Generated:
 
 ```typescript
 // Only 500 has a schema, so only that is included
-$post: Endpoint<{ data: Data; body: Body; error: { system_message?: string } }>;
+POST: { data: Data; body: Body; error: { system_message?: string } };
 
 // If no error responses have schemas, no error field is added
-$get: Data;
+GET: Data;
 ```
 
 Multiple error schemas are automatically unioned:
 
 ```typescript
 // Both 400 and 500 have schemas
-$post: Endpoint<{
+POST: {
   data: Data;
   body: Body;
   error: { error?: string } | { system_message?: string };
-}>;
+};
 ```
 
 ### File Upload Detection
@@ -281,7 +280,13 @@ Binary formats are automatically converted to `File` type:
 Generated:
 
 ```typescript
-$post: Endpoint<{ data: Response; formData: { file: File; title: string } }>;
+POST: {
+  data: Response;
+  body: {
+    file: File;
+    title: string;
+  }
+}
 ```
 
 ## Export: Spoosh → OpenAPI
@@ -307,8 +312,6 @@ npx spoosh-openapi export \
 ### Schema File
 
 ```typescript title="src/schema.ts"
-import type { Endpoint } from "@spoosh/core";
-
 interface User {
   id: number;
   name: string;
@@ -322,16 +325,16 @@ interface CreateUserBody {
 
 export type ApiSchema = {
   users: {
-    $get: Endpoint<{ data: User[]; query: { page?: number; limit?: number } }>;
-    $post: Endpoint<{ data: User; body: CreateUserBody }>;
-    _: {
-      $get: User;
-      $put: Endpoint<{ data: User; body: Partial<CreateUserBody> }>;
-      $delete: void;
-    };
+    GET: { data: User[]; query: { page?: number; limit?: number } };
+    POST: { data: User; body: CreateUserBody };
+  };
+  "users/:id": {
+    GET: { data: User };
+    PUT: { data: User; body: Partial<CreateUserBody> };
+    DELETE: void;
   };
   health: {
-    $get: { status: string };
+    GET: { status: string };
   };
 };
 ```

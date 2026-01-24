@@ -10,7 +10,7 @@ Fetch data with automatic caching and refetching. The callback **calls** the API
 ```typescript
 function UserList() {
   const { data, loading, error, refetch } = useRead(
-    (api) => api.users.$get()
+    (api) => api("users").GET()
   );
 
   if (loading) return <div>Loading...</div>;
@@ -28,7 +28,7 @@ function UserList() {
 
 ```typescript
 const { data, input } = useRead(
-  (api) => api.users.$get({ query: { page: 1, limit: 10 } }),
+  (api) => api("users").GET({ query: { page: 1, limit: 10 } }),
   {
     enabled: isReady,
     additionalTags: ["custom-tag"],

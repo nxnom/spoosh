@@ -20,7 +20,7 @@ Trigger mutations with loading and error states. Returns Angular Signals for rea
   `,
 })
 export class CreateUserComponent {
-  private createUser = injectWrite((api) => api.users.$post);
+  private createUser = injectWrite((api) => api("users").POST);
 
   loading = this.createUser.loading;
   error = this.createUser.error;
@@ -46,12 +46,12 @@ export class CreateUserComponent {
   template: `...`,
 })
 export class CreatePostComponent {
-  private createPost = injectWrite((api) => api.posts.$post);
+  private createPost = injectWrite((api) => api("posts").POST);
 
   async handleCreate() {
     await this.createPost.trigger({
       body: { title: "New Post", content: "..." },
-      invalidate: (api) => [api.posts.$get],
+      invalidate: (api) => [api("posts").GET],
     });
   }
 }
@@ -101,7 +101,7 @@ Use `reset()` to clear mutation state (useful for dismissing notifications):
   `,
 })
 export class CreatePostComponent {
-  private createPost = injectWrite((api) => api.posts.$post);
+  private createPost = injectWrite((api) => api("posts").POST);
 
   data = this.createPost.data;
   error = this.createPost.error;

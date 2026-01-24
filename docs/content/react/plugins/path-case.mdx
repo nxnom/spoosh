@@ -11,9 +11,9 @@ When your API uses kebab-case or snake_case URLs, you're forced to write ugly br
 
 ```typescript
 // Without pathCasePlugin - ugly bracket notation
-api["user-profiles"]["profile-settings"].$get();
-api["blog-posts"](":postId")["related-articles"].$get();
-api["order-history"]["order-items"].$get();
+api("user-profiles/profile-settings").GET();
+api("blog-posts/:postId/related-articles").GET({ params: { postId } });
+api("order-history/order-items").GET();
 ```
 
 ## The Solution
@@ -21,10 +21,10 @@ api["order-history"]["order-items"].$get();
 With `pathCasePlugin`, write clean camelCase:
 
 ```typescript
-// With pathCasePlugin - clean dot notation
-api.userProfiles.profileSettings.$get();
-api.blogPosts(":postId").relatedArticles.$get();
-api.orderHistory.orderItems.$get();
+// With pathCasePlugin - clean camelCase paths
+api("userProfiles/profileSettings").GET();
+api("blogPosts/:postId/relatedArticles").GET({ params: { postId } });
+api("orderHistory/orderItems").GET();
 
 // HTTP requests still use: /blog-posts/123/related-articles
 ```
@@ -59,7 +59,9 @@ Now you can use camelCase everywhere:
 
 ```typescript
 // TypeScript: camelCase with full autocomplete
-const { data } = useRead((api) => api.blogPosts(postId).comments.$get());
+const { data } = useRead((api) =>
+  api("blogPosts/:postId/comments").GET({ params: { postId } })
+);
 
 // HTTP request: GET /blog-posts/123/comments
 ```
@@ -83,7 +85,7 @@ pathCasePlugin({
   exclude: ["v1", "api"],
 });
 
-// api.v1.blogPosts.$get()
+// api("v1/blogPosts").GET()
 // HTTP: GET /v1/blog-posts (v1 unchanged)
 ```
 
@@ -110,12 +112,12 @@ Override the transformation for specific requests:
 
 ```typescript
 // Use snake_case for this specific endpoint
-useRead((api) => api.legacyEndpoint.$get(), {
+useRead((api) => api("legacyEndpoint").GET(), {
   pathCase: { targetCase: "snake" },
 });
 
 // Add exclusions for this request
-useWrite((api) => api.v2.users.$post(), {
+useWrite((api) => api("v2/users").POST, {
   pathCase: { exclude: ["v2"] },
 });
 ```
@@ -129,7 +131,9 @@ The plugin automatically skips:
 - **Excluded segments**: as configured
 
 ```typescript
-api.blogPosts(postId).comments(commentId).$get();
+api("blogPosts/:postId/comments/:commentId").GET({
+  params: { postId, commentId },
+});
 // HTTP: GET /blog-posts/123/comments/456
 // "123" and "456" are not transformed
 ```
@@ -150,14 +154,14 @@ These only transform **path segment keys** - request body, query params, and res
 ```typescript
 type Schema = {
   "user-posts": {
-    $get: () => Promise<{ data: { user_name: string } }>;
+    GET: { data: { user_name: string } };
   };
 };
 
 type CamelSchema = CamelCaseKeys<Schema>;
 // Result: {
 //   userPosts: {
-//     $get: () => Promise<{ data: { user_name: string } }>;
+//     GET: { data: { user_name: string } };
 //   }
 // }
 // Note: user_name in response type is unchanged
