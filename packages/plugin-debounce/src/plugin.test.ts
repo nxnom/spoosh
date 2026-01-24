@@ -504,7 +504,7 @@ describe("debouncePlugin", () => {
         stateManager,
         eventEmitter,
         queryKey: '{"method":"POST","path":["upload"]}',
-        requestOptions: { formData: { file: "test.txt" } },
+        requestOptions: { body: { file: "test.txt" } },
         pluginOptions: { debounce: debounceFn },
       });
       const next = vi.fn().mockResolvedValue({ data: [], status: 200 });
@@ -516,14 +516,14 @@ describe("debouncePlugin", () => {
         stateManager,
         eventEmitter,
         queryKey: '{"method":"POST","path":["upload"]}',
-        requestOptions: { formData: { file: "test2.txt" } },
+        requestOptions: { body: { file: "test2.txt" } },
         pluginOptions: { debounce: debounceFn },
       });
 
       await plugin.middleware!(context2, next);
 
       expect(debounceFn).toHaveBeenLastCalledWith({
-        prevFormData: { file: "test.txt" },
+        prevBody: { file: "test.txt" },
       });
     });
   });

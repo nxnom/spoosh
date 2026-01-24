@@ -10,35 +10,21 @@ type PrevParamsField<TParams> = [TParams] extends [never]
   ? object
   : { prevParams?: TParams };
 
-type PrevFormDataField<TFormData> = [TFormData] extends [never]
-  ? object
-  : { prevFormData?: TFormData };
-
 export type DebounceContext<
   TQuery = never,
   TBody = never,
   TParams = never,
-  TFormData = never,
-> = PrevQueryField<TQuery> &
-  PrevBodyField<TBody> &
-  PrevParamsField<TParams> &
-  PrevFormDataField<TFormData>;
+> = PrevQueryField<TQuery> & PrevBodyField<TBody> & PrevParamsField<TParams>;
 
-export type DebounceFn<
-  TQuery = never,
-  TBody = never,
-  TParams = never,
-  TFormData = never,
-> = (context: DebounceContext<TQuery, TBody, TParams, TFormData>) => number;
+export type DebounceFn<TQuery = never, TBody = never, TParams = never> = (
+  context: DebounceContext<TQuery, TBody, TParams>
+) => number;
 
-export type DebounceValue<
-  TQuery = never,
-  TBody = never,
-  TParams = never,
-  TFormData = never,
-> = number | DebounceFn<TQuery, TBody, TParams, TFormData>;
+export type DebounceValue<TQuery = never, TBody = never, TParams = never> =
+  | number
+  | DebounceFn<TQuery, TBody, TParams>;
 
-export type RequestAwareDebounceFn = DebounceValue<never, never, never, never>;
+export type RequestAwareDebounceFn = DebounceValue<never, never, never>;
 
 export interface DebounceReadOptions {
   /**
@@ -62,8 +48,7 @@ declare module "@spoosh/core" {
       | DebounceValue<
           TContext["input"]["query"],
           TContext["input"]["body"],
-          TContext["input"]["params"],
-          TContext["input"]["formData"]
+          TContext["input"]["params"]
         >
       | undefined;
   }

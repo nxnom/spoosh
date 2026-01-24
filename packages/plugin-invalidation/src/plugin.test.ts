@@ -630,7 +630,7 @@ describe("invalidationPlugin", () => {
       ) as InvalidationInstanceApi;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      instanceApi.invalidate((api: any) => [api.users.$get, "custom-tag"]);
+      instanceApi.invalidate((api: any) => [api("users").GET, "custom-tag"]);
 
       expect(invalidateHandler).toHaveBeenCalledWith(["users", "custom-tag"]);
       const usersEntry = stateManager.getCache(
@@ -672,7 +672,7 @@ describe("invalidationPlugin", () => {
       ) as InvalidationInstanceApi;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      instanceApi.invalidate((api: any) => [api.users(123).posts.$get]);
+      instanceApi.invalidate((api: any) => [api("users/123/posts").GET]);
 
       expect(invalidateHandler).toHaveBeenCalledWith(["users/123/posts"]);
     });

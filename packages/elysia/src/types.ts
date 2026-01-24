@@ -1,5 +1,3 @@
-import type { Endpoint } from "@spoosh/core";
-
 type Simplify<T> = { [K in keyof T]: T[K] } & {};
 
 type IsNever<T> = [T] extends [never] ? true : false;
@@ -8,18 +6,18 @@ type ElysiaMethod = "get" | "post" | "put" | "patch" | "delete" | "head";
 
 type BodyMethod = "post" | "put" | "patch" | "delete";
 
-type SpooshMethod = "$get" | "$post" | "$put" | "$patch" | "$delete";
+type SpooshMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 type MapMethodToSpoosh<M extends ElysiaMethod> = M extends "get" | "head"
-  ? "$get"
+  ? "GET"
   : M extends "post"
-    ? "$post"
+    ? "POST"
     : M extends "put"
-      ? "$put"
+      ? "PUT"
       : M extends "patch"
-        ? "$patch"
+        ? "PATCH"
         : M extends "delete"
-          ? "$delete"
+          ? "DELETE"
           : never;
 
 type ExtractTreatyData<T> = T extends { data: infer D; error: null }
@@ -77,27 +75,21 @@ type BodyField<T> = IsNever<T> extends true ? object : { body: T };
 
 type QueryField<T> = IsNever<T> extends true ? object : { query: T };
 
-type ClientEndpointToSpoosh<TData, TBody, TQuery> = Endpoint<
-  Simplify<{ data: TData } & BodyField<TBody> & QueryField<TQuery>>
+type ClientEndpointToFlat<TData, TBody, TQuery> = Simplify<
+  { data: TData } & BodyField<TBody> & QueryField<TQuery>
 >;
 
-type MethodToSpooshEndpoint<T, M extends string> = T extends (
+type MethodToFlatEndpoint<T, M extends string> = T extends (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ...args: any[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ) => any
-  ? ClientEndpointToSpoosh<
+  ? ClientEndpointToFlat<
       ExtractTreatyData<Awaited<ReturnType<T>>>,
       ExtractTreatyBody<T, M>,
       ExtractTreatyQuery<T, M>
     >
   : never;
-
-type TransformTreatyMethods<T> = {
-  [K in keyof T as K extends ElysiaMethod
-    ? MapMethodToSpoosh<K>
-    : never]: K extends string ? MethodToSpooshEndpoint<T[K], K> : never;
-};
 
 type HasMethodKey<T, K extends ElysiaMethod> = K extends keyof T ? true : false;
 
@@ -136,22 +128,49 @@ type NonIndexKeys<T> = {
   [K in keyof T]: K extends "index" | ElysiaMethod | SpooshMethod ? never : K;
 }[keyof T];
 
-type TransformTreatyClientImpl<T> = (HasAnyMethod<T> extends true
-  ? TransformTreatyMethods<T>
+type TransformTreatyMethods<T> = {
+  [K in keyof T as K extends ElysiaMethod
+    ? MapMethodToSpoosh<K>
+    : never]: K extends string ? MethodToFlatEndpoint<T[K], K> : never;
+};
+
+type JoinPath<A extends string, B extends string> = A extends ""
+  ? B
+  : `${A}/${B}`;
+
+type TransformTreatyToFlatImpl<
+  T,
+  Path extends string = "",
+> = (HasAnyMethod<T> extends true
+  ? { [P in Path]: TransformTreatyMethods<T> }
   : object) &
   (IsDynamicRoute<T> extends true
-    ? { _: TransformTreatyClient<ExtractDynamicRouteReturn<T>> }
+    ? TransformTreatyToFlat<ExtractDynamicRouteReturn<T>, JoinPath<Path, ":id">>
     : object) &
   (NonIndexKeys<T> extends never
     ? object
-    : {
-        [K in NonIndexKeys<T>]: TransformTreatyClient<T[K]>;
-      });
+    : UnionToIntersection<
+        {
+          [K in NonIndexKeys<T>]: TransformTreatyToFlat<
+            T[K],
+            JoinPath<Path, K & string>
+          >;
+        }[NonIndexKeys<T>]
+      >);
 
-type TransformTreatyClient<T> = TransformTreatyClientImpl<FlattenIndex<T>>;
+type UnionToIntersection<U> = (
+  U extends unknown ? (k: U) => void : never
+) extends (k: infer I) => void
+  ? I
+  : never;
+
+type TransformTreatyToFlat<
+  T,
+  Path extends string = "",
+> = TransformTreatyToFlatImpl<FlattenIndex<T>, Path>;
 
 /**
- * Transforms Eden Treaty client type into Spoosh schema format.
+ * Transforms Eden Treaty client type into Spoosh flat schema format.
  *
  * @example
  * ```typescript
@@ -161,6 +180,10 @@ type TransformTreatyClient<T> = TransformTreatyClientImpl<FlattenIndex<T>>;
  *
  * type Client = ReturnType<typeof treaty<App>>;
  * type ApiSchema = ElysiaToSpoosh<Client>;
+ *
+ * const api = createClient<ApiSchema>({ baseUrl: "/api" });
+ * await api("users").GET();
+ * await api("users/:id").GET({ params: { id: 123 } });
  * ```
  */
-export type ElysiaToSpoosh<T> = Simplify<TransformTreatyClient<T>>;
+export type ElysiaToSpoosh<T> = Simplify<TransformTreatyToFlat<T>>;

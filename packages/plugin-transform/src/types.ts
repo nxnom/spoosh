@@ -16,14 +16,6 @@ export type BodyTransformer<TIn = unknown> = (
   body: TIn
 ) => MaybePromise<FlexibleOutput<TIn> | undefined>;
 
-export type FormDataTransformer<TIn = unknown> = (
-  formData: TIn
-) => MaybePromise<FlexibleOutput<TIn> | undefined>;
-
-export type UrlEncodedTransformer<TIn = unknown> = (
-  urlEncoded: TIn
-) => MaybePromise<FlexibleOutput<TIn> | undefined>;
-
 export type ResponseTransformer<TIn = unknown, TOut = unknown> = (
   response: TIn
 ) => MaybePromise<TOut>;
@@ -34,12 +26,6 @@ export interface TransformConfig {
 
   /** Transform JSON body before request. Return undefined to remove body. */
   body?: BodyTransformer;
-
-  /** Transform form data before request. Return undefined to remove formData. */
-  formData?: FormDataTransformer;
-
-  /** Transform URL-encoded data before request. Return undefined to remove urlEncoded. */
-  urlEncoded?: UrlEncodedTransformer;
 
   /** Transform response data after request. Returns transformedData (can be any type). */
   response?: ResponseTransformer<unknown, unknown>;
@@ -100,12 +86,6 @@ type ResolvedTransformConfig<TContext extends ResolverContext> = {
 
   /** Transform JSON body before request. Return undefined to remove body. */
   body?: BodyTransformer<TContext["input"]["body"]>;
-
-  /** Transform form data before request. Return undefined to remove formData. */
-  formData?: FormDataTransformer<TContext["input"]["formData"]>;
-
-  /** Transform URL-encoded data before request. Return undefined to remove urlEncoded. */
-  urlEncoded?: UrlEncodedTransformer<TContext["input"]["urlEncoded"]>;
 
   /** Transform response data after request. Returns transformedData (can be any type). */
   response?: ResponseTransformer<TContext["data"], unknown>;

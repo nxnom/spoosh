@@ -1,5 +1,11 @@
 # @spoosh/plugin-transform
 
+## 0.3.0
+
+### Breaking Changes
+
+- Updated to support new flat schema API from @spoosh/core@0.6.0
+
 ## 0.2.0
 
 ### Breaking Changes

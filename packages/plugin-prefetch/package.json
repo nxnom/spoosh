@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-prefetch",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "Prefetch plugin for Spoosh - preload data before it's needed",
   "license": "MIT",
   "repository": {

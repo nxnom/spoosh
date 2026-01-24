@@ -66,9 +66,22 @@ export type PathSegment = {
   parameterName?: string;
 };
 
-/** Nested endpoint structure */
+/** Nested endpoint structure (legacy) */
 export type NestedEndpointStructure = {
   [key: string]: NestedEndpointStructure | EndpointTypeInfo;
+};
+
+/** HTTP methods supported */
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+/** Methods object for a path */
+export type PathMethods = {
+  [K in HttpMethod]?: EndpointTypeInfo;
+};
+
+/** Flat endpoint structure - path string keys to method objects */
+export type FlatEndpointStructure = {
+  [path: string]: PathMethods;
 };
 
 /** Result of schema-to-type conversion */

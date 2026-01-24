@@ -1,16 +1,19 @@
-import type { OpenAPISpec } from "../types.js";
+import type { OpenAPISpec, JSONSchema } from "../types.js";
 import type {
   ConversionContext,
   ImportOptions,
-  NestedEndpointStructure,
+  FlatEndpointStructure,
   EndpointTypeInfo,
+  HttpMethod,
 } from "./types.js";
-import { convertPathsToSpooshStructure } from "./path-converter.js";
+import { convertPathsToFlatStructure } from "./path-converter.js";
 import { detectEndpointType } from "./endpoint-detector.js";
 import {
   generateNamedType,
   sanitizeTypeName,
   ORIGINAL_NAMES,
+  clearNameCaches,
+  registerSchemaNames,
 } from "./schema-to-type.js";
 
 /**
@@ -23,8 +26,14 @@ export function generateSpooshSchema(
   spec: OpenAPISpec,
   options: ImportOptions = {}
 ): string {
-  // Clear the original names map at the start of each import
+  // Clear all caches at the start of each import
   ORIGINAL_NAMES.clear();
+  clearNameCaches();
+
+  // Pre-register all schema names to handle collisions
+  if (spec.components?.schemas) {
+    registerSchemaNames(Object.keys(spec.components.schemas));
+  }
 
   const ctx: ConversionContext = {
     namedTypes: new Map(),
@@ -53,12 +62,12 @@ export function generateSpooshSchema(
     }
   }
 
-  const structure = convertPathsToSpooshStructure(spec, endpointInfoMap);
+  const structure = convertPathsToFlatStructure(spec, endpointInfoMap);
 
   const sections: string[] = [];
 
   if (ctx.options.includeImports) {
-    sections.push(generateImports(endpointInfoMap));
+    sections.push(generateImports());
   }
 
   if (spec.components?.schemas) {
@@ -71,22 +80,92 @@ export function generateSpooshSchema(
 }
 
 /**
- * Generate import statements
- * @param endpointInfoMap Map of endpoint info
- * @returns Import statement string
+ * Generate import statements (no imports needed for flat schema)
+ * @returns Empty string
  */
-function generateImports(
-  endpointInfoMap: Map<string, EndpointTypeInfo>
-): string {
-  const hasEndpoint = Array.from(endpointInfoMap.values()).some(
-    (info) => !info.isVoid
-  );
+function generateImports(): string {
+  return "";
+}
 
-  if (!hasEndpoint) {
-    return "";
+/**
+ * Extract all $ref dependencies from a schema
+ */
+function extractRefs(schema: unknown): string[] {
+  const refs: string[] = [];
+
+  function walk(obj: unknown): void {
+    if (!obj || typeof obj !== "object") return;
+
+    if (Array.isArray(obj)) {
+      for (const item of obj) walk(item);
+      return;
+    }
+
+    const record = obj as Record<string, unknown>;
+
+    if (typeof record.$ref === "string") {
+      const parts = record.$ref.split("/");
+      const name = parts[parts.length - 1];
+      if (name) refs.push(name);
+    }
+
+    for (const value of Object.values(record)) {
+      walk(value);
+    }
   }
 
-  return `import type { Endpoint } from "@spoosh/core";`;
+  walk(schema);
+  return refs;
+}
+
+/**
+ * Topologically sort schemas so dependencies come before dependents
+ */
+function topologicalSortSchemas(
+  schemas: Record<string, JSONSchema>
+): Array<[string, JSONSchema]> {
+  const entries = Object.entries(schemas);
+  const nameSet = new Set(entries.map(([name]) => name));
+
+  const deps = new Map<string, Set<string>>();
+  for (const [name, schema] of entries) {
+    const schemaRefs = extractRefs(schema).filter((ref) => nameSet.has(ref));
+    deps.set(name, new Set(schemaRefs));
+  }
+
+  const sorted: Array<[string, JSONSchema]> = [];
+  const visited = new Set<string>();
+  const visiting = new Set<string>();
+
+  function visit(name: string): void {
+    if (visited.has(name)) return;
+
+    if (visiting.has(name)) {
+      visited.add(name);
+      return;
+    }
+
+    visiting.add(name);
+
+    for (const dep of deps.get(name) || []) {
+      visit(dep);
+    }
+
+    visiting.delete(name);
+    visited.add(name);
+
+    const schema = schemas[name];
+    if (schema !== undefined) {
+      sorted.push([name, schema]);
+    }
+  }
+
+  const sortedNames = [...nameSet].sort();
+  for (const name of sortedNames) {
+    visit(name);
+  }
+
+  return sorted;
 }
 
 /**
@@ -105,9 +184,7 @@ function generateComponentTypes(
     return "";
   }
 
-  const sortedSchemas = Object.entries(spec.components.schemas).sort((a, b) =>
-    a[0].localeCompare(b[0])
-  );
+  const sortedSchemas = topologicalSortSchemas(spec.components.schemas);
 
   for (const [name, schema] of sortedSchemas) {
     const typeDefinition = generateNamedType(name, schema, ctx);
@@ -119,49 +196,62 @@ function generateComponentTypes(
 
 /**
  * Generate main schema type
- * @param structure Nested structure
+ * @param structure Flat structure
  * @param ctx Conversion context
  * @returns Schema type definition
  */
 function generateSchemaType(
-  structure: NestedEndpointStructure,
+  structure: FlatEndpointStructure,
   ctx: ConversionContext
 ): string {
   const typeName = sanitizeTypeName(ctx.options.typeName || "ApiSchema");
-  const schemaBody = generateStructureBody(structure, ctx, 1);
+  const schemaBody = generateFlatStructureBody(structure, ctx);
 
   return `export type ${typeName} = ${schemaBody};`;
 }
 
 /**
- * Generate structure body recursively
- * @param structure Nested structure
+ * Generate flat structure body
+ * @param structure Flat structure
  * @param ctx Conversion context
- * @param indent Indentation level
  * @returns TypeScript object literal string
  */
-function generateStructureBody(
-  structure: NestedEndpointStructure,
-  ctx: ConversionContext,
-  indent: number
+function generateFlatStructureBody(
+  structure: FlatEndpointStructure,
+  ctx: ConversionContext
 ): string {
   const entries: string[] = [];
-  const indentStr = "  ".repeat(indent);
+  const indentStr = "  ";
 
-  for (const [key, value] of Object.entries(structure)) {
-    const quotedKey = quoteKeyIfNeeded(key);
+  const sortedPaths = Object.keys(structure).sort();
 
-    if (isEndpointTypeInfo(value)) {
-      const endpointStr = generateEndpointType(value);
+  for (const path of sortedPaths) {
+    const methods = structure[path];
 
-      if (ctx.options.jsdoc && value.description) {
-        entries.push(`${indentStr}/** ${value.description} */`);
+    if (!methods) continue;
+
+    const methodEntries: string[] = [];
+
+    const methodOrder: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+
+    for (const method of methodOrder) {
+      const endpointInfo = methods[method];
+
+      if (endpointInfo) {
+        const endpointStr = generateEndpointType(endpointInfo);
+
+        if (ctx.options.jsdoc && endpointInfo.description) {
+          methodEntries.push(`    /** ${endpointInfo.description} */`);
+        }
+
+        methodEntries.push(`    ${method}: ${endpointStr};`);
       }
+    }
 
-      entries.push(`${indentStr}${quotedKey}: ${endpointStr};`);
-    } else {
+    if (methodEntries.length > 0) {
+      const pathKey = JSON.stringify(path);
       entries.push(
-        `${indentStr}${quotedKey}: ${generateStructureBody(value, ctx, indent + 1)};`
+        `${indentStr}${pathKey}: {\n${methodEntries.join("\n")}\n${indentStr}};`
       );
     }
   }
@@ -170,7 +260,7 @@ function generateStructureBody(
     return "{}";
   }
 
-  return `{\n${entries.join("\n")}\n${"  ".repeat(indent - 1)}}`;
+  return `{\n${entries.join("\n")}\n}`;
 }
 
 /**
@@ -180,7 +270,7 @@ function generateStructureBody(
  */
 function generateEndpointType(info: EndpointTypeInfo): string {
   if (info.isVoid) {
-    return "void";
+    return "{ data: void }";
   }
 
   const fields: string[] = [`data: ${info.dataType}`];
@@ -205,29 +295,5 @@ function generateEndpointType(info: EndpointTypeInfo): string {
     fields.push(`error: ${info.errorType}`);
   }
 
-  return `Endpoint<{ ${fields.join("; ")} }>`;
-}
-
-/**
- * Type guard to check if value is EndpointTypeInfo
- * @param value Value to check
- * @returns True if value is EndpointTypeInfo
- */
-function isEndpointTypeInfo(
-  value: NestedEndpointStructure | EndpointTypeInfo
-): value is EndpointTypeInfo {
-  return "type" in value && "dataType" in value;
-}
-
-/**
- * Quote property name if needed
- * @param key Property name
- * @returns Quoted or unquoted key
- */
-function quoteKeyIfNeeded(key: string): string {
-  if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)) {
-    return key;
-  }
-
-  return JSON.stringify(key);
+  return `{ ${fields.join("; ")} }`;
 }

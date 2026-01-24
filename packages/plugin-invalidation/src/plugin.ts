@@ -40,7 +40,8 @@ function resolveTagsFromOption(
         tags.push(target);
       } else {
         const path = extractPathFromSelector(target);
-        const derivedTags = generateTags(path);
+        const pathSegments = path.split("/").filter(Boolean);
+        const derivedTags = generateTags(pathSegments);
         const exactTag = derivedTags[derivedTags.length - 1];
 
         if (exactTag) {

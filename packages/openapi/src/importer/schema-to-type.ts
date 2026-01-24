@@ -57,11 +57,65 @@ const TS_KEYWORDS = new Set([
 export const ORIGINAL_NAMES = new Map<string, string>();
 
 /**
+ * Map of original OpenAPI names to unique sanitized names
+ * Used to handle collisions when different names sanitize to the same identifier
+ */
+const NAME_CACHE = new Map<string, string>();
+
+/**
+ * Set of all used sanitized names
+ */
+const USED_NAMES = new Set<string>();
+
+/**
+ * Clear name caches (call at start of each import)
+ */
+export function clearNameCaches(): void {
+  NAME_CACHE.clear();
+  USED_NAMES.clear();
+}
+
+/**
+ * Pre-register all schema names to detect and handle collisions
+ * @param names Array of original schema names
+ */
+export function registerSchemaNames(names: string[]): void {
+  for (const name of names) {
+    if (NAME_CACHE.has(name)) continue;
+
+    let sanitized = name.replace(/[^a-zA-Z0-9_]/g, "_");
+
+    if (TS_KEYWORDS.has(name)) {
+      sanitized = `${name}Type`;
+    }
+
+    if (USED_NAMES.has(sanitized)) {
+      let suffix = 2;
+      while (USED_NAMES.has(`${sanitized}_${suffix}`)) {
+        suffix++;
+      }
+      sanitized = `${sanitized}_${suffix}`;
+    }
+
+    NAME_CACHE.set(name, sanitized);
+    USED_NAMES.add(sanitized);
+
+    if (sanitized !== name) {
+      ORIGINAL_NAMES.set(sanitized, name);
+    }
+  }
+}
+
+/**
  * Sanitize type name to avoid TypeScript keyword conflicts
  * @param name Type name
  * @returns Sanitized name
  */
 export function sanitizeTypeName(name: string): string {
+  if (NAME_CACHE.has(name)) {
+    return NAME_CACHE.get(name)!;
+  }
+
   if (TS_KEYWORDS.has(name)) {
     const sanitized = `${name}Type`;
     ORIGINAL_NAMES.set(sanitized, name);
@@ -70,7 +124,6 @@ export function sanitizeTypeName(name: string): string {
 
   const sanitized = name.replace(/[^a-zA-Z0-9_]/g, "_");
 
-  // Store original name if it was changed
   if (sanitized !== name) {
     ORIGINAL_NAMES.set(sanitized, name);
   }
@@ -106,12 +159,53 @@ export function extractTypeNameFromRef(ref: string): string {
 }
 
 /**
+ * Split union type string respecting brace/paren nesting
+ * @param unionStr Union type string
+ * @returns Array of individual type strings
+ */
+function splitUnionTypes(unionStr: string): string[] {
+  const types: string[] = [];
+  let current = "";
+  let depth = 0;
+
+  for (let i = 0; i < unionStr.length; i++) {
+    const char = unionStr[i];
+
+    if (char === "{" || char === "(" || char === "[" || char === "<") {
+      depth++;
+      current += char;
+    } else if (char === "}" || char === ")" || char === "]" || char === ">") {
+      depth--;
+      current += char;
+    } else if (
+      depth === 0 &&
+      char === "|" &&
+      unionStr[i - 1] === " " &&
+      unionStr[i + 1] === " "
+    ) {
+      if (current.trim()) {
+        types.push(current.trim());
+      }
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  if (current.trim()) {
+    types.push(current.trim());
+  }
+
+  return types;
+}
+
+/**
  * Deduplicate types in a union string
  * @param unionStr Union type string (e.g., "string | null | null")
  * @returns Deduplicated union string (e.g., "string | null")
  */
 function deduplicateUnion(unionStr: string): string {
-  const types = unionStr.split(" | ").map((t) => t.trim());
+  const types = splitUnionTypes(unionStr);
   const seen = new Set<string>();
   const unique: string[] = [];
 
@@ -304,9 +398,9 @@ function generateObjectType(
         ctx,
         depth + 1
       );
-      return `Record<string, ${valueType}>`;
+      return `{ [key: string]: ${valueType} }`;
     }
-    return "Record<string, unknown>";
+    return "{ [key: string]: unknown }";
   }
 
   const hasJsDoc =

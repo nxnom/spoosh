@@ -3,31 +3,52 @@ import { createStateManager, createEventEmitter } from "@spoosh/test-utils";
 
 import { prefetchPlugin } from "./plugin";
 
-function createMockApi() {
-  const user1 = {
-    $get: vi
-      .fn()
-      .mockResolvedValue({ data: { id: 1, name: "User" }, status: 200 }),
-  };
+type MockGetFn = ReturnType<typeof vi.fn> &
+  ((...args: unknown[]) => Promise<SpooshResponse<unknown, unknown>>);
 
-  const usersFunc: ((id: string) => typeof user1) & {
-    $get: ReturnType<typeof vi.fn>;
-    "1": typeof user1;
-  } = Object.assign(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    (id: string) => user1,
-    {
-      $get: vi.fn().mockResolvedValue({ data: { users: [] }, status: 200 }),
-      "1": user1,
-    }
-  );
+type MockMethods = {
+  GET: MockGetFn;
+};
 
-  return {
+type MockApi = ((path: string) => MockMethods) & {
+  _mocks: Record<string, MockMethods>;
+};
+
+function createMockApi(): MockApi {
+  const mocks: Record<string, MockMethods> = {
     posts: {
-      $get: vi.fn().mockResolvedValue({ data: { posts: [] }, status: 200 }),
+      GET: vi
+        .fn()
+        .mockResolvedValue({ data: { posts: [] }, status: 200 }) as MockGetFn,
     },
-    users: usersFunc,
+    users: {
+      GET: vi
+        .fn()
+        .mockResolvedValue({ data: { users: [] }, status: 200 }) as MockGetFn,
+    },
+    "users/:id": {
+      GET: vi.fn().mockResolvedValue({
+        data: { id: 1, name: "User" },
+        status: 200,
+      }) as MockGetFn,
+    },
   };
+
+  const api = ((path: string): MockMethods => {
+    if (!mocks[path]) {
+      mocks[path] = {
+        GET: vi
+          .fn()
+          .mockResolvedValue({ data: null, status: 200 }) as MockGetFn,
+      };
+    }
+
+    return mocks[path];
+  }) as MockApi;
+
+  api._mocks = mocks;
+
+  return api;
 }
 
 function createMockPluginExecutor(
@@ -105,7 +126,7 @@ describe("prefetchPlugin", () => {
       const pluginExecutor = createMockPluginExecutor();
       const api = createMockApi();
 
-      api.posts.$get.mockResolvedValue({
+      api("posts").GET.mockResolvedValue({
         data: { posts: [{ id: 1 }] },
         status: 200,
       });
@@ -117,11 +138,13 @@ describe("prefetchPlugin", () => {
         pluginExecutor,
       });
 
-      await prefetch((apiProxy) => (apiProxy as typeof api).posts.$get());
+      await prefetch((apiProxy) =>
+        (apiProxy as unknown as MockApi)("posts").GET()
+      );
 
       const queryKey = stateManager.createQueryKey({
         path: ["posts"],
-        method: "$get",
+        method: "GET",
         options: undefined,
       });
 
@@ -137,7 +160,7 @@ describe("prefetchPlugin", () => {
       const api = createMockApi();
 
       const errorResponse = { message: "Not found" };
-      api.posts.$get.mockResolvedValue({
+      api("posts").GET.mockResolvedValue({
         error: errorResponse,
         status: 404,
       });
@@ -150,14 +173,14 @@ describe("prefetchPlugin", () => {
       });
 
       const result = await prefetch((apiProxy) =>
-        (apiProxy as typeof api).posts.$get()
+        (apiProxy as unknown as MockApi)("posts").GET()
       );
 
       expect(result.error).toEqual(errorResponse);
 
       const queryKey = stateManager.createQueryKey({
         path: ["posts"],
-        method: "$get",
+        method: "GET",
         options: undefined,
       });
 
@@ -166,7 +189,7 @@ describe("prefetchPlugin", () => {
       expect(cached?.state.error).toBeUndefined();
     });
 
-    it("should throw error when selector does not select a $get method", async () => {
+    it("should throw error when selector does not select a GET method", async () => {
       const plugin = prefetchPlugin();
       const stateManager = createStateManager();
       const eventEmitter = createEventEmitter();
@@ -182,10 +205,10 @@ describe("prefetchPlugin", () => {
 
       await expect(
         prefetch((apiProxy) => {
-          void (apiProxy as typeof api).posts;
+          void (apiProxy as unknown as MockApi)("posts");
           return Promise.resolve({ data: undefined, status: 200 });
         })
-      ).rejects.toThrow("prefetch requires selecting a $get method");
+      ).rejects.toThrow("prefetch requires selecting a GET method");
     });
 
     it("should pass options to the API call", async () => {
@@ -203,10 +226,12 @@ describe("prefetchPlugin", () => {
       });
 
       await prefetch((apiProxy) =>
-        (apiProxy as typeof api).posts.$get({ query: { page: 1, limit: 10 } })
+        (apiProxy as unknown as MockApi)("posts").GET({
+          query: { page: 1, limit: 10 },
+        })
       );
 
-      expect(api.posts.$get).toHaveBeenCalledWith(
+      expect(api("posts").GET).toHaveBeenCalledWith(
         expect.objectContaining({
           query: { page: 1, limit: 10 },
         })
@@ -220,7 +245,7 @@ describe("prefetchPlugin", () => {
       const pluginExecutor = createMockPluginExecutor();
       const api = createMockApi();
 
-      api.users("1").$get.mockResolvedValue({
+      api("users/:id").GET.mockResolvedValue({
         data: { id: 1, name: "John" },
         status: 200,
       });
@@ -232,14 +257,18 @@ describe("prefetchPlugin", () => {
         pluginExecutor,
       });
 
-      await prefetch((apiProxy) => (apiProxy as typeof api).users("1").$get());
+      await prefetch((apiProxy) =>
+        (apiProxy as unknown as MockApi)("users/:id").GET({
+          params: { id: "1" },
+        })
+      );
 
-      expect(api.users("1").$get).toHaveBeenCalled();
+      expect(api("users/:id").GET).toHaveBeenCalled();
 
       const queryKey = stateManager.createQueryKey({
-        path: ["users", "1"],
-        method: "$get",
-        options: undefined,
+        path: ["users", ":id"],
+        method: "GET",
+        options: { params: { id: "1" } },
       });
 
       const cached = stateManager.getCache(queryKey);
@@ -270,9 +299,12 @@ describe("prefetchPlugin", () => {
         pluginExecutor,
       });
 
-      await prefetch((apiProxy) => (apiProxy as typeof api).posts.$get(), {
-        staleTime: 60000,
-      });
+      await prefetch(
+        (apiProxy) => (apiProxy as unknown as MockApi)("posts").GET(),
+        {
+          staleTime: 60000,
+        }
+      );
 
       expect(capturedPluginOptions?.staleTime).toBe(60000);
     });
@@ -299,10 +331,13 @@ describe("prefetchPlugin", () => {
         pluginExecutor,
       });
 
-      await prefetch((apiProxy) => (apiProxy as typeof api).posts.$get(), {
-        staleTime: 30000,
-        retries: 3,
-      });
+      await prefetch(
+        (apiProxy) => (apiProxy as unknown as MockApi)("posts").GET(),
+        {
+          staleTime: 30000,
+          retries: 3,
+        }
+      );
 
       expect(capturedPluginOptions?.staleTime).toBe(30000);
       expect(capturedPluginOptions?.retries).toBe(3);
@@ -324,7 +359,7 @@ describe("prefetchPlugin", () => {
 
       const queryKey = stateManager.createQueryKey({
         path: ["posts"],
-        method: "$get",
+        method: "GET",
         options: undefined,
       });
 
@@ -338,10 +373,10 @@ describe("prefetchPlugin", () => {
       });
 
       const result = await prefetch((apiProxy) =>
-        (apiProxy as typeof api).posts.$get()
+        (apiProxy as unknown as MockApi)("posts").GET()
       );
 
-      expect(api.posts.$get).not.toHaveBeenCalled();
+      expect(api("posts").GET).not.toHaveBeenCalled();
       expect(result).toEqual({ data: { posts: [{ id: 1 }] }, status: 200 });
     });
 
@@ -353,7 +388,7 @@ describe("prefetchPlugin", () => {
       const api = createMockApi();
 
       let resolvePromise: (value: SpooshResponse<unknown, unknown>) => void;
-      api.posts.$get.mockImplementation(
+      api("posts").GET.mockImplementation(
         () =>
           new Promise((resolve) => {
             resolvePromise = resolve;
@@ -368,17 +403,17 @@ describe("prefetchPlugin", () => {
       });
 
       const promise1 = prefetch((apiProxy) =>
-        (apiProxy as typeof api).posts.$get()
+        (apiProxy as unknown as MockApi)("posts").GET()
       );
       const promise2 = prefetch((apiProxy) =>
-        (apiProxy as typeof api).posts.$get()
+        (apiProxy as unknown as MockApi)("posts").GET()
       );
 
       resolvePromise!({ data: { posts: [{ id: 1 }] }, status: 200 });
 
       const [result1, result2] = await Promise.all([promise1, promise2]);
 
-      expect(api.posts.$get).toHaveBeenCalledTimes(1);
+      expect(api("posts").GET).toHaveBeenCalledTimes(1);
       expect(result1).toEqual(result2);
     });
 
@@ -389,7 +424,7 @@ describe("prefetchPlugin", () => {
       const pluginExecutor = createMockPluginExecutor();
       const api = createMockApi();
 
-      api.posts.$get.mockResolvedValue({
+      api("posts").GET.mockResolvedValue({
         data: { posts: [{ id: 1 }] },
         status: 200,
       });
@@ -401,16 +436,20 @@ describe("prefetchPlugin", () => {
         pluginExecutor,
       });
 
-      await prefetch((apiProxy) => (apiProxy as typeof api).posts.$get());
+      await prefetch((apiProxy) =>
+        (apiProxy as unknown as MockApi)("posts").GET()
+      );
 
-      api.posts.$get.mockResolvedValue({
+      api("posts").GET.mockResolvedValue({
         data: { posts: [{ id: 2 }] },
         status: 200,
       });
 
-      await prefetch((apiProxy) => (apiProxy as typeof api).posts.$get());
+      await prefetch((apiProxy) =>
+        (apiProxy as unknown as MockApi)("posts").GET()
+      );
 
-      expect(api.posts.$get).toHaveBeenCalledTimes(2);
+      expect(api("posts").GET).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -423,7 +462,7 @@ describe("prefetchPlugin", () => {
       const api = createMockApi();
 
       let resolvePromise: (value: SpooshResponse<unknown, unknown>) => void;
-      api.posts.$get.mockImplementation(
+      api("posts").GET.mockImplementation(
         () =>
           new Promise((resolve) => {
             resolvePromise = resolve;
@@ -437,11 +476,11 @@ describe("prefetchPlugin", () => {
         pluginExecutor,
       });
 
-      prefetch((apiProxy) => (apiProxy as typeof api).posts.$get());
+      prefetch((apiProxy) => (apiProxy as unknown as MockApi)("posts").GET());
 
       const queryKey = stateManager.createQueryKey({
         path: ["posts"],
-        method: "$get",
+        method: "GET",
         options: undefined,
       });
 
@@ -464,7 +503,7 @@ describe("prefetchPlugin", () => {
       const api = createMockApi();
 
       let resolvePromise: (value: SpooshResponse<unknown, unknown>) => void;
-      api.posts.$get.mockImplementation(
+      api("posts").GET.mockImplementation(
         () =>
           new Promise((resolve) => {
             resolvePromise = resolve;
@@ -478,11 +517,11 @@ describe("prefetchPlugin", () => {
         pluginExecutor,
       });
 
-      prefetch((apiProxy) => (apiProxy as typeof api).posts.$get());
+      prefetch((apiProxy) => (apiProxy as unknown as MockApi)("posts").GET());
 
       const queryKey = stateManager.createQueryKey({
         path: ["posts"],
-        method: "$get",
+        method: "GET",
         options: undefined,
       });
 
@@ -506,7 +545,7 @@ describe("prefetchPlugin", () => {
       const pluginExecutor = createMockPluginExecutor();
       const api = createMockApi();
 
-      api.posts.$get.mockResolvedValue({
+      api("posts").GET.mockResolvedValue({
         data: { posts: [{ id: 1 }] },
         status: 200,
       });
@@ -518,11 +557,13 @@ describe("prefetchPlugin", () => {
         pluginExecutor,
       });
 
-      await prefetch((apiProxy) => (apiProxy as typeof api).posts.$get());
+      await prefetch((apiProxy) =>
+        (apiProxy as unknown as MockApi)("posts").GET()
+      );
 
       const queryKey = stateManager.createQueryKey({
         path: ["posts"],
-        method: "$get",
+        method: "GET",
         options: undefined,
       });
 
@@ -542,7 +583,7 @@ describe("prefetchPlugin", () => {
       let resolveFirstPromise: (
         value: SpooshResponse<unknown, unknown>
       ) => void;
-      api.posts.$get.mockImplementationOnce(
+      api("posts").GET.mockImplementationOnce(
         () =>
           new Promise((resolve) => {
             resolveFirstPromise = resolve;
@@ -556,20 +597,20 @@ describe("prefetchPlugin", () => {
         pluginExecutor,
       });
 
-      prefetch((apiProxy) => (apiProxy as typeof api).posts.$get());
+      prefetch((apiProxy) => (apiProxy as unknown as MockApi)("posts").GET());
 
       await vi.advanceTimersByTimeAsync(5000);
 
-      api.posts.$get.mockResolvedValue({
+      api("posts").GET.mockResolvedValue({
         data: { posts: [{ id: 2 }] },
         status: 200,
       });
 
       const result = await prefetch((apiProxy) =>
-        (apiProxy as typeof api).posts.$get()
+        (apiProxy as unknown as MockApi)("posts").GET()
       );
 
-      expect(api.posts.$get).toHaveBeenCalledTimes(2);
+      expect(api("posts").GET).toHaveBeenCalledTimes(2);
       expect(result).toEqual({ data: { posts: [{ id: 2 }] }, status: 200 });
 
       resolveFirstPromise!({ data: { posts: [] }, status: 200 });
@@ -584,15 +625,17 @@ describe("prefetchPlugin", () => {
       const pluginExecutor = createMockPluginExecutor();
       const api = createMockApi();
 
-      api.posts.$get.mockImplementation((options: { signal?: AbortSignal }) => {
-        return new Promise((_, reject) => {
-          if (options?.signal) {
-            options.signal.addEventListener("abort", () => {
-              reject(new DOMException("Aborted", "AbortError"));
-            });
-          }
-        });
-      });
+      api("posts").GET.mockImplementation(
+        (options: { signal?: AbortSignal }) => {
+          return new Promise((_, reject) => {
+            if (options?.signal) {
+              options.signal.addEventListener("abort", () => {
+                reject(new DOMException("Aborted", "AbortError"));
+              });
+            }
+          });
+        }
+      );
 
       const { prefetch } = plugin.instanceApi!({
         api,
@@ -613,7 +656,7 @@ describe("prefetchPlugin", () => {
       });
 
       const prefetchPromise = prefetch((apiProxy) =>
-        (apiProxy as typeof api).posts.$get()
+        (apiProxy as unknown as MockApi)("posts").GET()
       );
 
       await vi.advanceTimersByTimeAsync(10);
@@ -634,7 +677,7 @@ describe("prefetchPlugin", () => {
       const pluginExecutor = createMockPluginExecutor();
       const api = createMockApi();
 
-      api.posts.$get.mockResolvedValue({
+      api("posts").GET.mockResolvedValue({
         data: { posts: [] },
         status: 200,
       });
@@ -646,14 +689,17 @@ describe("prefetchPlugin", () => {
         pluginExecutor,
       });
 
-      await prefetch((apiProxy) => (apiProxy as typeof api).posts.$get(), {
-        tags: ["custom-tag"],
-        additionalTags: ["extra-tag"],
-      });
+      await prefetch(
+        (apiProxy) => (apiProxy as unknown as MockApi)("posts").GET(),
+        {
+          tags: ["custom-tag"],
+          additionalTags: ["extra-tag"],
+        }
+      );
 
       const queryKey = stateManager.createQueryKey({
         path: ["posts"],
-        method: "$get",
+        method: "GET",
         options: undefined,
       });
 
@@ -678,14 +724,16 @@ describe("prefetchPlugin", () => {
         pluginExecutor,
       });
 
-      await prefetch((apiProxy) => (apiProxy as typeof api).posts.$get());
+      await prefetch((apiProxy) =>
+        (apiProxy as unknown as MockApi)("posts").GET()
+      );
 
       expect(pluginExecutor.executeMiddleware).toHaveBeenCalledWith(
         "read",
         expect.objectContaining({
           operationType: "read",
           path: ["posts"],
-          method: "$get",
+          method: "GET",
         }),
         expect.any(Function)
       );
@@ -705,13 +753,15 @@ describe("prefetchPlugin", () => {
         pluginExecutor,
       });
 
-      await prefetch((apiProxy) => (apiProxy as typeof api).posts.$get());
+      await prefetch((apiProxy) =>
+        (apiProxy as unknown as MockApi)("posts").GET()
+      );
 
       expect(pluginExecutor.createContext).toHaveBeenCalledWith(
         expect.objectContaining({
           operationType: "read",
           path: ["posts"],
-          method: "$get",
+          method: "GET",
           stateManager,
           eventEmitter,
         })
@@ -728,7 +778,7 @@ describe("prefetchPlugin", () => {
       const api = createMockApi();
 
       const thrownError = new Error("Network error");
-      api.posts.$get.mockRejectedValue(thrownError);
+      api("posts").GET.mockRejectedValue(thrownError);
 
       const { prefetch } = plugin.instanceApi!({
         api,
@@ -738,7 +788,7 @@ describe("prefetchPlugin", () => {
       });
 
       const result = await prefetch((apiProxy) =>
-        (apiProxy as typeof api).posts.$get()
+        (apiProxy as unknown as MockApi)("posts").GET()
       );
 
       expect(result.error).toBe(thrownError);
@@ -746,7 +796,7 @@ describe("prefetchPlugin", () => {
 
       const queryKey = stateManager.createQueryKey({
         path: ["posts"],
-        method: "$get",
+        method: "GET",
         options: undefined,
       });
 

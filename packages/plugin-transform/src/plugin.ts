@@ -22,7 +22,7 @@ function deepClone<T>(value: T): T {
 }
 
 /**
- * Enables data transformation for query, body, formData, urlEncoded, and response.
+ * Enables data transformation for query, body, and response.
  *
  * Supports both sync and async transformer functions. All data is deep-cloned
  * before transformation to prevent mutation of original objects.
@@ -100,26 +100,6 @@ export function transformPlugin(): SpooshPlugin<{
         context.requestOptions = {
           ...context.requestOptions,
           body: transformed,
-        };
-      }
-
-      if (transform?.formData && requestOptions.formData) {
-        const cloned = deepClone(requestOptions.formData);
-        const transformed = await transform.formData(cloned);
-
-        context.requestOptions = {
-          ...context.requestOptions,
-          formData: transformed as typeof requestOptions.formData,
-        };
-      }
-
-      if (transform?.urlEncoded && requestOptions.urlEncoded) {
-        const cloned = deepClone(requestOptions.urlEncoded);
-        const transformed = await transform.urlEncoded(cloned);
-
-        context.requestOptions = {
-          ...context.requestOptions,
-          urlEncoded: transformed as typeof requestOptions.urlEncoded,
         };
       }
 
