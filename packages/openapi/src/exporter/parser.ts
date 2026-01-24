@@ -7,7 +7,7 @@ import {
   type SchemaContext,
 } from "./type-to-schema.js";
 
-const HTTP_METHODS = ["$get", "$post", "$put", "$patch", "$delete"] as const;
+const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 type HttpMethod = (typeof HTTP_METHODS)[number];
 
 function isHttpMethod(key: string): key is HttpMethod {
@@ -17,7 +17,34 @@ function isHttpMethod(key: string): key is HttpMethod {
 function methodKeyToHttp(
   key: HttpMethod
 ): "get" | "post" | "put" | "patch" | "delete" {
-  return key.slice(1) as "get" | "post" | "put" | "patch" | "delete";
+  return key.toLowerCase() as "get" | "post" | "put" | "patch" | "delete";
+}
+
+/**
+ * Convert flat path format to OpenAPI path format
+ * e.g., "posts/:id/comments" -> "/posts/{id}/comments"
+ */
+function flatPathToOpenAPI(flatPath: string): string {
+  const openApiPath = flatPath.replace(/:([^/]+)/g, "{$1}");
+  return openApiPath.startsWith("/") ? openApiPath : `/${openApiPath}`;
+}
+
+/**
+ * Extract path parameters from flat path
+ * e.g., "posts/:postId/comments/:commentId" -> ["postId", "commentId"]
+ */
+function extractPathParams(flatPath: string): string[] {
+  const params: string[] = [];
+  const regex = /:([^/]+)/g;
+  let match;
+
+  while ((match = regex.exec(flatPath)) !== null) {
+    if (match[1]) {
+      params.push(match[1]);
+    }
+  }
+
+  return params;
 }
 
 export type ParseResult = {
@@ -76,7 +103,7 @@ export function parseSchema(
   const ctx = createSchemaContext(checker, openapiVersion);
   const endpoints: ParsedEndpoint[] = [];
 
-  walkSchemaType(schemaType, "", [], ctx, endpoints, checker);
+  walkFlatSchemaType(schemaType, ctx, endpoints, checker);
 
   // Extract all type aliases from the source file to preserve component schemas
   extractAllTypeAliases(sourceFile, checker, ctx);
@@ -104,10 +131,11 @@ function findExportedType(
   return declaredType;
 }
 
-function walkSchemaType(
+/**
+ * Walk flat schema type where keys are path strings like "posts/:id"
+ */
+function walkFlatSchemaType(
   type: ts.Type,
-  currentPath: string,
-  pathParams: string[],
   ctx: SchemaContext,
   endpoints: ParsedEndpoint[],
   checker: ts.TypeChecker
@@ -115,48 +143,30 @@ function walkSchemaType(
   const properties = type.getProperties();
 
   for (const prop of properties) {
-    const propName = prop.getName();
-    const propType = checker.getTypeOfSymbol(prop);
+    const flatPath = prop.getName();
+    const pathType = checker.getTypeOfSymbol(prop);
 
-    if (isHttpMethod(propName)) {
-      const endpoint = parseEndpoint(
-        propType,
-        currentPath || "/",
-        methodKeyToHttp(propName),
-        pathParams,
-        ctx
-      );
-      endpoints.push(endpoint);
-    } else if (propName === "_") {
-      const paramName = getParamNameFromPath(currentPath);
-      const newPath = `${currentPath}/{${paramName}}`;
-      walkSchemaType(
-        propType,
-        newPath,
-        [...pathParams, paramName],
-        ctx,
-        endpoints,
-        checker
-      );
-    } else {
-      const newPath = `${currentPath}/${propName}`;
-      walkSchemaType(propType, newPath, pathParams, ctx, endpoints, checker);
+    const openApiPath = flatPathToOpenAPI(flatPath);
+    const pathParams = extractPathParams(flatPath);
+
+    const methodProps = pathType.getProperties();
+
+    for (const methodProp of methodProps) {
+      const methodName = methodProp.getName();
+
+      if (isHttpMethod(methodName)) {
+        const methodType = checker.getTypeOfSymbol(methodProp);
+        const endpoint = parseEndpoint(
+          methodType,
+          openApiPath,
+          methodKeyToHttp(methodName),
+          pathParams,
+          ctx
+        );
+        endpoints.push(endpoint);
+      }
     }
   }
-}
-
-function getParamNameFromPath(currentPath: string): string {
-  const segments = currentPath.split("/").filter(Boolean);
-  const lastSegment = segments[segments.length - 1];
-
-  if (lastSegment) {
-    const singular = lastSegment.endsWith("s")
-      ? lastSegment.slice(0, -1)
-      : lastSegment;
-    return `${singular}Id`;
-  }
-
-  return "id";
 }
 
 function parseEndpoint(

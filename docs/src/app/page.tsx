@@ -35,7 +35,7 @@ export const { useRead, useWrite } = createReactSpoosh(spoosh);`;
 
 const exampleCode = `function UserList() {
   const { data, loading, error } = useRead(
-    (api) => api.users.$get()
+    (api) => api("users").GET()
   );
 
   if (loading) return <Spinner />;
@@ -220,7 +220,7 @@ export default function HomePage() {
 
               <FeatureCard
                 title="Your API is Your Code"
-                description='API paths become TypeScript code. Define /posts/:id once, call it as api.posts(":id").$get. Zero runtime overhead, pure compile-time magic.'
+                description='API paths become TypeScript code. Define "posts/:id" once, call it as api("posts/:id").GET(). Zero runtime overhead, pure compile-time magic.'
                 icon={
                   <svg
                     className="w-6 h-6"

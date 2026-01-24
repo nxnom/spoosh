@@ -20,14 +20,14 @@ import { transformPlugin } from "@spoosh/plugin-transform";
 
 const client = new Spoosh<ApiSchema, Error>("/api").use([transformPlugin()]);
 
-const { data } = useRead((api) => api.posts.$get({ query: { page: 1 } }), {
+const { data } = useRead((api) => api("posts").GET({ query: { page: 1 } }), {
   transform: {
     query: (q) => ({ ...q, limit: 10 }),
   },
 });
 
 // Transform body in useWrite
-const { trigger } = useWrite((api) => api.posts.$post);
+const { trigger } = useWrite((api) => api("posts").POST);
 
 trigger({
   body: { title: "New Post" },
@@ -42,7 +42,7 @@ trigger({
 Response transforms produce a separate `transformedData` field while preserving the original `data`:
 
 ```typescript
-const { data, transformedData } = useRead((api) => api.posts.$get(), {
+const { data, transformedData } = useRead((api) => api("posts").GET(), {
   transform: {
     response: (posts) => ({
       count: posts.length,
@@ -61,9 +61,7 @@ const { data, transformedData } = useRead((api) => api.posts.$get(), {
 The plugin supports transformation of:
 
 - **query** - Transform query parameters before request
-- **body** - Transform JSON body before request
-- **formData** - Transform form data before request
-- **urlEncoded** - Transform URL-encoded data before request
+- **body** - Transform request body before request (files auto-detected)
 - **response** - Transform response data after request (produces `transformedData`)
 
 ## Features
@@ -84,7 +82,7 @@ type TransformedPost = {
   postId: number;
 };
 
-const { transformedData } = useWrite((api) => api.posts.$post);
+const { transformedData } = useWrite((api) => api("posts").POST);
 
 // Type assertion required
 const typed = transformedData as TransformedPost | undefined;

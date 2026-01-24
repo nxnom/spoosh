@@ -5,8 +5,8 @@ import type {
   StateManager,
   EventEmitter,
   PluginExecutor,
-  QueryOnlyClient,
-  MutationOnlyClient,
+  ReadClient,
+  WriteClient,
   MethodOptionsMap,
   CoreRequestOptionsBase,
 } from "@spoosh/core";
@@ -114,16 +114,14 @@ export type AngularOptionsMap = MethodOptionsMap<
   MutationRequestOptions
 >;
 
-export type ReadApiClient<TSchema, TDefaultError> = QueryOnlyClient<
+export type ReadApiClient<TSchema, TDefaultError> = ReadClient<
   TSchema,
-  TDefaultError,
-  AngularOptionsMap
+  TDefaultError
 >;
 
-export type WriteApiClient<TSchema, TDefaultError> = MutationOnlyClient<
+export type WriteApiClient<TSchema, TDefaultError> = WriteClient<
   TSchema,
-  TDefaultError,
-  AngularOptionsMap
+  TDefaultError
 >;
 
 type QueryField<TQuery> = [TQuery] extends [never]
@@ -138,12 +136,6 @@ type BodyField<TBody> = [TBody] extends [never]
     ? { body?: Exclude<TBody, undefined> }
     : { body: TBody };
 
-type FormDataField<TFormData> = [TFormData] extends [never]
-  ? object
-  : undefined extends TFormData
-    ? { formData?: Exclude<TFormData, undefined> }
-    : { formData: TFormData };
-
 type ParamsField<TParamNames extends string> = [TParamNames] extends [never]
   ? object
   : { params: Record<TParamNames, string | number> };
@@ -151,21 +143,16 @@ type ParamsField<TParamNames extends string> = [TParamNames] extends [never]
 type ReadInputFields<
   TQuery,
   TBody,
-  TFormData,
   TParamNames extends string,
-> = QueryField<TQuery> &
-  BodyField<TBody> &
-  FormDataField<TFormData> &
-  ParamsField<TParamNames>;
+> = QueryField<TQuery> & BodyField<TBody> & ParamsField<TParamNames>;
 
-export type ResponseInputFields<
+export type ResponseInputFields<TQuery, TBody, TParamNames extends string> = [
   TQuery,
   TBody,
-  TFormData,
-  TParamNames extends string,
-> = [TQuery, TBody, TFormData, TParamNames] extends [never, never, never, never]
+  TParamNames,
+] extends [never, never, never]
   ? object
-  : { input: ReadInputFields<TQuery, TBody, TFormData, TParamNames> };
+  : { input: ReadInputFields<TQuery, TBody, TParamNames> };
 
 type OptionalQueryField<TQuery> = [TQuery] extends [never]
   ? object
@@ -179,12 +166,6 @@ type OptionalBodyField<TBody> = [TBody] extends [never]
     ? { body?: Exclude<TBody, undefined> }
     : { body: TBody };
 
-type OptionalFormDataField<TFormData> = [TFormData] extends [never]
-  ? object
-  : undefined extends TFormData
-    ? { formData?: Exclude<TFormData, undefined> }
-    : { formData: TFormData };
-
 type OptionalParamsField<TParamNames extends string> = [TParamNames] extends [
   never,
 ]
@@ -194,24 +175,19 @@ type OptionalParamsField<TParamNames extends string> = [TParamNames] extends [
 type InputFields<
   TQuery,
   TBody,
-  TFormData,
   TParamNames extends string,
 > = OptionalQueryField<TQuery> &
   OptionalBodyField<TBody> &
-  OptionalFormDataField<TFormData> &
   OptionalParamsField<TParamNames>;
 
 export type WriteResponseInputFields<
   TQuery,
   TBody,
-  TFormData,
   TParamNames extends string,
-> = [TQuery, TBody, TFormData, TParamNames] extends [never, never, never, never]
+> = [TQuery, TBody, TParamNames] extends [never, never, never]
   ? object
   : {
-      input: Signal<
-        InputFields<TQuery, TBody, TFormData, TParamNames> | undefined
-      >;
+      input: Signal<InputFields<TQuery, TBody, TParamNames> | undefined>;
     };
 
 type SuccessResponse<T> = Extract<T, { data: unknown; error?: undefined }>;
@@ -256,13 +232,6 @@ export type ExtractResponseBody<T> =
     ? B
     : never;
 
-export type ExtractResponseFormData<T> =
-  SuccessReturnType<T> extends {
-    input: { formData: infer F };
-  }
-    ? F
-    : never;
-
 export type ExtractResponseParamNames<T> =
   SuccessReturnType<T> extends { input: { params: Record<infer K, unknown> } }
     ? K extends string
@@ -282,18 +251,4 @@ export type ExtractMethodBody<T> =
     body: infer B;
   }
     ? B
-    : never;
-
-export type ExtractMethodFormData<T> =
-  ExtractMethodOptions<T> extends {
-    formData: infer F;
-  }
-    ? F
-    : never;
-
-export type ExtractMethodUrlEncoded<T> =
-  ExtractMethodOptions<T> extends {
-    urlEncoded: infer U;
-  }
-    ? U
     : never;

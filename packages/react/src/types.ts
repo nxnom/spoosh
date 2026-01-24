@@ -2,8 +2,8 @@ import type {
   SpooshPlugin,
   SpooshResponse,
   SpooshClient,
-  QueryOnlyClient,
-  MutationOnlyClient,
+  ReadClient,
+  WriteClient,
   SpooshOptions,
   MergePluginResults,
   MethodOptionsMap,
@@ -24,11 +24,7 @@ export type ReactOptionsMap = MethodOptionsMap<
   MutationRequestOptions
 >;
 
-export type ApiClient<TSchema> = SpooshClient<
-  TSchema,
-  unknown,
-  ReactOptionsMap
->;
+export type ApiClient<TSchema> = SpooshClient<TSchema, unknown>;
 
 export type PluginHooksConfig<
   TPlugins extends readonly SpooshPlugin<PluginTypeConfig>[],
@@ -130,12 +126,6 @@ type OptionalBodyField<TBody> = [TBody] extends [never]
     ? { body?: Exclude<TBody, undefined> }
     : { body: TBody };
 
-type OptionalFormDataField<TFormData> = [TFormData] extends [never]
-  ? object
-  : undefined extends TFormData
-    ? { formData?: Exclude<TFormData, undefined> }
-    : { formData: TFormData };
-
 type OptionalParamsField<TParamNames extends string> = [TParamNames] extends [
   never,
 ]
@@ -145,21 +135,18 @@ type OptionalParamsField<TParamNames extends string> = [TParamNames] extends [
 type InputFields<
   TQuery,
   TBody,
-  TFormData,
   TParamNames extends string,
 > = OptionalQueryField<TQuery> &
   OptionalBodyField<TBody> &
-  OptionalFormDataField<TFormData> &
   OptionalParamsField<TParamNames>;
 
 export type WriteResponseInputFields<
   TQuery,
   TBody,
-  TFormData,
   TParamNames extends string,
-> = [TQuery, TBody, TFormData, TParamNames] extends [never, never, never, never]
+> = [TQuery, TBody, TParamNames] extends [never, never, never]
   ? object
-  : { input: InputFields<TQuery, TBody, TFormData, TParamNames> | undefined };
+  : { input: InputFields<TQuery, TBody, TParamNames> | undefined };
 
 export type UseReadResult<
   TData,
@@ -175,16 +162,14 @@ export type UseWriteResult<
 > = BaseWriteResult<TData, TError, TOptions> &
   MergePluginResults<TPlugins>["write"];
 
-export type ReadApiClient<TSchema, TDefaultError> = QueryOnlyClient<
+export type ReadApiClient<TSchema, TDefaultError> = ReadClient<
   TSchema,
-  TDefaultError,
-  ReactOptionsMap
+  TDefaultError
 >;
 
-export type WriteApiClient<TSchema, TDefaultError> = MutationOnlyClient<
+export type WriteApiClient<TSchema, TDefaultError> = WriteClient<
   TSchema,
-  TDefaultError,
-  ReactOptionsMap
+  TDefaultError
 >;
 
 type SuccessResponse<T> = Extract<T, { data: unknown; error?: undefined }>;
@@ -207,6 +192,15 @@ export type ExtractMethodOptions<T> = T extends (...args: infer A) => unknown
   ? A[0]
   : never;
 
+type ExtractSuccessInput<T> =
+  SuccessResponse<AwaitedReturnType<T>> extends {
+    input?: infer I;
+  }
+    ? I
+    : object;
+
+export type ExtractResponseRequestOptions<T> = ExtractSuccessInput<T>;
+
 export type ExtractMethodQuery<T> =
   ExtractMethodOptions<T> extends {
     query: infer Q;
@@ -219,20 +213,6 @@ export type ExtractMethodBody<T> =
     body: infer B;
   }
     ? B
-    : never;
-
-export type ExtractMethodFormData<T> =
-  ExtractMethodOptions<T> extends {
-    formData: infer F;
-  }
-    ? F
-    : never;
-
-export type ExtractMethodUrlEncoded<T> =
-  ExtractMethodOptions<T> extends {
-    urlEncoded: infer U;
-  }
-    ? U
     : never;
 
 type AwaitedReturnType<T> = T extends (...args: never[]) => infer R
@@ -255,13 +235,6 @@ export type ExtractResponseBody<T> =
     ? B
     : never;
 
-export type ExtractResponseFormData<T> =
-  SuccessReturnType<T> extends {
-    input: { formData: infer F };
-  }
-    ? F
-    : never;
-
 export type ExtractResponseParamNames<T> =
   SuccessReturnType<T> extends { input: { params: Record<infer K, unknown> } }
     ? K extends string
@@ -281,12 +254,6 @@ type BodyField<TBody> = [TBody] extends [never]
     ? { body?: Exclude<TBody, undefined> }
     : { body: TBody };
 
-type FormDataField<TFormData> = [TFormData] extends [never]
-  ? object
-  : undefined extends TFormData
-    ? { formData?: Exclude<TFormData, undefined> }
-    : { formData: TFormData };
-
 type ParamsField<TParamNames extends string> = [TParamNames] extends [never]
   ? object
   : { params: Record<TParamNames, string | number> };
@@ -294,21 +261,16 @@ type ParamsField<TParamNames extends string> = [TParamNames] extends [never]
 type ReadInputFields<
   TQuery,
   TBody,
-  TFormData,
   TParamNames extends string,
-> = QueryField<TQuery> &
-  BodyField<TBody> &
-  FormDataField<TFormData> &
-  ParamsField<TParamNames>;
+> = QueryField<TQuery> & BodyField<TBody> & ParamsField<TParamNames>;
 
-export type ResponseInputFields<
+export type ResponseInputFields<TQuery, TBody, TParamNames extends string> = [
   TQuery,
   TBody,
-  TFormData,
-  TParamNames extends string,
-> = [TQuery, TBody, TFormData, TParamNames] extends [never, never, never, never]
+  TParamNames,
+] extends [never, never, never]
   ? object
-  : { input: ReadInputFields<TQuery, TBody, TFormData, TParamNames> };
+  : { input: ReadInputFields<TQuery, TBody, TParamNames> };
 
 export type AnyInfiniteRequestOptions = {
   query?: Record<string, unknown>;
@@ -444,8 +406,7 @@ export type UseInfiniteReadResult<
 > = BaseInfiniteReadResult<TData, TError, TItem> &
   MergePluginResults<TPlugins>["read"];
 
-export type InfiniteReadApiClient<TSchema, TDefaultError> = QueryOnlyClient<
+export type InfiniteReadApiClient<TSchema, TDefaultError> = ReadClient<
   TSchema,
-  TDefaultError,
-  ReactOptionsMap
+  TDefaultError
 >;

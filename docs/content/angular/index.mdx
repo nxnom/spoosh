@@ -13,37 +13,42 @@ Spoosh uses a tag-based caching system. Each query is automatically tagged based
 
 ```typescript
 // Cache tags are automatically generated from the path:
-const users = injectRead((api) => api.users.$get());
+const users = injectRead((api) => api("users").GET());
 // → tags: ["users"]
 
-const user = injectRead((api) => api.users(123).$get());
+const user = injectRead((api) => api("users/:id").GET({ params: { id: 123 } }));
 // → tags: ["users", "users/123"]
 
-const userPosts = injectRead((api) => api.users(123).posts.$get());
+const userPosts = injectRead((api) =>
+  api("users/:userId/posts").GET({ params: { userId: 123 } })
+);
 // → tags: ["users", "users/123", "users/123/posts"]
 ```
 
 When you mutate data, Spoosh automatically invalidates related queries based on these tags. Create a post for user 123? Every query that depends on that user's data refreshes automatically.
 
 ```typescript
-const createPost = injectWrite((api) => api.users(123).posts.$post);
+const createPost = injectWrite((api) => api("users/:userId/posts").POST);
 
 // This mutation automatically invalidates:
 // - users
 // - users/123
 // - users/123/posts
-await createPost.trigger({ body: newPost });
+await createPost.trigger({ params: { userId: 123 }, body: newPost });
 ```
 
-### Type-Safe Routing with Zero Strings
+### Type-Safe Routing with Path-Based API
 
-Define your API schema once, then use a proxy-based API that gives you autocomplete for every endpoint, parameter, and response.
+Define your API schema once, then use a path-based API that gives you autocomplete for every endpoint, parameter, and response.
 
 ```typescript
-// Fully typed, no string URLs
-const user = injectRead((api) => api.users(123).$get());
+// Fully typed with path-based syntax
+const user = injectRead((api) => api("users/:id").GET({ params: { id: 123 } }));
 const userPosts = injectRead((api) =>
-  api.users(123).posts.$get({ query: { page: 1 } })
+  api("users/:userId/posts").GET({
+    params: { userId: 123 },
+    query: { page: 1 },
+  })
 );
 ```
 
@@ -55,19 +60,20 @@ You can also specify custom tags manually:
 
 ```typescript
 // Override auto-generated tags
-const users = injectRead((api) => api.users.$get(), {
+const users = injectRead((api) => api("users").GET(), {
   tags: ["custom-users"], // replaces auto-generated tags
 });
 
 // Or extend auto-generated tags
-const usersWithDashboard = injectRead((api) => api.users.$get(), {
+const usersWithDashboard = injectRead((api) => api("users").GET(), {
   additionalTags: ["dashboard-data"], // adds to auto-generated tags
 });
 
 // On mutations, specify which tags to invalidate
 await createPost.trigger({
+  params: { userId: 123 },
   body: { title: "New Post" },
-  invalidate: (api) => [api.posts.$get, api.stats.$get, "custom-tag"],
+  invalidate: (api) => [api("posts").GET, api("stats").GET, "custom-tag"],
 });
 ```
 
@@ -88,7 +94,7 @@ const spoosh = new Spoosh<API, Error>("/api").use([
 ]);
 
 // Options are typed based on installed plugins
-const users = injectRead((api) => api.users.$get(), {
+const users = injectRead((api) => api("users").GET(), {
   staleTime: 10000, // ✓ Known from cachePlugin
   retries: 5, // ✓ Known from retryPlugin
   interval: 60000, // ✓ Known from pollingPlugin
@@ -134,7 +140,6 @@ At ~10KB gzipped for the core, Spoosh keeps your bundle size minimal. Add only t
 | `@spoosh/plugin-gc`               | Garbage collection for cache management                |
 | `@spoosh/plugin-transform`        | Transform request and response data                    |
 | `@spoosh/plugin-qs`               | Query string serialization for nested objects          |
-| `@spoosh/plugin-path-case`        | Write camelCase, send kebab-case to API                |
 | `@spoosh/plugin-debug`            | Debug logging                                          |
 
 ## Next Steps

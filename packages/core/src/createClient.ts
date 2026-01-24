@@ -20,16 +20,17 @@ export type SpooshClientConfig = {
  *
  * @example
  * ```ts
- * type ApiSchema = {
- *   posts: {
- *     $get: Endpoint<Post[]>;
- *     $post: Endpoint<Post, CreatePostBody>;
- *     _: {
- *       $get: Endpoint<Post>;
- *       $delete: Endpoint<void>;
- *     };
+ * type ApiSchema = SpooshSchema<{
+ *   "posts": {
+ *     GET: { data: Post[] };
+ *     POST: { data: Post; body: CreatePostBody };
  *   };
- * };
+ *   "posts/:id": {
+ *     GET: { data: Post };
+ *     PUT: { data: Post; body: UpdatePostBody };
+ *     DELETE: { data: void };
+ *   };
+ * }>;
  *
  * type ApiError = {
  *   message: string;
@@ -39,9 +40,10 @@ export type SpooshClientConfig = {
  *   baseUrl: "/api",
  * });
  *
- * // Type-safe API calls
- * const { data } = await api.posts.$get();
- * const { data: post } = await api.posts(123).$get();
+ * // Type-safe API calls with path strings
+ * const { data } = await api("posts").GET();
+ * const { data: post } = await api("posts/123").GET();
+ * await api("posts/:id").GET({ params: { id: 123 } });
  * ```
  */
 export function createClient<TSchema, TDefaultError = unknown>(
@@ -51,7 +53,7 @@ export function createClient<TSchema, TDefaultError = unknown>(
 
   const optionsWithMiddlewares = { ...defaultOptions, middlewares };
 
-  return createProxyHandler<SpooshClient<TSchema, TDefaultError>>({
+  return createProxyHandler<TSchema, TDefaultError>({
     baseUrl,
     defaultOptions: optionsWithMiddlewares,
     nextTags: true,

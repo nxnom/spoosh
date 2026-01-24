@@ -34,10 +34,10 @@ When enabled, queries automatically refetch:
 
 ```typescript
 // Disable focus refetch for this query
-injectRead((api) => api.settings.$get(), { refetchOnFocus: false });
+injectRead((api) => api("settings").GET(), { refetchOnFocus: false });
 
 // Enable reconnect refetch only
-injectRead((api) => api.user.$get(), {
+injectRead((api) => api("user").GET(), {
   refetchOnFocus: false,
   refetchOnReconnect: true,
 });

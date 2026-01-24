@@ -16,13 +16,13 @@ Tags are automatically generated from the API path hierarchy:
 
 ```typescript
 // Query tags are generated from the path:
-useRead((api) => api.users.$get());
+useRead((api) => api("users").GET());
 // → tags: ["users"]
 
-useRead((api) => api.users(123).$get());
+useRead((api) => api("users/:id").GET({ params: { id: 123 } }));
 // → tags: ["users", "users/123"]
 
-useRead((api) => api.users(123).posts.$get());
+useRead((api) => api("users/:id/posts").GET({ params: { id: 123 } }));
 // → tags: ["users", "users/123", "users/123/posts"]
 ```
 
@@ -30,8 +30,8 @@ When a mutation succeeds, related queries are automatically invalidated:
 
 ```typescript
 // Creating a post at users/123/posts invalidates:
-const { trigger } = useWrite((api) => api.users(123).posts.$post);
-await trigger({ body: { title: "New Post" } });
+const { trigger } = useWrite((api) => api("users/:id/posts").POST);
+await trigger({ params: { id: 123 }, body: { title: "New Post" } });
 
 // ✓ Invalidates: "users", "users/123", "users/123/posts"
 // All queries matching these tags will refetch automatically
@@ -45,7 +45,7 @@ import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 
 const client = new Spoosh<ApiSchema, Error>("/api").use([invalidationPlugin()]);
 
-const { trigger } = useWrite((api) => api.posts.$post);
+const { trigger } = useWrite((api) => api("posts").POST);
 await trigger({ body: { title: "New Post" } });
 ```
 
@@ -81,7 +81,7 @@ await trigger({
 await trigger({
   body: { title: "New Post" },
   autoInvalidate: "none",
-  invalidate: (api) => [api.posts.$get, api.stats.$get, "dashboard-data"],
+  invalidate: (api) => [api("posts").GET, api("stats").GET, "dashboard-data"],
 });
 
 // Add specific tags (works alongside autoInvalidate)
@@ -127,7 +127,7 @@ const { useRead, invalidate } = createReactSpoosh(client);
 invalidate(["users", "posts"]);
 
 // Invalidate with callback (type-safe API selector)
-invalidate((api) => [api.users.$get, api.posts.$get, "custom-tag"]);
+invalidate((api) => [api("users").GET, api("posts").GET, "custom-tag"]);
 
 // Useful for external events like WebSocket messages
 socket.on("data-changed", (tags) => {
@@ -135,6 +135,6 @@ socket.on("data-changed", (tags) => {
 });
 ```
 
-| Method           | Description                                                        |
-| ---------------- | ------------------------------------------------------------------ |
+| Method       | Description                                                        |
+| ------------ | ------------------------------------------------------------------ |
 | `invalidate` | Manually invalidate cache entries by tags or API selector callback |

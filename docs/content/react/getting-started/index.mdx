@@ -21,8 +21,6 @@ This guide will help you set up Spoosh and make your first type-safe API call.
 Create a file to define your API types:
 
 ```typescript title="src/api/schema.ts"
-import type { Endpoint } from "@spoosh/core";
-
 type User = {
   id: number;
   name: string;
@@ -36,16 +34,16 @@ type CreateUserBody = {
 
 export type ApiSchema = {
   users: {
-    $get: Endpoint<{ data: User[] }>;
-    $post: Endpoint<{ data: User; body: CreateUserBody }>;
-    _: {
-      $get: Endpoint<{ data: User }>;
-      $put: Endpoint<{ data: User; body: Partial<CreateUserBody> }>;
-      $delete: void;
-    };
+    GET: { data: User[] };
+    POST: { data: User; body: CreateUserBody };
+  };
+  "users/:id": {
+    GET: { data: User };
+    PUT: { data: User; body: Partial<CreateUserBody> };
+    DELETE: void;
   };
   search: {
-    $get: Endpoint<{ data: User[]; query: { q: string; page?: number } }>;
+    GET: { data: User[]; query: { q: string; page?: number } };
   };
 };
 ```
@@ -84,7 +82,9 @@ Now you can use the hooks in your components:
 import { useRead } from "../api/client";
 
 export function UserList() {
-  const { data, loading, error, refetch } = useRead((api) => api.users.$get());
+  const { data, loading, error, refetch } = useRead((api) =>
+    api("users").GET()
+  );
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;

@@ -60,31 +60,31 @@ type ApiSchema = ElysiaToSpoosh<ReturnType<typeof treaty<App>>>["api"];
 const spoosh = new Spoosh<ApiSchema, Error>("http://localhost:3000/api");
 
 // Fully typed API calls
-const { data: posts } = await spoosh.posts.$get();
+const { data: posts } = await spoosh.api("posts").GET();
 // posts is typed as { id: number; title: string }[]
 
-const { data: newPost } = await spoosh.posts.$post({
+const { data: newPost } = await spoosh.api("posts").POST({
   body: { title: "New Post" },
 });
 // body is typed, newPost is { id: number; title: string }
 
-// Dynamic segment with direct usage (simplest)
-const { data: post } = await spoosh.posts(1).$get();
+// Dynamic segment with params
+const { data: post } = await spoosh.api("posts/:id").GET({ params: { id: 1 } });
 // post is typed as { id: number; title: string }
 
 // With variable
 const postId = 1;
-const { data } = await spoosh.posts(postId).$get();
+const { data } = await spoosh.api("posts/:id").GET({ params: { id: postId } });
 ```
 
 ## Type Mapping
 
-| Elysia                   | Spoosh                      |
-| ------------------------ | --------------------------- |
-| Return value             | Response data type          |
-| `body: t.Object({...})`  | Request body type           |
-| `query: t.Object({...})` | Query params type           |
-| `/posts/:id`             | `posts._` (dynamic segment) |
+| Elysia                   | Spoosh                           |
+| ------------------------ | -------------------------------- |
+| Return value             | Response data type               |
+| `body: t.Object({...})`  | Request body type                |
+| `query: t.Object({...})` | Query params type                |
+| `/posts/:id`             | `"posts/:id"` (path with params) |
 
 ## API Reference
 
@@ -102,34 +102,30 @@ type ApiSchema = ElysiaToSpoosh<ReturnType<typeof treaty<App>>>["api"];
 
 **Supported HTTP methods:**
 
-- `$get`
-- `$post`
-- `$put`
-- `$patch`
-- `$delete`
+- `GET`
+- `POST`
+- `PUT`
+- `PATCH`
+- `DELETE`
 
 **Path parameters:**
 
-Dynamic segments (`:id`, `:slug`, etc.) are converted to `_` in the schema and accessed via direct usage:
+Dynamic segments (`:id`, `:slug`, etc.) are preserved in the path and accessed via the `params` option:
 
 ```typescript
 // Elysia route: /users/:userId/posts/:postId
 
-// Direct usage (simplest - pass values directly)
-spoosh.users(123).posts(456).$get();
+// Access with params object
+spoosh.api("users/:userId/posts/:postId").GET({
+  params: { userId: 123, postId: 456 },
+});
 
 // With variables
 const userId = 123;
 const postId = 456;
-spoosh.users(userId).posts(postId).$get();
-
-// Typed params (advanced - explicit param names)
-spoosh
-  .users(":userId")
-  .posts(":postId")
-  .$get({
-    params: { userId: 123, postId: 456 },
-  });
+spoosh.api("users/:userId/posts/:postId").GET({
+  params: { userId, postId },
+});
 ```
 
 ## Split Routes

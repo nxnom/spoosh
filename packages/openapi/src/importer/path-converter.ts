@@ -4,95 +4,80 @@ import type {
   OpenAPISpec,
 } from "../types.js";
 import type {
-  PathSegment,
-  NestedEndpointStructure,
+  FlatEndpointStructure,
   EndpointTypeInfo,
+  HttpMethod,
+  PathMethods,
 } from "./types.js";
 
 /**
- * Parse a path string into segments
- * @param path OpenAPI path (e.g., "/posts/{postId}/comments")
- * @returns Array of parsed segments
+ * Convert OpenAPI path to Spoosh flat path format
+ * Converts {paramName} to :paramName
+ * @param openApiPath OpenAPI path (e.g., "/posts/{postId}/comments")
+ * @returns Spoosh path (e.g., "posts/:postId/comments")
  */
-export function parsePathSegments(path: string): PathSegment[] {
-  const segments = path.split("/").filter((s) => s.length > 0);
-
-  return segments.map((segment) => {
-    const isParameter = segment.startsWith("{") && segment.endsWith("}");
-    return {
-      value: segment,
-      isParameter,
-      parameterName: isParameter ? segment.slice(1, -1) : undefined,
-    };
-  });
+export function convertToFlatPath(openApiPath: string): string {
+  return openApiPath.replace(/^\//, "").replace(/\{([^}]+)\}/g, ":$1");
 }
 
 /**
- * Convert OpenAPI paths to nested Spoosh structure
+ * Convert OpenAPI paths to flat Spoosh structure
  * @param spec OpenAPI specification
  * @param endpointInfoMap Map from path+method to EndpointTypeInfo
- * @returns Nested Spoosh structure
+ * @returns Flat Spoosh structure
  */
-export function convertPathsToSpooshStructure(
+export function convertPathsToFlatStructure(
   spec: OpenAPISpec,
   endpointInfoMap: Map<string, EndpointTypeInfo>
-): NestedEndpointStructure {
-  const root: NestedEndpointStructure = {};
+): FlatEndpointStructure {
+  const result: FlatEndpointStructure = {};
 
   for (const [path, pathItem] of Object.entries(spec.paths)) {
-    const segments = parsePathSegments(path);
-    let current = root;
+    const flatPath = convertToFlatPath(path);
 
-    for (const segment of segments) {
-      if (segment.isParameter) {
-        if (!current._) {
-          current._ = {};
-        }
-        current = current._ as NestedEndpointStructure;
-      } else {
-        if (!current[segment.value]) {
-          current[segment.value] = {};
-        }
-        current = current[segment.value] as NestedEndpointStructure;
-      }
+    if (!result[flatPath]) {
+      result[flatPath] = {};
     }
 
-    attachMethods(current, path, pathItem, endpointInfoMap);
+    attachMethods(result[flatPath], path, pathItem, endpointInfoMap);
   }
 
-  return root;
+  return result;
 }
 
 /**
- * Attach HTTP methods to the current node
- * @param node Current node in nested structure
- * @param path Original path string
+ * Attach HTTP methods to the path entry
+ * @param methods Methods object for the path
+ * @param path Original OpenAPI path string
  * @param pathItem OpenAPI path item
  * @param endpointInfoMap Map from path+method to EndpointTypeInfo
  */
 function attachMethods(
-  node: NestedEndpointStructure,
+  methods: PathMethods,
   path: string,
   pathItem: OpenAPIPathItem,
   endpointInfoMap: Map<string, EndpointTypeInfo>
 ): void {
-  const methods: Array<keyof OpenAPIPathItem> = [
-    "get",
-    "post",
-    "put",
-    "patch",
-    "delete",
+  const httpMethods: Array<{
+    openapi: keyof OpenAPIPathItem;
+    spoosh: HttpMethod;
+  }> = [
+    { openapi: "get", spoosh: "GET" },
+    { openapi: "post", spoosh: "POST" },
+    { openapi: "put", spoosh: "PUT" },
+    { openapi: "patch", spoosh: "PATCH" },
+    { openapi: "delete", spoosh: "DELETE" },
   ];
 
-  for (const method of methods) {
-    const operation = pathItem[method] as OpenAPIOperation | undefined;
+  for (const { openapi, spoosh } of httpMethods) {
+    const operation = pathItem[openapi] as OpenAPIOperation | undefined;
+
     if (operation) {
-      const spooshMethod = `$${method}`;
-      const key = `${path}:${method}`;
+      const key = `${path}:${openapi}`;
       const endpointInfo = endpointInfoMap.get(key);
 
       if (endpointInfo) {
-        node[spooshMethod] = endpointInfo;
+        methods[spoosh] = endpointInfo;
       }
     }
   }

@@ -24,10 +24,10 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([
 ]);
 
 // Uses plugin defaults
-useRead((api) => api.posts.$get());
+useRead((api) => api("posts").GET());
 
 // Per-query override
-useRead((api) => api.posts.$get(), {
+useRead((api) => api("posts").GET(), {
   refetchOnFocus: false, // Disable for this query
 });
 ```

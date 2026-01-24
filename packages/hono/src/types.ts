@@ -1,4 +1,3 @@
-import type { Endpoint } from "@spoosh/core";
 import type { ClientRequest } from "hono/client";
 
 type Simplify<T> = { [K in keyof T]: T[K] } & {};
@@ -6,6 +5,18 @@ type Simplify<T> = { [K in keyof T]: T[K] } & {};
 type IsNever<T> = [T] extends [never] ? true : false;
 
 type HonoSchemaMethod = "$get" | "$post" | "$put" | "$patch" | "$delete";
+
+type HonoToHttpMethod<T extends string> = T extends "$get"
+  ? "GET"
+  : T extends "$post"
+    ? "POST"
+    : T extends "$put"
+      ? "PUT"
+      : T extends "$patch"
+        ? "PATCH"
+        : T extends "$delete"
+          ? "DELETE"
+          : never;
 
 type ExtractClientOutput<T> = T extends { output: infer O } ? O : never;
 
@@ -42,12 +53,10 @@ type FormDataField<T> =
     ? object
     : { formData: ExtractClientFormData<T> };
 
-type ClientEndpointToSpoosh<T> = Endpoint<
-  Simplify<
-    { data: ExtractClientOutput<T> } & BodyField<T> &
-      QueryField<T> &
-      FormDataField<T>
-  >
+type ClientEndpointToSpoosh<T> = Simplify<
+  { data: ExtractClientOutput<T> } & BodyField<T> &
+    QueryField<T> &
+    FormDataField<T>
 >;
 
 // Extract endpoint schema from hc client method function signature
@@ -67,33 +76,13 @@ type ExtractEndpointFromClientMethod<T> = T extends (
     ? T
     : never;
 
-type TransformClientMethods<T> = {
-  [K in keyof T as K extends HonoSchemaMethod
-    ? K
-    : never]: ClientEndpointToSpoosh<ExtractEndpointFromClientMethod<T[K]>>;
-};
-
-// Transform `:paramName` keys to `_` for Spoosh compatibility
-type TransformClientKey<K> = K extends `:${string}` ? "_" : K;
-
 // Extract schema from ClientRequest (handles intersection of ClientRequest & nested routes)
 type ExtractClientSchema<T> =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   T extends ClientRequest<any, any, infer S> ? S : never;
 
-// Check if T has HTTP method keys (either from ClientRequest or direct function methods)
-type HasMethodKey<T, K extends HonoSchemaMethod> = K extends keyof T
-  ? true
-  : false;
-
-type HasAnyMethod<T> =
-  | HasMethodKey<T, "$get">
-  | HasMethodKey<T, "$post">
-  | HasMethodKey<T, "$put">
-  | HasMethodKey<T, "$patch">
-  | HasMethodKey<T, "$delete"> extends false
-  ? false
-  : true;
+// Check if T has any HTTP method keys
+type HasAnyMethod<T> = keyof T & HonoSchemaMethod extends never ? false : true;
 
 // Check if T has ClientRequest methods OR direct function methods
 type HasClientMethods<T> =
@@ -108,22 +97,56 @@ type NonMethodKeys<T> = {
   [K in keyof T]: K extends HonoSchemaMethod | "$url" ? never : K;
 }[keyof T];
 
-// Transform: extract methods from ClientRequest AND recursively transform nested routes
-type TransformClientRequest<T> = (HasClientMethods<T> extends true
-  ? TransformClientMethods<GetMethodSchema<T>>
-  : object) &
-  (NonMethodKeys<T> extends never
-    ? object
-    : {
-        [K in NonMethodKeys<T> as TransformClientKey<K>]: TransformClientRequest<
-          T[K]
-        >;
-      });
+// Transform methods to Spoosh format
+type TransformMethods<T> = {
+  [K in keyof T as K extends HonoSchemaMethod
+    ? HonoToHttpMethod<K>
+    : never]: ClientEndpointToSpoosh<ExtractEndpointFromClientMethod<T[K]>>;
+};
 
-type FlattenIndex<T> = T extends { index: infer I } ? Omit<T, "index"> & I : T;
+// Join path segments
+type JoinPath<A extends string, B extends string> = A extends ""
+  ? B
+  : `${A}/${B}`;
+
+// Transform param key `:id` to `:id` (keep as is for path-based schema)
+type TransformParamKey<K extends string> = K extends `:${infer P}`
+  ? `:${P}`
+  : K;
+
+// Union to intersection helper
+type UnionToIntersection<U> = (
+  U extends unknown ? (k: U) => void : never
+) extends (k: infer I) => void
+  ? I
+  : never;
+
+// Recursively flatten Hono client to path-based schema
+type FlattenHonoClient<T, Path extends string = ""> =
+  // Add current path's methods if it has any
+  (HasClientMethods<T> extends true
+    ? { [P in Path]: TransformMethods<GetMethodSchema<T>> }
+    : object) &
+    // Recursively process nested routes
+    (NonMethodKeys<T> extends never
+      ? object
+      : UnionToIntersection<
+          {
+            [K in NonMethodKeys<T>]: K extends "index"
+              ? FlattenHonoClient<T[K], Path>
+              : K extends string
+                ? FlattenHonoClient<T[K], JoinPath<Path, TransformParamKey<K>>>
+                : never;
+          }[NonMethodKeys<T>]
+        >);
+
+// Clean up empty string key to use "/" or remove it
+type CleanupRootPath<T> = {
+  [K in keyof T as K extends "" ? "/" : K]: T[K];
+};
 
 /**
- * Transforms `hc` client type into Spoosh schema format.
+ * Transforms `hc` client type into Spoosh flat schema format.
  *
  * @example
  * ```typescript
@@ -132,10 +155,14 @@ type FlattenIndex<T> = T extends { index: infer I } ? Omit<T, "index"> & I : T;
  * import type { AppType } from './server';
  *
  * type Client = ReturnType<typeof hc<AppType>>;
- * type ApiSchema = HonoToSpoosh<Client>['api'];
+ * type ApiSchema = HonoToSpoosh<Client>;
+ *
+ * const api = createClient<ApiSchema>({ baseUrl: "/api" });
+ * await api("posts").GET();
+ * await api("posts/:id").GET({ params: { id: "123" } });
  * ```
  */
-export type HonoToSpoosh<T> = Simplify<TransformClientRequest<T>>;
+export type HonoToSpoosh<T> = Simplify<CleanupRootPath<FlattenHonoClient<T>>>;
 
 /**
  * Transforms a sub-client (single route group) into Spoosh schema format.
@@ -154,8 +181,6 @@ export type HonoToSpoosh<T> = Simplify<TransformClientRequest<T>>;
  *   users: HonoRouteToSpoosh<ReturnType<typeof hc<typeof usersRoutes>>>;
  *   posts: HonoRouteToSpoosh<ReturnType<typeof hc<typeof postsRoutes>>>;
  * };
- *
- * // Usage: api.users.$get(), api.posts.$post(), etc.
  * ```
  */
-export type HonoRouteToSpoosh<T> = FlattenIndex<HonoToSpoosh<T>>;
+export type HonoRouteToSpoosh<T> = HonoToSpoosh<T>;

@@ -9,23 +9,10 @@ import type {
   TransformOptions,
 } from "./types";
 
-function deepClone<T>(value: T): T {
-  try {
-    if (value === undefined || value === null) {
-      return value;
-    }
-
-    return structuredClone(value);
-  } catch {
-    return value;
-  }
-}
-
 /**
- * Enables data transformation for query, body, formData, urlEncoded, and response.
+ * Enables response data transformation.
  *
- * Supports both sync and async transformer functions. All data is deep-cloned
- * before transformation to prevent mutation of original objects.
+ * Supports both sync and async transformer functions.
  *
  * All transforms are per-request for full type inference.
  *
@@ -42,11 +29,10 @@ function deepClone<T>(value: T): T {
  *   ]);
  *
  * // Per-request transforms with full type inference
- * const { data, transformedData } = useRead(
+ * const { data, meta } = useRead(
  *   (api) => api.posts.$get(),
  *   {
  *     transform: {
- *       query: (q) => ({ ...q, timestamp: Date.now() }),
  *       response: (posts) => ({
  *         count: posts.length,
  *         hasMore: posts.length >= 10,
@@ -55,13 +41,8 @@ function deepClone<T>(value: T): T {
  *   }
  * );
  *
- * // useWrite with body transform
- * trigger({
- *   body: { name: "test" },
- *   transform: {
- *     body: (b) => ({ ...b, createdAt: Date.now() }),
- *   },
- * });
+ * // Access transformed data via meta
+ * console.log(meta.transformedData);
  * ```
  */
 export function transformPlugin(): SpooshPlugin<{
@@ -74,57 +55,6 @@ export function transformPlugin(): SpooshPlugin<{
   return {
     name: "spoosh:transform",
     operations: ["read", "write", "infiniteRead"],
-
-    middleware: async (context, next) => {
-      const { requestOptions } = context;
-      const pluginOptions = context.pluginOptions as
-        | TransformOptions
-        | undefined;
-
-      const transform = pluginOptions?.transform;
-
-      if (transform?.query && requestOptions.query) {
-        const cloned = deepClone(requestOptions.query);
-        const transformed = await transform.query(cloned);
-
-        context.requestOptions = {
-          ...context.requestOptions,
-          query: transformed as typeof requestOptions.query,
-        };
-      }
-
-      if (transform?.body && requestOptions.body) {
-        const cloned = deepClone(requestOptions.body);
-        const transformed = await transform.body(cloned);
-
-        context.requestOptions = {
-          ...context.requestOptions,
-          body: transformed,
-        };
-      }
-
-      if (transform?.formData && requestOptions.formData) {
-        const cloned = deepClone(requestOptions.formData);
-        const transformed = await transform.formData(cloned);
-
-        context.requestOptions = {
-          ...context.requestOptions,
-          formData: transformed as typeof requestOptions.formData,
-        };
-      }
-
-      if (transform?.urlEncoded && requestOptions.urlEncoded) {
-        const cloned = deepClone(requestOptions.urlEncoded);
-        const transformed = await transform.urlEncoded(cloned);
-
-        context.requestOptions = {
-          ...context.requestOptions,
-          urlEncoded: transformed as typeof requestOptions.urlEncoded,
-        };
-      }
-
-      return next();
-    },
 
     onResponse: async (context, response) => {
       const pluginOptions = context.pluginOptions as

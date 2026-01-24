@@ -49,7 +49,7 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([
 After a successful mutation, cache tags are automatically revalidated on the server:
 
 ```typescript
-const { trigger } = useWrite((api) => api.posts.$post);
+const { trigger } = useWrite((api) => api("posts").POST);
 
 await trigger({ body: { title: "New Post" } });
 // Server cache for "posts" tag is revalidated
@@ -150,7 +150,7 @@ import { PostList } from "./post-list";
 
 export default async function PostsPage() {
   // Auto-generates: next: { tags: ['posts'] }
-  const { data: posts } = await serverApi.posts.$get();
+  const { data: posts } = await serverApi("posts").GET();
 
   return <PostList initialPosts={posts} />;
 }
@@ -163,11 +163,11 @@ import { useRead, useWrite } from "@/api/client";
 
 export function PostList({ initialPosts }) {
   const { data, meta } = useRead(
-    (api) => api.posts.$get(),
+    (api) => api("posts").GET(),
     { initialData: initialPosts }
   );
 
-  const { trigger } = useWrite((api) => api.posts.$post);
+  const { trigger } = useWrite((api) => api("posts").POST);
 
   const handleCreate = async () => {
     await trigger({ body: { title: "New Post" } });

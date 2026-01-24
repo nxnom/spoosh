@@ -15,31 +15,29 @@ npm install @spoosh/core
 ### Define API Schema
 
 ```typescript
-import type { Endpoint } from "@spoosh/core";
-
 type User = { id: number; name: string; email: string };
 
 type ApiSchema = {
   users: {
-    $get: Endpoint<{ data: User[] }>;
-    $post: Endpoint<{ data: User; body: { name: string; email: string } }>;
-    _: {
-      $get: Endpoint<{ data: User }>;
-      $put: Endpoint<{ data: User; body: Partial<User> }>;
-      $delete: void;
-    };
+    GET: { data: User[] };
+    POST: { data: User; body: { name: string; email: string } };
+  };
+  "users/:id": {
+    GET: { data: User };
+    PUT: { data: User; body: Partial<User> };
+    DELETE: { data: void };
   };
   search: {
-    $get: Endpoint<{ data: User[]; query: { q: string; page?: number } }>;
+    GET: { data: User[]; query: { q: string; page?: number } };
   };
   upload: {
-    $post: Endpoint<{ data: { url: string }; formData: { file: File } }>;
+    POST: { data: { url: string }; body: { file: File } };
   };
   payments: {
-    $post: Endpoint<{
+    POST: {
       data: { id: string };
-      urlEncoded: { amount: number; currency: string };
-    }>;
+      body: { amount: number; currency: string };
+    };
   };
 };
 ```
@@ -58,41 +56,37 @@ const api = createClient<ApiSchema>({
 
 ```typescript
 // GET /api/users
-const { data, error, status } = await api.users.$get();
+const { data, error, status } = await api("users").GET();
 
 // GET /api/search?q=john&page=1
-const { data } = await api.search.$get({ query: { q: "john", page: 1 } });
+const { data } = await api("search").GET({ query: { q: "john", page: 1 } });
 
 // POST /api/users with JSON body
-const { data: newUser } = await api.users.$post({
+const { data: newUser } = await api("users").POST({
   body: { name: "John", email: "john@example.com" },
 });
 
-// GET /api/users/123 (direct usage - simplest)
-const { data: user } = await api.users(123).$get();
+// GET /api/users/123 (with params)
+const { data: user } = await api("users/:id").GET({ params: { id: 123 } });
 
-// PUT /api/users/123 (with variable)
+// PUT /api/users/123
 const userId = 123;
-const { data: updated } = await api.users(userId).$put({
+const { data: updated } = await api("users/:id").PUT({
+  params: { id: userId },
   body: { name: "John Updated" },
 });
 
 // DELETE /api/users/123
-await api.users(123).$delete();
+await api("users/:id").DELETE({ params: { id: 123 } });
 
-// Typed params (advanced - when you need explicit param names)
-const { data } = await api.users(":userId").$get({
-  params: { userId: 123 },
+// POST with file upload (auto FormData when File detected)
+const { data: uploaded } = await api("upload").POST({
+  body: { file: myFile },
 });
 
-// POST with FormData
-const { data: uploaded } = await api.upload.$post({
-  formData: { file: myFile },
-});
-
-// POST with URL-encoded body (auto Content-Type: application/x-www-form-urlencoded)
-const { data: payment } = await api.payments.$post({
-  urlEncoded: { amount: 1000, currency: "usd" },
+// POST with form data
+const { data: payment } = await api("payments").POST({
+  body: { amount: 1000, currency: "usd" },
 });
 ```
 
@@ -121,10 +115,12 @@ import { createClient } from "@spoosh/core";
 const api = createClient<ApiSchema>({ baseUrl: process.env.API_URL! });
 
 // Auto-generates next: { tags: ['posts'] }
-const { data: posts } = await api.posts.$get();
+const { data: posts } = await api("posts").GET();
 
 // Auto-generates next: { tags: ['users', 'users/123', 'users/123/posts'] }
-const { data: userPosts } = await api.users(123).posts.$get();
+const { data: userPosts } = await api("users/:id/posts").GET({
+  params: { id: 123 },
+});
 ```
 
 This enables automatic cache invalidation with `revalidateTag()` in Next.js.
@@ -176,16 +172,14 @@ const updatedContext = await applyMiddlewares(context, middlewares, "before");
 
 ## Schema Types
 
-| Type                             | Description                  | Example                                                             |
-| -------------------------------- | ---------------------------- | ------------------------------------------------------------------- |
-| `Endpoint<{ data }>`             | Endpoint with data only      | `$get: Endpoint<{ data: User[] }>`                                  |
-| `Endpoint<{ data; body }>`       | Endpoint with JSON body      | `$post: Endpoint<{ data: User; body: CreateUserBody }>`             |
-| `Endpoint<{ data; query }>`      | Endpoint with query params   | `$get: Endpoint<{ data: User[]; query: { page: number } }>`         |
-| `Endpoint<{ data; formData }>`   | Endpoint with multipart form | `$post: Endpoint<{ data: Result; formData: { file: File } }>`       |
-| `Endpoint<{ data; urlEncoded }>` | Endpoint with URL-encoded    | `$post: Endpoint<{ data: Result; urlEncoded: { amount: number } }>` |
-| `Endpoint<{ data; error }>`      | Endpoint with typed error    | `$get: Endpoint<{ data: User; error: ApiError }>`                   |
-| `void`                           | No response body             | `$delete: void`                                                     |
-| `_`                              | Dynamic path segment         | `users: { _: { $get: Endpoint<{ data: User }> } }`                  |
+| Field   | Description                             | Example                                          |
+| ------- | --------------------------------------- | ------------------------------------------------ |
+| `data`  | Response data type                      | `GET: { data: User[] }`                          |
+| `body`  | Request body type (files auto-detected) | `POST: { data: User; body: CreateUserBody }`     |
+| `query` | Query parameters type                   | `GET: { data: User[]; query: { page: number } }` |
+| `error` | Typed error type                        | `GET: { data: User; error: ApiError }`           |
+
+Path parameters are defined using `:param` syntax in the path key (e.g., `"users/:id"`).
 
 ## API Reference
 
@@ -201,7 +195,7 @@ Creates a lightweight type-safe API client.
 
 ### Spoosh (class)
 
-Creates a full-featured client with plugin system using a clean class-based API. Use this with `@spoosh/react`.
+Creates a full-featured client with plugin system using a clean class-based API. Use this with `@spoosh/react` or `@spoosh/angular`.
 
 ```typescript
 import { Spoosh } from "@spoosh/core";
@@ -213,7 +207,7 @@ const client = new Spoosh<ApiSchema, Error>("/api", {
 }).use([cachePlugin({ staleTime: 5000 }), retryPlugin({ retries: 3 })]);
 
 const { api } = client;
-const { data } = await api.users.$get();
+const { data } = await api("users").GET();
 ```
 
 **Constructor Parameters:**

@@ -20,13 +20,13 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([debouncePlugin()]);
 
 // Wait 300ms after typing stops before fetching
 const { data } = useRead(
-  (api) => api.search.$get({ query: { q: searchTerm } }),
+  (api) => api("search").GET({ query: { q: searchTerm } }),
   { debounce: 300 }
 );
 
 // Conditional debounce - only debounce when search query changes
 const { data } = useRead(
-  (api) => api.search.$get({ query: { q: searchTerm, page } }),
+  (api) => api("search").GET({ query: { q: searchTerm, page } }),
   { debounce: ({ prevQuery }) => (prevQuery?.q !== searchTerm ? 300 : 0) }
 );
 ```
@@ -43,9 +43,7 @@ const { data } = useRead(
 
 When using a function, you receive:
 
-| Property       | Type      | Description               |
-| -------------- | --------- | ------------------------- |
-| `prevQuery`    | `object`  | Previous query parameters |
-| `prevBody`     | `unknown` | Previous request body     |
-| `prevParams`   | `object`  | Previous path parameters  |
-| `prevFormData` | `object`  | Previous form data        |
+| Property     | Type     | Description               |
+| ------------ | -------- | ------------------------- |
+| `prevQuery`  | `object` | Previous query parameters |
+| `prevParams` | `object` | Previous path parameters  |

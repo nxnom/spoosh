@@ -2,43 +2,24 @@ type PrevQueryField<TQuery> = [TQuery] extends [never]
   ? object
   : { prevQuery?: TQuery };
 
-type PrevBodyField<TBody> = [TBody] extends [never]
-  ? object
-  : { prevBody?: TBody };
-
 type PrevParamsField<TParams> = [TParams] extends [never]
   ? object
   : { prevParams?: TParams };
 
-type PrevFormDataField<TFormData> = [TFormData] extends [never]
-  ? object
-  : { prevFormData?: TFormData };
-
 export type DebounceContext<
   TQuery = never,
-  TBody = never,
   TParams = never,
-  TFormData = never,
-> = PrevQueryField<TQuery> &
-  PrevBodyField<TBody> &
-  PrevParamsField<TParams> &
-  PrevFormDataField<TFormData>;
+> = PrevQueryField<TQuery> & PrevParamsField<TParams>;
 
-export type DebounceFn<
-  TQuery = never,
-  TBody = never,
-  TParams = never,
-  TFormData = never,
-> = (context: DebounceContext<TQuery, TBody, TParams, TFormData>) => number;
+export type DebounceFn<TQuery = never, TParams = never> = (
+  context: DebounceContext<TQuery, TParams>
+) => number;
 
-export type DebounceValue<
-  TQuery = never,
-  TBody = never,
-  TParams = never,
-  TFormData = never,
-> = number | DebounceFn<TQuery, TBody, TParams, TFormData>;
+export type DebounceValue<TQuery = never, TParams = never> =
+  | number
+  | DebounceFn<TQuery, TParams>;
 
-export type RequestAwareDebounceFn = DebounceValue<never, never, never, never>;
+export type RequestAwareDebounceFn = DebounceValue<never, never>;
 
 export interface DebounceReadOptions {
   /**
@@ -59,12 +40,7 @@ export type DebounceWriteResult = object;
 declare module "@spoosh/core" {
   interface PluginResolvers<TContext> {
     debounce:
-      | DebounceValue<
-          TContext["input"]["query"],
-          TContext["input"]["body"],
-          TContext["input"]["params"],
-          TContext["input"]["formData"]
-        >
+      | DebounceValue<TContext["input"]["query"], TContext["input"]["params"]>
       | undefined;
   }
 }

@@ -1,5 +1,5 @@
 import type { SpooshResponse } from "./response.types";
-import type { HttpMethod, SchemaMethod } from "./common.types";
+import type { HttpMethod } from "./common.types";
 
 export type RetryConfig = {
   retries?: number | false;
@@ -32,39 +32,15 @@ type QueryOption<TQuery> = [TQuery] extends [never]
     ? { query?: Exclude<TQuery, undefined> }
     : { query: TQuery };
 
-type FormDataOption<TFormData> = [TFormData] extends [never]
-  ? object
-  : undefined extends TFormData
-    ? { formData?: Exclude<TFormData, undefined> }
-    : { formData: TFormData };
-
-type UrlEncodedOption<TUrlEncoded> = [TUrlEncoded] extends [never]
-  ? object
-  : undefined extends TUrlEncoded
-    ? { urlEncoded?: Exclude<TUrlEncoded, undefined> }
-    : { urlEncoded: TUrlEncoded };
-
-export type RequestOptions<
-  TBody = never,
-  TQuery = never,
-  TFormData = never,
-  TUrlEncoded = never,
-> = BaseRequestOptions &
+export type RequestOptions<TBody = never, TQuery = never> = BaseRequestOptions &
   BodyOption<TBody> &
-  QueryOption<TQuery> &
-  FormDataOption<TFormData> &
-  UrlEncodedOption<TUrlEncoded>;
+  QueryOption<TQuery>;
 
 export type AnyRequestOptions = BaseRequestOptions & {
   body?: unknown;
   query?: Record<string, string | number | boolean | undefined>;
-  formData?: Record<string, unknown>;
-  urlEncoded?: Record<string, unknown>;
   params?: Record<string, string | number>;
   signal?: AbortSignal;
-
-  /** @internal Path transformer function. Set by plugins like path-case. */
-  _pathTransformer?: (path: string[]) => string[];
 } & Partial<RetryConfig>;
 
 type DynamicParamsOption = {
@@ -79,16 +55,16 @@ export type MethodOptionsMap<
   TQueryOptions = object,
   TMutationOptions = object,
 > = {
-  $get: TQueryOptions;
-  $post: TMutationOptions;
-  $put: TMutationOptions;
-  $patch: TMutationOptions;
-  $delete: TMutationOptions;
+  GET: TQueryOptions;
+  POST: TMutationOptions;
+  PUT: TMutationOptions;
+  PATCH: TMutationOptions;
+  DELETE: TMutationOptions;
 };
 
-export type ExtractMethodOptions<TOptionsMap, TMethod extends SchemaMethod> =
+export type ExtractMethodOptions<TOptionsMap, TMethod extends HttpMethod> =
   TOptionsMap extends MethodOptionsMap<infer TQuery, infer TMutation>
-    ? TMethod extends "$get"
+    ? TMethod extends "GET"
       ? TQuery
       : TMutation
     : TOptionsMap;

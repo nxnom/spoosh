@@ -423,40 +423,6 @@ describe("debouncePlugin", () => {
       expect(result).toEqual(expectedResponse);
     });
 
-    it("should pass prevBody when available", async () => {
-      const plugin = debouncePlugin();
-      const stateManager = createStateManager();
-      const eventEmitter = createEventEmitter();
-
-      const debounceFn = vi.fn().mockReturnValue(200);
-
-      const context1 = createMockContext({
-        stateManager,
-        eventEmitter,
-        queryKey: '{"method":"POST","path":["search"]}',
-        requestOptions: { body: { term: "first" } },
-        pluginOptions: { debounce: debounceFn },
-      });
-      const next = vi.fn().mockResolvedValue({ data: [], status: 200 });
-
-      await plugin.middleware!(context1, next);
-      vi.advanceTimersByTime(300);
-
-      const context2 = createMockContext({
-        stateManager,
-        eventEmitter,
-        queryKey: '{"method":"POST","path":["search"]}',
-        requestOptions: { body: { term: "second" } },
-        pluginOptions: { debounce: debounceFn },
-      });
-
-      await plugin.middleware!(context2, next);
-
-      expect(debounceFn).toHaveBeenLastCalledWith({
-        prevBody: { term: "first" },
-      });
-    });
-
     it("should pass prevParams when available", async () => {
       const plugin = debouncePlugin();
       const stateManager = createStateManager();
@@ -490,40 +456,6 @@ describe("debouncePlugin", () => {
 
       expect(debounceFn).toHaveBeenLastCalledWith({
         prevParams: { id: 1 },
-      });
-    });
-
-    it("should pass prevFormData when available", async () => {
-      const plugin = debouncePlugin();
-      const stateManager = createStateManager();
-      const eventEmitter = createEventEmitter();
-
-      const debounceFn = vi.fn().mockReturnValue(200);
-
-      const context1 = createMockContext({
-        stateManager,
-        eventEmitter,
-        queryKey: '{"method":"POST","path":["upload"]}',
-        requestOptions: { formData: { file: "test.txt" } },
-        pluginOptions: { debounce: debounceFn },
-      });
-      const next = vi.fn().mockResolvedValue({ data: [], status: 200 });
-
-      await plugin.middleware!(context1, next);
-      vi.advanceTimersByTime(300);
-
-      const context2 = createMockContext({
-        stateManager,
-        eventEmitter,
-        queryKey: '{"method":"POST","path":["upload"]}',
-        requestOptions: { formData: { file: "test2.txt" } },
-        pluginOptions: { debounce: debounceFn },
-      });
-
-      await plugin.middleware!(context2, next);
-
-      expect(debounceFn).toHaveBeenLastCalledWith({
-        prevFormData: { file: "test.txt" },
       });
     });
   });

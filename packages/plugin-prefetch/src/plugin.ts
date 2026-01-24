@@ -44,13 +44,13 @@ import { storePromiseInCache } from "./promise-cache";
  * const { prefetch } = createReactSpoosh(client);
  *
  * // Basic prefetch
- * await prefetch((api) => api.posts.$get());
+ * await prefetch((api) => api("posts").GET());
  *
  * // Prefetch with query options
- * await prefetch((api) => api.posts.$get({ query: { page: 1, limit: 10 } }));
+ * await prefetch((api) => api("posts").GET({ query: { page: 1, limit: 10 } }));
  *
  * // Prefetch with plugin options (staleTime, retries, etc.)
- * await prefetch((api) => api.users(userId).$get(), {
+ * await prefetch((api) => api("users/:id").GET({ params: { id: userId } }), {
  *   staleTime: 60000,
  *   retries: 3,
  * });
@@ -58,7 +58,7 @@ import { storePromiseInCache } from "./promise-cache";
  * // Prefetch on hover
  * <Link
  *   href="/posts/1"
- *   onMouseEnter={() => prefetch((api) => api.posts(1).$get())}
+ *   onMouseEnter={() => prefetch((api) => api("posts/:id").GET({ params: { id: 1 } }))}
  * >
  *   View Post
  * </Link>
@@ -84,7 +84,7 @@ export function prefetchPlugin(
       ): Promise<SpooshResponse<TData, TError>> => {
         const { tags, additionalTags } = options;
 
-        let callPath: string[] = [];
+        let callPath = "";
         let callMethod = "";
         let callOptions: unknown = undefined;
 
@@ -103,19 +103,20 @@ export function prefetchPlugin(
 
         if (!callMethod) {
           throw new Error(
-            "prefetch requires selecting a $get method. " +
-              "Example: prefetch((api) => api.posts.$get())"
+            "prefetch requires selecting a GET method. " +
+              'Example: prefetch((api) => api("posts").GET())'
           );
         }
 
-        const resolvedPath = resolvePath(callPath, undefined);
+        const pathSegments = callPath.split("/").filter(Boolean);
+        const resolvedPath = resolvePath(pathSegments, undefined);
         const resolvedTags = resolveTags(
           { tags, additionalTags },
           resolvedPath
         );
 
         const queryKey = stateManager.createQueryKey({
-          path: callPath,
+          path: pathSegments,
           method: callMethod,
           options: callOptions,
         });
@@ -126,7 +127,7 @@ export function prefetchPlugin(
 
         const pluginContext = pluginExecutor.createContext<TData, TError>({
           operationType: "read",
-          path: callPath,
+          path: pathSegments,
           method: callMethod as "GET",
           queryKey,
           tags: resolvedTags,
@@ -161,13 +162,10 @@ export function prefetchPlugin(
           };
 
           try {
-            let current: unknown = api;
-
-            for (const segment of resolvedPath) {
-              current = (current as Record<string, unknown>)[segment];
-            }
-
-            const method = (current as Record<string, unknown>)[callMethod] as (
+            const pathMethods = (
+              api as (path: string) => Record<string, unknown>
+            )(callPath);
+            const method = pathMethods[callMethod] as (
               o?: unknown
             ) => Promise<SpooshResponse<TData, TError>>;
 

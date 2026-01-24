@@ -1,5 +1,26 @@
 # @spoosh/react
 
+## 0.4.0
+
+### Breaking Changes
+
+- Updated to support new flat schema API from @spoosh/core@0.6.0
+- Hook selectors now use flat path syntax: `api => api("posts/:id").GET()`
+
+### Migration
+
+**Before:**
+
+```typescript
+const { data } = useRead((api) => api.posts._.$get({ params: { id } }));
+```
+
+**After:**
+
+```typescript
+const { data } = useRead((api) => api("posts/:id").GET({ params: { id } }));
+```
+
 ## 0.3.0
 
 ### Breaking Changes

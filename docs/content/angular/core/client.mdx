@@ -71,24 +71,23 @@ export const { injectRead, injectWrite, injectInfiniteRead } =
 All API calls accept optional request configuration:
 
 ```typescript
-const { data } = await api.users.$get({
+const { data } = await api("users").GET({
   query: { page: 1, limit: 10 },
   headers: { Authorization: "Bearer token" },
 });
 ```
 
-| Option     | Description                            |
-| ---------- | -------------------------------------- |
-| `query`    | Query parameters                       |
-| `body`     | Request body (POST, PUT, PATCH)        |
-| `formData` | Form data for file uploads             |
-| `params`   | Path parameters (with function syntax) |
-| `headers`  | Additional headers                     |
+| Option    | Description                                                           |
+| --------- | --------------------------------------------------------------------- |
+| `query`   | Query parameters                                                      |
+| `body`    | Request body (POST, PUT, PATCH). Files are auto-detected as FormData. |
+| `params`  | Path parameters                                                       |
+| `headers` | Additional headers                                                    |
 
 ## Per-Request Headers
 
 ```typescript
-const { data } = await api.users.$get({
+const { data } = await api("users").GET({
   headers: {
     Authorization: `Bearer ${token}`,
     "X-Custom-Header": "value",
@@ -120,7 +119,7 @@ const api = createClient<ApiSchema>({
   baseUrl: process.env.API_URL!,
 });
 
-const { data } = await api.users.$get();
+const { data } = await api("users").GET();
 ```
 
 | Option           | Type                 | Description                   |

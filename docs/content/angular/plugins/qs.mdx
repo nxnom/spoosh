@@ -39,12 +39,12 @@ const query = {
 
 ```typescript
 // Use comma-separated arrays for this request
-injectRead((api) => api.items.$get({ query }), {
+injectRead((api) => api("items").GET({ query }), {
   qs: { arrayFormat: "comma" },
 });
 
 // Use dot notation for nested objects
-injectRead((api) => api.search.$get({ query }), { qs: { allowDots: true } });
+injectRead((api) => api("search").GET({ query }), { qs: { allowDots: true } });
 ```
 
 ## Options
@@ -64,7 +64,7 @@ Accepts all [`qs` stringify options](https://github.com/ljharb/qs#stringifying).
 Same options as plugin config, nested under `qs`:
 
 ```typescript
-injectRead((api) => api.items.$get({ query }), {
+injectRead((api) => api("items").GET({ query }), {
   qs: { arrayFormat: "comma" },
 });
 ```

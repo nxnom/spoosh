@@ -27,50 +27,45 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([
   optimisticPlugin(),
 ]);
 
-const { trigger } = useWrite((api) => api.posts(id).$delete);
+const { trigger } = useWrite((api) => api("posts/:id").DELETE);
 
 trigger({
+  params: { id },
   // Optimistic delete - instantly remove item from list
-  optimistic: ($, api) =>
-    $({
-      for: api.posts.$get,
-      updater: (posts) => posts.filter((p) => p.id !== id),
-      rollbackOnError: true,
-    }),
+  optimistic: (api) =>
+    api("posts")
+      .GET()
+      .UPDATE_CACHE((posts) => posts.filter((p) => p.id !== id)),
 });
 
-// Optimistic update with response data
+// Optimistic update with response data (onSuccess timing)
 trigger({
-  optimistic: ($, api) =>
-    $({
-      for: api.posts.$get,
-      timing: "onSuccess",
-      updater: (posts, newPost) => [newPost!, ...posts],
-    }),
+  optimistic: (api) =>
+    api("posts")
+      .GET()
+      .ON_SUCCESS()
+      .UPDATE_CACHE((posts, newPost) => [newPost!, ...posts]),
 });
 
 // Multiple targets
 trigger({
-  optimistic: ($, api) => [
-    $({
-      for: api.posts.$get,
-      updater: (posts) => posts.filter((p) => p.id !== id),
-    }),
-    $({
-      for: api.stats.$get,
-      updater: (stats) => ({ ...stats, count: stats.count - 1 }),
-    }),
+  optimistic: (api) => [
+    api("posts")
+      .GET()
+      .UPDATE_CACHE((posts) => posts.filter((p) => p.id !== id)),
+    api("stats")
+      .GET()
+      .UPDATE_CACHE((stats) => ({ ...stats, count: stats.count - 1 })),
   ],
 });
 
 // Filter by request params
 trigger({
-  optimistic: ($, api) =>
-    $({
-      for: api.posts.$get,
-      match: (request) => request.query?.page === 1,
-      updater: (posts, newPost) => [newPost!, ...posts],
-    }),
+  optimistic: (api) =>
+    api("posts")
+      .GET()
+      .WHERE((request) => request.query?.page === 1)
+      .UPDATE_CACHE((posts, newPost) => [newPost!, ...posts]),
 });
 ```
 
@@ -78,20 +73,22 @@ trigger({
 
 ### Per-Request Options
 
-| Option       | Type                             | Description                           |
-| ------------ | -------------------------------- | ------------------------------------- |
-| `optimistic` | `($, api) => config \| config[]` | Callback to define optimistic updates |
+| Option       | Type                            | Description                           |
+| ------------ | ------------------------------- | ------------------------------------- |
+| `optimistic` | `(api) => builder \| builder[]` | Callback to define optimistic updates |
 
-### Config Object
+### Builder Methods (DSL)
 
-| Property          | Type                         | Default       | Description                          |
-| ----------------- | ---------------------------- | ------------- | ------------------------------------ |
-| `for`             | `api.endpoint.$get`          | required      | The endpoint to update               |
-| `updater`         | `(data, response?) => data`  | required      | Function to update cached data       |
-| `match`           | `(request) => boolean`       | -             | Filter which cache entries to update |
-| `timing`          | `"immediate" \| "onSuccess"` | `"immediate"` | When to apply the update (see below) |
-| `rollbackOnError` | `boolean`                    | `true`        | Whether to rollback on error         |
-| `onError`         | `(error) => void`            | -             | Error callback                       |
+Chain methods to configure optimistic updates:
+
+| Method              | Description                               |
+| ------------------- | ----------------------------------------- |
+| `.GET()`            | Select the GET endpoint to update         |
+| `.WHERE(fn)`        | Filter which cache entries to update      |
+| `.UPDATE_CACHE(fn)` | Update cache immediately (default timing) |
+| `.ON_SUCCESS()`     | Switch to onSuccess timing mode           |
+| `.NO_ROLLBACK()`    | Disable automatic rollback on error       |
+| `.ON_ERROR(fn)`     | Error callback                            |
 
 ### Result
 
@@ -101,7 +98,7 @@ trigger({
 
 ### Timing Modes
 
-| Mode          | Description                                                                 |
-| ------------- | --------------------------------------------------------------------------- |
-| `"immediate"` | Update cache instantly before request completes. Rollback on error.         |
-| `"onSuccess"` | Wait for successful response, then update cache with response data applied. |
+| Usage                            | Description                                                                                          |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `.UPDATE_CACHE(fn)`              | **Immediate** - Update cache instantly before request completes. Rollback on error.                  |
+| `.ON_SUCCESS().UPDATE_CACHE(fn)` | **On Success** - Wait for successful response, then update cache. `fn` receives response as 2nd arg. |

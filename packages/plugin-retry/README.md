@@ -21,10 +21,10 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([
 ]);
 
 // Per-query override
-useRead((api) => api.posts.$get(), { retries: 5, retryDelay: 2000 });
+useRead((api) => api("posts").GET(), { retries: 5, retryDelay: 2000 });
 
 // Disable retries for a specific request
-useRead((api) => api.posts.$get(), { retries: false });
+useRead((api) => api("posts").GET(), { retries: false });
 ```
 
 ## Options

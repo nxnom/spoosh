@@ -28,10 +28,10 @@ Data is considered "fresh" for the duration of `staleTime`. During this period, 
 
 ```typescript
 // Use longer cache time for static data
-useRead((api) => api.settings.$get(), { staleTime: 60000 });
+useRead((api) => api("settings").GET(), { staleTime: 60000 });
 
 // Disable caching for real-time data
-useRead((api) => api.live.$get(), { staleTime: 0 });
+useRead((api) => api("live").GET(), { staleTime: 0 });
 ```
 
 ## Options

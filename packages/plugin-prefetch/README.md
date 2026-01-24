@@ -28,14 +28,14 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
 const { useRead, useWrite, prefetch } = createReactSpoosh(spoosh);
 
 // Basic prefetch
-await prefetch((api) => api.posts.$get());
+await prefetch((api) => api("posts").GET());
 
 // Prefetch with query options
-await prefetch((api) => api.posts.$get({ query: { page: 1, limit: 10 } }));
+await prefetch((api) => api("posts").GET({ query: { page: 1, limit: 10 } }));
 
 // Prefetch with plugin options (staleTime, retries, etc.)
 await prefetch(
-  (api) => api.users(userId).$get(),
+  (api) => api("users/:id").GET({ params: { id: userId } }),
   {
     staleTime: 60000,
     retries: 3,
@@ -45,7 +45,7 @@ await prefetch(
 // Prefetch on hover
 <Link
   href="/posts/1"
-  onMouseEnter={() => prefetch((api) => api.posts(1).$get())}
+  onMouseEnter={() => prefetch((api) => api("posts/:id").GET({ params: { id: 1 } }))}
 >
   View Post
 </Link>
@@ -77,9 +77,9 @@ Multiple calls to prefetch the same data will return the same promise, avoiding 
 
 ```typescript
 // These will only make ONE network request
-prefetch((api) => api.posts.$get());
-prefetch((api) => api.posts.$get());
-prefetch((api) => api.posts.$get());
+prefetch((api) => api("posts").GET());
+prefetch((api) => api("posts").GET());
+prefetch((api) => api("posts").GET());
 ```
 
 ### Memory Leak Prevention

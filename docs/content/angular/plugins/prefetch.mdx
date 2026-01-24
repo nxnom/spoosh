@@ -30,10 +30,10 @@ const { injectRead, injectWrite, prefetch } = createAngularSpoosh(client);
 
 ```typescript
 // Prefetch data
-await prefetch((api) => api.posts.$get());
+await prefetch((api) => api("posts").GET());
 
 // Prefetch with query parameters
-await prefetch((api) => api.posts.$get({ query: { page: 1, limit: 10 } }));
+await prefetch((api) => api("posts").GET({ query: { page: 1, limit: 10 } }));
 ```
 
 ## Prefetch with Options
@@ -41,7 +41,7 @@ await prefetch((api) => api.posts.$get({ query: { page: 1, limit: 10 } }));
 Pass plugin options as the second argument:
 
 ```typescript
-await prefetch((api) => api.users(userId).$get(), {
+await prefetch((api) => api("users/:id").GET({ params: { id: userId } }), {
   staleTime: 60000,
   retries: 3,
 });
@@ -60,7 +60,7 @@ A common pattern is prefetching when the user hovers over a link:
 })
 export class PostLinkComponent {
   onHover() {
-    prefetch((api) => api.posts(1).$get());
+    prefetch((api) => api("posts/:id").GET({ params: { id: 1 } }));
   }
 }
 ```
@@ -78,7 +78,7 @@ export class NavComponent {
   constructor(private router: Router) {}
 
   async handleNavigation(postId: number) {
-    await prefetch((api) => api.posts(postId).$get());
+    await prefetch((api) => api("posts/:id").GET({ params: { id: postId } }));
     this.router.navigate(["/posts", postId]);
   }
 }
@@ -90,9 +90,9 @@ Multiple calls to prefetch the same data will return the same promise, avoiding 
 
 ```typescript
 // These will only make ONE network request
-prefetch((api) => api.posts.$get());
-prefetch((api) => api.posts.$get());
-prefetch((api) => api.posts.$get());
+prefetch((api) => api("posts").GET());
+prefetch((api) => api("posts").GET());
+prefetch((api) => api("posts").GET());
 ```
 
 ## Options

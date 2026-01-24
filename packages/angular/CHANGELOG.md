@@ -1,5 +1,26 @@
 # @spoosh/angular
 
+## 0.3.0
+
+### Breaking Changes
+
+- Updated to support new flat schema API from @spoosh/core@0.6.0
+- Inject selectors now use flat path syntax: `api => api("posts/:id").GET()`
+
+### Migration
+
+**Before:**
+
+```typescript
+const data = injectRead((api) => api.posts._.$get({ params: { id } }));
+```
+
+**After:**
+
+```typescript
+const data = injectRead((api) => api("posts/:id").GET({ params: { id } }));
+```
+
 ## 0.2.0
 
 ### Breaking Changes

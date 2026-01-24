@@ -83,54 +83,50 @@ All API calls are fully typed:
 
 ```typescript
 // GET /api/posts
-const { data: posts } = await api.posts.$get();
+const { data: posts } = await api("posts").GET();
 // posts: { id: number; title: string }[]
 
 // POST /api/posts
-const { data: newPost } = await api.posts.$post({
+const { data: newPost } = await api("posts").POST({
   body: { title: "New Post" }, // body is typed
 });
 // newPost: { id: number; title: string }
 
 // GET /api/posts/1
-const { data: post } = await api.posts(1).$get();
+const { data: post } = await api("posts/:id").GET({ params: { id: 1 } });
 // post: { id: number; title: string }
 
 // DELETE /api/posts/1
-await api.posts(1).$delete();
+await api("posts/:id").DELETE({ params: { id: 1 } });
 ```
 
 ## Type Mapping
 
-| Elysia                   | Spoosh                      |
-| ------------------------ | --------------------------- |
-| Return value             | Response data type          |
-| `body: t.Object({...})`  | Request body type           |
-| `query: t.Object({...})` | Query params type           |
-| `/posts/:id`             | `posts._` (dynamic segment) |
+| Elysia                   | Spoosh                         |
+| ------------------------ | ------------------------------ |
+| Return value             | Response data type             |
+| `body: t.Object({...})`  | Request body type              |
+| `query: t.Object({...})` | Query params type              |
+| `/posts/:id`             | `"posts/:id"` (path-based key) |
 
 ## Path Parameters
 
-Dynamic segments (`:id`, `:slug`, etc.) are converted to `_` in the schema and accessed with direct usage:
+Dynamic segments (`:id`, `:slug`, etc.) are represented as path-based keys in the schema:
 
 ```typescript
 // Elysia route: /users/:userId/posts/:postId
 
-// Direct usage (simplest - pass values directly)
-api.users(123).posts(456).$get();
+// Path-based access with params object
+api("users/:userId/posts/:postId").GET({
+  params: { userId: 123, postId: 456 },
+});
 
 // With variables
 const userId = 123;
 const postId = 456;
-api.users(userId).posts(postId).$get();
-
-// Typed params (advanced - explicit param names)
-api
-  .users(":userId")
-  .posts(":postId")
-  .$get({
-    params: { userId: 123, postId: 456 },
-  });
+api("users/:userId/posts/:postId").GET({
+  params: { userId, postId },
+});
 ```
 
 ### With Angular
@@ -151,13 +147,18 @@ import { injectRead, injectWrite } from "./api/client";
 export class UserProfileComponent {
   userId = input.required<number>();
 
-  user = injectRead((api) => api.users(this.userId()).$get());
+  user = injectRead((api) =>
+    api("users/:id").GET({ params: { id: this.userId() } })
+  );
 
-  updateUser = injectWrite((api) => api.users(this.userId()).$put);
-  deleteUser = injectWrite((api) => api.users(this.userId()).$delete);
+  updateUser = injectWrite((api) => api("users/:id").PUT);
+  deleteUser = injectWrite((api) => api("users/:id").DELETE);
 
   async handleUpdate() {
-    await this.updateUser.trigger({ body: { name: "Updated" } });
+    await this.updateUser.trigger({
+      params: { id: this.userId() },
+      body: { name: "Updated" },
+    });
   }
 }
 ```

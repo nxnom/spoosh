@@ -56,7 +56,9 @@ import { injectRead } from "./api/client";
   `,
 })
 export class UserProfileComponent {
-  private user = injectRead((api) => api.users(1).$get());
+  private user = injectRead((api) =>
+    api("users/:id").GET({ params: { id: 1 } })
+  );
 
   data = computed(() => this.user.data());
   error = computed(() => this.user.error());
@@ -90,7 +92,7 @@ export class SearchUsersComponent {
   searchTerm = signal("");
 
   private searchResults = injectRead(
-    (api) => api.search.$get({ query: { q: this.searchTerm() } }),
+    (api) => api("search").GET({ query: { q: this.searchTerm() } }),
     { enabled: () => this.searchTerm().length > 0 }
   );
 
@@ -123,7 +125,7 @@ import { injectWrite } from "./api/client";
 })
 export class CreatePostComponent {
   private createPost = injectWrite((api, data) =>
-    api.posts.$post({ body: data })
+    api("posts").POST({ body: data })
   );
 
   loading = computed(() => this.createPost.loading());
@@ -157,7 +159,7 @@ import { injectInfiniteRead } from "./api/client";
 })
 export class PostFeedComponent {
   private posts = injectInfiniteRead(
-    (api, { pageParam }) => api.posts.$get({ query: { cursor: pageParam } }),
+    (api, { pageParam }) => api("posts").GET({ query: { cursor: pageParam } }),
     { getNextPageParam: (lastPage) => lastPage.nextCursor }
   );
 
@@ -174,7 +176,7 @@ The response includes the input that was sent with the request:
 
 ```typescript
 const createUser = injectWrite((api) =>
-  api.users.$post({ body: { name: "John", email: "john@example.com" } })
+  api("users").POST({ body: { name: "John", email: "john@example.com" } })
 );
 
 // response.input?.body contains { name: "John", email: "john@example.com" }
