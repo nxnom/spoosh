@@ -26,7 +26,6 @@ import type {
   ReadApiClient,
   ExtractResponseQuery,
   ExtractResponseBody,
-  ExtractResponseFormData,
   ExtractResponseParamNames,
   ResponseInputFields,
 } from "../types";
@@ -76,7 +75,6 @@ export function createUseRead<
     ResponseInputFields<
       ExtractResponseQuery<TReadFn>,
       ExtractResponseBody<TReadFn>,
-      ExtractResponseFormData<TReadFn>,
       ExtractResponseParamNames<TReadFn>
     > {
     const {
@@ -103,8 +101,8 @@ export function createUseRead<
 
     if (!capturedCall) {
       throw new Error(
-        "useRead requires calling an HTTP method ($get). " +
-          "Example: useRead((api) => api.posts.$get())"
+        "useRead requires calling an HTTP method (GET). " +
+          'Example: useRead((api) => api("posts").GET())'
       );
     }
 
@@ -112,11 +110,12 @@ export function createUseRead<
       | { params?: Record<string, string | number> }
       | undefined;
 
-    const resolvedPath = resolvePath(capturedCall.path, requestOptions?.params);
+    const pathSegments = capturedCall.path.split("/").filter(Boolean);
+    const resolvedPath = resolvePath(pathSegments, requestOptions?.params);
     const resolvedTags = resolveTags({ tags, additionalTags }, resolvedPath);
 
     const queryKey = stateManager.createQueryKey({
-      path: capturedCall.path,
+      path: pathSegments,
       method: capturedCall.method,
       options: capturedCall.options,
     });
@@ -145,7 +144,7 @@ export function createUseRead<
     if (!controllerRef.current || controllerRef.current.queryKey !== queryKey) {
       const controller = createOperationController<TData, TError>({
         operationType: "read",
-        path: capturedCall.path,
+        path: pathSegments,
         method: capturedCall.method as "GET",
         tags: resolvedTags,
         requestOptions: capturedCall.options as
@@ -156,15 +155,12 @@ export function createUseRead<
         pluginExecutor,
         hookId,
         fetchFn: async (fetchOpts) => {
-          let current: unknown = api;
-
-          for (const segment of resolvedPath) {
-            current = (current as Record<string, unknown>)[segment];
-          }
-
-          const method = (current as Record<string, unknown>)[
-            capturedCall.method
-          ] as (o?: unknown) => Promise<SpooshResponse<TData, TError>>;
+          const pathMethods = (
+            api as (path: string) => Record<string, unknown>
+          )(capturedCall.path);
+          const method = pathMethods[capturedCall.method] as (
+            o?: unknown
+          ) => Promise<SpooshResponse<TData, TError>>;
 
           return method(fetchOpts);
         },
@@ -295,10 +291,6 @@ export function createUseRead<
       inputInner.body = opts.body;
     }
 
-    if (opts?.formData !== undefined) {
-      inputInner.formData = opts.formData;
-    }
-
     if (opts?.params !== undefined) {
       inputInner.params = opts.params;
     }
@@ -329,7 +321,6 @@ export function createUseRead<
       ResponseInputFields<
         ExtractResponseQuery<TReadFn>,
         ExtractResponseBody<TReadFn>,
-        ExtractResponseFormData<TReadFn>,
         ExtractResponseParamNames<TReadFn>
       >;
   };

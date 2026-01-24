@@ -18,7 +18,6 @@ import type {
   BaseInfiniteReadResult,
   ExtractResponseQuery,
   ExtractResponseBody,
-  ExtractResponseFormData,
   ExtractResponseParamNames,
   ResponseInputFields,
   WriteResponseInputFields,
@@ -26,8 +25,6 @@ import type {
   ExtractMethodError,
   ExtractMethodQuery,
   ExtractMethodBody,
-  ExtractMethodFormData,
-  ExtractMethodUrlEncoded,
   AnyInfiniteRequestOptions,
   ReadApiClient,
   WriteApiClient,
@@ -47,8 +44,7 @@ type ReadResolverContext<TSchema, TReadFn, TDefaultError> = ResolverContext<
   InferError<ExtractMethodError<TReadFn>, TDefaultError>,
   ExtractResponseQuery<TReadFn>,
   ExtractResponseBody<TReadFn>,
-  ExtractParamsRecord<TReadFn>,
-  ExtractResponseFormData<TReadFn>
+  ExtractParamsRecord<TReadFn>
 >;
 
 type ResolvedReadOptions<
@@ -69,9 +65,7 @@ type WriteResolverContext<TSchema, TMethod, TDefaultError> = ResolverContext<
   ExtractMethodBody<TMethod>,
   ExtractResponseParamNames<TMethod> extends never
     ? never
-    : Record<ExtractResponseParamNames<TMethod>, string | number>,
-  ExtractMethodFormData<TMethod>,
-  ExtractMethodUrlEncoded<TMethod>
+    : Record<ExtractResponseParamNames<TMethod>, string | number>
 >;
 
 type ResolvedWriteOptions<
@@ -104,32 +98,27 @@ type UseReadFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
   ResponseInputFields<
     ExtractResponseQuery<TReadFn>,
     ExtractResponseBody<TReadFn>,
-    ExtractResponseFormData<TReadFn>,
     ExtractResponseParamNames<TReadFn>
   >;
 
 type UseWriteFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
-  TMethod extends (
-    ...args: never[]
-  ) => Promise<SpooshResponse<unknown, unknown>>,
-  TWriteOpts extends (TMethod extends (options: infer O) => unknown
-    ? O
-    : object) &
-    ResolvedWriteOptions<TSchema, TPlugins, TMethod, TDefaultError> =
-    (TMethod extends (options: infer O) => unknown ? O : object) &
-      ResolvedWriteOptions<TSchema, TPlugins, TMethod, TDefaultError>,
+  TMethod extends (...args: never) => Promise<SpooshResponse<unknown, unknown>>,
 >(
   writeFn: (api: WriteApiClient<TSchema, TDefaultError>) => TMethod
 ) => BaseWriteResult<
   ExtractMethodData<TMethod>,
   InferError<ExtractMethodError<TMethod>, TDefaultError>,
-  TWriteOpts,
-  ResolveResultTypes<MergePluginResults<TPlugins>["write"], TWriteOpts>
+  Parameters<TMethod>[0] &
+    ResolvedWriteOptions<TSchema, TPlugins, TMethod, TDefaultError>,
+  ResolveResultTypes<
+    MergePluginResults<TPlugins>["write"],
+    Parameters<TMethod>[0] &
+      ResolvedWriteOptions<TSchema, TPlugins, TMethod, TDefaultError>
+  >
 > &
   WriteResponseInputFields<
-    ExtractResponseQuery<TMethod>,
-    ExtractResponseBody<TMethod>,
-    ExtractResponseFormData<TMethod>,
+    ExtractMethodQuery<TMethod>,
+    ExtractMethodBody<TMethod>,
     ExtractResponseParamNames<TMethod>
   >;
 
@@ -140,8 +129,7 @@ type InfiniteReadResolverContext<TSchema, TData, TError, TRequest> =
     TError,
     TRequest extends { query: infer Q } ? Q : never,
     TRequest extends { body: infer B } ? B : never,
-    TRequest extends { params: infer P } ? P : never,
-    never
+    TRequest extends { params: infer P } ? P : never
   >;
 
 type ResolvedInfiniteReadOptions<
@@ -188,16 +176,16 @@ export type SpooshReactHooks<
   /**
    * React hook for fetching data from an API endpoint with automatic caching and revalidation.
    *
-   * @param readFn - Function that selects the API endpoint to call (e.g., `(api) => api.posts.$get()`)
+   * @param readFn - Function that selects the API endpoint to call (e.g., `(api) => api("posts").GET()`)
    * @param readOptions - Optional configuration including `enabled`, `tags`, and plugin-specific options
    * @returns Object containing `data`, `error`, `loading`, `fetching`, `refetch`, and `abort`
    *
    * @example
    * ```tsx
-   * const { data, loading, error } = useRead((api) => api.posts.$get());
+   * const { data, loading, error } = useRead((api) => api("posts").GET());
    *
    * const { data: post } = useRead(
-   *   (api) => api.posts(postId).$get(),
+   *   (api) => api("posts/:id").GET({ params: { id: postId } }),
    *   { enabled: !!postId }
    * );
    * ```
@@ -207,12 +195,12 @@ export type SpooshReactHooks<
   /**
    * React hook for mutations (POST, PUT, PATCH, DELETE) with manual triggering.
    *
-   * @param writeFn - Function that selects the API endpoint (e.g., `(api) => api.posts.$post`)
+   * @param writeFn - Function that selects the API endpoint (e.g., `(api) => api("posts").POST`)
    * @returns Object containing `trigger`, `data`, `error`, `loading`, `reset`, and `abort`
    *
    * @example
    * ```tsx
-   * const { trigger, loading, data } = useWrite((api) => api.posts.$post);
+   * const { trigger, loading, data } = useWrite((api) => api("posts").POST);
    *
    * const handleSubmit = async (formData) => {
    *   const { data, error } = await trigger({ body: formData });
@@ -232,7 +220,7 @@ export type SpooshReactHooks<
    * @example
    * ```tsx
    * const { data, fetchNext, canFetchNext, loading } = useInfiniteRead(
-   *   (api) => api.posts.$get(),
+   *   (api) => api("posts").GET(),
    *   {
    *     canFetchNext: ({ response }) => !!response?.nextCursor,
    *     nextPageRequest: ({ response }) => ({ query: { cursor: response?.nextCursor } }),

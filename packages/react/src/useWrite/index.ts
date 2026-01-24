@@ -27,11 +27,8 @@ import type {
   ExtractMethodOptions,
   ExtractMethodQuery,
   ExtractMethodBody,
-  ExtractMethodFormData,
-  ExtractMethodUrlEncoded,
   ExtractResponseQuery,
   ExtractResponseBody,
-  ExtractResponseFormData,
   ExtractResponseParamNames,
   WriteResponseInputFields,
 } from "../types";
@@ -65,9 +62,7 @@ export function createUseWrite<
     InferError<ExtractMethodError<TMethod>>,
     ExtractMethodQuery<TMethod>,
     ExtractMethodBody<TMethod>,
-    ExtractParamsRecord<TMethod>,
-    ExtractMethodFormData<TMethod>,
-    ExtractMethodUrlEncoded<TMethod>
+    ExtractParamsRecord<TMethod>
   >;
 
   type ResolvedWriteOptions<TMethod> = import("@spoosh/core").ResolveTypes<
@@ -93,7 +88,6 @@ export function createUseWrite<
     WriteResponseInputFields<
       ExtractResponseQuery<TMethod>,
       ExtractResponseBody<TMethod>,
-      ExtractResponseFormData<TMethod>,
       ExtractResponseParamNames<TMethod>
     > {
     type TData = ExtractMethodData<TMethod>;
@@ -118,13 +112,15 @@ export function createUseWrite<
 
     if (!selectedEndpoint) {
       throw new Error(
-        "useWrite requires selecting an HTTP method ($post, $put, $patch, $delete). " +
-          "Example: useWrite((api) => api.posts.$post)"
+        "useWrite requires selecting an HTTP method (POST, PUT, PATCH, DELETE). " +
+          'Example: useWrite((api) => api("posts").POST)'
       );
     }
 
+    const pathSegments = selectedEndpoint.path.split("/").filter(Boolean);
+
     const queryKey = stateManager.createQueryKey({
-      path: selectedEndpoint.path,
+      path: pathSegments,
       method: selectedEndpoint.method,
       options: undefined,
     });
@@ -138,7 +134,7 @@ export function createUseWrite<
       controllerRef.current = {
         controller: createOperationController<TData, TError>({
           operationType: "write",
-          path: selectedEndpoint.path,
+          path: pathSegments,
           method: selectedEndpoint.method as
             | "POST"
             | "PUT"
@@ -150,20 +146,12 @@ export function createUseWrite<
           pluginExecutor,
           hookId,
           fetchFn: async (fetchOpts) => {
-            const params = (
-              fetchOpts as { params?: Record<string, string | number> }
-            )?.params;
-            const resolvedPath = resolvePath(selectedEndpoint.path, params);
-
-            let current: unknown = api;
-
-            for (const segment of resolvedPath) {
-              current = (current as Record<string, unknown>)[segment];
-            }
-
-            const method = (current as Record<string, unknown>)[
-              selectedEndpoint.method
-            ] as (o?: unknown) => Promise<SpooshResponse<TData, TError>>;
+            const pathMethods = (
+              api as (path: string) => Record<string, unknown>
+            )(selectedEndpoint.path);
+            const method = pathMethods[selectedEndpoint.method] as (
+              o?: unknown
+            ) => Promise<SpooshResponse<TData, TError>>;
 
             return method(fetchOpts);
           },
@@ -210,7 +198,7 @@ export function createUseWrite<
             | { params?: Record<string, string | number> }
             | undefined
         )?.params;
-        const resolvedPath = resolvePath(selectedEndpoint.path, params);
+        const resolvedPath = resolvePath(pathSegments, params);
         const tags = resolveTags(triggerOptions, resolvedPath);
 
         controller.setPluginOptions({ ...triggerOptions, tags });
@@ -249,10 +237,6 @@ export function createUseWrite<
       inputInner.body = opts.body;
     }
 
-    if (opts?.formData !== undefined) {
-      inputInner.formData = opts.formData;
-    }
-
     if (opts?.params !== undefined) {
       inputInner.params = opts.params;
     }
@@ -282,7 +266,6 @@ export function createUseWrite<
       WriteResponseInputFields<
         ExtractResponseQuery<TMethod>,
         ExtractResponseBody<TMethod>,
-        ExtractResponseFormData<TMethod>,
         ExtractResponseParamNames<TMethod>
       >;
   };

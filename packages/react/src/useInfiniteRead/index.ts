@@ -83,8 +83,8 @@ export function createUseInfiniteRead<
 
     if (!capturedCall) {
       throw new Error(
-        "useInfiniteRead requires calling an HTTP method ($get). " +
-          "Example: useInfiniteRead((api) => api.posts.$get())"
+        "useInfiniteRead requires calling an HTTP method (GET). " +
+          'Example: useInfiniteRead((api) => api("posts").GET())'
       );
     }
 
@@ -95,6 +95,8 @@ export function createUseInfiniteRead<
           body?: unknown;
         }
       | undefined;
+
+    const pathSegments = capturedCall.path.split("/").filter(Boolean);
 
     const initialRequest: InfiniteRequestOptions = {
       query: requestOptions?.query,
@@ -109,7 +111,7 @@ export function createUseInfiniteRead<
       body: undefined,
     };
 
-    const resolvedPath = resolvePath(capturedCall.path, requestOptions?.params);
+    const resolvedPath = resolvePath(pathSegments, requestOptions?.params);
     const resolvedTags = resolveTags({ tags, additionalTags }, resolvedPath);
 
     const canFetchNextRef = useRef(canFetchNext);
@@ -125,7 +127,7 @@ export function createUseInfiniteRead<
     mergerRef.current = merger;
 
     const queryKey = stateManager.createQueryKey({
-      path: capturedCall.path,
+      path: pathSegments,
       method: capturedCall.method,
       options: baseOptionsForKey,
     });
@@ -145,7 +147,7 @@ export function createUseInfiniteRead<
           TError,
           TRequest
         >({
-          path: capturedCall.path,
+          path: pathSegments,
           method: capturedCall.method as "GET",
           tags: resolvedTags,
           initialRequest,
@@ -164,17 +166,12 @@ export function createUseInfiniteRead<
           pluginExecutor,
           hookId,
           fetchFn: async (opts, signal) => {
-            const fetchPath = resolvePath(capturedCall.path, opts.params);
-
-            let current: unknown = api;
-
-            for (const segment of fetchPath) {
-              current = (current as Record<string, unknown>)[segment];
-            }
-
-            const method = (current as Record<string, unknown>)[
-              capturedCall.method
-            ] as (opts?: unknown) => Promise<SpooshResponse<TData, TError>>;
+            const pathMethods = (
+              api as (path: string) => Record<string, unknown>
+            )(capturedCall.path);
+            const method = pathMethods[capturedCall.method] as (
+              opts?: unknown
+            ) => Promise<SpooshResponse<TData, TError>>;
 
             const fetchOptions = {
               ...(capturedCall.options as object),
