@@ -43,9 +43,7 @@ const { data } = useRead(
 
 When using a function, you receive:
 
-| Property       | Type      | Description               |
-| -------------- | --------- | ------------------------- |
-| `prevQuery`    | `object`  | Previous query parameters |
-| `prevBody`     | `unknown` | Previous request body     |
-| `prevParams`   | `object`  | Previous path parameters  |
-| `prevFormData` | `object`  | Previous form data        |
+| Property     | Type     | Description               |
+| ------------ | -------- | ------------------------- |
+| `prevQuery`  | `object` | Previous query parameters |
+| `prevParams` | `object` | Previous path parameters  |

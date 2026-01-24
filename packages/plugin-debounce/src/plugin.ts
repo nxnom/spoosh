@@ -47,12 +47,12 @@ function resolveDebounceMs(
  *   ]);
  *
  * // Debounce search by 300ms
- * useRead((api) => api.search.$get({ query: { q: searchTerm } }), {
+ * useRead((api) => api("search").GET({ query: { q: searchTerm } }), {
  *   debounce: 300,
  * });
  *
  * // Dynamic debounce based on previous query
- * useRead((api) => api.search.$get({ query: { q: searchTerm } }), {
+ * useRead((api) => api("search").GET({ query: { q: searchTerm } }), {
  *   debounce: ({ prevQuery }) => prevQuery?.q ? 300 : 0,
  * });
  * ```
