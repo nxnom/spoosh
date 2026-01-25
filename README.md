@@ -19,14 +19,12 @@ Spoosh is a lightweight, type-safe API client framework with a unique plugin arc
 **Type-Safe Routing** — Access your API with natural object syntax. Full autocomplete, zero magic strings.
 
 ```typescript
-// Direct usage with variables or literals (simplest)
-const userId = 123;
-const { data } = await client.api.users(userId).posts.$get();
-const { data } = await client.api.posts(456).comments.$get();
-
-// Typed params for explicit parameter names (advanced)
-const { data } = await client.api.users(":userId").posts.$get({
+// Direct usage with path strings
+const { data } = await client.api("users/:userId/posts").GET({
   params: { userId: 123 },
+});
+const { data } = await client.api("posts/:postId/comments").GET({
+  params: { postId: 456 },
 });
 ```
 
@@ -34,15 +32,14 @@ const { data } = await client.api.users(":userId").posts.$get({
 
 ```typescript
 // Tags are generated from the path hierarchy:
-// users.$get()           → tags: ["users"]
-// users(123).$get()      → tags: ["users", "users/123"]
-// users(123).posts.$get() → tags: ["users", "users/123", "users/123/posts"]
+// api("users").GET()                → tags: ["users"]
+// api("users/:id").GET({...})       → tags: ["users", "users/:id"]
+// api("users/:id/posts").GET({...}) → tags: ["users", "users/:id", "users/:id/posts"]
 
 // When you create a post, related queries are auto-invalidated:
-const userId = 123;
-const { trigger } = useWrite((api) => api.users(userId).posts.$post);
-await trigger({ body: { title: "New Post" } });
-// ✓ Automatically invalidates: users, users/123, users/123/posts
+const { trigger } = useWrite((api) => api("users/:userId/posts").POST);
+await trigger({ params: { userId: 123 }, body: { title: "New Post" } });
+// ✓ Automatically invalidates: users, users/:userId, users/:userId/posts
 ```
 
 **Composable Plugin System** — Add only what you need. Each plugin is a separate package with its own types.
@@ -63,9 +60,11 @@ import { Spoosh, type Endpoint } from "@spoosh/core";
 
 type ApiSchema = {
   posts: {
-    $get: Endpoint<Post[]>;
-    $post: Endpoint<Post, CreatePostBody>;
-    _: { $get: Endpoint<Post> };
+    GET: Endpoint<Post[]>;
+    POST: Endpoint<Post, CreatePostBody>;
+  };
+  "posts/:id": {
+    GET: Endpoint<Post>;
   };
 };
 
@@ -89,6 +88,12 @@ For React:
 npm install @spoosh/core @spoosh/react
 ```
 
+For Angular:
+
+```bash
+npm install @spoosh/core @spoosh/angular
+```
+
 ## Quick Start
 
 ```typescript
@@ -97,8 +102,10 @@ import { cachePlugin } from "@spoosh/plugin-cache";
 
 type ApiSchema = {
   users: {
-    $get: Endpoint<User[]>;
-    _: { $get: Endpoint<User> };
+    GET: Endpoint<User[]>;
+  };
+  "users/:id": {
+    GET: Endpoint<User>;
   };
 };
 
@@ -106,8 +113,8 @@ const client = new Spoosh<ApiSchema, Error>("/api")
   .use([cachePlugin({ staleTime: 5000 })]);
 
 // Fully typed API calls
-const { data, error } = await client.api.users.$get();
-const { data: user } = await client.api.users(123).$get();
+const { data, error } = await client.api("users").GET();
+const { data: user } = await client.api("users/:id").GET({ params: { id: 123 } });
 ```
 
 ### With React
@@ -118,10 +125,40 @@ import { createReactSpoosh } from "@spoosh/react";
 const { useRead, useWrite } = createReactSpoosh(client);
 
 function UserList() {
-  const { data, loading, error } = useRead((api) => api.users.$get());
+  const { data, loading, error } = useRead((api) => api("users").GET());
 
   if (loading) return <div>Loading...</div>;
   return <ul>{data?.map((user) => <li key={user.id}>{user.name}</li>)}</ul>;
+}
+```
+
+### With Angular
+
+```typescript
+import { createAngularSpoosh } from "@spoosh/angular";
+
+const { injectRead, injectWrite } = createAngularSpoosh(client);
+
+@Component({
+  selector: 'app-user-list',
+  template: `
+    @if (loading()) {
+      <div>Loading...</div>
+    } @else {
+      <ul>
+        @for (user of data(); track user.id) {
+          <li>{{ user.name }}</li>
+        }
+      </ul>
+    }
+  `
+})
+export class UserListComponent {
+  private users = injectRead((api) => api("users").GET());
+
+  data = this.users.data;
+  loading = this.users.loading;
+  error = this.users.error;
 }
 ```
 
@@ -133,6 +170,7 @@ function UserList() {
 | ------------------------------------- | ------------------------------------------------------ |
 | [@spoosh/core](./packages/core)       | Core client and plugin system                            |
 | [@spoosh/react](./packages/react)     | React hooks (`useRead`, `useWrite`, `useInfiniteRead`)   |
+| [@spoosh/angular](./packages/angular) | Angular signals (`injectRead`, `injectWrite`, `injectInfiniteRead`) |
 | [@spoosh/hono](./packages/hono)       | Hono type adapter for server-to-client type inference    |
 | [@spoosh/elysia](./packages/elysia)   | Elysia type adapter for server-to-client type inference  |
 | [@spoosh/openapi](./packages/openapi) | Generate OpenAPI specs from TypeScript types             |
@@ -152,6 +190,9 @@ function UserList() {
 | [@spoosh/plugin-initial-data](./packages/plugin-initial-data)   | Show data immediately before fetch completes         |
 | [@spoosh/plugin-refetch](./packages/plugin-refetch)             | Refetch on window focus or network reconnect         |
 | [@spoosh/plugin-prefetch](./packages/plugin-prefetch)           | Preload data before it's needed                      |
+| [@spoosh/plugin-transform](./packages/plugin-transform)         | Transform response data with sync/async functions    |
+| [@spoosh/plugin-gc](./packages/plugin-gc)                       | Garbage collection for cache cleanup                 |
+| [@spoosh/plugin-qs](./packages/plugin-qs)                       | Query string serialization with nested object support|
 | [@spoosh/plugin-nextjs](./packages/plugin-nextjs)               | Next.js server-side cache revalidation               |
 | [@spoosh/plugin-debug](./packages/plugin-debug)                 | Debug logging for development                        |
 
@@ -176,7 +217,7 @@ Per-request options are type-safe based on installed plugins:
 
 ```typescript
 // These options are typed based on your plugins
-useRead((api) => api.posts.$get(), {
+useRead((api) => api("posts").GET(), {
   staleTime: 10000, // from plugin-cache
   retries: 5, // from plugin-retry
   pollingInterval: 3000, // from plugin-polling

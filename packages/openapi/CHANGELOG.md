@@ -1,5 +1,11 @@
 # @spoosh/openapi
 
+## 0.2.1
+
+### Patch Changes
+
+- Update test script to count uppercase HTTP methods (GET, POST, etc.)
+
 ## 0.2.0
 
 ### Breaking Changes

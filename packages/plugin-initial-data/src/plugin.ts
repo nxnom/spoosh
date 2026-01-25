@@ -29,13 +29,13 @@ import type {
  *
  * // Basic usage - shows initialData, refetches in background
  * const { data, isInitialData } = useRead(
- *   (api) => api.posts.$get(),
+ *   (api) => api("posts").GET(),
  *   { initialData: prefetchedPosts }
  * );
  *
  * // Disable background refetch
  * const { data } = useRead(
- *   (api) => api.posts.$get(),
+ *   (api) => api("posts").GET(),
  *   { initialData: prefetchedPosts, refetchOnInitialData: false }
  * );
  * ```

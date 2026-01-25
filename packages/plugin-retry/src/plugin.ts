@@ -29,7 +29,7 @@ import type {
  *   ]);
  *
  * // Per-query override
- * useRead((api) => api.posts.$get(), {
+ * useRead((api) => api("posts").GET(), {
  *   retries: 5,
  *   retryDelay: 2000,
  * });

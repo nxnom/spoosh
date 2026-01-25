@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-refetch",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Auto-refetch plugin for Spoosh - refetch on focus and reconnect",
   "license": "MIT",
   "repository": {

@@ -82,8 +82,8 @@ function runImport(specPath, outputPath) {
 }
 
 function countEndpoints(tsContent) {
-  // Count $get, $post, $put, $patch, $delete occurrences
-  const matches = tsContent.match(/\$(get|post|put|patch|delete)/g);
+  // Count GET, POST, PUT, PATCH, DELETE occurrences
+  const matches = tsContent.match(/\b(GET|POST|PUT|PATCH|DELETE)\b/g);
   return matches ? matches.length : 0;
 }
 

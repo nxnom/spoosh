@@ -27,7 +27,7 @@ import type {
  *   ]);
  *
  * // Throttle to max once per second
- * useRead((api) => api.posts.$get(), {
+ * useRead((api) => api("posts").GET(), {
  *   throttle: 1000,
  * });
  * ```

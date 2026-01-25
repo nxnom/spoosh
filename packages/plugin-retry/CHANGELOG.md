@@ -1,5 +1,11 @@
 # @spoosh/plugin-retry
 
+## 0.1.5
+
+### Patch Changes
+
+- Update documentation examples to use new flat schema syntax
+
 ## 0.1.4
 
 ### Patch Changes

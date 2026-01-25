@@ -30,7 +30,7 @@ import type {
  *   ]);
  *
  * // Per-query override
- * useRead((api) => api.posts.$get(), {
+ * useRead((api) => api("posts").GET(), {
  *   dedupe: false,
  * });
  * ```

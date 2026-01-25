@@ -31,7 +31,7 @@ import type {
  *   ]);
  *
  * // Per-query override
- * useRead((api) => api.posts.$get(), {
+ * useRead((api) => api("posts").GET(), {
  *   staleTime: 10000,
  * });
  * ```

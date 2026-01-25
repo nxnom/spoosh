@@ -19,7 +19,7 @@ import type { SpooshReactHooks, SpooshInstanceShape } from "./types";
  * const { useRead, useWrite, useInfiniteRead } = createReactSpoosh(spooshInstance);
  *
  * function MyComponent() {
- *   const { data, loading } = useRead((api) => api.posts.$get());
+ *   const { data, loading } = useRead((api) => api("posts").GET());
  *   return <div>{loading ? 'Loading...' : data?.title}</div>;
  * }
  * ```

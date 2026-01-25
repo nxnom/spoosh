@@ -30,7 +30,7 @@ import type {
  *
  * // Per-request transforms with full type inference
  * const { data, meta } = useRead(
- *   (api) => api.posts.$get(),
+ *   (api) => api("posts").GET(),
  *   {
  *     transform: (posts) => ({
  *       count: posts.length,

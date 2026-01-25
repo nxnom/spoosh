@@ -1,5 +1,11 @@
 # @spoosh/react
 
+## 0.4.1
+
+### Patch Changes
+
+- Update documentation examples to use new flat schema syntax
+
 ## 0.4.0
 
 ### Breaking Changes

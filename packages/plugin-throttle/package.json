@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-throttle",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Request throttling plugin for Spoosh - limits request frequency",
   "license": "MIT",
   "repository": {

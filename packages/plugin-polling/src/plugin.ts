@@ -27,12 +27,12 @@ import type {
  *   ]);
  *
  * // Poll every 5 seconds
- * useRead((api) => api.posts.$get(), {
+ * useRead((api) => api("posts").GET(), {
  *   pollingInterval: 5000,
  * });
  *
  * // Dynamic interval based on data
- * useRead((api) => api.posts.$get(), {
+ * useRead((api) => api("posts").GET(), {
  *   pollingInterval: (data, error) => error ? 10000 : 5000,
  * });
  * ```

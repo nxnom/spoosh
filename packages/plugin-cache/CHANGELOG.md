@@ -1,5 +1,11 @@
 # @spoosh/plugin-cache
 
+## 0.2.1
+
+### Patch Changes
+
+- Update documentation examples to use new flat schema syntax
+
 ## 0.2.0
 
 ### Features
