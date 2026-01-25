@@ -22,7 +22,7 @@ import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
 
 const client = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
-  invalidationPlugin({ autoInvalidate: "all" }),
+  invalidationPlugin({ defaultMode: "all" }),
   deduplicationPlugin({ read: "in-flight" }),
 ]);
 
@@ -69,28 +69,24 @@ const { trigger } = useWrite((api) => api("posts").POST);
 
 await trigger({
   body: { title: "New Post" },
-  autoInvalidate: "all",
+  invalidate: "all",
 });
 ```
 
 ### Manual Invalidation
 
-Target specific queries to invalidate:
+Target specific tags to invalidate:
 
 ```typescript
 const { trigger } = useWrite((api) => api("posts").POST);
 
 await trigger({
   body: { title: "New Post" },
-  autoInvalidate: "none",
-  invalidate: (api) => [
-    api("posts").GET, // invalidates "posts"
-    api("users/:id/stats").GET, // invalidates "users/{userId}/stats"
-  ],
+  invalidate: ["posts", "users/123/stats"],
 });
 ```
 
-You can also pass tag strings directly:
+You can also use mode + tags:
 
 ```typescript
 await trigger({

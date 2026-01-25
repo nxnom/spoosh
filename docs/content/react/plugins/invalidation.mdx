@@ -30,13 +30,13 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([
 
 ```typescript
 // Default: invalidate all related tags (full hierarchy)
-invalidationPlugin(); // same as { autoInvalidate: "all" }
+invalidationPlugin(); // same as { defaultMode: "all" }
 
 // Only invalidate the exact endpoint by default
-invalidationPlugin({ autoInvalidate: "self" });
+invalidationPlugin({ defaultMode: "self" });
 
 // Disable auto-invalidation by default (manual only)
-invalidationPlugin({ autoInvalidate: "none" });
+invalidationPlugin({ defaultMode: "none" });
 ```
 
 ## How It Works
@@ -81,36 +81,47 @@ await trigger({ params: { id: 123 }, body: { title: "New Post" } });
 // All queries matching these tags will refetch automatically
 ```
 
-## Per-Request Override
+## Per-Request Invalidation
 
 Override the default invalidation behavior for specific mutations:
 
 ```typescript
 const { trigger } = useWrite((api) => api("posts").POST);
 
-// Override to invalidate all related tags
+// Mode only (string)
 await trigger({
   body: { title: "New Post" },
-  autoInvalidate: "all",
+  invalidate: "all", // Invalidate entire path hierarchy
 });
 
-// Override to only invalidate the exact endpoint
 await trigger({
   body: { title: "New Post" },
-  autoInvalidate: "self",
+  invalidate: "self", // Only invalidate the exact endpoint
 });
 
-// Disable auto-invalidation and specify custom targets
 await trigger({
   body: { title: "New Post" },
-  autoInvalidate: "none",
-  invalidate: (api) => [api("posts").GET, api("stats").GET, "dashboard-data"],
+  invalidate: "none", // No invalidation
 });
 
-// Add specific tags (works alongside autoInvalidate)
+// Tags only (array without mode keyword)
 await trigger({
   body: { title: "New Post" },
-  invalidate: ["posts", "user-posts"],
+  invalidate: ["posts", "users", "custom-tag"],
+  // → Only explicit tags are invalidated
+});
+
+// Mode + Tags (array with mode keyword)
+await trigger({
+  body: { title: "New Post" },
+  invalidate: ["all", "dashboard", "stats"],
+  // → 'all' mode + explicit tags
+});
+
+await trigger({
+  body: { title: "New Post" },
+  invalidate: ["posts", "self", "users"],
+  // → 'self' mode + explicit tags
 });
 ```
 
@@ -118,18 +129,17 @@ await trigger({
 
 ### Plugin Config
 
-| Option           | Type                        | Default | Description                        |
-| ---------------- | --------------------------- | ------- | ---------------------------------- |
-| `autoInvalidate` | `"all" \| "self" \| "none"` | `"all"` | Default auto-invalidation behavior |
+| Option        | Type                        | Default | Description                                         |
+| ------------- | --------------------------- | ------- | --------------------------------------------------- |
+| `defaultMode` | `"all" \| "self" \| "none"` | `"all"` | Default invalidation mode when option not specified |
 
 ### Per-Request Options
 
-| Option           | Type                           | Description                              |
-| ---------------- | ------------------------------ | ---------------------------------------- |
-| `autoInvalidate` | `"all" \| "self" \| "none"`    | Override auto-invalidation behavior      |
-| `invalidate`     | `string[] \| ((api) => [...])` | Specific tags or endpoints to invalidate |
+| Option       | Type                                    | Description                                                                             |
+| ------------ | --------------------------------------- | --------------------------------------------------------------------------------------- |
+| `invalidate` | `"all" \| "self" \| "none" \| string[]` | Mode only (string), tags only (array), or mode + tags (array with 'all'/'self' keyword) |
 
-## Auto-Invalidate Modes
+## Invalidation Modes
 
 | Mode     | Description                                       |
 | -------- | ------------------------------------------------- |
@@ -137,13 +147,96 @@ await trigger({
 | `"self"` | Only invalidate the exact endpoint tag            |
 | `"none"` | Disable auto-invalidation (manual only)           |
 
-## Example
+## Examples
+
+### Nested Path Invalidation
 
 ```typescript
-// Path: users/123/posts
-// Mode "all" invalidates: ["users", "users/123", "users/123/posts"]
-// Mode "self" invalidates: ["users/123/posts"]
-// Mode "none" invalidates: nothing (unless manually specified)
+// Creating a new post
+const { trigger } = useWrite((api) => api("posts").POST);
+
+await trigger({
+  body: { title: "New Post" },
+  invalidate: "all",
+});
+// Invalidates: ["posts"]
+
+// Updating a specific post
+const { trigger } = useWrite((api) => api("posts/:id").PATCH);
+
+const postId = 1;
+await trigger({
+  params: { id: postId },
+  body: { title: "Updated" },
+  invalidate: "all",
+});
+// Invalidates: ["posts", `posts/${postId}`]
+
+// Deleting a comment on a post
+const { trigger } = useWrite((api) => api("posts/:postId/comments/:id").DELETE);
+
+const postId = 5;
+const commentId = 10;
+await trigger({
+  params: { postId, id: commentId },
+  invalidate: "all",
+});
+// Invalidates: ["posts", `posts/${postId}`, `posts/${postId}/comments`, `posts/${postId}/comments/${commentId}`]
+```
+
+### Mode Comparison
+
+```typescript
+// Path: posts/:id/comments
+const { trigger } = useWrite((api) => api("posts/:id/comments").POST);
+
+const postId = 1;
+
+// Mode "all" invalidates full hierarchy
+await trigger({
+  params: { id: postId },
+  body: { text: "Great post!" },
+  invalidate: "all",
+});
+// Invalidates: ["posts", `posts/${postId}`, `posts/${postId}/comments`]
+
+// Mode "self" invalidates only exact endpoint
+await trigger({
+  params: { id: postId },
+  body: { text: "Great post!" },
+  invalidate: "self",
+});
+// Invalidates: [`posts/${postId}/comments`]
+
+// Mode "none" invalidates nothing
+await trigger({
+  params: { id: postId },
+  body: { text: "Great post!" },
+  invalidate: "none",
+});
+// Invalidates: []
+```
+
+### Combining Mode with Explicit Tags
+
+```typescript
+const postId = 1;
+
+// Invalidate hierarchy + specific tags
+await trigger({
+  params: { id: postId },
+  body: { text: "Great post!" },
+  invalidate: ["all", "dashboard", "user-stats"],
+});
+// Invalidates: ["posts", `posts/${postId}`, `posts/${postId}/comments`, "dashboard", "user-stats"]
+
+// Invalidate self + specific tags
+await trigger({
+  params: { id: postId },
+  body: { text: "Great post!" },
+  invalidate: ["self", `posts/${postId}`, "dashboard"],
+});
+// Invalidates: [`posts/${postId}/comments`, `posts/${postId}`, "dashboard"]
 ```
 
 ## Manual Invalidation
@@ -158,8 +251,8 @@ const { useRead, invalidate } = createReactSpoosh(client);
 // Invalidate with string array
 invalidate(["users", "posts"]);
 
-// Invalidate with callback (type-safe API selector)
-invalidate((api) => [api("users").GET, api("posts").GET, "custom-tag"]);
+// Invalidate with single string
+invalidate("posts");
 ```
 
 ### WebSocket Example

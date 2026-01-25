@@ -1,9 +1,9 @@
 ---
 title: Introduction
-description: A type-safe API client with automatic cache invalidation and zero boilerplate for Angular
+description: A type-safe API client with automatic cache invalidation and zero boilerplate
 ---
 
-**Spoosh** is a type-safe API client with automatic cache management for Angular. Define your API schema once, then get type-safe requests with automatic cache invalidation based on URL hierarchy.
+**Spoosh** is a type-safe API client with automatic cache management. Define your API schema once, then get type-safe requests with automatic cache invalidation based on URL hierarchy.
 
 ## What Makes Spoosh Different
 
@@ -12,43 +12,40 @@ description: A type-safe API client with automatic cache invalidation and zero b
 Spoosh uses a tag-based caching system. Each query is automatically tagged based on its URL path hierarchy:
 
 ```typescript
-// Cache tags are automatically generated from the path:
-const users = injectRead((api) => api("users").GET());
+// Query tags are automatically generated from the path:
+useRead((api) => api("users").GET());
 // → tags: ["users"]
 
-const user = injectRead((api) => api("users/:id").GET({ params: { id: 123 } }));
+useRead((api) => api("users/:id").GET({ params: { id: 123 } }));
 // → tags: ["users", "users/123"]
 
-const userPosts = injectRead((api) =>
-  api("users/:userId/posts").GET({ params: { userId: 123 } })
-);
+useRead((api) => api("users/:id/posts").GET({ params: { id: 123 } }));
 // → tags: ["users", "users/123", "users/123/posts"]
 ```
 
 When you mutate data, Spoosh automatically invalidates related queries based on these tags. Create a post for user 123? Every query that depends on that user's data refreshes automatically.
 
 ```typescript
-const createPost = injectWrite((api) => api("users/:userId/posts").POST);
+const { trigger } = useWrite((api) => api("users/:id/posts").POST);
 
 // This mutation automatically invalidates:
 // - users
 // - users/123
 // - users/123/posts
-await createPost.trigger({ params: { userId: 123 }, body: newPost });
+await trigger({ params: { id: 123 }, body: newPost });
 ```
 
-### Type-Safe Routing with Path-Based API
+### Type-Safe Routing with Zero Strings
 
-Define your API schema once, then use a path-based API that gives you autocomplete for every endpoint, parameter, and response.
+Define your API schema once, then use a function-based API that gives you autocomplete for every endpoint, parameter, and response.
 
 ```typescript
-// Fully typed with path-based syntax
-const user = injectRead((api) => api("users/:id").GET({ params: { id: 123 } }));
-const userPosts = injectRead((api) =>
-  api("users/:userId/posts").GET({
-    params: { userId: 123 },
-    query: { page: 1 },
-  })
+// Fully typed paths
+const { data: user } = useRead((api) =>
+  api("users/:id").GET({ params: { id: 123 } })
+);
+const { data: posts } = useRead((api) =>
+  api("users/:id/posts").GET({ params: { id: 123 }, query: { page: 1 } })
 );
 ```
 
@@ -60,20 +57,19 @@ You can also specify custom tags manually:
 
 ```typescript
 // Override auto-generated tags
-const users = injectRead((api) => api("users").GET(), {
+const { data } = useRead((api) => api("users").GET(), {
   tags: ["custom-users"], // replaces auto-generated tags
 });
 
 // Or extend auto-generated tags
-const usersWithDashboard = injectRead((api) => api("users").GET(), {
+const { data } = useRead((api) => api("users").GET(), {
   additionalTags: ["dashboard-data"], // adds to auto-generated tags
 });
 
 // On mutations, specify which tags to invalidate
-await createPost.trigger({
-  params: { userId: 123 },
+await trigger({
   body: { title: "New Post" },
-  invalidate: (api) => [api("posts").GET, api("stats").GET, "custom-tag"],
+  invalidate: ["posts", "stats", "custom-tag"],
 });
 ```
 
@@ -94,7 +90,7 @@ const spoosh = new Spoosh<API, Error>("/api").use([
 ]);
 
 // Options are typed based on installed plugins
-const users = injectRead((api) => api("users").GET(), {
+useRead((api) => api("users").GET(), {
   staleTime: 10000, // ✓ Known from cachePlugin
   retries: 5, // ✓ Known from retryPlugin
   interval: 60000, // ✓ Known from pollingPlugin
@@ -114,13 +110,13 @@ At ~10KB gzipped for the core, Spoosh keeps your bundle size minimal. Add only t
 
 ## Packages
 
-| Package           | Description                                                          |
-| ----------------- | -------------------------------------------------------------------- |
-| `@spoosh/core`    | Core client and plugin system                                        |
-| `@spoosh/angular` | Angular bindings (`injectRead`, `injectWrite`, `injectInfiniteRead`) |
-| `@spoosh/hono`    | Hono type adapter                                                    |
-| `@spoosh/elysia`  | Elysia type adapter                                                  |
-| `@spoosh/openapi` | Bidirectional OpenAPI converter (import/export)                      |
+| Package           | Description                                               |
+| ----------------- | --------------------------------------------------------- |
+| `@spoosh/core`    | Core client and plugin system                             |
+| `@spoosh/react`   | React bindings (`useRead`, `useWrite`, `useInfiniteRead`) |
+| `@spoosh/hono`    | Hono type adapter                                         |
+| `@spoosh/elysia`  | Elysia type adapter                                       |
+| `@spoosh/openapi` | Bidirectional OpenAPI converter (import/export)           |
 
 ### Plugins
 
@@ -140,14 +136,12 @@ At ~10KB gzipped for the core, Spoosh keeps your bundle size minimal. Add only t
 | `@spoosh/plugin-gc`               | Garbage collection for cache management                |
 | `@spoosh/plugin-transform`        | Transform request and response data                    |
 | `@spoosh/plugin-qs`               | Query string serialization for nested objects          |
+| `@spoosh/plugin-nextjs`           | Next.js server revalidation                            |
 | `@spoosh/plugin-debug`            | Debug logging                                          |
 
 ## Next Steps
 
 <Cards>
-  <Card title="Getting Started" href="/angular/docs/getting-started" />
-  <Card
-    title="Installation"
-    href="/angular/docs/getting-started/installation"
-  />
+  <Card title="Getting Started" href="/react/docs/getting-started" />
+  <Card title="Installation" href="/react/docs/getting-started/installation" />
 </Cards>

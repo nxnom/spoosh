@@ -1,28 +1,34 @@
-import type { SpooshResponse, QuerySchemaHelper } from "@spoosh/core";
+export type InvalidationMode = "all" | "self" | "none";
 
-export type AutoInvalidate = "all" | "self" | "none";
+/**
+ * Extract paths that have GET methods (eligible for invalidation)
+ */
+type ReadPaths<TSchema> = {
+  [K in keyof TSchema & string]: "GET" extends keyof TSchema[K] ? K : never;
+}[keyof TSchema & string];
 
-type InvalidateCallbackFn<TSchema> = (
-  api: QuerySchemaHelper<TSchema>
-) => (
-  | ((...args: never[]) => Promise<SpooshResponse<unknown, unknown>>)
-  | string
-)[];
-
-export type InvalidateOption<TSchema> =
-  | string[]
-  | InvalidateCallbackFn<TSchema>;
+/**
+ * Unified invalidate option
+ * - String: mode only ('all' | 'self' | 'none')
+ * - Array: tags only OR [mode keyword mixed with tags]
+ *   - If array contains 'all' or 'self' at ANY position, it's treated as mode + tags
+ *   - Otherwise, it's tags only with mode defaulting to 'none'
+ *   - 'none' keyword should NOT be used in arrays (use string 'none' instead)
+ */
+export type InvalidateOption<TSchema = unknown> =
+  | InvalidationMode
+  | (ReadPaths<TSchema> | "all" | "self" | (string & {}))[];
 
 export interface InvalidationPluginConfig {
-  /** Default auto-invalidation behavior. Defaults to `"all"`. */
-  autoInvalidate?: AutoInvalidate;
+  /**
+   * Default invalidation mode when invalidate option is not specified
+   * @default "all"
+   */
+  defaultMode?: InvalidationMode;
 }
 
 export interface InvalidationWriteOptions<TSchema = unknown> {
-  /** Auto-invalidation behavior. Overrides plugin default. */
-  autoInvalidate?: AutoInvalidate;
-
-  /** Specific tags or endpoints to invalidate after mutation. */
+  /** Unified invalidation configuration */
   invalidate?: InvalidateOption<TSchema>;
 }
 
@@ -34,7 +40,15 @@ export type InvalidationReadResult = object;
 
 export type InvalidationWriteResult = object;
 
-export type InvalidateFn<TSchema> = (tags: InvalidateOption<TSchema>) => void;
+/**
+ * Manual invalidation - tags only
+ */
+export type InvalidateFn<TSchema> = {
+  (tag: ReadPaths<TSchema>): void;
+  (tags: ReadPaths<TSchema>[]): void;
+  (tag: string): void;
+  (tags: string[]): void;
+};
 
 export interface InvalidationInstanceApi {
   /** Manually invalidate cache entries by tags. Useful for external events like WebSocket messages. */
@@ -42,8 +56,8 @@ export interface InvalidationInstanceApi {
 }
 
 export interface InvalidationPluginExports {
-  /** Set the default autoInvalidate behavior for this mutation */
-  setAutoInvalidateDefault: (value: AutoInvalidate) => void;
+  /** Set the default invalidation mode for this mutation */
+  setDefaultMode: (value: InvalidationMode) => void;
 }
 
 declare module "@spoosh/core" {

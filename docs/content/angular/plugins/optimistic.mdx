@@ -33,9 +33,9 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([
 Use the chained DSL to define optimistic updates:
 
 ```typescript
-const deletePost = injectWrite((api) => api("posts/:id").DELETE);
+const { trigger } = useWrite((api) => api("posts/:id").DELETE);
 
-deletePost.trigger({
+trigger({
   params: { id },
   optimistic: (api) =>
     api("posts")
@@ -51,9 +51,9 @@ The `UPDATE_CACHE` function receives the current cached data and returns the opt
 Use `ON_SUCCESS` to update cache with the actual response:
 
 ```typescript
-const createPost = injectWrite((api) => api("posts").POST);
+const { trigger } = useWrite((api) => api("posts").POST);
 
-createPost.trigger({
+trigger({
   body: { title: "New Post", content: "..." },
   optimistic: (api) =>
     api("posts")
@@ -124,36 +124,32 @@ Chain methods to configure optimistic updates:
 
 ### Result
 
-The `injectRead` function returns plugin metadata via the `meta` signal:
+The `useRead` hook returns plugin metadata via the `meta` property:
 
-| Property              | Type      | Description                                         |
-| --------------------- | --------- | --------------------------------------------------- |
-| `meta().isOptimistic` | `boolean` | `true` if current data is from an optimistic update |
+| Property            | Type      | Description                                         |
+| ------------------- | --------- | --------------------------------------------------- |
+| `meta.isOptimistic` | `boolean` | `true` if current data is from an optimistic update |
 
 ```typescript
-@Component({
-  selector: "app-post-list",
-  template: `
+function PostList() {
+  const { data, meta } = useRead((api) => api("posts").GET());
+
+  return (
     <div>
-      @if (posts.meta().isOptimistic) {
-        <span>Saving...</span>
-      }
+      {meta.isOptimistic && <span>Saving...</span>}
       <ul>
-        @for (post of posts.data(); track post.id) {
-          <li>{{ post.title }}</li>
-        }
+        {data?.map((post) => (
+          <li key={post.id}>{post.title}</li>
+        ))}
       </ul>
     </div>
-  `,
-})
-export class PostListComponent {
-  posts = injectRead((api) => api("posts").GET());
+  );
 }
 ```
 
 ## Auto-Invalidation Behavior
 
-By default, when using optimistic updates, `autoInvalidate` is set to `"none"` for that request to prevent immediate cache invalidation from overwriting your optimistic data.
+By default, when using optimistic updates, invalidation mode is set to `"none"` for that request to prevent immediate cache invalidation from overwriting your optimistic data.
 
 If you want auto-invalidation to still happen, set it explicitly:
 
@@ -164,7 +160,7 @@ trigger({
     api("posts")
       .GET()
       .UPDATE_CACHE((posts) => [...posts]),
-  autoInvalidate: "all",
+  invalidate: "all",
 });
 
 // Invalidate only the exact endpoint tag
@@ -173,25 +169,15 @@ trigger({
     api("posts")
       .GET()
       .UPDATE_CACHE((posts) => [...posts]),
-  autoInvalidate: "self",
+  invalidate: "self",
 });
 
-// Target specific endpoints or tags manually
+// Target specific tags manually
 trigger({
   optimistic: (api) =>
     api("posts")
       .GET()
       .UPDATE_CACHE((posts) => [...posts]),
-  autoInvalidate: "none",
-  invalidate: (api) => [api("posts").GET, api("stats").GET],
-});
-
-// Or use string tags
-trigger({
-  optimistic: (api) =>
-    api("posts")
-      .GET()
-      .UPDATE_CACHE((posts) => [...posts]),
-  invalidate: ["posts", "dashboard"],
+  invalidate: ["posts", "stats", "dashboard"],
 });
 ```

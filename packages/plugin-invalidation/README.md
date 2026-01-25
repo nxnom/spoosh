@@ -53,41 +53,58 @@ await trigger({ body: { title: "New Post" } });
 
 ```typescript
 // Default: invalidate all related tags (full hierarchy)
-invalidationPlugin(); // same as { autoInvalidate: "all" }
+invalidationPlugin(); // same as { defaultMode: "all" }
 
 // Only invalidate the exact endpoint by default
-invalidationPlugin({ autoInvalidate: "self" });
+invalidationPlugin({ defaultMode: "self" });
 
 // Disable auto-invalidation by default (manual only)
-invalidationPlugin({ autoInvalidate: "none" });
+invalidationPlugin({ defaultMode: "none" });
 ```
 
-## Per-Request Override
+## Per-Request Invalidation
 
 ```typescript
-// Override to invalidate all related tags
+// Mode only (string)
 await trigger({
   body: { title: "New Post" },
-  autoInvalidate: "all",
+  invalidate: "all", // Invalidate entire path hierarchy
 });
 
-// Override to only invalidate the exact endpoint
 await trigger({
   body: { title: "New Post" },
-  autoInvalidate: "self",
+  invalidate: "self", // Only invalidate the exact endpoint
 });
 
-// Disable auto-invalidation and specify custom targets
 await trigger({
   body: { title: "New Post" },
-  autoInvalidate: "none",
-  invalidate: (api) => [api("posts").GET, api("stats").GET, "dashboard-data"],
+  invalidate: "none", // No invalidation
 });
 
-// Add specific tags (works alongside autoInvalidate)
+// Tags only (array without mode keyword)
 await trigger({
   body: { title: "New Post" },
-  invalidate: ["posts", "user-posts"],
+  invalidate: ["posts", "users", "custom-tag"],
+  // → Default mode: 'none' (only explicit tags are invalidated)
+});
+
+// Mode + Tags (array with mode keyword at any position)
+await trigger({
+  body: { title: "New Post" },
+  invalidate: ["all", "dashboard", "stats"],
+  // → 'all' mode + explicit tags
+});
+
+await trigger({
+  body: { title: "New Post" },
+  invalidate: ["posts", "self", "users"],
+  // → 'self' mode + explicit tags
+});
+
+await trigger({
+  body: { title: "New Post" },
+  invalidate: ["dashboard", "stats", "all"],
+  // → 'all' mode + explicit tags (mode can be anywhere)
 });
 ```
 
@@ -95,18 +112,17 @@ await trigger({
 
 ### Plugin Config
 
-| Option           | Type                        | Default | Description                        |
-| ---------------- | --------------------------- | ------- | ---------------------------------- |
-| `autoInvalidate` | `"all" \| "self" \| "none"` | `"all"` | Default auto-invalidation behavior |
+| Option        | Type                        | Default | Description                                          |
+| ------------- | --------------------------- | ------- | ---------------------------------------------------- |
+| `defaultMode` | `"all" \| "self" \| "none"` | `"all"` | Default invalidation mode when option not specified |
 
 ### Per-Request Options
 
-| Option           | Type                           | Description                              |
-| ---------------- | ------------------------------ | ---------------------------------------- |
-| `autoInvalidate` | `"all" \| "self" \| "none"`    | Override auto-invalidation behavior      |
-| `invalidate`     | `string[] \| ((api) => [...])` | Specific tags or endpoints to invalidate |
+| Option       | Type                                    | Description                                                                                                                |
+| ------------ | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `invalidate` | `"all" \| "self" \| "none" \| string[]` | Mode only (string), tags only (array), or mode + tags (array with 'all'/'self' keyword at any position) |
 
-### Auto-Invalidate Modes
+### Invalidation Modes
 
 | Mode     | Description                             | Example                                                     |
 | -------- | --------------------------------------- | ----------------------------------------------------------- |
@@ -126,8 +142,8 @@ const { useRead, invalidate } = createReactSpoosh(client);
 // Invalidate with string array
 invalidate(["users", "posts"]);
 
-// Invalidate with callback (type-safe API selector)
-invalidate((api) => [api("users").GET, api("posts").GET, "custom-tag"]);
+// Invalidate with single string
+invalidate("users");
 
 // Useful for external events like WebSocket messages
 socket.on("data-changed", (tags) => {
@@ -135,6 +151,6 @@ socket.on("data-changed", (tags) => {
 });
 ```
 
-| Method       | Description                                                        |
-| ------------ | ------------------------------------------------------------------ |
-| `invalidate` | Manually invalidate cache entries by tags or API selector callback |
+| Method       | Description                                 |
+| ------------ | ------------------------------------------- |
+| `invalidate` | Manually invalidate cache entries by tags   |

@@ -3,11 +3,6 @@ import type {
   PluginContext,
   InstanceApiContext,
 } from "@spoosh/core";
-import {
-  createSelectorProxy,
-  extractPathFromSelector,
-  generateTags,
-} from "@spoosh/core";
 
 import type {
   InvalidationPluginConfig,
@@ -16,72 +11,67 @@ import type {
   InvalidationInfiniteReadOptions,
   InvalidationReadResult,
   InvalidationWriteResult,
-  AutoInvalidate,
+  InvalidationMode,
   InvalidationPluginExports,
   InvalidationInstanceApi,
-  InvalidateOption,
 } from "./types";
 
-const INVALIDATION_DEFAULT_KEY = "invalidation:autoInvalidateDefault";
+const INVALIDATION_DEFAULT_KEY = "invalidation:defaultMode";
 
-function resolveTagsFromOption(
-  invalidate: InvalidateOption<unknown>
+function resolveModeTags(
+  context: PluginContext,
+  mode: InvalidationMode
 ): string[] {
-  const tags: string[] = [];
-
-  if (Array.isArray(invalidate)) {
-    tags.push(...invalidate);
-  } else {
-    const proxy = createSelectorProxy<never>();
-    const invalidationTargets = invalidate(proxy as never);
-
-    for (const target of invalidationTargets) {
-      if (typeof target === "string") {
-        tags.push(target);
-      } else {
-        const path = extractPathFromSelector(target);
-        const pathSegments = path.split("/").filter(Boolean);
-        const derivedTags = generateTags(pathSegments);
-        const exactTag = derivedTags[derivedTags.length - 1];
-
-        if (exactTag) {
-          tags.push(exactTag);
-        }
-      }
-    }
+  switch (mode) {
+    case "all":
+      return context.tags;
+    case "self":
+      return [context.path.join("/")];
+    case "none":
+      return [];
   }
-
-  return tags;
 }
 
 function resolveInvalidateTags(
   context: PluginContext,
-  defaultAutoInvalidate: AutoInvalidate
+  defaultMode: InvalidationMode
 ): string[] {
   const pluginOptions = context.pluginOptions as
     | InvalidationWriteOptions
     | undefined;
 
-  const tags: string[] = [];
+  const invalidateOption = pluginOptions?.invalidate;
 
-  if (pluginOptions?.invalidate) {
-    tags.push(...resolveTagsFromOption(pluginOptions.invalidate));
+  if (!invalidateOption) {
+    const overrideDefault = context.metadata.get(INVALIDATION_DEFAULT_KEY) as
+      | InvalidationMode
+      | undefined;
+    const effectiveDefault = overrideDefault ?? defaultMode;
+    return resolveModeTags(context, effectiveDefault);
   }
 
-  const overrideDefault = context.metadata.get(INVALIDATION_DEFAULT_KEY) as
-    | AutoInvalidate
-    | undefined;
-  const effectiveDefault = overrideDefault ?? defaultAutoInvalidate;
-  const autoInvalidate = pluginOptions?.autoInvalidate ?? effectiveDefault;
-
-  if (autoInvalidate === "all") {
-    tags.push(...context.tags);
-  } else if (autoInvalidate === "self") {
-    const selfTag = context.path.join("/");
-    tags.push(selfTag);
+  if (typeof invalidateOption === "string") {
+    return resolveModeTags(context, invalidateOption);
   }
 
-  return [...new Set(tags)];
+  if (Array.isArray(invalidateOption)) {
+    const tags: string[] = [];
+    let mode: InvalidationMode = "none";
+
+    for (const item of invalidateOption) {
+      if (item === "all" || item === "self") {
+        mode = item as InvalidationMode;
+      } else if (typeof item === "string") {
+        tags.push(item);
+      }
+    }
+
+    tags.push(...resolveModeTags(context, mode));
+
+    return [...new Set(tags)];
+  }
+
+  return [];
 }
 
 /**
@@ -100,13 +90,20 @@ function resolveInvalidateTags(
  *
  * const client = new Spoosh<ApiSchema, Error>("/api")
  *   .use([
- *     invalidationPlugin({ autoInvalidate: "all" }),
+ *     invalidationPlugin({ defaultMode: "all" }),
  *   ]);
  *
- * // Per-mutation override
+ * // Per-mutation invalidation
  * trigger({
- *   autoInvalidate: "self", // Only invalidate the same endpoint
- *   invalidate: ["posts"], // Or explicit tags
+ *   invalidate: "self", // Mode only
+ * });
+ *
+ * trigger({
+ *   invalidate: ["posts", "users"], // Tags only
+ * });
+ *
+ * trigger({
+ *   invalidate: ["all", "posts", "custom-tag"], // Mode + tags
  * });
  * ```
  */
@@ -120,7 +117,7 @@ export function invalidationPlugin(
   writeResult: InvalidationWriteResult;
   instanceApi: InvalidationInstanceApi;
 }> {
-  const { autoInvalidate: defaultAutoInvalidate = "all" } = config;
+  const { defaultMode = "all" } = config;
 
   return {
     name: "spoosh:invalidation",
@@ -128,7 +125,7 @@ export function invalidationPlugin(
 
     exports(context): InvalidationPluginExports {
       return {
-        setAutoInvalidateDefault(value: AutoInvalidate) {
+        setDefaultMode(value: InvalidationMode) {
           context.metadata.set(INVALIDATION_DEFAULT_KEY, value);
         },
       };
@@ -136,7 +133,7 @@ export function invalidationPlugin(
 
     onResponse(context, response) {
       if (!response.error) {
-        const tags = resolveInvalidateTags(context, defaultAutoInvalidate);
+        const tags = resolveInvalidateTags(context, defaultMode);
 
         if (tags.length > 0) {
           context.stateManager.markStale(tags);
@@ -148,8 +145,8 @@ export function invalidationPlugin(
     instanceApi(context: InstanceApiContext) {
       const { stateManager, eventEmitter } = context;
 
-      const invalidate = (input: InvalidateOption<unknown>): void => {
-        const tags = resolveTagsFromOption(input);
+      const invalidate = (input: string | string[]): void => {
+        const tags = Array.isArray(input) ? input : [input];
 
         if (tags.length > 0) {
           stateManager.markStale(tags);

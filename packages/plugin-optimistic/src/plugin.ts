@@ -217,9 +217,9 @@ function rollbackOptimistic(
  * Immediately updates cached data before the mutation completes,
  * with automatic rollback on error.
  *
- * When using optimistic updates, `autoInvalidate` defaults to `"none"` to prevent
+ * When using optimistic updates, invalidation mode defaults to `"none"` to prevent
  * unnecessary refetches that would override the optimistic data. You can override
- * this by explicitly setting `autoInvalidate` or using the `invalidate` option.
+ * this by explicitly setting the `invalidate` option with a mode string or array.
  *
  * @see {@link https://spoosh.dev/docs/plugins/optimistic | Optimistic Plugin Documentation}
  *
@@ -283,9 +283,7 @@ export function optimisticPlugin(): SpooshPlugin<{
       const targets = resolveOptimisticTargets(context);
 
       if (targets.length > 0) {
-        context.plugins
-          .get("spoosh:invalidation")
-          ?.setAutoInvalidateDefault("none");
+        context.plugins.get("spoosh:invalidation")?.setDefaultMode("none");
       }
 
       const immediateTargets = targets.filter((t) => t.timing !== "onSuccess");

@@ -1,6 +1,6 @@
 export { invalidationPlugin } from "./plugin";
 export type {
-  AutoInvalidate,
+  InvalidationMode,
   InvalidateOption,
   InvalidationPluginConfig,
   InvalidationWriteOptions,

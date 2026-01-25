@@ -695,7 +695,7 @@ describe("optimisticPlugin", () => {
       const cacheKey = '{"method":"GET","path":["posts"]}';
       setupCacheEntry(stateManager, cacheKey, [{ id: 1 }], "posts");
 
-      const setAutoInvalidateDefault = vi.fn();
+      const setDefaultMode = vi.fn();
       const pluginOptions = createOptimisticPluginOptions(
         "posts",
         (data) => data
@@ -705,7 +705,7 @@ describe("optimisticPlugin", () => {
         stateManager,
         pluginOptions,
         plugins: {
-          get: vi.fn().mockReturnValue({ setAutoInvalidateDefault }),
+          get: vi.fn().mockReturnValue({ setDefaultMode }),
         },
       });
 
@@ -715,7 +715,7 @@ describe("optimisticPlugin", () => {
 
       await plugin.middleware!(context, next);
 
-      expect(setAutoInvalidateDefault).toHaveBeenCalledWith("none");
+      expect(setDefaultMode).toHaveBeenCalledWith("none");
     });
   });
 

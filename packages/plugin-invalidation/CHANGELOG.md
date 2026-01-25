@@ -1,5 +1,14 @@
 # @spoosh/plugin-invalidation
 
+## 0.4.0
+
+### Breaking Changes
+
+- Simplified invalidation API: merged `autoInvalidate` and `invalidate` into unified `invalidate` option
+- Plugin config: `autoInvalidate` → `defaultMode`
+- Per-request: `invalidate` now accepts string mode or array (tags + optional mode keyword)
+- Exports: `setAutoInvalidateDefault` → `setDefaultMode`
+
 ## 0.3.0
 
 ### Breaking Changes

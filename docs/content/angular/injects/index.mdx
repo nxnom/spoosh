@@ -1,33 +1,32 @@
 ---
-title: Angular Injects
-description: Angular inject functions for data fetching with Signals
+title: React Hooks
+description: React hooks for data fetching with full type safety
 ---
 
-The `@spoosh/angular` package provides Angular inject functions for data fetching with full type safety and Signals support.
+The `@spoosh/react` package provides React hooks for data fetching with full type safety.
 
 ## Installation
 
 ```package-install
-@spoosh/core @spoosh/angular
+@spoosh/core @spoosh/react
 ```
 
 ## Setup
 
 ```typescript title="src/api/client.ts"
 import { Spoosh } from "@spoosh/core";
-import { createAngularSpoosh } from "@spoosh/angular";
+import { createReactSpoosh } from "@spoosh/react";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
 
 const client = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
-  invalidationPlugin({ autoInvalidate: "all" }),
+  invalidationPlugin({ defaultMode: "all" }),
   deduplicationPlugin({ read: "in-flight" }),
 ]);
 
-export const { injectRead, injectWrite, injectInfiniteRead } =
-  createAngularSpoosh(client);
+export const { useRead, useWrite, useInfiniteRead } = createReactSpoosh(client);
 ```
 
 ## Automatic Tag Generation
@@ -47,7 +46,7 @@ Tags are hierarchical. Invalidating `"users"` will refetch all queries under `/u
 Override or extend auto-generated tags:
 
 ```typescript
-const users = injectRead((api) => api("users").GET(), {
+const { data } = useRead((api) => api("users").GET(), {
   tags: ["custom-users"], // overrides auto-generated tags
   additionalTags: ["dashboard-data"], // adds to auto-generated tags
 });
@@ -66,35 +65,31 @@ The `invalidationPlugin` automatically refetches stale queries after mutations.
 | `"none"` | No automatic invalidation                           |
 
 ```typescript
-const createPost = injectWrite((api) => api("posts").POST);
+const { trigger } = useWrite((api) => api("posts").POST);
 
-await createPost.trigger({
+await trigger({
   body: { title: "New Post" },
-  autoInvalidate: "all",
+  invalidate: "all",
 });
 ```
 
 ### Manual Invalidation
 
-Target specific queries to invalidate:
+Target specific tags to invalidate:
 
 ```typescript
-const createPost = injectWrite((api) => api("posts").POST);
+const { trigger } = useWrite((api) => api("posts").POST);
 
-await createPost.trigger({
+await trigger({
   body: { title: "New Post" },
-  autoInvalidate: "none",
-  invalidate: (api) => [
-    api("posts").GET, // invalidates "posts"
-    api("users/:id/stats").GET, // invalidates "users/{userId}/stats"
-  ],
+  invalidate: ["posts", "users/123/stats"],
 });
 ```
 
-You can also pass tag strings directly:
+You can also use mode + tags:
 
 ```typescript
-await createPost.trigger({
+await trigger({
   body: { title: "New Post" },
   invalidate: ["posts", "dashboard"], // invalidates all queries with these tags
 });
@@ -112,33 +107,25 @@ The `deduplicationPlugin` prevents duplicate network requests when the same quer
 | `false`       | Disable deduplication                                                  |
 
 ```typescript
-const users = injectRead((api) => api("users").GET(), { dedupe: "in-flight" });
+const { data } = useRead((api) => api("users").GET(), { dedupe: "in-flight" });
 ```
 
 When multiple components call the same query simultaneously, only one network request is made:
 
 ```typescript
-@Component({
-  selector: "app-header",
-  template: `<div>{{ user()?.name }}</div>`,
-})
-export class HeaderComponent {
-  private currentUser = injectRead((api) => api("me").GET());
-  user = this.currentUser.data;
+function Header() {
+  const { data: user } = useRead((api) => api("me").GET());
+  return <div>{user?.name}</div>;
 }
 
-@Component({
-  selector: "app-sidebar",
-  template: `<nav>{{ user()?.email }}</nav>`,
-})
-export class SidebarComponent {
-  private currentUser = injectRead((api) => api("me").GET());
-  user = this.currentUser.data;
+function Sidebar() {
+  const { data: user } = useRead((api) => api("me").GET());
+  return <nav>{user?.email}</nav>;
 }
 ```
 
-## Available Inject Functions
+## Available Hooks
 
-- [injectRead](/angular/docs/injects/inject-read) - Fetch data with automatic caching
-- [injectWrite](/angular/docs/injects/inject-write) - Trigger mutations with loading states
-- [injectInfiniteRead](/angular/docs/injects/inject-infinite-read) - Paginated data fetching
+- [useRead](/react/docs/hooks/use-read) - Fetch data with automatic caching
+- [useWrite](/react/docs/hooks/use-write) - Trigger mutations with loading states
+- [useInfiniteRead](/react/docs/hooks/use-infinite-read) - Paginated data fetching

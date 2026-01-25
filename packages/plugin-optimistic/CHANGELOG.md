@@ -1,5 +1,9 @@
 # @spoosh/plugin-optimistic
 
+## 0.4.0
+
+- Use new invalidation default mode API from @spoosh/plugin-invalidation@0.4.0
+
 ## 0.3.0
 
 ### Breaking Changes

@@ -149,7 +149,7 @@ function PostList() {
 
 ## Auto-Invalidation Behavior
 
-By default, when using optimistic updates, `autoInvalidate` is set to `"none"` for that request to prevent immediate cache invalidation from overwriting your optimistic data.
+By default, when using optimistic updates, invalidation mode is set to `"none"` for that request to prevent immediate cache invalidation from overwriting your optimistic data.
 
 If you want auto-invalidation to still happen, set it explicitly:
 
@@ -160,7 +160,7 @@ trigger({
     api("posts")
       .GET()
       .UPDATE_CACHE((posts) => [...posts]),
-  autoInvalidate: "all",
+  invalidate: "all",
 });
 
 // Invalidate only the exact endpoint tag
@@ -169,25 +169,15 @@ trigger({
     api("posts")
       .GET()
       .UPDATE_CACHE((posts) => [...posts]),
-  autoInvalidate: "self",
+  invalidate: "self",
 });
 
-// Target specific endpoints or tags manually
+// Target specific tags manually
 trigger({
   optimistic: (api) =>
     api("posts")
       .GET()
       .UPDATE_CACHE((posts) => [...posts]),
-  autoInvalidate: "none",
-  invalidate: (api) => [api("posts").GET, api("stats").GET],
-});
-
-// Or use string tags
-trigger({
-  optimistic: (api) =>
-    api("posts")
-      .GET()
-      .UPDATE_CACHE((posts) => [...posts]),
-  invalidate: ["posts", "dashboard"],
+  invalidate: ["posts", "stats", "dashboard"],
 });
 ```

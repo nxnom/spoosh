@@ -69,7 +69,7 @@ const { data } = useRead((api) => api("users").GET(), {
 // On mutations, specify which tags to invalidate
 await trigger({
   body: { title: "New Post" },
-  invalidate: (api) => [api("posts").GET, api("stats").GET, "custom-tag"],
+  invalidate: ["posts", "stats", "custom-tag"],
 });
 ```
 
