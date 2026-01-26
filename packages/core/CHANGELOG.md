@@ -1,5 +1,9 @@
 # @spoosh/core
 
+## 0.8.1
+
+- Fixed `stale` flag not being set to `false` in controller after successful fetch
+
 ## 0.8.0
 
 ### Breaking Changes
