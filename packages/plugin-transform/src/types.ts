@@ -32,10 +32,7 @@ export type TransformWriteResult = {
   transformedData?: unknown;
 };
 
-export type TransformOptions =
-  | TransformReadOptions
-  | TransformWriteOptions
-  | TransformInfiniteReadOptions;
+export type TransformOptions = TransformReadOptions | TransformWriteOptions;
 
 /**
  * Extracts the return type of a response transformer from hook options.

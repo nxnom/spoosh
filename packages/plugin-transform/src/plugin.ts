@@ -3,7 +3,6 @@ import type { SpooshPlugin } from "@spoosh/core";
 import type {
   TransformReadOptions,
   TransformWriteOptions,
-  TransformInfiniteReadOptions,
   TransformReadResult,
   TransformWriteResult,
   TransformOptions,
@@ -46,7 +45,6 @@ import type {
 export function transformPlugin(): SpooshPlugin<{
   readOptions: TransformReadOptions;
   writeOptions: TransformWriteOptions;
-  infiniteReadOptions: TransformInfiniteReadOptions;
   readResult: TransformReadResult;
   writeResult: TransformWriteResult;
 }> {
