@@ -52,21 +52,6 @@ describe("cachePlugin", () => {
       expect(result).toEqual(expectedResponse);
     });
 
-    it("should store data in cache after successful fetch", async () => {
-      const plugin = cachePlugin();
-      const stateManager = createStateManager();
-      const context = createMockContext({ stateManager });
-      const fetchedData = { id: 1, name: "User" };
-      const next = vi
-        .fn()
-        .mockResolvedValue({ data: fetchedData, status: 200 });
-
-      await plugin.middleware!(context, next);
-
-      const cached = stateManager.getCache(context.queryKey);
-      expect(cached?.state.data).toEqual(fetchedData);
-    });
-
     it("should not cache error responses", async () => {
       const plugin = cachePlugin();
       const stateManager = createStateManager();
@@ -276,89 +261,6 @@ describe("cachePlugin", () => {
 
       expect(next).toHaveBeenCalled();
       expect(result.data).toEqual({ id: 1, name: "Fresh User" });
-    });
-  });
-
-  describe("cache state updates", () => {
-    it("should set stale to false after successful fetch", async () => {
-      const plugin = cachePlugin();
-      const stateManager = createStateManager();
-      const context = createMockContext({ stateManager });
-      const next = vi.fn().mockResolvedValue({
-        data: { id: 1 },
-        status: 200,
-      });
-
-      await plugin.middleware!(context, next);
-
-      const cached = stateManager.getCache(context.queryKey);
-      expect(cached?.stale).toBe(false);
-    });
-
-    it("should update timestamp after successful fetch", async () => {
-      vi.setSystemTime(new Date("2024-01-01T12:00:00Z"));
-
-      const plugin = cachePlugin();
-      const stateManager = createStateManager();
-      const context = createMockContext({ stateManager });
-      const next = vi.fn().mockResolvedValue({
-        data: { id: 1 },
-        status: 200,
-      });
-
-      await plugin.middleware!(context, next);
-
-      const cached = stateManager.getCache(context.queryKey);
-      expect(cached?.state.timestamp).toBe(Date.now());
-    });
-
-    it("should store tags with cache entry", async () => {
-      const plugin = cachePlugin();
-      const stateManager = createStateManager();
-      const tags = ["users", "users/1", "admin"];
-      const context = createMockContext({ stateManager, tags });
-      const next = vi.fn().mockResolvedValue({
-        data: { id: 1 },
-        status: 200,
-      });
-
-      await plugin.middleware!(context, next);
-
-      const cached = stateManager.getCache(context.queryKey);
-      expect(cached?.tags).toEqual(tags);
-    });
-
-    it("should clear error when data is fetched successfully", async () => {
-      const plugin = cachePlugin();
-      const stateManager = createStateManager();
-
-      stateManager.setCache('{"method":"GET","path":["users","1"]}', {
-        state: {
-          data: undefined,
-          error: { message: "Previous error" },
-          timestamp: 0,
-        },
-        tags: [],
-        stale: false,
-      });
-
-      const context = createMockContext({
-        stateManager,
-        queryKey: '{"method":"GET","path":["users","1"]}',
-        path: ["users", "1"],
-        tags: ["users", "users/1"],
-        forceRefetch: true,
-      });
-      const next = vi.fn().mockResolvedValue({
-        data: { id: 1 },
-        status: 200,
-      });
-
-      await plugin.middleware!(context, next);
-
-      const cached = stateManager.getCache(context.queryKey);
-      expect(cached?.state.error).toBeUndefined();
-      expect(cached?.state.data).toEqual({ id: 1 });
     });
   });
 

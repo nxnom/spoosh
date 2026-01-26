@@ -67,21 +67,7 @@ export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
         }
       }
 
-      const response = await next();
-
-      if (response.data !== undefined && !response.error) {
-        context.stateManager.setCache(context.queryKey, {
-          state: {
-            data: response.data,
-            error: undefined,
-            timestamp: Date.now(),
-          },
-          tags: context.tags,
-          stale: false,
-        });
-      }
-
-      return response;
+      return await next();
     },
 
     instanceApi(context: InstanceApiContext) {
