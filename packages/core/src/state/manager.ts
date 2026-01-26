@@ -207,15 +207,23 @@ export function createStateManager(): StateManager {
     },
 
     setMeta(key, data) {
-      const entry = cache.get(key);
+      let entry = cache.get(key);
 
-      if (entry) {
-        for (const [name, value] of Object.entries(data)) {
-          entry.meta.set(name, value);
-        }
-
-        notifySubscribers(key);
+      if (!entry) {
+        entry = {
+          state: createInitialState(),
+          tags: [],
+          meta: new Map(),
+          selfTag: generateSelfTagFromKey(key),
+        };
+        cache.set(key, entry);
       }
+
+      for (const [name, value] of Object.entries(data)) {
+        entry.meta.set(name, value);
+      }
+
+      notifySubscribers(key);
     },
 
     markStale(tags) {

@@ -606,12 +606,15 @@ describe("createStateManager", () => {
       ).not.toThrow();
     });
 
-    it("should not create entry when setting meta on non-existent key", () => {
+    it("should create entry when setting meta on non-existent key", () => {
       const manager = createStateManager();
 
       manager.setMeta("non-existent", { data: "value" });
 
-      expect(manager.getCache("non-existent")).toBeUndefined();
+      const entry = manager.getCache("non-existent");
+      expect(entry).toBeDefined();
+      expect(entry?.meta.get("data")).toBe("value");
+      expect(entry?.state.data).toBeUndefined();
     });
   });
 

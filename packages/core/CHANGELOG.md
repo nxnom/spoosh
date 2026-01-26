@@ -1,5 +1,9 @@
 # @spoosh/core
 
+## 0.8.2
+
+- Fix response override `setMeta` data in first request
+
 ## 0.8.1
 
 - Fixed `stale` flag not being set to `false` in controller after successful fetch
