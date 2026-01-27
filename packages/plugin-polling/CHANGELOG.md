@@ -1,5 +1,9 @@
 # @spoosh/plugin-polling
 
+## 0.2.1
+
+- Fix polling not passing `responses` in first tick
+
 ## 0.2.0
 
 ### Breaking Changes

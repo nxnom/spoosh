@@ -206,24 +206,12 @@ describe("pollingPlugin", () => {
     });
   });
 
-  describe("dynamic pollingInterval function", () => {
-    it("should call pollingInterval function with data and error", () => {
+  describe("first-tick response data", () => {
+    it("should pass response data to pollingInterval on first request with empty cache", () => {
       const plugin = pollingPlugin();
       const eventEmitter = createEventEmitter();
       const stateManager = createStateManager();
-      const pollingIntervalFn = vi.fn().mockReturnValue(2000);
-
-      const cachedData = { id: 1, status: "active" };
-
-      stateManager.setCache('{"method":"GET","path":["users","1"]}', {
-        state: {
-          data: cachedData,
-          error: undefined,
-          timestamp: Date.now(),
-        },
-        tags: ["users"],
-        stale: false,
-      });
+      const pollingIntervalFn = vi.fn().mockReturnValue(5000);
 
       const context = createMockContext({
         eventEmitter,
@@ -232,9 +220,62 @@ describe("pollingPlugin", () => {
         pluginOptions: { pollingInterval: pollingIntervalFn },
       });
 
-      plugin.afterResponse!(context, createMockResponse());
+      const responseData = { id: 1, name: "Test User" };
 
-      expect(pollingIntervalFn).toHaveBeenCalledWith(cachedData, undefined);
+      plugin.afterResponse!(
+        context,
+        createMockResponse({ data: responseData })
+      );
+
+      expect(pollingIntervalFn).toHaveBeenCalledWith(responseData, undefined);
+    });
+
+    it("should pass response error to pollingInterval on first request with empty cache", () => {
+      const plugin = pollingPlugin();
+      const eventEmitter = createEventEmitter();
+      const stateManager = createStateManager();
+      const pollingIntervalFn = vi.fn().mockReturnValue(5000);
+
+      const context = createMockContext({
+        eventEmitter,
+        stateManager,
+        queryKey: '{"method":"GET","path":["users","1"]}',
+        pluginOptions: { pollingInterval: pollingIntervalFn },
+      });
+
+      const responseError = { message: "Not found" };
+
+      plugin.afterResponse!(
+        context,
+        createMockResponse({ error: responseError, status: 404 })
+      );
+
+      expect(pollingIntervalFn).toHaveBeenCalledWith(undefined, responseError);
+    });
+  });
+
+  describe("dynamic pollingInterval function", () => {
+    it("should call pollingInterval function with data and error", () => {
+      const plugin = pollingPlugin();
+      const eventEmitter = createEventEmitter();
+      const stateManager = createStateManager();
+      const pollingIntervalFn = vi.fn().mockReturnValue(2000);
+
+      const responseData = { id: 1, status: "active" };
+
+      const context = createMockContext({
+        eventEmitter,
+        stateManager,
+        queryKey: '{"method":"GET","path":["users","1"]}',
+        pluginOptions: { pollingInterval: pollingIntervalFn },
+      });
+
+      plugin.afterResponse!(
+        context,
+        createMockResponse({ data: responseData })
+      );
+
+      expect(pollingIntervalFn).toHaveBeenCalledWith(responseData, undefined);
     });
 
     it("should use dynamic interval value from function", () => {
@@ -275,17 +316,7 @@ describe("pollingPlugin", () => {
       const stateManager = createStateManager();
       const pollingIntervalFn = vi.fn().mockReturnValue(1000);
 
-      const cachedError = { message: "Request failed" };
-
-      stateManager.setCache('{"method":"GET","path":["users","1"]}', {
-        state: {
-          data: undefined,
-          error: cachedError,
-          timestamp: Date.now(),
-        },
-        tags: ["users"],
-        stale: false,
-      });
+      const responseError = { message: "Request failed" };
 
       const context = createMockContext({
         eventEmitter,
@@ -294,9 +325,12 @@ describe("pollingPlugin", () => {
         pluginOptions: { pollingInterval: pollingIntervalFn },
       });
 
-      plugin.afterResponse!(context, createMockResponse());
+      plugin.afterResponse!(
+        context,
+        createMockResponse({ error: responseError, status: 500 })
+      );
 
-      expect(pollingIntervalFn).toHaveBeenCalledWith(undefined, cachedError);
+      expect(pollingIntervalFn).toHaveBeenCalledWith(undefined, responseError);
     });
 
     it("should disable polling when function returns false", () => {

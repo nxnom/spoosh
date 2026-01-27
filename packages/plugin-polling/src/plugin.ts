@@ -1,4 +1,4 @@
-import type { SpooshPlugin, PluginContext } from "@spoosh/core";
+import type { SpooshPlugin, PluginContext, SpooshResponse } from "@spoosh/core";
 
 import type {
   PollingReadOptions,
@@ -55,7 +55,10 @@ export function pollingPlugin(): SpooshPlugin<{
     }
   };
 
-  const scheduleNextPoll = (context: PluginContext) => {
+  const scheduleNextPoll = (
+    context: PluginContext,
+    response?: SpooshResponse<unknown, unknown>
+  ) => {
     const { queryKey, eventEmitter } = context;
 
     const pluginOptions = context.pluginOptions as
@@ -65,13 +68,11 @@ export function pollingPlugin(): SpooshPlugin<{
 
     if (!pollingInterval) return;
 
-    const cached = context.stateManager.getCache(queryKey);
-    const data = cached?.state.data;
-    const error = cached?.state.error;
+    const source = response ?? context.stateManager.getCache(queryKey)?.state;
 
     const resolvedInterval =
       typeof pollingInterval === "function"
-        ? pollingInterval(data, error)
+        ? pollingInterval(source?.data, source?.error)
         : pollingInterval;
 
     if (resolvedInterval === false || resolvedInterval <= 0) return;
@@ -94,8 +95,8 @@ export function pollingPlugin(): SpooshPlugin<{
     name: "spoosh:polling",
     operations: ["read", "infiniteRead"],
 
-    afterResponse(context) {
-      scheduleNextPoll(context);
+    afterResponse(context, response) {
+      scheduleNextPoll(context, response);
     },
 
     lifecycle: {
