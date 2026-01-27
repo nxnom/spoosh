@@ -6,9 +6,12 @@ import type {
   ExtractBody,
   ExtractParamNames,
   HasParams,
+  ReadPaths,
+  WritePaths,
+  HasReadMethod,
+  HasWriteMethod,
 } from "../types/schema.types";
-
-type Simplify<T> = { [K in keyof T]: T[K] } & {};
+import type { Simplify, WriteMethod } from "../types/common.types";
 
 type IsNever<T> = [T] extends [never] ? true : false;
 
@@ -34,7 +37,7 @@ type EndpointMethodFn<TEndpoint, TPath extends string> = (
   >
 >;
 
-type QueryPathMethods<TSchema, TPath extends string> =
+type ReadPathMethods<TSchema, TPath extends string> =
   FindMatchingKey<TSchema, TPath> extends infer TKey
     ? TKey extends keyof TSchema
       ? "GET" extends keyof TSchema[TKey]
@@ -42,19 +45,6 @@ type QueryPathMethods<TSchema, TPath extends string> =
         : never
       : never
     : never;
-
-type ReadPaths<TSchema> = {
-  [K in keyof TSchema & string]: "GET" extends keyof TSchema[K] ? K : never;
-}[keyof TSchema & string];
-
-type HasGetMethod<TSchema, TPath extends string> =
-  FindMatchingKey<TSchema, TPath> extends infer TKey
-    ? TKey extends keyof TSchema
-      ? "GET" extends keyof TSchema[TKey]
-        ? true
-        : false
-      : false
-    : false;
 
 /**
  * Schema navigation helper for plugins that need type-safe API schema access.
@@ -69,7 +59,7 @@ type HasGetMethod<TSchema, TPath extends string> =
  * ```ts
  * // Define your plugin's callback type
  * type MyCallbackFn<TSchema = unknown> = (
- *   api: QuerySchemaHelper<TSchema>
+ *   api: ReadSchemaHelper<TSchema>
  * ) => unknown;
  *
  * // Usage in plugin options
@@ -97,21 +87,19 @@ type HasGetMethod<TSchema, TPath extends string> =
  * });
  * ```
  */
-export type QuerySchemaHelper<TSchema> = <
+export type ReadSchemaHelper<TSchema> = <
   TPath extends ReadPaths<TSchema> | (string & {}),
 >(
   path: TPath
-) => HasGetMethod<TSchema, TPath> extends true
-  ? QueryPathMethods<TSchema, TPath>
+) => HasReadMethod<TSchema, TPath> extends true
+  ? ReadPathMethods<TSchema, TPath>
   : never;
 
-type MutationMethod = "POST" | "PUT" | "PATCH" | "DELETE";
-
-type MutationPathMethods<TSchema, TPath extends string> =
+type WritePathMethods<TSchema, TPath extends string> =
   FindMatchingKey<TSchema, TPath> extends infer TKey
     ? TKey extends keyof TSchema
       ? Simplify<{
-          [M in MutationMethod as M extends keyof TSchema[TKey]
+          [M in WriteMethod as M extends keyof TSchema[TKey]
             ? M
             : never]: M extends keyof TSchema[TKey]
             ? EndpointMethodFn<TSchema[TKey][M], TPath>
@@ -120,35 +108,15 @@ type MutationPathMethods<TSchema, TPath extends string> =
       : never
     : never;
 
-type WritePaths<TSchema> = {
-  [K in keyof TSchema & string]: Extract<
-    keyof TSchema[K],
-    MutationMethod
-  > extends never
-    ? never
-    : K;
-}[keyof TSchema & string];
-
-type HasMutationMethod<TSchema, TPath extends string> =
-  FindMatchingKey<TSchema, TPath> extends infer TKey
-    ? TKey extends keyof TSchema
-      ? MutationMethod extends never
-        ? false
-        : Extract<keyof TSchema[TKey], MutationMethod> extends never
-          ? false
-          : true
-      : false
-    : false;
-
 /**
  * Schema navigation helper for plugins that need type-safe API schema access for mutations.
  *
- * Similar to QuerySchemaHelper but exposes mutation methods (POST, PUT, PATCH, DELETE).
+ * Similar to ReadSchemaHelper but exposes write methods (POST, PUT, PATCH, DELETE).
  */
-export type MutationSchemaHelper<TSchema> = <
+export type WriteSchemaHelper<TSchema> = <
   TPath extends WritePaths<TSchema> | (string & {}),
 >(
   path: TPath
-) => HasMutationMethod<TSchema, TPath> extends true
-  ? MutationPathMethods<TSchema, TPath>
+) => HasWriteMethod<TSchema, TPath> extends true
+  ? WritePathMethods<TSchema, TPath>
   : never;

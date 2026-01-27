@@ -1,6 +1,6 @@
-import type { HttpMethod } from "./common.types";
+import type { HttpMethod, WriteMethod } from "./common.types";
 
-export type { HttpMethod };
+export type { HttpMethod, WriteMethod };
 
 /**
  * An API schema where routes are defined as string keys with path patterns.
@@ -160,3 +160,48 @@ export type ExtractParamNames<T extends string> =
 export type HasParams<T extends string> = T extends `${string}:${string}`
   ? true
   : false;
+
+/**
+ * Extract paths that have GET methods.
+ */
+export type ReadPaths<TSchema> = {
+  [K in keyof TSchema & string]: "GET" extends keyof TSchema[K] ? K : never;
+}[keyof TSchema & string];
+
+/**
+ * Extract paths that have write methods (POST, PUT, PATCH, DELETE).
+ */
+export type WritePaths<TSchema> = {
+  [K in keyof TSchema & string]: Extract<
+    keyof TSchema[K],
+    WriteMethod
+  > extends never
+    ? never
+    : K;
+}[keyof TSchema & string];
+
+/**
+ * Check if a schema path has a GET method.
+ */
+export type HasReadMethod<TSchema, TPath extends string> =
+  FindMatchingKey<TSchema, TPath> extends infer TKey
+    ? TKey extends keyof TSchema
+      ? "GET" extends keyof TSchema[TKey]
+        ? true
+        : false
+      : false
+    : false;
+
+/**
+ * Check if a schema path has any write methods.
+ */
+export type HasWriteMethod<TSchema, TPath extends string> =
+  FindMatchingKey<TSchema, TPath> extends infer TKey
+    ? TKey extends keyof TSchema
+      ? WriteMethod extends never
+        ? false
+        : Extract<keyof TSchema[TKey], WriteMethod> extends never
+          ? false
+          : true
+      : false
+    : false;

@@ -1,4 +1,4 @@
-type Simplify<T> = { [K in keyof T]: T[K] } & {};
+import type { Simplify } from "@spoosh/core";
 
 type IsNever<T> = [T] extends [never] ? true : false;
 

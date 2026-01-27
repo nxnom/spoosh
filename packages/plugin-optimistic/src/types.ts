@@ -3,9 +3,8 @@ import type {
   ExtractData,
   ExtractParamNames,
   HasParams,
+  Simplify,
 } from "@spoosh/core";
-
-type Simplify<T> = { [K in keyof T]: T[K] } & {};
 
 /**
  * Check if query exists in the method config.

@@ -1,6 +1,6 @@
 import type {
   SpooshResponse,
-  QuerySchemaHelper,
+  ReadSchemaHelper,
   TagOptions,
 } from "@spoosh/core";
 
@@ -22,7 +22,7 @@ export interface PrefetchOptions extends TagOptions {
 }
 
 type PrefetchCallbackFn<TSchema> = (
-  api: QuerySchemaHelper<TSchema>
+  api: ReadSchemaHelper<TSchema>
 ) => Promise<SpooshResponse<unknown, unknown>>;
 
 export type PrefetchFn<TSchema, TPluginOptions = object> = <

@@ -1,5 +1,10 @@
 # @spoosh/elysia
 
+## 0.2.1
+
+- Updated dependencies
+  - @spoosh/core@0.9.0
+
 ## 0.2.0
 
 ### Breaking Changes

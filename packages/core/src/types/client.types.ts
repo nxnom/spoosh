@@ -7,11 +7,15 @@ import type {
   FindMatchingKey,
   ExtractParamNames,
   HasParams,
+  ReadPaths,
+  WritePaths,
+  HasReadMethod,
+  HasWriteMethod,
 } from "./schema.types";
+import type { WriteMethod } from "./common.types";
+import type { Simplify } from "./common.types";
 import type { HeadersInitOrGetter } from "./request.types";
 import type { SpooshBody } from "../utils/body";
-
-type Simplify<T> = { [K in keyof T]: T[K] } & {};
 
 /**
  * Base request options available on all methods.
@@ -193,25 +197,6 @@ type ReadPathMethods<TSchema, TPath extends string, TDefaultError> =
     : never;
 
 /**
- * Check if a schema path has a GET method.
- */
-type HasGetMethod<TSchema, TPath extends string> =
-  FindMatchingKey<TSchema, TPath> extends infer TKey
-    ? TKey extends keyof TSchema
-      ? "GET" extends keyof TSchema[TKey]
-        ? true
-        : false
-      : false
-    : false;
-
-/**
- * Extract paths that have GET methods.
- */
-type ReadPaths<TSchema> = {
-  [K in keyof TSchema & string]: "GET" extends keyof TSchema[K] ? K : never;
-}[keyof TSchema & string];
-
-/**
  * A read-only API client that only exposes GET methods.
  * Used by useRead and injectRead hooks.
  */
@@ -219,14 +204,9 @@ export type ReadClient<TSchema, TDefaultError = unknown> = <
   TPath extends ReadPaths<TSchema> | (string & {}),
 >(
   path: TPath
-) => HasGetMethod<TSchema, TPath> extends true
+) => HasReadMethod<TSchema, TPath> extends true
   ? ReadPathMethods<TSchema, TPath, TDefaultError>
   : never;
-
-/**
- * Mutation methods (non-GET).
- */
-type MutationMethod = "POST" | "PUT" | "PATCH" | "DELETE";
 
 /**
  * Write-only client type that only exposes mutation methods (POST, PUT, PATCH, DELETE).
@@ -236,7 +216,7 @@ type WritePathMethods<TSchema, TPath extends string, TDefaultError> =
   FindMatchingKey<TSchema, TPath> extends infer TKey
     ? TKey extends keyof TSchema
       ? Simplify<{
-          [M in MutationMethod as M extends keyof TSchema[TKey]
+          [M in WriteMethod as M extends keyof TSchema[TKey]
             ? M
             : never]: M extends keyof TSchema[TKey]
             ? MethodFn<TSchema[TKey][M], TDefaultError, TPath>
@@ -246,32 +226,6 @@ type WritePathMethods<TSchema, TPath extends string, TDefaultError> =
     : never;
 
 /**
- * Check if a schema path has any mutation methods.
- */
-type HasMutationMethod<TSchema, TPath extends string> =
-  FindMatchingKey<TSchema, TPath> extends infer TKey
-    ? TKey extends keyof TSchema
-      ? MutationMethod extends never
-        ? false
-        : Extract<keyof TSchema[TKey], MutationMethod> extends never
-          ? false
-          : true
-      : false
-    : false;
-
-/**
- * Extract paths that have mutation methods.
- */
-type WritePaths<TSchema> = {
-  [K in keyof TSchema & string]: Extract<
-    keyof TSchema[K],
-    MutationMethod
-  > extends never
-    ? never
-    : K;
-}[keyof TSchema & string];
-
-/**
  * A write-only API client that only exposes mutation methods (POST, PUT, PATCH, DELETE).
  * Used by useWrite and injectWrite hooks.
  */
@@ -279,6 +233,6 @@ export type WriteClient<TSchema, TDefaultError = unknown> = <
   TPath extends WritePaths<TSchema> | (string & {}),
 >(
   path: TPath
-) => HasMutationMethod<TSchema, TPath> extends true
+) => HasWriteMethod<TSchema, TPath> extends true
   ? WritePathMethods<TSchema, TPath, TDefaultError>
   : never;
