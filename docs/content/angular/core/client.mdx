@@ -77,12 +77,12 @@ const { data } = await api("users").GET({
 });
 ```
 
-| Option    | Description                                                           |
-| --------- | --------------------------------------------------------------------- |
-| `query`   | Query parameters                                                      |
-| `body`    | Request body (POST, PUT, PATCH). Files are auto-detected as FormData. |
-| `params`  | Path parameters                                                       |
-| `headers` | Additional headers                                                    |
+| Option    | Description                                                                                                    |
+| --------- | -------------------------------------------------------------------------------------------------------------- |
+| `query`   | Query parameters                                                                                               |
+| `body`    | Request body (POST, PUT, PATCH). Use `form()` / `json()` / `urlencoded()` wrappers for explicit serialization. |
+| `params`  | Path parameters                                                                                                |
+| `headers` | Additional headers                                                                                             |
 
 ## Per-Request Headers
 

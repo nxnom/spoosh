@@ -112,14 +112,14 @@ await trigger({
 
 ### Plugin Config
 
-| Option        | Type                        | Default | Description                                          |
-| ------------- | --------------------------- | ------- | ---------------------------------------------------- |
+| Option        | Type                        | Default | Description                                         |
+| ------------- | --------------------------- | ------- | --------------------------------------------------- |
 | `defaultMode` | `"all" \| "self" \| "none"` | `"all"` | Default invalidation mode when option not specified |
 
 ### Per-Request Options
 
-| Option       | Type                                    | Description                                                                                                                |
-| ------------ | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Option       | Type                                    | Description                                                                                             |
+| ------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `invalidate` | `"all" \| "self" \| "none" \| string[]` | Mode only (string), tags only (array), or mode + tags (array with 'all'/'self' keyword at any position) |
 
 ### Invalidation Modes
@@ -151,6 +151,6 @@ socket.on("data-changed", (tags) => {
 });
 ```
 
-| Method       | Description                                 |
-| ------------ | ------------------------------------------- |
-| `invalidate` | Manually invalidate cache entries by tags   |
+| Method       | Description                               |
+| ------------ | ----------------------------------------- |
+| `invalidate` | Manually invalidate cache entries by tags |

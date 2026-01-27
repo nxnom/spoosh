@@ -97,11 +97,11 @@ const { data } = await api("users").GET({
 
 ### \{ data; body \} with Files
 
-When your body contains `File` or `Blob` objects, they are automatically detected and sent as FormData:
+Use the `form()` wrapper to send file uploads as multipart/form-data:
 
 ```ts twoslash
 // @noErrors
-import { createClient } from "@spoosh/core";
+import { createClient, form } from "@spoosh/core";
 
 type ApiSchema = {
   "users/avatar": {
@@ -109,11 +109,14 @@ type ApiSchema = {
   };
 };
 
-const api = createClient<ApiSchema>({ baseUrl: "/api" });
 declare const myFile: File;
 // ---cut---
+import { form } from "@spoosh/core";
+
+const api = createClient<ApiSchema>({ baseUrl: "/api" });
+
 const { data } = await api("users/avatar").POST({
-  body: { file: myFile },
+  body: form({ file: myFile }),
 });
 ```
 
@@ -287,11 +290,11 @@ See the [Elysia Integration](/angular/docs/integrations/elysia) guide for detail
 
 ## Summary
 
-| Type                | Description                | Example                                              |
-| ------------------- | -------------------------- | ---------------------------------------------------- |
-| `\{ data \}`        | Endpoint with data only    | `GET: \{ data: User[] \}`                            |
-| `\{ data; body \}`  | Endpoint with JSON body    | `POST: \{ data: User; body: CreateUserBody \}`       |
-| `\{ data; query \}` | Endpoint with query params | `GET: \{ data: User[]; query: \{ page: number \} \}` |
-| `\{ data; error \}` | Endpoint with typed error  | `GET: \{ data: User; error: ApiError \}`             |
-| `void`              | No response body           | `DELETE: void`                                       |
-| Path with `/:param` | Dynamic path segment       | `"users/:id": \{ GET: \{ data: User \} \}`           |
+| Type              | Description                | Example                                          |
+| ----------------- | -------------------------- | ------------------------------------------------ |
+| `{ data }`        | Endpoint with data only    | `GET: { data: User[] }`                          |
+| `{ data; body }`  | Endpoint with JSON body    | `POST: { data: User; body: CreateUserBody }`     |
+| `{ data; query }` | Endpoint with query params | `GET: { data: User[]; query: { page: number } }` |
+| `{ data; error }` | Endpoint with typed error  | `GET: { data: User; error: ApiError }`           |
+| `void`            | No response body           | `DELETE: void`                                   |
+| `"path/:param"`   | Dynamic path segment       | `"users/:id": { GET: { data: User } }`           |

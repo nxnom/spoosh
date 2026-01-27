@@ -1,5 +1,11 @@
 # @spoosh/core
 
+## 0.9.0
+
+### Breaking Changes
+
+- Insteads of relying on header or body to determine body type. Now use `form() / json() / urlencoded()` helpers to explicitly set body type.
+
 ## 0.8.2
 
 - Fix response override `setMeta` data in first request

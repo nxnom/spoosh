@@ -50,6 +50,9 @@ import { createClient } from "@spoosh/core";
 const api = createClient<ApiSchema>({
   baseUrl: "/api",
 });
+
+// Import body wrappers for explicit serialization
+import { json, form, urlencoded } from "@spoosh/core";
 ```
 
 ### Make API Calls
@@ -79,14 +82,14 @@ const { data: updated } = await api("users/:id").PUT({
 // DELETE /api/users/123
 await api("users/:id").DELETE({ params: { id: 123 } });
 
-// POST with file upload (auto FormData when File detected)
+// POST with file upload (using form() wrapper for multipart/form-data)
 const { data: uploaded } = await api("upload").POST({
-  body: { file: myFile },
+  body: form({ file: myFile }),
 });
 
-// POST with form data
+// POST with form data (using urlencoded() wrapper)
 const { data: payment } = await api("payments").POST({
-  body: { amount: 1000, currency: "usd" },
+  body: urlencoded({ amount: 1000, currency: "usd" }),
 });
 ```
 
@@ -172,12 +175,12 @@ const updatedContext = await applyMiddlewares(context, middlewares, "before");
 
 ## Schema Types
 
-| Field   | Description                             | Example                                          |
-| ------- | --------------------------------------- | ------------------------------------------------ |
-| `data`  | Response data type                      | `GET: { data: User[] }`                          |
-| `body`  | Request body type (files auto-detected) | `POST: { data: User; body: CreateUserBody }`     |
-| `query` | Query parameters type                   | `GET: { data: User[]; query: { page: number } }` |
-| `error` | Typed error type                        | `GET: { data: User; error: ApiError }`           |
+| Field   | Description           | Example                                          |
+| ------- | --------------------- | ------------------------------------------------ |
+| `data`  | Response data type    | `GET: { data: User[] }`                          |
+| `body`  | Request body type     | `POST: { data: User; body: CreateUserBody }`     |
+| `query` | Query parameters type | `GET: { data: User[]; query: { page: number } }` |
+| `error` | Typed error type      | `GET: { data: User; error: ApiError }`           |
 
 Path parameters are defined using `:param` syntax in the path key (e.g., `"users/:id"`).
 

@@ -64,39 +64,39 @@ await prefetch(
 
 The second argument to `prefetch()` accepts any plugin options (staleTime, retries, dedupe, etc.) plus:
 
-| Option | Type                                    | Description                                        |
-| ------ | --------------------------------------- | -------------------------------------------------- |
+| Option | Type                                    | Description                                         |
+| ------ | --------------------------------------- | --------------------------------------------------- |
 | `tags` | `'all' \| 'self' \| 'none' \| string[]` | Tag mode or custom tags (replaces `additionalTags`) |
 
 **Examples:**
 
 ```typescript
 // Mode only - 'all' generates full hierarchy
-await prefetch((api) => api("users/:id/posts").GET({ params: { id: '123' } }), {
-  tags: 'all'  // ['users', 'users/123', 'users/123/posts']
+await prefetch((api) => api("users/:id/posts").GET({ params: { id: "123" } }), {
+  tags: "all", // ['users', 'users/123', 'users/123/posts']
 });
 
 // Mode only - 'self' generates only exact path
-await prefetch((api) => api("users/:id/posts").GET({ params: { id: '123' } }), {
-  tags: 'self'  // ['users/123/posts']
+await prefetch((api) => api("users/:id/posts").GET({ params: { id: "123" } }), {
+  tags: "self", // ['users/123/posts']
 });
 
 // Mode only - 'none' generates no tags
-await prefetch((api) => api("posts").GET(), { tags: 'none' });  // []
+await prefetch((api) => api("posts").GET(), { tags: "none" }); // []
 
 // Custom tags only - replaces auto-generated tags
 await prefetch((api) => api("posts").GET(), {
-  tags: ['custom', 'dashboard']  // ['custom', 'dashboard']
+  tags: ["custom", "dashboard"], // ['custom', 'dashboard']
 });
 
 // Mode + custom tags - 'all' mode combined with custom tags
-await prefetch((api) => api("users/:id/posts").GET({ params: { id: '123' } }), {
-  tags: ['all', 'dashboard']  // ['users', 'users/123', 'users/123/posts', 'dashboard']
+await prefetch((api) => api("users/:id/posts").GET({ params: { id: "123" } }), {
+  tags: ["all", "dashboard"], // ['users', 'users/123', 'users/123/posts', 'dashboard']
 });
 
 // Mode + custom tags - 'self' mode combined with custom tags
-await prefetch((api) => api("users/:id/posts").GET({ params: { id: '123' } }), {
-  tags: ['self', 'dashboard']  // ['users/123/posts', 'dashboard']
+await prefetch((api) => api("users/:id/posts").GET({ params: { id: "123" } }), {
+  tags: ["self", "dashboard"], // ['users/123/posts', 'dashboard']
 });
 ```
 
