@@ -1,5 +1,9 @@
 # @spoosh/angular
 
+## 0.6.0
+
+- Remove `injectLazyRead` hook and now `injectRead` trigger support passing custom options
+
 ## 0.5.0
 
 - Rename `refetch` with `trigger` in `injectRead` and `injectInfiniteRead` hooks for consistency

@@ -1,5 +1,9 @@
 # @spoosh/react
 
+## 0.7.0
+
+- Remove `useLazyRead` hook and now `useRead` trigger support passing custom options
+
 ## 0.6.0
 
 - Rename `refetch` with `trigger` in `useRead` and `useInfiniteRead` hooks for consistency
