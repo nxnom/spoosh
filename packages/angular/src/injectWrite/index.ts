@@ -150,16 +150,6 @@ export function createInjectWrite<
       }
     });
 
-    const reset = () => {
-      if (currentQueryKey) {
-        stateManager.deleteCache(currentQueryKey);
-      }
-
-      dataSignal.set(undefined);
-      errorSignal.set(undefined);
-      loadingSignal.set(false);
-    };
-
     const abort = () => {
       currentController?.abort();
     };
@@ -299,7 +289,6 @@ export function createInjectWrite<
       data: dataSignal as Signal<TData | undefined>,
       error: errorSignal as Signal<TError | undefined>,
       loading: loadingSignal,
-      reset,
       abort,
     };
 

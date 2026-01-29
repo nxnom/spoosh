@@ -223,7 +223,7 @@ export type SpooshReactHooks<
    * React hook for mutations (POST, PUT, PATCH, DELETE) with manual triggering.
    *
    * @param writeFn - Function that selects the API endpoint (e.g., `(api) => api("posts").POST`)
-   * @returns Object containing `trigger`, `data`, `error`, `loading`, `reset`, and `abort`
+   * @returns Object containing `trigger`, `data`, `error`, `loading`, and `abort`
    *
    * @example
    * ```tsx
@@ -241,7 +241,7 @@ export type SpooshReactHooks<
    * React hook for lazy GET requests with manual triggering (does not auto-fetch on mount).
    *
    * @param readFn - Function that selects the API endpoint (e.g., `(api) => api("posts").GET`)
-   * @returns Object containing `trigger`, `data`, `error`, `loading`, `reset`, and `abort`
+   * @returns Object containing `trigger`, `data`, `error`, `loading`, and `abort`
    *
    * @example
    * ```tsx

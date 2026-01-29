@@ -212,7 +212,6 @@ function PostList() {
 | `data`    | `TData \| undefined`   | Response data                      |
 | `error`   | `TError \| undefined`  | Error if request failed            |
 | `loading` | `boolean`              | True while mutation is in progress |
-| `reset`   | `() => void`           | Reset state                        |
 | `abort`   | `() => void`           | Abort current request              |
 
 ### useInfiniteRead(readFn, options)

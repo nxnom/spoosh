@@ -176,13 +176,6 @@ export function createUseLazyRead<
       error: TError | undefined;
     }>({ isPending: false, error: undefined });
 
-    const reset = useCallback(() => {
-      if (currentQueryKey) {
-        stateManager.deleteCache(currentQueryKey);
-      }
-      setRequestState({ isPending: false, error: undefined });
-    }, [currentQueryKey]);
-
     const abort = useCallback(() => {
       controllerRef.current?.controller.abort();
     }, []);
@@ -249,7 +242,6 @@ export function createUseLazyRead<
       data: state.data as TData | undefined,
       error: requestState.error ?? (state.error as TError | undefined),
       loading,
-      reset,
       abort,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;

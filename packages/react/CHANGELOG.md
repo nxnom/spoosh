@@ -4,6 +4,7 @@
 
 - Added `useLazyRead` hook for on-demand data fetching
 - Rename `refetch` with `trigger` in `useRead` and `useInfiniteRead` hooks for consistency
+- Remove `reset` function for simplier api
 
 ## 0.5.1
 

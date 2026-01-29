@@ -60,7 +60,6 @@ export interface BaseWriteResult<
   error: Signal<TError | undefined>;
   loading: Signal<boolean>;
   meta: Signal<TPluginResult>;
-  reset: () => void;
   abort: () => void;
 }
 
@@ -69,7 +68,6 @@ export interface BaseLazyReadResult<TData, TError, TOptions> {
   data: Signal<TData | undefined>;
   error: Signal<TError | undefined>;
   loading: Signal<boolean>;
-  reset: () => void;
   abort: () => void;
 }
 

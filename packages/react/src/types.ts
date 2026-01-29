@@ -109,9 +109,6 @@ export type BaseWriteResult<
   /** Plugin-provided metadata */
   meta: TMeta;
 
-  /** Reset the state to initial values */
-  reset: () => void;
-
   /** Abort the current mutation */
   abort: () => void;
 };
@@ -135,9 +132,6 @@ export type BaseLazyReadResult<TData, TError, TOptions> = {
 
   /** Error from the last failed request */
   error: TError | undefined;
-
-  /** Reset the state to initial values */
-  reset: () => void;
 
   /** Abort the current fetch */
   abort: () => void;

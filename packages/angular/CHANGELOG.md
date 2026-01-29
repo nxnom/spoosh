@@ -4,6 +4,7 @@
 
 - Added `injectLazyRead` hook for on-demand data fetching
 - Rename `refetch` with `trigger` in `injectRead` and `injectInfiniteRead` hooks for consistency
+- Remove `reset` function for simplier api
 
 ## 0.4.0
 

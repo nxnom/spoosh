@@ -224,7 +224,6 @@ export class PostListComponent {
 | `loading` | `Signal<boolean>`             | True while mutation is in progress |
 | `meta`    | `Signal<PluginResults>`       | Plugin metadata                    |
 | `input`   | `TriggerOptions \| undefined` | Last trigger input                 |
-| `reset`   | `() => void`                  | Reset state                        |
 | `abort`   | `() => void`                  | Abort current request              |
 
 ### injectInfiniteRead(readFn, options)

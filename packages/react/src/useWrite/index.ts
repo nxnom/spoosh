@@ -178,11 +178,6 @@ export function createUseWrite<
       error: TError | undefined;
     }>({ isPending: false, error: undefined });
 
-    const reset = useCallback(() => {
-      stateManager.deleteCache(queryKey);
-      setRequestState({ isPending: false, error: undefined });
-    }, [queryKey]);
-
     const abort = useCallback(() => {
       controller.abort();
     }, []);
@@ -255,7 +250,6 @@ export function createUseWrite<
       data: state.data as TData | undefined,
       error: requestState.error ?? (state.error as TError | undefined),
       loading,
-      reset,
       abort,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
