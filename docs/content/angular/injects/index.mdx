@@ -26,7 +26,7 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([
   deduplicationPlugin({ read: "in-flight" }),
 ]);
 
-export const { injectRead, injectLazyRead, injectWrite, injectInfiniteRead } =
+export const { injectRead, injectWrite, injectInfiniteRead } =
   createAngularSpoosh(client);
 ```
 
@@ -144,6 +144,5 @@ export class SidebarComponent {
 ## Available Injects
 
 - [injectRead](/docs/angular/injects/inject-read) - Fetch data with automatic caching
-- [injectLazyRead](/docs/angular/injects/inject-lazy-read) - Lazy data fetching with manual trigger
 - [injectWrite](/docs/angular/injects/inject-write) - Trigger mutations with loading states
 - [injectInfiniteRead](/docs/angular/injects/inject-infinite-read) - Paginated data fetching

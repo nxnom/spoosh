@@ -23,8 +23,7 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
 ]);
 
-export const { useRead, useWrite, useInfiniteRead } =
-  createReactSpoosh(spoosh);
+export const { useRead, useWrite, useInfiniteRead } = createReactSpoosh(spoosh);
 ```
 
 ### useRead
