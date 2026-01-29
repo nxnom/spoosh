@@ -98,13 +98,99 @@ injectRead((api) => api("users/:id/posts").GET({ params: { id: "123" } }), {
 
 ## Returns
 
-| Property   | Type                          | Description                             |
-| ---------- | ----------------------------- | --------------------------------------- |
-| `data`     | `Signal<TData \| undefined>`  | Response data signal                    |
-| `error`    | `Signal<TError \| undefined>` | Error signal if request failed          |
-| `loading`  | `Signal<boolean>`             | Signal true during initial load         |
-| `fetching` | `Signal<boolean>`             | Signal true during any fetch            |
-| `trigger`  | `() => Promise`               | Manually trigger fetch                  |
-| `abort`    | `() => void`                  | Abort current request                   |
-| `input`    | `Signal<object>`              | The request input (query, body, params) |
-| `meta`     | `Signal<object>`              | Plugin-provided metadata                |
+| Property   | Type                          | Description                                    |
+| ---------- | ----------------------------- | ---------------------------------------------- |
+| `data`     | `Signal<TData \| undefined>`  | Response data signal                           |
+| `error`    | `Signal<TError \| undefined>` | Error signal if request failed                 |
+| `loading`  | `Signal<boolean>`             | Signal true during initial load                |
+| `fetching` | `Signal<boolean>`             | Signal true during any fetch                   |
+| `trigger`  | `(options?) => Promise`       | Manually trigger fetch with optional overrides |
+| `abort`    | `() => void`                  | Abort current request                          |
+| `input`    | `Signal<object>`              | The request input (query, body, params)        |
+| `meta`     | `Signal<object>`              | Plugin-provided metadata                       |
+
+## Trigger with Override Options
+
+The `trigger` function accepts optional parameters to override the request:
+
+```typescript
+@Component({
+  selector: "app-user-detail",
+  template: `
+    <button (click)="loadUser('1')">Load User 1</button>
+    <button (click)="loadUser('2')">Load User 2</button>
+    <button (click)="refresh()">Refresh</button>
+    @if (data()) {
+      <div>{{ data()?.name }}</div>
+    }
+  `,
+})
+export class UserDetailComponent {
+  private user = injectRead((api) =>
+    api("users/:id").GET({ params: { id: "1" } })
+  );
+
+  data = this.user.data;
+  trigger = this.user.trigger;
+
+  loadUser(id: string) {
+    // Fetch with different params
+    this.trigger({ params: { id } });
+  }
+
+  refresh() {
+    // Force refetch (bypass cache)
+    this.trigger({ force: true });
+  }
+}
+```
+
+> You should avoid using custom options with `trigger` as much as possible.
+> Most of the time, you can achieve the same effect by changing the `enabled` and input parameters in the initial request.
+
+### Trigger Options
+
+| Option   | Type      | Default | Description                        |
+| -------- | --------- | ------- | ---------------------------------- |
+| `params` | `object`  | -       | Override URL path parameters       |
+| `query`  | `object`  | -       | Override query string parameters   |
+| `body`   | `unknown` | -       | Override request body              |
+| `force`  | `boolean` | `false` | Bypass cache and force fresh fetch |
+
+## On-Demand Fetching
+
+For cases where you don't want to fetch on mount (like download or print), use `enabled: false` and call `trigger` manually:
+
+```typescript
+@Component({
+  selector: "app-download-report",
+  template: `
+    <button (click)="download('monthly')" [disabled]="loading()">
+      Download Monthly Report
+    </button>
+    <button (click)="download('yearly')" [disabled]="loading()">
+      Download Yearly Report
+    </button>
+  `,
+})
+export class DownloadReportComponent {
+  private report = injectRead(
+    (api) => api("reports/:id").GET({ params: { id: "" } }), // placeholder
+    { enabled: false }
+  );
+
+  loading = this.report.loading;
+
+  async download(reportId: string) {
+    const { data } = await this.report.trigger({ params: { id: reportId } });
+    if (data) {
+      // Process the downloaded report
+      this.downloadFile(data.url, data.filename);
+    }
+  }
+
+  private downloadFile(url: string, filename: string) {
+    // Implementation
+  }
+}
+```

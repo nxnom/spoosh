@@ -78,13 +78,82 @@ useRead((api) => api("users/:id/posts").GET({ params: { id: "123" } }), {
 
 ## Returns
 
-| Property   | Type                  | Description                             |
-| ---------- | --------------------- | --------------------------------------- |
-| `data`     | `TData \| undefined`  | Response data                           |
-| `error`    | `TError \| undefined` | Error if request failed                 |
-| `loading`  | `boolean`             | True during initial load                |
-| `fetching` | `boolean`             | True during any fetch                   |
-| `trigger`  | `() => Promise`       | Manually trigger fetch (or refetch)     |
-| `abort`    | `() => void`          | Abort current request                   |
-| `input`    | `object`              | The request input (query, body, params) |
-| `meta`     | `object`              | Plugin-provided metadata                |
+| Property   | Type                    | Description                                    |
+| ---------- | ----------------------- | ---------------------------------------------- |
+| `data`     | `TData \| undefined`    | Response data                                  |
+| `error`    | `TError \| undefined`   | Error if request failed                        |
+| `loading`  | `boolean`               | True during initial load                       |
+| `fetching` | `boolean`               | True during any fetch                          |
+| `trigger`  | `(options?) => Promise` | Manually trigger fetch with optional overrides |
+| `abort`    | `() => void`            | Abort current request                          |
+| `input`    | `object`                | The request input (query, body, params)        |
+| `meta`     | `object`                | Plugin-provided metadata                       |
+
+## Trigger with Override Options
+
+The `trigger` function accepts optional parameters to override the request:
+
+```typescript
+const { data, trigger } = useRead((api) =>
+  api("users/:id").GET({ params: { id: "1" } })
+);
+
+// Refetch with same params
+trigger();
+
+// Fetch with different params
+trigger({ params: { id: "2" } });
+
+// Override query parameters
+trigger({ query: { include: "profile" } });
+
+// Force refetch (bypass cache)
+trigger({ force: true });
+
+// Combine overrides
+trigger({ params: { id: "3" }, query: { include: "posts" }, force: true });
+```
+
+> You should avoid using custom options with `trigger` as much as possible.
+> Most of the time, you can achieve the same effect by changing the `enabled` and input parameters in the initial request.
+
+### Trigger Options
+
+| Option   | Type      | Default | Description                        |
+| -------- | --------- | ------- | ---------------------------------- |
+| `params` | `object`  | -       | Override URL path parameters       |
+| `query`  | `object`  | -       | Override query string parameters   |
+| `body`   | `unknown` | -       | Override request body              |
+| `force`  | `boolean` | `false` | Bypass cache and force fresh fetch |
+
+## On-Demand Fetching
+
+For cases where you don't want to fetch on mount (like download or print), use `enabled: false` and call `trigger` manually:
+
+```typescript
+function DownloadReport() {
+  const { data, loading, trigger } = useRead(
+    (api) => api("reports/:id").GET({ params: { id: "" } }), // placeholder
+    { enabled: false }
+  );
+
+  const handleDownload = async (reportId: string) => {
+    const { data } = await trigger({ params: { id: reportId } });
+    if (data) {
+      // Process the downloaded report
+      downloadFile(data.url, data.filename);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={() => handleDownload("monthly")} disabled={loading}>
+        Download Monthly Report
+      </button>
+      <button onClick={() => handleDownload("yearly")} disabled={loading}>
+        Download Yearly Report
+      </button>
+    </div>
+  );
+}
+```
