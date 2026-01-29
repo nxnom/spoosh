@@ -46,7 +46,7 @@ export interface BaseReadResult<
   fetching: Signal<boolean>;
   meta: Signal<TPluginResult>;
   abort: () => void;
-  refetch: () => Promise<SpooshResponse<TData, TError>>;
+  trigger: () => Promise<SpooshResponse<TData, TError>>;
 }
 
 export interface BaseWriteResult<
@@ -60,6 +60,15 @@ export interface BaseWriteResult<
   error: Signal<TError | undefined>;
   loading: Signal<boolean>;
   meta: Signal<TPluginResult>;
+  reset: () => void;
+  abort: () => void;
+}
+
+export interface BaseLazyReadResult<TData, TError, TOptions> {
+  trigger: (options?: TOptions) => Promise<SpooshResponse<TData, TError>>;
+  data: Signal<TData | undefined>;
+  error: Signal<TError | undefined>;
+  loading: Signal<boolean>;
   reset: () => void;
   abort: () => void;
 }
@@ -102,7 +111,7 @@ export interface BaseInfiniteReadResult<
   meta: Signal<TPluginResult>;
   fetchNext: () => Promise<void>;
   fetchPrev: () => Promise<void>;
-  refetch: () => Promise<void>;
+  trigger: () => Promise<void>;
   abort: () => void;
 }
 

@@ -1,6 +1,6 @@
 # @spoosh/angular
 
-Angular signals integration for Spoosh - `injectRead`, `injectWrite`, and `injectInfiniteRead`.
+Angular signals integration for Spoosh - `injectRead`, `injectLazyRead`, `injectWrite`, and `injectInfiniteRead`.
 
 **[Documentation](https://spoosh.dev/docs/integrations/angular)** · **Requirements:** TypeScript >= 5.0, Angular >= 16.0
 
@@ -23,13 +23,13 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
 ]);
 
-export const { injectRead, injectWrite, injectInfiniteRead } =
+export const { injectRead, injectLazyRead, injectWrite, injectInfiniteRead } =
   createAngularSpoosh(spoosh);
 ```
 
 ### injectRead
 
-Fetch data with automatic caching and refetching using Angular signals.
+Fetch data with automatic caching and triggering using Angular signals.
 
 ```typescript
 @Component({
@@ -71,6 +71,28 @@ export class UserListComponent {
     (api) => api("users/:id").GET({ params: { id: this.userId() } }),
     { enabled: () => this.userId() !== null }
   );
+}
+```
+
+### injectLazyRead
+
+Lazy data fetching for print/download/export scenarios. Does not auto-fetch on mount.
+
+```typescript
+@Component({
+  template: `
+    <button (click)="handlePrint('123')" [disabled]="order.loading()">
+      {{ order.loading() ? "Loading..." : "Print" }}
+    </button>
+  `,
+})
+export class PrintOrderComponent {
+  order = injectLazyRead((api) => api("orders/:id").GET);
+
+  async handlePrint(orderId: string) {
+    const { data } = await this.order.trigger({ params: { id: orderId } });
+    if (data) this.printService.printReceipt(data);
+  }
 }
 ```
 
@@ -187,7 +209,7 @@ export class PostListComponent {
 | `loading`  | `Signal<boolean>`             | True during initial load                  |
 | `fetching` | `Signal<boolean>`             | True during any fetch                     |
 | `meta`     | `Signal<PluginResults>`       | Plugin metadata (e.g., `transformedData`) |
-| `refetch`  | `() => Promise`               | Manually trigger refetch                  |
+| `trigger`  | `() => Promise`               | Manually trigger fetch                    |
 | `abort`    | `() => void`                  | Abort current request                     |
 
 ### injectWrite(writeFn)

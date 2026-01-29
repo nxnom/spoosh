@@ -31,6 +31,13 @@ export type SpooshAngularFunctions<
       TPlugins
     >
   >;
+  injectLazyRead: ReturnType<
+    typeof import("../injectLazyRead").createInjectLazyRead<
+      TSchema,
+      TDefaultError,
+      TPlugins
+    >
+  >;
 } & MergePluginInstanceApi<TPlugins, TSchema>;
 
 export type { SpooshInstanceShape, ExtractMethodData, ExtractMethodError };

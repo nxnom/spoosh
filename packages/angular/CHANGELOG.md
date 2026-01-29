@@ -1,5 +1,10 @@
 # @spoosh/angular
 
+## 0.5.0
+
+- Added `injectLazyRead` hook for on-demand data fetching
+- Rename `refetch` with `trigger` in `injectRead` and `injectInfiniteRead` hooks for consistency
+
 ## 0.4.0
 
 ### Breaking Changes

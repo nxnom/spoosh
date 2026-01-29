@@ -417,7 +417,7 @@ export function createInjectRead<
       currentController?.abort();
     };
 
-    const refetch = () => {
+    const trigger = () => {
       if (currentController) {
         // Mount if not already mounted (allows manual fetch when enabled: false)
         if (!isMounted) {
@@ -443,7 +443,7 @@ export function createInjectRead<
       loading: loadingSignal,
       fetching: fetchingSignal,
       abort,
-      refetch,
+      trigger,
     };
 
     return result as unknown as BaseReadResult<

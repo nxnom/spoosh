@@ -490,7 +490,7 @@ export function createInjectInfiniteRead<
       }
     };
 
-    const refetch = async () => {
+    const trigger = async () => {
       if (!currentController) return;
 
       // Mount if not already mounted (allows manual fetch when enabled: false)
@@ -530,7 +530,7 @@ export function createInjectInfiniteRead<
       canFetchPrev: canFetchPrevSignal,
       fetchNext,
       fetchPrev,
-      refetch,
+      trigger,
       abort,
     };
 

@@ -2,6 +2,7 @@ import type { PluginArray, PluginExecutor } from "@spoosh/core";
 import { createInjectRead } from "../injectRead";
 import { createInjectWrite } from "../injectWrite";
 import { createInjectInfiniteRead } from "../injectInfiniteRead";
+import { createInjectLazyRead } from "../injectLazyRead";
 import type { SpooshAngularFunctions, SpooshInstanceShape } from "./types";
 
 export function createAngularSpoosh<
@@ -45,6 +46,17 @@ export function createAngularSpoosh<
     typeof createInjectInfiniteRead<TSchema, TDefaultError, TPlugins>
   >[0]);
 
+  const injectLazyRead = createInjectLazyRead<TSchema, TDefaultError, TPlugins>(
+    {
+      api,
+      stateManager,
+      eventEmitter,
+      pluginExecutor,
+    } as Parameters<
+      typeof createInjectLazyRead<TSchema, TDefaultError, TPlugins>
+    >[0]
+  );
+
   const instanceApiContext = {
     api,
     stateManager,
@@ -69,6 +81,7 @@ export function createAngularSpoosh<
     injectRead,
     injectWrite,
     injectInfiniteRead,
+    injectLazyRead,
     ...instanceApis,
   } as SpooshAngularFunctions<TDefaultError, TSchema, TPlugins>;
 }
