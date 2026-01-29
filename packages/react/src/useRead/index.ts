@@ -307,7 +307,7 @@ export function createUseRead<
       abortRef.current();
     }, []);
 
-    const refetch = useCallback(() => {
+    const trigger = useCallback(() => {
       return executeWithTracking(true);
     }, [executeWithTracking]);
 
@@ -345,7 +345,7 @@ export function createUseRead<
       loading,
       fetching,
       abort,
-      refetch,
+      trigger,
     };
   }
 

@@ -14,6 +14,7 @@ import type {
 import type {
   BaseReadOptions,
   BaseReadResult,
+  BaseLazyReadResult,
   BaseWriteResult,
   BaseInfiniteReadOptions,
   BaseInfiniteReadResult,
@@ -26,6 +27,7 @@ import type {
   ExtractMethodError,
   ExtractMethodQuery,
   ExtractMethodBody,
+  ExtractCoreMethodOptions,
   AnyInfiniteRequestOptions,
   ReadApiClient,
   WriteApiClient,
@@ -128,6 +130,25 @@ type UseWriteFn<TDefaultError, TSchema, TPlugins extends PluginArray> = {
     >;
 };
 
+type UseLazyReadFn<TDefaultError, TSchema> = {
+  <
+    TMethod extends (
+      ...args: never
+    ) => Promise<SpooshResponse<unknown, unknown>>,
+  >(
+    readFn: (api: ReadApiClient<TSchema, TDefaultError>) => TMethod
+  ): BaseLazyReadResult<
+    ExtractMethodData<TMethod>,
+    InferError<ExtractMethodError<TMethod>, TDefaultError>,
+    ExtractCoreMethodOptions<TMethod>
+  > &
+    WriteResponseInputFields<
+      ExtractResponseQuery<TMethod>,
+      ExtractResponseBody<TMethod>,
+      ExtractResponseParamNames<TMethod>
+    >;
+};
+
 type InfiniteReadResolverContext<TSchema, TData, TError, TRequest> =
   ResolverContext<
     TSchema,
@@ -184,7 +205,7 @@ export type SpooshReactHooks<
    *
    * @param readFn - Function that selects the API endpoint to call (e.g., `(api) => api("posts").GET()`)
    * @param readOptions - Optional configuration including `enabled`, `tags`, and plugin-specific options
-   * @returns Object containing `data`, `error`, `loading`, `fetching`, `refetch`, and `abort`
+   * @returns Object containing `data`, `error`, `loading`, `fetching`, `trigger`, and `abort`
    *
    * @example
    * ```tsx
@@ -215,6 +236,24 @@ export type SpooshReactHooks<
    * ```
    */
   useWrite: UseWriteFn<TDefaultError, TSchema, TPlugins>;
+
+  /**
+   * React hook for lazy GET requests with manual triggering (does not auto-fetch on mount).
+   *
+   * @param readFn - Function that selects the API endpoint (e.g., `(api) => api("posts").GET`)
+   * @returns Object containing `trigger`, `data`, `error`, `loading`, `reset`, and `abort`
+   *
+   * @example
+   * ```tsx
+   * const { trigger, loading, data } = useLazyRead((api) => api("posts/:id").GET);
+   *
+   * const handleClick = async (id) => {
+   *   const { data, error } = await trigger({ params: { id } });
+   *   if (data) console.log('Fetched:', data);
+   * };
+   * ```
+   */
+  useLazyRead: UseLazyReadFn<TDefaultError, TSchema>;
 
   /**
    * React hook for infinite/paginated data fetching with automatic pagination control.

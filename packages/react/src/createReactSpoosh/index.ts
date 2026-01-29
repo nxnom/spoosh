@@ -1,6 +1,7 @@
 import type { PluginArray } from "@spoosh/core";
 import { createUseRead } from "../useRead";
 import { createUseWrite } from "../useWrite";
+import { createUseLazyRead } from "../useLazyRead";
 import { createUseInfiniteRead } from "../useInfiniteRead";
 import type { SpooshReactHooks, SpooshInstanceShape } from "./types";
 
@@ -48,6 +49,13 @@ export function createReactSpoosh<
     pluginExecutor,
   });
 
+  const useLazyRead = createUseLazyRead<TSchema, TDefaultError, TPlugins>({
+    api,
+    stateManager,
+    eventEmitter,
+    pluginExecutor,
+  });
+
   const useInfiniteRead = createUseInfiniteRead<
     TSchema,
     TDefaultError,
@@ -80,6 +88,7 @@ export function createReactSpoosh<
   return {
     useRead,
     useWrite,
+    useLazyRead,
     useInfiniteRead,
     ...instanceApis,
   } as SpooshReactHooks<TDefaultError, TSchema, TPlugins>;

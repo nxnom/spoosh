@@ -1,5 +1,10 @@
 # @spoosh/react
 
+## 0.6.0
+
+- Added `useLazyRead` hook for on-demand data fetching
+- Rename `refetch` with `trigger` in `useRead` and `useInfiniteRead` hooks for consistency
+
 ## 0.5.1
 
 - Improve type inference for meta field with overloaded hooks

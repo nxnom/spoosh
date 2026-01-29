@@ -1,6 +1,6 @@
 # @spoosh/react
 
-React hooks for Spoosh - `useRead`, `useWrite`, and `useInfiniteRead`.
+React hooks for Spoosh - `useRead`, `useLazyRead`, `useWrite`, and `useInfiniteRead`.
 
 **[Documentation](https://spoosh.dev/docs/integrations/react)** · **Requirements:** TypeScript >= 5.0, React >= 18.0
 
@@ -23,7 +23,8 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
 ]);
 
-export const { useRead, useWrite, useInfiniteRead } = createReactSpoosh(spoosh);
+export const { useRead, useLazyRead, useWrite, useInfiniteRead } =
+  createReactSpoosh(spoosh);
 ```
 
 ### useRead
@@ -32,7 +33,7 @@ Fetch data with automatic caching and refetching.
 
 ```typescript
 function UserList() {
-  const { data, loading, error, refetch } = useRead(
+  const { data, loading, error, trigger } = useRead(
     (api) => api("users").GET()
   );
 
@@ -60,6 +61,27 @@ const { data: user } = useRead(
   (api) => api("users/:id").GET({ params: { id: userId } }),
   { enabled: !!userId }
 );
+```
+
+### useLazyRead
+
+Lazy data fetching for print/download/export scenarios. Does not auto-fetch on mount.
+
+```typescript
+function PrintOrder() {
+  const { trigger, loading } = useLazyRead((api) => api("orders/:id").GET);
+
+  const handlePrint = async (orderId: string) => {
+    const { data } = await trigger({ params: { id: orderId } });
+    if (data) printReceipt(data);
+  };
+
+  return (
+    <button onClick={() => handlePrint("123")} disabled={loading}>
+      {loading ? "Loading..." : "Print"}
+    </button>
+  );
+}
 ```
 
 ### useWrite
@@ -177,7 +199,7 @@ function PostList() {
 | `error`    | `TError \| undefined` | Error if request failed  |
 | `loading`  | `boolean`             | True during initial load |
 | `fetching` | `boolean`             | True during any fetch    |
-| `refetch`  | `() => Promise`       | Manually trigger refetch |
+| `trigger`  | `() => Promise`       | Manually trigger fetch   |
 | `abort`    | `() => void`          | Abort current request    |
 
 ### useWrite(writeFn)

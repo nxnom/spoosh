@@ -76,8 +76,8 @@ export type BaseReadResult<TData, TError, TMeta = Record<string, unknown>> = {
   /** Abort the current fetch operation */
   abort: () => void;
 
-  /** Manually trigger a refetch */
-  refetch: () => Promise<SpooshResponse<TData, TError>>;
+  /** Manually trigger a fetch */
+  trigger: () => Promise<SpooshResponse<TData, TError>>;
 };
 
 /**
@@ -113,6 +113,33 @@ export type BaseWriteResult<
   reset: () => void;
 
   /** Abort the current mutation */
+  abort: () => void;
+};
+
+/**
+ * Result returned by `useLazyRead` hook.
+ *
+ * @template TData - The response data type
+ * @template TError - The error type
+ * @template TOptions - The trigger options type
+ */
+export type BaseLazyReadResult<TData, TError, TOptions> = {
+  /** Execute the fetch with optional options */
+  trigger: (options?: TOptions) => Promise<SpooshResponse<TData, TError>>;
+
+  /** True while the fetch is in progress */
+  loading: boolean;
+
+  /** Response data from the API */
+  data: TData | undefined;
+
+  /** Error from the last failed request */
+  error: TError | undefined;
+
+  /** Reset the state to initial values */
+  reset: () => void;
+
+  /** Abort the current fetch */
   abort: () => void;
 };
 
@@ -195,6 +222,14 @@ export type ExtractMethodError<T> = T extends (...args: never[]) => infer R
 export type ExtractMethodOptions<T> = T extends (...args: infer A) => unknown
   ? A[0]
   : never;
+
+export type ExtractCoreMethodOptions<T> = T extends (
+  ...args: infer A
+) => unknown
+  ? A[0] extends object
+    ? Pick<A[0], Extract<keyof A[0], "query" | "params" | "body">>
+    : object
+  : object;
 
 type ExtractSuccessInput<T> =
   SuccessResponse<AwaitedReturnType<T>> extends {
@@ -401,8 +436,8 @@ export type BaseInfiniteReadResult<
   /** Fetch the previous page */
   fetchPrev: () => Promise<void>;
 
-  /** Refetch all pages from the beginning */
-  refetch: () => Promise<void>;
+  /** Trigger refetch of all pages from the beginning */
+  trigger: () => Promise<void>;
 
   /** Abort the current fetch operation */
   abort: () => void;

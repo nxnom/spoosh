@@ -284,7 +284,7 @@ export function createUseInfiniteRead<
       canFetchPrev: state.canFetchPrev,
       fetchNext: controller.fetchNext,
       fetchPrev: controller.fetchPrev,
-      refetch: controller.refetch,
+      trigger: controller.refetch,
       abort: controller.abort,
       error: state.error,
     };
