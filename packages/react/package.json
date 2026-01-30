@@ -45,6 +45,9 @@
     "react": "^18 || ^19"
   },
   "devDependencies": {
-    "@spoosh/core": "workspace:*"
+    "@spoosh/core": "workspace:*",
+    "@spoosh/test-utils": "workspace:*",
+    "@testing-library/react": "^16.0.0",
+    "jsdom": "^26.0.0"
   }
 }
