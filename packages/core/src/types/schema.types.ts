@@ -205,3 +205,48 @@ export type HasWriteMethod<TSchema, TPath extends string> =
           : true
       : false
     : false;
+
+type NormalizePrefix<T extends string> = T extends `/${infer Rest}`
+  ? NormalizePrefix<Rest>
+  : T extends `${infer Rest}/`
+    ? NormalizePrefix<Rest>
+    : T;
+
+type StripPrefixFromPath<
+  TPath extends string,
+  TPrefix extends string,
+> = TPath extends TPrefix
+  ? ""
+  : TPath extends `${TPrefix}/${infer Rest}`
+    ? Rest
+    : TPath;
+
+/**
+ * Strips a prefix from all path keys in a schema.
+ * Works with any schema (Elysia, Hono, or manual).
+ *
+ * @example
+ * ```ts
+ * type FullSchema = {
+ *   "api": { GET: { data: string } };
+ *   "api/users": { GET: { data: User[] } };
+ *   "api/posts/:id": { GET: { data: Post } };
+ *   "health": { GET: { data: { status: string } } };
+ * };
+ *
+ * type ApiSchema = StripPrefix<FullSchema, "api">;
+ * // {
+ * //   "": { GET: { data: string } };
+ * //   "users": { GET: { data: User[] } };
+ * //   "posts/:id": { GET: { data: Post } };
+ * //   "health": { GET: { data: { status: string } } };
+ * // }
+ * ```
+ */
+export type StripPrefix<TSchema, TPrefix extends string> = TPrefix extends ""
+  ? TSchema
+  : {
+      [K in keyof TSchema as K extends string
+        ? StripPrefixFromPath<K, NormalizePrefix<TPrefix>>
+        : K]: TSchema[K];
+    };
