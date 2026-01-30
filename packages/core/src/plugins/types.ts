@@ -42,12 +42,6 @@ export type PluginContext<TData = unknown, TError = unknown> = {
   /** Unique identifier for the hook instance. Persists across queryKey changes within the same hook. */
   readonly hookId?: string;
 
-  /**
-   * Prefix to strip from tags. Configured at the Spoosh instance level.
-   * Plugins can use this to normalize tags before emitting events.
-   */
-  readonly stripTagPrefix?: string;
-
   requestOptions: AnyRequestOptions;
   state: OperationState<TData, TError>;
   response?: SpooshResponse<TData, TError>;

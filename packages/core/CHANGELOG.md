@@ -1,5 +1,9 @@
 # @spoosh/core
 
+## 0.9.2
+
+- Remove `stripTagPrefix` logics and user must use `StripPrefix` utility type to remove prefix from api schema paths
+
 ## 0.9.1
 
 - Create `StripPrefix` utility type to remove prefix from api schema paths

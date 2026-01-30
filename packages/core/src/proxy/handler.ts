@@ -1,5 +1,4 @@
 import { executeFetch } from "../fetch";
-import { stripPrefixFromPath } from "../utils/stripPathPrefix";
 import type {
   AnyRequestOptions,
   SpooshOptions,
@@ -13,12 +12,6 @@ export type ProxyHandlerConfig<TOptions = SpooshOptions> = {
   defaultOptions: TOptions;
   fetchExecutor?: FetchExecutor<TOptions, AnyRequestOptions>;
   nextTags?: boolean;
-
-  /** Prefix to strip from URL path (auto-detected from baseUrl, always applied) */
-  urlPrefix?: string;
-
-  /** Prefix to strip from tag generation (defaults to urlPrefix) */
-  tagPrefix?: string;
 };
 
 /**
@@ -78,11 +71,7 @@ export function createProxyHandler<
     defaultOptions,
     fetchExecutor = executeFetch as FetchExecutor<TOptions, AnyRequestOptions>,
     nextTags,
-    urlPrefix,
-    tagPrefix,
   } = config;
-
-  const effectiveTagPrefix = tagPrefix ?? urlPrefix;
 
   return ((path: string) => {
     return new Proxy(
@@ -99,22 +88,13 @@ export function createProxyHandler<
           return (options?: AnyRequestOptions) => {
             const resolvedPath = resolvePath(path, options?.params);
 
-            const urlPath = urlPrefix
-              ? stripPrefixFromPath(resolvedPath, urlPrefix)
-              : resolvedPath;
-
-            const tagPath = effectiveTagPrefix
-              ? stripPrefixFromPath(resolvedPath, effectiveTagPrefix)
-              : resolvedPath;
-
             return fetchExecutor(
               baseUrl,
-              urlPath,
+              resolvedPath,
               method,
               defaultOptions,
               options,
-              nextTags,
-              tagPath
+              nextTags
             );
           };
         },

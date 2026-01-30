@@ -46,9 +46,6 @@ export type MockContextOptions<TData = unknown, TError = unknown> = {
 
   hookId?: string;
 
-  /** Prefix to strip from tags, passed from Spoosh config */
-  stripTagPrefix?: string;
-
   state?: Partial<OperationState<TData, TError>>;
 
   requestOptions?: Record<string, unknown>;
@@ -77,7 +74,6 @@ export function createMockContext<TData = unknown, TError = unknown>(
     pluginOptions,
     forceRefetch,
     hookId,
-    stripTagPrefix,
     state: stateOverrides,
     requestOptions = {},
     metadata = new Map(),
@@ -105,7 +101,6 @@ export function createMockContext<TData = unknown, TError = unknown>(
     pluginOptions,
     forceRefetch,
     hookId,
-    stripTagPrefix,
   } as unknown as PluginContext<TData, TError>;
 }
 

@@ -85,16 +85,9 @@ function sortByDependencies(plugins: SpooshPlugin[]): SpooshPlugin[] {
   return sorted;
 }
 
-export type PluginExecutorOptions = {
-  stripTagPrefix?: string;
-};
-
 export function createPluginExecutor(
-  initialPlugins: SpooshPlugin[] = [],
-  options: PluginExecutorOptions = {}
+  initialPlugins: SpooshPlugin[] = []
 ): PluginExecutor {
-  const { stripTagPrefix } = options;
-
   validateDependencies(initialPlugins);
   const plugins = sortByDependencies(initialPlugins);
   const frozenPlugins = Object.freeze([...plugins]);
@@ -215,11 +208,6 @@ export function createPluginExecutor(
         ctx.headers = { ...ctx.headers, ...newHeaders };
         ctx.requestOptions.headers = ctx.headers;
       };
-
-      if (stripTagPrefix) {
-        (ctx as { stripTagPrefix?: string }).stripTagPrefix = stripTagPrefix;
-      }
-
       return ctx;
     },
   };
