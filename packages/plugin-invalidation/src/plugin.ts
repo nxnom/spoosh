@@ -1,7 +1,8 @@
-import type {
-  SpooshPlugin,
-  PluginContext,
-  InstanceApiContext,
+import {
+  type SpooshPlugin,
+  type PluginContext,
+  type InstanceApiContext,
+  stripPrefixFromPath,
 } from "@spoosh/core";
 
 import type {
@@ -20,13 +21,25 @@ const INVALIDATION_DEFAULT_KEY = "invalidation:defaultMode";
 
 function resolveModeTags(
   context: PluginContext,
-  mode: InvalidationMode
+  mode: InvalidationMode,
+  stripTagPrefix?: string
 ): string[] {
   switch (mode) {
     case "all":
+      if (stripTagPrefix) {
+        return context.tags.map((tag) => {
+          const segments = tag.split("/").filter(Boolean);
+          return stripPrefixFromPath(segments, stripTagPrefix).join("/");
+        });
+      }
       return context.tags;
-    case "self":
-      return [context.path.join("/")];
+    case "self": {
+      const selfPath = context.path.join("/");
+      if (stripTagPrefix) {
+        return [stripPrefixFromPath(context.path, stripTagPrefix).join("/")];
+      }
+      return [selfPath];
+    }
     case "none":
       return [];
   }
@@ -34,7 +47,8 @@ function resolveModeTags(
 
 function resolveInvalidateTags(
   context: PluginContext,
-  defaultMode: InvalidationMode
+  defaultMode: InvalidationMode,
+  stripTagPrefix?: string
 ): string[] {
   const pluginOptions = context.pluginOptions as
     | InvalidationWriteOptions
@@ -47,11 +61,11 @@ function resolveInvalidateTags(
       | InvalidationMode
       | undefined;
     const effectiveDefault = overrideDefault ?? defaultMode;
-    return resolveModeTags(context, effectiveDefault);
+    return resolveModeTags(context, effectiveDefault, stripTagPrefix);
   }
 
   if (typeof invalidateOption === "string") {
-    return resolveModeTags(context, invalidateOption);
+    return resolveModeTags(context, invalidateOption, stripTagPrefix);
   }
 
   if (Array.isArray(invalidateOption)) {
@@ -62,11 +76,16 @@ function resolveInvalidateTags(
       if (item === "all" || item === "self") {
         mode = item as InvalidationMode;
       } else if (typeof item === "string") {
-        tags.push(item);
+        if (stripTagPrefix) {
+          const segments = item.split("/").filter(Boolean);
+          tags.push(stripPrefixFromPath(segments, stripTagPrefix).join("/"));
+        } else {
+          tags.push(item);
+        }
       }
     }
 
-    tags.push(...resolveModeTags(context, mode));
+    tags.push(...resolveModeTags(context, mode, stripTagPrefix));
 
     return [...new Set(tags)];
   }
@@ -133,7 +152,11 @@ export function invalidationPlugin(
 
     afterResponse(context, response) {
       if (!response.error) {
-        const tags = resolveInvalidateTags(context, defaultMode);
+        const tags = resolveInvalidateTags(
+          context,
+          defaultMode,
+          context.stripTagPrefix
+        );
 
         if (tags.length > 0) {
           context.stateManager.markStale(tags);

@@ -1,5 +1,9 @@
 # @spoosh/plugin-invalidation
 
+## 0.5.1
+
+- Strip prefix tags if Spoosh config is present
+
 ## 0.5.0
 
 ### Breaking Changes

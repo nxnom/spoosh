@@ -196,7 +196,9 @@ export class Spoosh<
       });
       const stateManager = createStateManager();
       const eventEmitter = createEventEmitter();
-      const pluginExecutor = createPluginExecutor([...this._plugins]);
+      const pluginExecutor = createPluginExecutor([...this._plugins], {
+        stripTagPrefix: tagPrefix,
+      });
 
       this._instance = {
         api,
@@ -206,6 +208,7 @@ export class Spoosh<
         config: {
           baseUrl: this.baseUrl,
           defaultOptions: this.defaultOptions,
+          stripTagPrefix: tagPrefix,
         },
         _types: {
           schema: undefined as unknown as TSchema,

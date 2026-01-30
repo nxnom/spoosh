@@ -55,6 +55,9 @@ export type SpooshInstance<
   config: {
     baseUrl: string;
     defaultOptions: SpooshOptions;
+
+    /** Resolved prefix to strip from tags (used for cache invalidation matching) */
+    stripTagPrefix?: string;
   };
 
   _types: {
