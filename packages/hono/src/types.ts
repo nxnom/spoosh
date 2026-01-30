@@ -23,18 +23,16 @@ type ExtractClientBody<T> = T extends { input: { json: infer B } }
   ? IsNever<B> extends true
     ? never
     : B
-  : never;
+  : T extends { input: { form: infer F } }
+    ? IsNever<F> extends true
+      ? never
+      : F
+    : never;
 
 type ExtractClientQuery<T> = T extends { input: { query: infer Q } }
   ? IsNever<Q> extends true
     ? never
     : Q
-  : never;
-
-type ExtractClientFormData<T> = T extends { input: { form: infer F } }
-  ? IsNever<F> extends true
-    ? never
-    : F
   : never;
 
 type BodyField<T> =
@@ -47,15 +45,8 @@ type QueryField<T> =
     ? object
     : { query: ExtractClientQuery<T> };
 
-type FormDataField<T> =
-  IsNever<ExtractClientFormData<T>> extends true
-    ? object
-    : { formData: ExtractClientFormData<T> };
-
 type ClientEndpointToSpoosh<T> = Simplify<
-  { data: ExtractClientOutput<T> } & BodyField<T> &
-    QueryField<T> &
-    FormDataField<T>
+  { data: ExtractClientOutput<T> } & BodyField<T> & QueryField<T>
 >;
 
 // Extract endpoint schema from hc client method function signature
