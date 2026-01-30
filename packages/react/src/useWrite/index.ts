@@ -213,7 +213,7 @@ export function createUseWrite<
           return response;
         } catch (err) {
           setRequestState({ isPending: false, error: err as TError });
-          throw err;
+          return { error: err as TError } as SpooshResponse<TData, TError>;
         }
       },
       [selectedEndpoint.path]

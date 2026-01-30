@@ -233,7 +233,7 @@ export function createInjectRead<
         return response;
       } catch (err) {
         errorSignal.set(err as TError);
-        throw err;
+        return { error: err as TError } as SpooshResponse<TData, TError>;
       } finally {
         loadingSignal.set(false);
         fetchingSignal.set(false);
