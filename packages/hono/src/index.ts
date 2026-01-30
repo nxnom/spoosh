@@ -1,1 +1,1 @@
-export type { HonoToSpoosh, HonoRouteToSpoosh } from "./types";
+export type { HonoToSpoosh } from "./types";
