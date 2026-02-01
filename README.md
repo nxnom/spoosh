@@ -56,15 +56,15 @@ const client = new Spoosh<ApiSchema, Error>('/api')
 **Zero Boilerplate** — Define your schema once, get a fully typed client. No code generation required.
 
 ```typescript
-import { Spoosh, type Endpoint } from "@spoosh/core";
+import { Spoosh } from "@spoosh/core";
 
 type ApiSchema = {
   posts: {
-    GET: Endpoint<Post[]>;
-    POST: Endpoint<Post, CreatePostBody>;
+    GET: { data: Post[] };
+    POST: { data: Post; body: CreatePostBody };
   };
   "posts/:id": {
-    GET: Endpoint<Post>;
+    GET: { data: Post };
   };
 };
 
@@ -97,15 +97,15 @@ npm install @spoosh/core @spoosh/angular
 ## Quick Start
 
 ```typescript
-import { Spoosh, type Endpoint } from "@spoosh/core";
+import { Spoosh } from "@spoosh/core";
 import { cachePlugin } from "@spoosh/plugin-cache";
 
 type ApiSchema = {
   users: {
-    GET: Endpoint<User[]>;
+    GET: { data: User[] };
   };
   "users/:id": {
-    GET: Endpoint<User>;
+    GET: { data: User };
   };
 };
 
