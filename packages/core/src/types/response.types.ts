@@ -4,14 +4,6 @@ type QueryField<TQuery> = [TQuery] extends [never] ? object : { query: TQuery };
 
 type BodyField<TBody> = [TBody] extends [never] ? object : { body: TBody };
 
-type FormDataField<TFormData> = [TFormData] extends [never]
-  ? object
-  : { formData: TFormData };
-
-type UrlEncodedField<TUrlEncoded> = [TUrlEncoded] extends [never]
-  ? object
-  : { urlEncoded: TUrlEncoded };
-
 type ParamsField<TParamNames extends string> = [TParamNames] extends [never]
   ? object
   : { params: Record<TParamNames, string | number> };
@@ -19,30 +11,16 @@ type ParamsField<TParamNames extends string> = [TParamNames] extends [never]
 type InputFields<
   TQuery,
   TBody,
-  TFormData,
-  TUrlEncoded,
   TParamNames extends string,
-> = QueryField<TQuery> &
-  BodyField<TBody> &
-  FormDataField<TFormData> &
-  UrlEncodedField<TUrlEncoded> &
-  ParamsField<TParamNames>;
+> = QueryField<TQuery> & BodyField<TBody> & ParamsField<TParamNames>;
 
-type InputFieldWrapper<
+type InputFieldWrapper<TQuery, TBody, TParamNames extends string> = [
   TQuery,
   TBody,
-  TFormData,
-  TUrlEncoded,
-  TParamNames extends string,
-> = [TQuery, TBody, TFormData, TUrlEncoded, TParamNames] extends [
-  never,
-  never,
-  never,
-  never,
-  never,
-]
+  TParamNames,
+] extends [never, never, never]
   ? object
-  : { input: InputFields<TQuery, TBody, TFormData, TUrlEncoded, TParamNames> };
+  : { input: InputFields<TQuery, TBody, TParamNames> };
 
 export type SpooshResponse<
   TData,
@@ -50,8 +28,6 @@ export type SpooshResponse<
   TRequestOptions = unknown,
   TQuery = never,
   TBody = never,
-  TFormData = never,
-  TUrlEncoded = never,
   TParamNames extends string = never,
 > =
   | ({
@@ -61,7 +37,7 @@ export type SpooshResponse<
       error?: undefined;
       aborted?: false;
       readonly __requestOptions?: TRequestOptions;
-    } & InputFieldWrapper<TQuery, TBody, TFormData, TUrlEncoded, TParamNames>)
+    } & InputFieldWrapper<TQuery, TBody, TParamNames>)
   | ({
       status: number;
       data?: undefined;
@@ -69,7 +45,7 @@ export type SpooshResponse<
       error: TError;
       aborted?: boolean;
       readonly __requestOptions?: TRequestOptions;
-    } & InputFieldWrapper<TQuery, TBody, TFormData, TUrlEncoded, TParamNames>);
+    } & InputFieldWrapper<TQuery, TBody, TParamNames>);
 
 export type SpooshOptionsExtra<TData = unknown, TError = unknown> = {
   middlewares?: SpooshMiddleware<TData, TError>[];

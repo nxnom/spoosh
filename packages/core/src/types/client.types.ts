@@ -106,8 +106,6 @@ type MethodResponse<
   RequestOptions<TMethodConfig, TUserPath>,
   ExtractQuery<TMethodConfig>,
   ExtractBody<TMethodConfig>,
-  never,
-  never,
   ExtractParamNames<TUserPath>
 >;
 
