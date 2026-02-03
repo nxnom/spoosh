@@ -340,6 +340,26 @@ describe("useRead", () => {
         expect(calls.length).toBeGreaterThan(initialCallCount);
       });
     });
+
+    it("responds to refetchAll events", async () => {
+      const { useRead, eventEmitter, calls } = createTestHooks();
+
+      const { result } = renderHook(() => useRead((api) => api("posts").GET()));
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      const initialCallCount = calls.length;
+
+      act(() => {
+        eventEmitter.emit("refetchAll", undefined);
+      });
+
+      await waitFor(() => {
+        expect(calls.length).toBeGreaterThan(initialCallCount);
+      });
+    });
   });
 
   describe("Lifecycle", () => {

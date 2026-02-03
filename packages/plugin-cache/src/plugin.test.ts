@@ -311,6 +311,27 @@ describe("cachePlugin", () => {
 
       expect(() => exports.clearCache()).not.toThrow();
     });
+
+    it("should emit refetchAll event when clearCache is called", () => {
+      const plugin = cachePlugin();
+      const stateManager = createStateManager();
+      const emitMock = vi.fn();
+      const context = {
+        api: {},
+        stateManager,
+        eventEmitter: { on: vi.fn(), off: vi.fn(), emit: emitMock },
+        pluginExecutor: {
+          executeMiddleware: vi.fn(),
+          createContext: vi.fn(),
+        },
+      } as unknown as InstanceApiContext;
+
+      const exports = plugin.instanceApi!(context) as CacheInstanceApi;
+
+      exports.clearCache();
+
+      expect(emitMock).toHaveBeenCalledWith("refetchAll", undefined);
+    });
   });
 
   describe("edge cases", () => {

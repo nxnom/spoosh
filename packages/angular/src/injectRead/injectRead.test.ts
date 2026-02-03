@@ -356,6 +356,20 @@ describe("injectRead", () => {
 
       await waitFor(() => calls.length > initialCallCount);
     });
+
+    it("responds to refetchAll events", async () => {
+      const { injectRead, eventEmitter, calls } = createTestHooks();
+
+      const result = injectRead((api) => api("posts").GET());
+
+      await waitFor(() => result.loading() === false);
+
+      const initialCallCount = calls.length;
+
+      eventEmitter.emit("refetchAll", undefined);
+
+      await waitFor(() => calls.length > initialCallCount);
+    });
   });
 
   describe("Lifecycle", () => {

@@ -636,6 +636,39 @@ describe("useInfiniteRead", () => {
 
       expect(result.current.data).toBeDefined();
     });
+
+    it("should respond to refetchAll events", async () => {
+      const { useInfiniteRead, eventEmitter, calls } = createTestHooks();
+
+      const { result } = renderHook(() =>
+        useInfiniteRead<PageResponse, { id: number }>(
+          (api: any) => api("/posts").GET(),
+          {
+            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            nextPageRequest: (ctx) => ({
+              query: { cursor: ctx.response?.nextCursor },
+            }),
+            merger: (responses) => responses.flatMap((r) => r.items),
+          }
+        )
+      );
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      const initialCallCount = calls.length;
+
+      await act(async () => {
+        eventEmitter.emit("refetchAll", undefined);
+      });
+
+      await waitFor(() => {
+        expect(calls.length).toBeGreaterThan(initialCallCount);
+      });
+
+      expect(result.current.data).toBeDefined();
+    });
   });
 
   describe("Additional Edge Cases", () => {
