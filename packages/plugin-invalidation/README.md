@@ -118,6 +118,12 @@ await trigger({
   body: { title: "New Post" },
   invalidate: "*", // Triggers ALL queries to refetch
 });
+
+// Combined with clearCache (from @spoosh/plugin-cache)
+await trigger({
+  clearCache: true,     // Clear all cached data
+  invalidate: "*",      // Then refetch all queries
+});
 ```
 
 ## Options
@@ -193,3 +199,21 @@ socket.on("full-sync", () => {
 | Method       | Description                                                            |
 | ------------ | ---------------------------------------------------------------------- |
 | `invalidate` | Manually invalidate cache entries by tags, or use `"*"` to refetch all |
+
+## Combining with Cache Plugin
+
+For scenarios like logout or user switching, combine `invalidate: "*"` with `clearCache` from `@spoosh/plugin-cache`:
+
+```typescript
+const { trigger } = useWrite((api) => api("auth/logout").POST);
+
+// Clear cache + trigger all queries to refetch
+await trigger({
+  clearCache: true,    // From cache plugin: clear all cached data
+  invalidate: "*",     // From invalidation plugin: trigger all queries to refetch
+});
+```
+
+This ensures both:
+1. All cached data is cleared (no stale data from previous session)
+2. All active queries refetch with fresh data

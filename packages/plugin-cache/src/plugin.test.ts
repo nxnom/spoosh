@@ -33,9 +33,9 @@ describe("cachePlugin", () => {
       expect(plugin.name).toBe("spoosh:cache");
     });
 
-    it("should operate on read and infiniteRead operations", () => {
+    it("should operate on read, infiniteRead, and write operations", () => {
       const plugin = cachePlugin();
-      expect(plugin.operations).toEqual(["read", "infiniteRead"]);
+      expect(plugin.operations).toEqual(["read", "infiniteRead", "write"]);
     });
   });
 
@@ -312,7 +312,7 @@ describe("cachePlugin", () => {
       expect(() => exports.clearCache()).not.toThrow();
     });
 
-    it("should emit refetchAll event when clearCache is called", () => {
+    it("should NOT emit refetchAll event when clearCache is called without options", () => {
       const plugin = cachePlugin();
       const stateManager = createStateManager();
       const emitMock = vi.fn();
@@ -330,7 +330,141 @@ describe("cachePlugin", () => {
 
       exports.clearCache();
 
+      expect(emitMock).not.toHaveBeenCalled();
+    });
+
+    it("should emit refetchAll event when clearCache is called with refetchAll: true", () => {
+      const plugin = cachePlugin();
+      const stateManager = createStateManager();
+      const emitMock = vi.fn();
+      const context = {
+        api: {},
+        stateManager,
+        eventEmitter: { on: vi.fn(), off: vi.fn(), emit: emitMock },
+        pluginExecutor: {
+          executeMiddleware: vi.fn(),
+          createContext: vi.fn(),
+        },
+      } as unknown as InstanceApiContext;
+
+      const exports = plugin.instanceApi!(context) as CacheInstanceApi;
+
+      exports.clearCache({ refetchAll: true });
+
       expect(emitMock).toHaveBeenCalledWith("refetchAll", undefined);
+    });
+
+    it("should NOT emit refetchAll event when clearCache is called with refetchAll: false", () => {
+      const plugin = cachePlugin();
+      const stateManager = createStateManager();
+      const emitMock = vi.fn();
+      const context = {
+        api: {},
+        stateManager,
+        eventEmitter: { on: vi.fn(), off: vi.fn(), emit: emitMock },
+        pluginExecutor: {
+          executeMiddleware: vi.fn(),
+          createContext: vi.fn(),
+        },
+      } as unknown as InstanceApiContext;
+
+      const exports = plugin.instanceApi!(context) as CacheInstanceApi;
+
+      exports.clearCache({ refetchAll: false });
+
+      expect(emitMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("afterResponse with clearCache option", () => {
+    it("should clear cache when clearCache option is true and response succeeds", () => {
+      const plugin = cachePlugin();
+      const stateManager = createStateManager();
+
+      stateManager.setCache("entry-1", {
+        state: { data: "data1", error: undefined, timestamp: Date.now() },
+        tags: ["tag1"],
+      });
+      stateManager.setCache("entry-2", {
+        state: { data: "data2", error: undefined, timestamp: Date.now() },
+        tags: ["tag2"],
+      });
+
+      expect(stateManager.getSize()).toBe(2);
+
+      const context = createMockContext({
+        stateManager,
+        pluginOptions: { clearCache: true },
+      });
+
+      plugin.afterResponse!(context, { data: { success: true }, status: 200 });
+
+      expect(stateManager.getSize()).toBe(0);
+    });
+
+    it("should NOT clear cache when clearCache option is false", () => {
+      const plugin = cachePlugin();
+      const stateManager = createStateManager();
+
+      stateManager.setCache("entry-1", {
+        state: { data: "data1", error: undefined, timestamp: Date.now() },
+        tags: ["tag1"],
+      });
+
+      expect(stateManager.getSize()).toBe(1);
+
+      const context = createMockContext({
+        stateManager,
+        pluginOptions: { clearCache: false },
+      });
+
+      plugin.afterResponse!(context, { data: { success: true }, status: 200 });
+
+      expect(stateManager.getSize()).toBe(1);
+    });
+
+    it("should NOT clear cache when clearCache option is not provided", () => {
+      const plugin = cachePlugin();
+      const stateManager = createStateManager();
+
+      stateManager.setCache("entry-1", {
+        state: { data: "data1", error: undefined, timestamp: Date.now() },
+        tags: ["tag1"],
+      });
+
+      expect(stateManager.getSize()).toBe(1);
+
+      const context = createMockContext({
+        stateManager,
+      });
+
+      plugin.afterResponse!(context, { data: { success: true }, status: 200 });
+
+      expect(stateManager.getSize()).toBe(1);
+    });
+
+    it("should NOT clear cache when response has error", () => {
+      const plugin = cachePlugin();
+      const stateManager = createStateManager();
+
+      stateManager.setCache("entry-1", {
+        state: { data: "data1", error: undefined, timestamp: Date.now() },
+        tags: ["tag1"],
+      });
+
+      expect(stateManager.getSize()).toBe(1);
+
+      const context = createMockContext({
+        stateManager,
+        pluginOptions: { clearCache: true },
+      });
+
+      plugin.afterResponse!(context, {
+        error: { message: "Server error" },
+        status: 500,
+      });
+
+      expect(stateManager.getSize()).toBe(1);
     });
   });
 

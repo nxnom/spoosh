@@ -38,6 +38,24 @@ useRead((api) => api("posts").GET(), { staleTime: 10000 });
 | ----------- | -------- | ------------------------------------ |
 | `staleTime` | `number` | Override stale time for this request |
 
+### Write Options
+
+Clear cache after a mutation completes successfully:
+
+```typescript
+const { trigger } = useWrite((api) => api("auth/logout").POST);
+
+// Clear cache after logout
+await trigger({ clearCache: true });
+
+// Clear cache + trigger all queries to refetch
+await trigger({ clearCache: true, invalidate: "*" });
+```
+
+| Option       | Type      | Description                                       |
+| ------------ | --------- | ------------------------------------------------- |
+| `clearCache` | `boolean` | Clear all cached data after mutation succeeds     |
+
 ## Instance API
 
 The plugin exposes a `clearCache` function for manually clearing all cached data:
@@ -47,12 +65,18 @@ import { createReactSpoosh } from "@spoosh/react";
 
 const { useRead, clearCache } = createReactSpoosh(client);
 
-// Clear all cached data (e.g., on logout or user switch)
+// Clear all cached data only (no refetch)
 function handleLogout() {
   clearCache();
 }
+
+// Clear cache and trigger all queries to refetch
+function handleUserSwitch() {
+  clearCache({ refetchAll: true });
+}
 ```
 
-| Method       | Description                                              |
-| ------------ | -------------------------------------------------------- |
-| `clearCache` | Clears all cached data. Useful for logout/user switching |
+| Method                             | Description                                     |
+| ---------------------------------- | ----------------------------------------------- |
+| `clearCache()`                     | Clears all cached data without triggering refetch |
+| `clearCache({ refetchAll: true })` | Clears cache and triggers all queries to refetch  |

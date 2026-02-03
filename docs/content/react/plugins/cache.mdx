@@ -72,9 +72,31 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([
 
 When a mutation succeeds, related cached queries are automatically refreshed.
 
-## Clearing Cache
+## Clearing Cache on Mutations
 
-The plugin exposes a `clearCache` function for manually clearing all cached data. This is useful for scenarios like user logout or switching accounts:
+You can clear all cached data after a mutation completes successfully using the `clearCache` write option:
+
+```typescript
+const { trigger } = useWrite((api) => api("auth/logout").POST);
+
+// Clear cache after logout
+await trigger({ clearCache: true });
+
+// Clear cache + trigger all queries to refetch (combine with invalidation plugin)
+await trigger({ clearCache: true, invalidate: "*" });
+```
+
+This is useful for scenarios like user logout or switching organizations where you want to ensure no stale data persists.
+
+### Write Options
+
+| Option       | Type      | Description                                   |
+| ------------ | --------- | --------------------------------------------- |
+| `clearCache` | `boolean` | Clear all cached data after mutation succeeds |
+
+## Manual Cache Clearing
+
+The plugin also exposes a `clearCache` function for manually clearing all cached data outside of mutations:
 
 ```typescript
 import { createReactSpoosh } from "@spoosh/react";
@@ -83,16 +105,37 @@ const { useRead, clearCache } = createReactSpoosh(client);
 
 function LogoutButton() {
   const handleLogout = () => {
+    // Clear cache only (no automatic refetch)
     clearCache();
     // ... rest of logout logic
   };
 
   return <button onClick={handleLogout}>Logout</button>;
 }
+
+function SwitchAccountButton() {
+  const handleSwitch = () => {
+    // Clear cache and trigger all queries to refetch
+    clearCache({ refetchAll: true });
+  };
+
+  return <button onClick={handleSwitch}>Switch Account</button>;
+}
 ```
 
 ### Instance API
 
-| Method       | Description                                              |
-| ------------ | -------------------------------------------------------- |
-| `clearCache` | Clears all cached data. Useful for logout/user switching |
+| Method                             | Description                                       |
+| ---------------------------------- | ------------------------------------------------- |
+| `clearCache()`                     | Clears all cached data without triggering refetch |
+| `clearCache({ refetchAll: true })` | Clears cache and triggers all queries to refetch  |
+
+### Behavior Matrix
+
+| Call                                             | Cache Cleared | Refetch All |
+| ------------------------------------------------ | ------------- | ----------- |
+| `clearCache()`                                   | ✅            | ❌          |
+| `clearCache({ refetchAll: true })`               | ✅            | ✅          |
+| `trigger({ clearCache: true })`                  | ✅            | ❌          |
+| `trigger({ invalidate: "*" })`                   | ❌            | ✅          |
+| `trigger({ clearCache: true, invalidate: "*" })` | ✅            | ✅          |

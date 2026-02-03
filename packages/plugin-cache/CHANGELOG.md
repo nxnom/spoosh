@@ -1,8 +1,13 @@
 # @spoosh/plugin-cache
 
-## 0.2.3
+## 0.3.0
 
 - Emit `refetchAll` event when cache is cleared
+- Update `clearCache` method to accept { refetchAll: boolean } option
+- Added `{ clearCache: boolean }` write option for write operations to clear cache after mutation
+  ```
+  logoutTrigger({ clearCache: true })
+  ```
 
 ## 0.2.2
 

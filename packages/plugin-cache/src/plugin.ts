@@ -8,6 +8,7 @@ import type {
   CacheReadResult,
   CacheWriteResult,
   CacheInstanceApi,
+  ClearCacheOptions,
 } from "./types";
 
 /**
@@ -48,7 +49,7 @@ export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
 
   return {
     name: "spoosh:cache",
-    operations: ["read", "infiniteRead"],
+    operations: ["read", "infiniteRead", "write"],
 
     middleware: async (context, next) => {
       if (!context.forceRefetch) {
@@ -70,12 +71,27 @@ export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
       return await next();
     },
 
+    afterResponse(context, response) {
+      if (!response.error) {
+        const pluginOptions = context.pluginOptions as
+          | CacheWriteOptions
+          | undefined;
+
+        if (pluginOptions?.clearCache) {
+          context.stateManager.clear();
+        }
+      }
+    },
+
     instanceApi(context: InstanceApiContext) {
       const { stateManager, eventEmitter } = context;
 
-      const clearCache = (): void => {
+      const clearCache = (options?: ClearCacheOptions): void => {
         stateManager.clear();
-        eventEmitter.emit("refetchAll", undefined);
+
+        if (options?.refetchAll) {
+          eventEmitter.emit("refetchAll", undefined);
+        }
       };
 
       return { clearCache };
