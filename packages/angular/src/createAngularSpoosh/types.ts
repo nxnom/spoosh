@@ -1,9 +1,9 @@
 import type { PluginArray, MergePluginInstanceApi } from "@spoosh/core";
+import type { SpooshInstanceShape } from "../types/shared";
 import type {
-  SpooshInstanceShape,
   ExtractMethodData,
   ExtractMethodError,
-} from "../types";
+} from "../types/extraction";
 
 export type SpooshAngularFunctions<
   TDefaultError,

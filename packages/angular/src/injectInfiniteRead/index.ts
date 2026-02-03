@@ -26,10 +26,10 @@ import {
 import type {
   BaseInfiniteReadOptions,
   BaseInfiniteReadResult,
-  ReadApiClient,
-  SpooshInstanceShape,
+  InfiniteReadApiClient as ReadApiClient,
   PageContext,
-} from "../types";
+} from "./types";
+import type { SpooshInstanceShape } from "../types/shared";
 
 export type AnyInfiniteRequestOptions = InfiniteRequestOptions;
 

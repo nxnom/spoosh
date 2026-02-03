@@ -26,13 +26,15 @@ import type {
   BaseReadOptions,
   BaseReadResult,
   ReadApiClient,
+  ResponseInputFields,
+  TriggerOptions,
+} from "./types";
+import type {
   ExtractResponseQuery,
   ExtractResponseBody,
   ExtractResponseParamNames,
-  ResponseInputFields,
-  SpooshInstanceShape,
-  TriggerOptions,
-} from "../types";
+} from "../types/extraction";
+import type { SpooshInstanceShape } from "../types/shared";
 
 export function createInjectRead<
   TSchema,

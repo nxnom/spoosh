@@ -1,2 +1,35 @@
 export { createAngularSpoosh } from "./createAngularSpoosh";
-export * from "./types";
+
+export type {
+  SpooshInstanceShape,
+  EnabledOption,
+  AngularOptionsMap,
+} from "./types/shared";
+export type {
+  ExtractMethodData,
+  ExtractMethodError,
+  ExtractMethodOptions,
+  ExtractMethodQuery,
+  ExtractMethodBody,
+  ExtractResponseQuery,
+  ExtractResponseBody,
+  ExtractResponseParamNames,
+} from "./types/extraction";
+export type {
+  BaseReadOptions,
+  BaseReadResult,
+  ReadApiClient,
+  TriggerOptions,
+  ResponseInputFields,
+} from "./injectRead/types";
+export type {
+  BaseWriteResult,
+  WriteApiClient,
+  WriteResponseInputFields,
+} from "./injectWrite/types";
+export type {
+  BaseInfiniteReadOptions,
+  BaseInfiniteReadResult,
+  PageContext,
+  InfiniteReadApiClient,
+} from "./injectInfiniteRead/types";

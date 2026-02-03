@@ -16,14 +16,16 @@ import {
 import type {
   BaseWriteResult,
   WriteApiClient,
+  WriteResponseInputFields,
+} from "./types";
+import type {
   ExtractMethodQuery,
   ExtractMethodBody,
   ExtractResponseQuery,
   ExtractResponseBody,
   ExtractResponseParamNames,
-  WriteResponseInputFields,
-  SpooshInstanceShape,
-} from "../types";
+} from "../types/extraction";
+import type { SpooshInstanceShape } from "../types/shared";
 
 export function createInjectWrite<
   TSchema,
