@@ -131,7 +131,13 @@ await trigger({
   invalidate: "none", // No invalidation
 });
 
-// Tags only (array without mode keyword)
+// Single tag (string)
+await trigger({
+  body: { title: "New Post" },
+  invalidate: "posts", // Invalidate only "posts" tag
+});
+
+// Multiple tags (array without mode keyword)
 await trigger({
   body: { title: "New Post" },
   invalidate: ["posts", "users", "custom-tag"],
@@ -150,6 +156,12 @@ await trigger({
   invalidate: ["posts", "self", "users"],
   // → 'self' mode + explicit tags
 });
+
+// Wildcard - global refetch
+await trigger({
+  body: { title: "New Post" },
+  invalidate: "*", // Triggers ALL queries to refetch
+});
 ```
 
 ## Options
@@ -162,9 +174,9 @@ await trigger({
 
 ### Per-Request Options
 
-| Option       | Type                                    | Description                                                                             |
-| ------------ | --------------------------------------- | --------------------------------------------------------------------------------------- |
-| `invalidate` | `"all" \| "self" \| "none" \| string[]` | Mode only (string), tags only (array), or mode + tags (array with 'all'/'self' keyword) |
+| Option       | Type                                                     | Description                                                                                                                      |
+| ------------ | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `invalidate` | `"all" \| "self" \| "none" \| "*" \| string \| string[]` | Mode (`"all"`, `"self"`, `"none"`), wildcard (`"*"` for global refetch), single tag, or array of tags with optional mode keyword |
 
 ## Invalidation Modes
 
@@ -173,6 +185,7 @@ await trigger({
 | `"all"`  | Invalidate all tags from path hierarchy (default) |
 | `"self"` | Only invalidate the exact endpoint tag            |
 | `"none"` | Disable auto-invalidation (manual only)           |
+| `"*"`    | Global refetch - triggers all queries to refetch  |
 
 ## Examples
 
@@ -271,33 +284,46 @@ await trigger({
 The plugin exposes `invalidate` for manually triggering cache invalidation outside of mutations. This is useful for external events like WebSocket messages or other state changes.
 
 ```typescript
-import { createReactSpoosh } from "@spoosh/react";
+import { createAngularSpoosh } from "@spoosh/angular";
 
-const { useRead, invalidate } = createReactSpoosh(client);
+const { injectRead, invalidate } = createAngularSpoosh(client);
 
 // Invalidate with string array
 invalidate(["users", "posts"]);
 
 // Invalidate with single string
 invalidate("posts");
+
+// Global refetch - triggers ALL queries to refetch
+invalidate("*");
 ```
 
 ### WebSocket Example
 
 ```typescript
-import { useEffect } from "react";
+import { Component, OnDestroy, OnInit, inject } from "@angular/core";
 import { invalidate } from "./spoosh";
 
-function Dashboard() {
-  useEffect(() => {
+@Component({
+  selector: "app-dashboard",
+  template: `<div>...</div>`,
+})
+export class DashboardComponent implements OnInit, OnDestroy {
+  ngOnInit() {
     socket.on("data-changed", (tags: string[]) => {
       invalidate(tags);
     });
 
-    return () => socket.off("data-changed");
-  }, []);
+    // Trigger global refetch on full sync
+    socket.on("full-sync", () => {
+      invalidate("*");
+    });
+  }
 
-  return <div>...</div>;
+  ngOnDestroy() {
+    socket.off("data-changed");
+    socket.off("full-sync");
+  }
 }
 ```
 

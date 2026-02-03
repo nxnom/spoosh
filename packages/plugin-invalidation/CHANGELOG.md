@@ -1,5 +1,9 @@
 # @spoosh/plugin-invalidation
 
+## 0.5.3
+
+- Added wildcard `*` support in invalidation tags to match multiple paths
+
 ## 0.5.2
 
 - Remove `stripTagPrefix` logics and user must use `StripPrefix` utility type to remove prefix from api schema paths

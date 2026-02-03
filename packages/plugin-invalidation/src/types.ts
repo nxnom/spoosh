@@ -17,6 +17,8 @@ type ReadPaths<TSchema> = {
  */
 export type InvalidateOption<TSchema = unknown> =
   | InvalidationMode
+  | "*"
+  | ReadPaths<TSchema>
   | (ReadPaths<TSchema> | "all" | "self" | (string & {}))[];
 
 export interface InvalidationPluginConfig {
@@ -41,13 +43,12 @@ export type InvalidationReadResult = object;
 export type InvalidationWriteResult = object;
 
 /**
- * Manual invalidation - tags only
+ * Manual invalidation - tags only, or "*" for global refetch
  */
 export type InvalidateFn<TSchema> = {
-  (tag: ReadPaths<TSchema>): void;
-  (tags: ReadPaths<TSchema>[]): void;
-  (tag: string): void;
-  (tags: string[]): void;
+  (tag: "*"): void;
+  (tag: ReadPaths<TSchema> | (string & {})): void;
+  (tags: (ReadPaths<TSchema> | (string & {}))[]): void;
 };
 
 export interface InvalidationInstanceApi {

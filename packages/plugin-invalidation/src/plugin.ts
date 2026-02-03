@@ -51,7 +51,15 @@ function resolveInvalidateTags(
   }
 
   if (typeof invalidateOption === "string") {
-    return resolveModeTags(context, invalidateOption);
+    if (
+      invalidateOption === "all" ||
+      invalidateOption === "self" ||
+      invalidateOption === "none"
+    ) {
+      return resolveModeTags(context, invalidateOption);
+    }
+
+    return [invalidateOption];
   }
 
   if (Array.isArray(invalidateOption)) {
@@ -99,11 +107,19 @@ function resolveInvalidateTags(
  * });
  *
  * trigger({
- *   invalidate: ["posts", "users"], // Tags only
+ *   invalidate: "posts", // Single tag
+ * });
+ *
+ * trigger({
+ *   invalidate: ["posts", "users"], // Multiple tags
  * });
  *
  * trigger({
  *   invalidate: ["all", "posts", "custom-tag"], // Mode + tags
+ * });
+ *
+ * trigger({
+ *   invalidate: "*", // Global refetch - triggers all queries to refetch
  * });
  * ```
  */
@@ -135,6 +151,11 @@ export function invalidationPlugin(
       if (!response.error) {
         const tags = resolveInvalidateTags(context, defaultMode);
 
+        if (tags.includes("*")) {
+          context.eventEmitter.emit("refetchAll", undefined);
+          return;
+        }
+
         if (tags.length > 0) {
           context.stateManager.markStale(tags);
           context.eventEmitter.emit("invalidate", tags);
@@ -147,6 +168,11 @@ export function invalidationPlugin(
 
       const invalidate = (input: string | string[]): void => {
         const tags = Array.isArray(input) ? input : [input];
+
+        if (tags.includes("*")) {
+          eventEmitter.emit("refetchAll", undefined);
+          return;
+        }
 
         if (tags.length > 0) {
           stateManager.markStale(tags);

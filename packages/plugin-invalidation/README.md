@@ -2,7 +2,7 @@
 
 Cache invalidation plugin for Spoosh - auto-invalidates related queries after mutations.
 
-**[Documentation](https://spoosh.dev/docs/plugins/invalidation)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
+**[Documentation](https://spoosh.dev/react/docs/plugins/invalidation)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
 
 ## Installation
 
@@ -81,7 +81,13 @@ await trigger({
   invalidate: "none", // No invalidation
 });
 
-// Tags only (array without mode keyword)
+// Single tag (string)
+await trigger({
+  body: { title: "New Post" },
+  invalidate: "posts", // Invalidate only "posts" tag
+});
+
+// Multiple tags (array without mode keyword)
 await trigger({
   body: { title: "New Post" },
   invalidate: ["posts", "users", "custom-tag"],
@@ -106,6 +112,12 @@ await trigger({
   invalidate: ["dashboard", "stats", "all"],
   // → 'all' mode + explicit tags (mode can be anywhere)
 });
+
+// Wildcard - global refetch
+await trigger({
+  body: { title: "New Post" },
+  invalidate: "*", // Triggers ALL queries to refetch
+});
 ```
 
 ## Options
@@ -118,9 +130,9 @@ await trigger({
 
 ### Per-Request Options
 
-| Option       | Type                                    | Description                                                                                             |
-| ------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `invalidate` | `"all" \| "self" \| "none" \| string[]` | Mode only (string), tags only (array), or mode + tags (array with 'all'/'self' keyword at any position) |
+| Option       | Type                                                     | Description                                                                                                                      |
+| ------------ | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `invalidate` | `"all" \| "self" \| "none" \| "*" \| string \| string[]` | Mode (`"all"`, `"self"`, `"none"`), wildcard (`"*"` for global refetch), single tag, or array of tags with optional mode keyword |
 
 ### Invalidation Modes
 
@@ -129,6 +141,7 @@ await trigger({
 | `"all"`  | Invalidate all tags from path hierarchy | `users/123/posts` → `users`, `users/123`, `users/123/posts` |
 | `"self"` | Only invalidate the exact endpoint tag  | `users/123/posts` → `users/123/posts`                       |
 | `"none"` | Disable auto-invalidation (manual only) | No automatic invalidation                                   |
+| `"*"`    | Global refetch - triggers all queries   | All active queries refetch                                  |
 
 ## Instance API
 
@@ -145,12 +158,20 @@ invalidate(["users", "posts"]);
 // Invalidate with single string
 invalidate("users");
 
+// Global refetch - triggers ALL queries to refetch
+invalidate("*");
+
 // Useful for external events like WebSocket messages
 socket.on("data-changed", (tags) => {
   invalidate(tags);
 });
+
+// WebSocket: trigger global refetch
+socket.on("full-sync", () => {
+  invalidate("*");
+});
 ```
 
-| Method       | Description                               |
-| ------------ | ----------------------------------------- |
-| `invalidate` | Manually invalidate cache entries by tags |
+| Method       | Description                                                            |
+| ------------ | ---------------------------------------------------------------------- |
+| `invalidate` | Manually invalidate cache entries by tags, or use `"*"` to refetch all |
