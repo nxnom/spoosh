@@ -243,8 +243,14 @@ export function createUseInfiniteRead<
         }
       );
 
+      const unsubRefetchAll = eventEmitter.on("refetchAll", () => {
+        setIsPending(true);
+        controller.refetch().finally(() => setIsPending(false));
+      });
+
       return () => {
         unsubInvalidate();
+        unsubRefetchAll();
       };
     }, [tagsKey]);
 

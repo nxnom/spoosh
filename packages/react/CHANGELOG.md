@@ -1,5 +1,9 @@
 # @spoosh/react
 
+## 0.7.1
+
+- Handle `refetchAll` event in read hooks to trigger refetching when cache is cleared
+
 ## 0.7.0
 
 - Remove `useLazyRead` hook and now `useRead` trigger support passing custom options

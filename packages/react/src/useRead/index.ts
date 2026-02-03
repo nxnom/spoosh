@@ -296,9 +296,14 @@ export function createUseRead<
         }
       );
 
+      const unsubRefetchAll = eventEmitter.on("refetchAll", () => {
+        executeWithTracking(true);
+      });
+
       return () => {
         unsubRefetch();
         unsubInvalidate();
+        unsubRefetchAll();
       };
     }, [queryKey, enabled, tagsKey]);
 
