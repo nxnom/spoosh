@@ -187,6 +187,24 @@ await trigger({
 | `"none"` | Disable auto-invalidation (manual only)           |
 | `"*"`    | Global refetch - triggers all queries to refetch  |
 
+### Understanding `"all"` vs `"*"`
+
+These two options serve different purposes:
+
+- **`"all"`** - Invalidates all tags **from the current endpoint's path hierarchy**. If you're mutating `users/123/posts`, it invalidates `["users", "users/123", "users/123/posts"]`. It's scoped to the mutation's path.
+
+- **`"*"`** - Triggers a **global refetch of every active query** in your app, regardless of tags. Use this sparingly for scenarios like "user logged out" or "full data sync from server".
+
+```typescript
+// "all" - scoped to this mutation's path hierarchy
+await trigger({ invalidate: "all" });
+// If path is users/123/posts → invalidates: users, users/123, users/123/posts
+
+// "*" - refetches ALL queries in the entire app
+await trigger({ invalidate: "*" });
+// Every active useRead will refetch
+```
+
 ## Examples
 
 ### Nested Path Invalidation
