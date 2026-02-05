@@ -31,7 +31,7 @@ const spoosh = new Spoosh<API, Error>("/api").use([
 export const { useRead, useWrite } = createReactSpoosh(spoosh);
 ```
 
-Using [Hono](/docs/react/integrations/hono) or [Elysia](/docs/react/integrations/elysia)? You can infer the schema directly from your server routes for end-to-end type safety with zero manual definitions.
+Using [Hono](/docs/react/type-adapters/hono) or [Elysia](/docs/react/type-adapters/elysia)? You can infer the schema directly from your server routes for end-to-end type safety with zero manual definitions.
 
 ## What Makes Spoosh Different
 

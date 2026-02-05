@@ -31,7 +31,7 @@ const spoosh = new Spoosh<API, Error>("/api").use([
 export const { injectRead, injectWrite } = createAngularSpoosh(spoosh);
 ```
 
-Using [Hono](/docs/angular/integrations/hono) or [Elysia](/docs/angular/integrations/elysia)? You can infer the schema directly from your server routes for end-to-end type safety with zero manual definitions.
+Using [Hono](/docs/angular/type-adapters/hono) or [Elysia](/docs/angular/type-adapters/elysia)? You can infer the schema directly from your server routes for end-to-end type safety with zero manual definitions.
 
 ## What Makes Spoosh Different
 

@@ -35,11 +35,11 @@ const reactContent = `# Spoosh React
 - [useWrite](${REACT_RAW_BASE}/hooks/use-write.mdx): Trigger mutations
 - [useInfiniteRead](${REACT_RAW_BASE}/hooks/use-infinite-read.mdx): Paginated data fetching
 
-## Integrations
+## Type Adapters
 
-- [Hono](${REACT_RAW_BASE}/integrations/hono.mdx): Hono server type adapter
-- [Elysia](${REACT_RAW_BASE}/integrations/elysia.mdx): Elysia server type adapter
-- [OpenAPI](${REACT_RAW_BASE}/integrations/openapi.mdx): Bidirectional OpenAPI conversion
+- [Hono](${REACT_RAW_BASE}/type-adapters/hono.mdx): Hono server type adapter
+- [Elysia](${REACT_RAW_BASE}/type-adapters/elysia.mdx): Elysia server type adapter
+- [OpenAPI](${REACT_RAW_BASE}/type-adapters/openapi.mdx): Bidirectional OpenAPI conversion
 
 ## Plugins
 
@@ -107,11 +107,11 @@ const angularContent = `# Spoosh Angular
 - [injectWrite](${ANGULAR_RAW_BASE}/injects/inject-write.mdx): Trigger mutations
 - [injectInfiniteRead](${ANGULAR_RAW_BASE}/injects/inject-infinite-read.mdx): Paginated data fetching
 
-## Integrations
+## Type Adapters
 
-- [Hono](${ANGULAR_RAW_BASE}/integrations/hono.mdx): Hono server type adapter
-- [Elysia](${ANGULAR_RAW_BASE}/integrations/elysia.mdx): Elysia server type adapter
-- [OpenAPI](${ANGULAR_RAW_BASE}/integrations/openapi.mdx): Bidirectional OpenAPI conversion
+- [Hono](${ANGULAR_RAW_BASE}/type-adapters/hono.mdx): Hono server type adapter
+- [Elysia](${ANGULAR_RAW_BASE}/type-adapters/elysia.mdx): Elysia server type adapter
+- [OpenAPI](${ANGULAR_RAW_BASE}/type-adapters/openapi.mdx): Bidirectional OpenAPI conversion
 
 ## Plugins
 

@@ -6,6 +6,6 @@
     "core",
     "hooks",
     "plugins",
-    "integrations"
+    "type-adapters"
   ]
 }

@@ -6,6 +6,6 @@
     "core",
     "injects",
     "plugins",
-    "integrations"
+    "type-adapters"
   ]
 }
