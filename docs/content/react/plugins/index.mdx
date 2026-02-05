@@ -47,6 +47,7 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
 | [Optimistic](/docs/react/plugins/optimistic)     | `@spoosh/plugin-optimistic`   | Instant UI updates with automatic rollback |
 | [Initial Data](/docs/react/plugins/initial-data) | `@spoosh/plugin-initial-data` | Provide initial data for queries           |
 | [Prefetch](/docs/react/plugins/prefetch)         | `@spoosh/plugin-prefetch`     | Preload data before it's needed            |
+| [GC](/docs/react/plugins/gc)                     | `@spoosh/plugin-gc`           | Garbage collection for cache management    |
 
 ### Request Control
 
@@ -66,12 +67,17 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
 | [QS](/docs/react/plugins/qs)               | `@spoosh/plugin-qs`        | Nested object serialization for query params |
 | [Transform](/docs/react/plugins/transform) | `@spoosh/plugin-transform` | Transform response data                      |
 
-### Framework Integration
+### Framework
 
 | Plugin                                | Package                 | Description                    |
 | ------------------------------------- | ----------------------- | ------------------------------ |
 | [Next.js](/docs/react/plugins/nextjs) | `@spoosh/plugin-nextjs` | Server-side cache revalidation |
-| [Debug](/docs/react/plugins/debug)    | `@spoosh/plugin-debug`  | Development logging            |
+
+### Development
+
+| Plugin                             | Package                | Description         |
+| ---------------------------------- | ---------------------- | ------------------- |
+| [Debug](/docs/react/plugins/debug) | `@spoosh/plugin-debug` | Development logging |
 
 ## Recommended Setup
 

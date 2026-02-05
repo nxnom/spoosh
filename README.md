@@ -12,7 +12,7 @@
 
 Spoosh is a lightweight, type-safe API toolkit with a unique plugin architecture. Build exactly what you need by composing plugins together.
 
-**[Documentation](https://spoosh.dev)** · [Getting Started](https://spoosh.dev/docs/getting-started) · [Plugins](https://spoosh.dev/docs/plugins)
+**[Documentation](https://spoosh.dev)** · [Getting Started](https://spoosh.dev/docs/react/getting-started) · [Plugins](https://spoosh.dev/docs/react/plugins)
 
 ## Features
 
