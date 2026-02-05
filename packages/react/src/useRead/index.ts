@@ -322,7 +322,7 @@ export function createUseRead<
       async (
         triggerOptions?: { force?: boolean } & Record<string, unknown>
       ) => {
-        const { force = false, ...overrideOptions } = triggerOptions ?? {};
+        const { force = true, ...overrideOptions } = triggerOptions ?? {};
         const hasOverrides = Object.keys(overrideOptions).length > 0;
 
         if (!hasOverrides) {
