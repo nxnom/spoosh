@@ -34,11 +34,9 @@ const { data, progress } = useRead((api) => api("files/:id").GET(), {
 ## File Upload
 
 ```typescript
-const { trigger, progress } = useWrite((api) => api("files").POST, {
-  progress: true,
-});
+const { trigger, progress } = useWrite((api) => api("files").POST);
 
-trigger({ body: form({ file: selectedFile }) });
+trigger({ body: form({ file: selectedFile }), progress: true });
 
 // progress?.loaded tracks bytes uploaded
 ```

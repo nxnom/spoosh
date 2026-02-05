@@ -1,5 +1,5 @@
 ---
-title: useWrite
+title: injectWrite
 description: Trigger mutations with loading and error states
 ---
 
@@ -8,36 +8,35 @@ Trigger mutations with loading and error states. The callback **selects** the AP
 ## Basic Usage
 
 ```typescript
-function CreateUser() {
-  const { trigger, loading, error } = useWrite(
-    (api) => api("users").POST
-  );
+@Component({
+  selector: "app-create-user",
+  template: `
+    <form (ngSubmit)="handleSubmit()">
+      <button [disabled]="createUser.loading()">
+        {{ createUser.loading() ? "Creating..." : "Create User" }}
+      </button>
+    </form>
+  `,
+})
+export class CreateUserComponent {
+  createUser = injectWrite((api) => api("users").POST);
 
-  const handleSubmit = async (formData: CreateUserBody) => {
-    const result = await trigger({ body: formData });
+  async handleSubmit() {
+    const result = await this.createUser.trigger({ body: formData });
 
     if (result.data) {
       console.log("Created:", result.data);
     }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      {/* form fields */}
-      <button disabled={loading}>
-        {loading ? "Creating..." : "Create User"}
-      </button>
-    </form>
-  );
+  }
 }
 ```
 
 ## With Invalidation
 
 ```typescript
-const { trigger } = useWrite((api) => api("posts").POST);
+createPost = injectWrite((api) => api("posts").POST);
 
-await trigger({
+await createPost.trigger({
   body: { title: "New Post", content: "..." },
   invalidate: ["posts"],
 });
@@ -45,15 +44,15 @@ await trigger({
 
 ## Returns
 
-| Property  | Type                   | Description                        |
-| --------- | ---------------------- | ---------------------------------- |
-| `trigger` | `(options) => Promise` | Execute the mutation               |
-| `data`    | `TData \| undefined`   | Response data                      |
-| `error`   | `TError \| undefined`  | Error if request failed            |
-| `loading` | `boolean`              | True while mutation is in progress |
-| `abort`   | `() => void`           | Abort current request              |
-| `input`   | `object \| undefined`  | The last trigger input             |
-| `meta`    | `object`               | Plugin-provided metadata           |
+| Property  | Type                          | Description                        |
+| --------- | ----------------------------- | ---------------------------------- |
+| `trigger` | `(options) => Promise`        | Execute the mutation               |
+| `data`    | `Signal<TData \| undefined>`  | Response data                      |
+| `error`   | `Signal<TError \| undefined>` | Error if request failed            |
+| `loading` | `Signal<boolean>`             | True while mutation is in progress |
+| `abort`   | `() => void`                  | Abort current request              |
+| `input`   | `TriggerOptions \| undefined` | The last trigger input             |
+| `meta`    | `Signal<PluginResults>`       | Plugin-provided metadata           |
 
 ## Trigger Options
 

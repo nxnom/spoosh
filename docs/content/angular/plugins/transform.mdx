@@ -27,7 +27,7 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([transformPlugin()]);
 Response transforms produce a separate `transformedData` field in `meta` while preserving the original `data`:
 
 ```typescript
-const posts = injectRead((api) => api("posts").GET(), {
+posts = injectRead((api) => api("posts").GET(), {
   transform: (posts) => ({
     count: posts.length,
     hasMore: posts.length >= 10,
@@ -46,7 +46,7 @@ The `meta().transformedData` type is automatically inferred from your transforme
 Just like `injectRead`, response transforms for `injectWrite` produce a separate `transformedData` field in `meta`:
 
 ```typescript
-const createPost = injectWrite((api) => api("posts").POST);
+createPost = injectWrite((api) => api("posts").POST);
 
 const response = await createPost.trigger({
   body: { title: "New Post" },
@@ -66,7 +66,7 @@ const response = await createPost.trigger({
 **TypeScript Limitation**: Due to TypeScript's limitations with dynamic trigger options, `meta().transformedData` is typed as `never` in the result. You'll need to use type assertion to access it:
 
 ```typescript
-const createPost = injectWrite((api) => api("posts").POST);
+createPost = injectWrite((api) => api("posts").POST);
 
 // Type assertion required
 const typed = createPost.meta().transformedData as
@@ -77,7 +77,7 @@ const typed = createPost.meta().transformedData as
 Alternatively, extract it from the trigger response:
 
 ```typescript
-const createPost = injectWrite((api) => api("posts").POST);
+createPost = injectWrite((api) => api("posts").POST);
 
 const response = await createPost.trigger({
   body: { title: "New Post" },
@@ -98,7 +98,7 @@ const result = response.data; // Post
 Transform and analyze response data:
 
 ```typescript
-const analytics = injectRead((api) => api("analytics").GET(), {
+analytics = injectRead((api) => api("analytics").GET(), {
   transform: (analytics) => ({
     totalViews: analytics.reduce((sum, a) => sum + a.views, 0),
     averageEngagement:
@@ -116,7 +116,7 @@ const analytics = injectRead((api) => api("analytics").GET(), {
 All transform functions support async operations:
 
 ```typescript
-const posts = injectRead((api) => api("posts").GET(), {
+posts = injectRead((api) => api("posts").GET(), {
   transform: async (posts) => {
     const enriched = await enrichPostsWithMetadata(posts);
     return {
@@ -132,7 +132,7 @@ const posts = injectRead((api) => api("posts").GET(), {
 Return `undefined` to remove the data entirely:
 
 ```typescript
-const posts = injectRead((api) => api("posts").GET(), {
+posts = injectRead((api) => api("posts").GET(), {
   transform: (posts) => {
     if (posts.length === 0) return undefined;
     return {
@@ -149,7 +149,7 @@ The transform plugin provides full type inference:
 
 ```typescript
 // Response type is inferred from endpoint (injectRead)
-const users = injectRead((api) => api("users").GET(), {
+users = injectRead((api) => api("users").GET(), {
   transform: (users) => {
     // 'users' is typed as User[]
     return {
@@ -168,7 +168,7 @@ const users = injectRead((api) => api("users").GET(), {
 For `injectWrite`, there is a TypeScript limitation where `meta().transformedData` is inferred as `never` in the result due to dynamic trigger options:
 
 ```typescript
-const createPost = injectWrite((api) => api("posts").POST);
+createPost = injectWrite((api) => api("posts").POST);
 
 // meta().transformedData is typed as 'never' here because TypeScript cannot infer
 // the type from dynamic trigger options passed later
@@ -194,7 +194,7 @@ type TransformedPost = {
   createdAt: Date;
 };
 
-const createPost = injectWrite((api) => api("posts").POST);
+createPost = injectWrite((api) => api("posts").POST);
 
 // Use type assertion
 const transformed = createPost.meta().transformedData as
@@ -207,7 +207,7 @@ const transformed = createPost.meta().transformedData as
 ### Compute Derived Data
 
 ```typescript
-const orders = injectRead((api) => api("orders").GET(), {
+orders = injectRead((api) => api("orders").GET(), {
   transform: (orders) => ({
     total: orders.reduce((sum, o) => sum + o.amount, 0),
     averageOrder: orders.reduce((sum, o) => sum + o.amount, 0) / orders.length,
@@ -219,7 +219,7 @@ const orders = injectRead((api) => api("orders").GET(), {
 ### Extract Specific Fields
 
 ```typescript
-const posts = injectRead((api) => api("posts").GET(), {
+posts = injectRead((api) => api("posts").GET(), {
   transform: (posts) => ({
     ids: posts.map((p) => p.id),
     titles: posts.map((p) => p.title),
@@ -231,7 +231,7 @@ const posts = injectRead((api) => api("posts").GET(), {
 ### Enrich Response Data
 
 ```typescript
-const users = injectRead((api) => api("users").GET(), {
+users = injectRead((api) => api("users").GET(), {
   transform: (users) => ({
     totalUsers: users.length,
     activeUsers: users.filter((u) => u.active),

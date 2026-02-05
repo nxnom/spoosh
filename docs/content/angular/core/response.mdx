@@ -124,17 +124,14 @@ import { injectWrite } from "./api/client";
   `,
 })
 export class CreatePostComponent {
-  private createPost = injectWrite((api, data) =>
-    api("posts").POST({ body: data })
-  );
+  private createPost = injectWrite((api) => api("posts").POST);
 
   loading = computed(() => this.createPost.loading());
   abort = () => this.createPost.abort();
 
   async handleSubmit() {
     await this.createPost.trigger({
-      title: "New Post",
-      content: "...",
+      body: { title: "New Post", content: "..." },
     });
   }
 }
@@ -175,11 +172,10 @@ export class PostFeedComponent {
 The response includes the input that was sent with the request:
 
 ```typescript
-const createUser = injectWrite((api) =>
-  api("users").POST({ body: { name: "John", email: "john@example.com" } })
-);
+createUser = injectWrite((api) => api("users").POST);
 
-// response.input?.body contains { name: "John", email: "john@example.com" }
+// After: await createUser.trigger({ body: { name: "John", email: "john@example.com" } })
+// createUser.input?.body contains { name: "John", email: "john@example.com" }
 ```
 
 This is useful for optimistic updates and debugging.

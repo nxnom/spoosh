@@ -48,17 +48,17 @@ The unified `tags` option supports modes and custom tags:
 
 ```typescript
 // Mode only - generates auto tags based on mode
-const users = injectRead((api) => api("users").GET(), {
+users = injectRead((api) => api("users").GET(), {
   tags: "all", // Full hierarchy: ['users']
 });
 
 // Custom tags only - replaces auto-generated tags
-const users = injectRead((api) => api("users").GET(), {
+users = injectRead((api) => api("users").GET(), {
   tags: ["custom-users", "dashboard"],
 });
 
 // Mode + custom tags - combines both
-const users = injectRead((api) => api("users").GET(), {
+users = injectRead((api) => api("users").GET(), {
   tags: ["all", "dashboard-data"], // ['users', 'dashboard-data']
 });
 ```
@@ -76,9 +76,9 @@ The `invalidationPlugin` automatically refetches stale queries after mutations.
 | `"none"` | No automatic invalidation                           |
 
 ```typescript
-const posts = injectWrite((api) => api("posts").POST);
+createPost = injectWrite((api) => api("posts").POST);
 
-await posts.trigger({
+await createPost.trigger({
   body: { title: "New Post" },
   invalidate: "all",
 });
@@ -89,9 +89,9 @@ await posts.trigger({
 Target specific tags to invalidate:
 
 ```typescript
-const posts = injectWrite((api) => api("posts").POST);
+createPost = injectWrite((api) => api("posts").POST);
 
-await posts.trigger({
+await createPost.trigger({
   body: { title: "New Post" },
   invalidate: ["posts", "users/123/stats"],
 });
@@ -100,9 +100,11 @@ await posts.trigger({
 You can also use mode + tags:
 
 ```typescript
-await trigger({
+createPost = injectWrite((api) => api("posts").POST);
+
+await createPost.trigger({
   body: { title: "New Post" },
-  invalidate: ["posts", "dashboard"], // invalidates all queries with these tags
+  invalidate: ["posts", "dashboard"],
 });
 ```
 
@@ -118,7 +120,7 @@ The `deduplicationPlugin` prevents duplicate network requests when the same quer
 | `false`       | Disable deduplication                                                  |
 
 ```typescript
-const users = injectRead((api) => api("users").GET(), { dedupe: "in-flight" });
+users = injectRead((api) => api("users").GET(), { dedupe: "in-flight" });
 ```
 
 When multiple components call the same query simultaneously, only one network request is made:

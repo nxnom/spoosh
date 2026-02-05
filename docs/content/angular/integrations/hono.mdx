@@ -282,7 +282,7 @@ In rare cases, even after splitting routes, certain endpoints may still trigger 
 
 ```typescript
 // @ts-expect-error TS2589 - complex endpoint type
-const updateBooking = injectWrite((api) => api("bookings/:id/confirm").POST);
+updateBooking = injectWrite((api) => api("bookings/:id/confirm").POST);
 ```
 
 <Callout type="warn">

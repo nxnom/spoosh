@@ -45,13 +45,13 @@ Tags are automatically generated from the API path hierarchy:
 
 ```typescript
 // Query tags are generated from the path:
-useRead((api) => api("users").GET());
+injectRead((api) => api("users").GET());
 // → tags: ["users"]
 
-useRead((api) => api("users/:id").GET({ params: { id: 123 } }));
+injectRead((api) => api("users/:id").GET({ params: { id: 123 } }));
 // → tags: ["users", "users/123"]
 
-useRead((api) => api("users/:id/posts").GET({ params: { id: 123 } }));
+injectRead((api) => api("users/:id/posts").GET({ params: { id: 123 } }));
 // → tags: ["users", "users/123", "users/123/posts"]
 ```
 
@@ -61,7 +61,7 @@ You can override or extend auto-generated tags using the unified `tags` option:
 
 ```typescript
 // Mode only - 'all' generates full hierarchy
-const posts = injectRead(
+posts = injectRead(
   (api) => api("users/:id/posts").GET({ params: { id: "123" } }),
   {
     tags: "all", // ['users', 'users/123', 'users/123/posts']
@@ -69,7 +69,7 @@ const posts = injectRead(
 );
 
 // Mode only - 'self' generates only exact path
-const posts = injectRead(
+posts = injectRead(
   (api) => api("users/:id/posts").GET({ params: { id: "123" } }),
   {
     tags: "self", // ['users/123/posts']
@@ -77,12 +77,12 @@ const posts = injectRead(
 );
 
 // Custom tags only - replaces auto-generated tags
-const users = injectRead((api) => api("users").GET(), {
+users = injectRead((api) => api("users").GET(), {
   tags: ["custom-users", "dashboard"], // ['custom-users', 'dashboard']
 });
 
 // Mode + custom tags - 'all' mode combined with custom tags
-const posts = injectRead(
+posts = injectRead(
   (api) => api("users/:id/posts").GET({ params: { id: "123" } }),
   {
     tags: ["all", "dashboard"], // ['users', 'users/123', 'users/123/posts', 'dashboard']
@@ -90,7 +90,7 @@ const posts = injectRead(
 );
 
 // Mode + custom tags - 'self' mode combined with custom tags
-const posts = injectRead(
+posts = injectRead(
   (api) => api("users/:id/posts").GET({ params: { id: "123" } }),
   {
     tags: ["self", "dashboard"], // ['users/123/posts', 'dashboard']
@@ -101,9 +101,9 @@ const posts = injectRead(
 When a mutation succeeds, related queries are automatically invalidated:
 
 ```typescript
-const { trigger } = useWrite((api) => api("users/:id/posts").POST);
+createPost = injectWrite((api) => api("users/:id/posts").POST);
 
-await trigger({ params: { id: 123 }, body: { title: "New Post" } });
+await createPost.trigger({ params: { id: 123 }, body: { title: "New Post" } });
 // ✓ Invalidates: "users", "users/123", "users/123/posts"
 // All queries matching these tags will refetch automatically
 ```
@@ -113,58 +113,58 @@ await trigger({ params: { id: 123 }, body: { title: "New Post" } });
 Override the default invalidation behavior for specific mutations:
 
 ```typescript
-const { trigger } = useWrite((api) => api("posts").POST);
+createPost = injectWrite((api) => api("posts").POST);
 
 // Mode only (string)
-await trigger({
+await createPost.trigger({
   body: { title: "New Post" },
   invalidate: "all", // Invalidate entire path hierarchy
 });
 
-await trigger({
+await createPost.trigger({
   body: { title: "New Post" },
   invalidate: "self", // Only invalidate the exact endpoint
 });
 
-await trigger({
+await createPost.trigger({
   body: { title: "New Post" },
   invalidate: "none", // No invalidation
 });
 
 // Single tag (string)
-await trigger({
+await createPost.trigger({
   body: { title: "New Post" },
   invalidate: "posts", // Invalidate only "posts" tag
 });
 
 // Multiple tags (array without mode keyword)
-await trigger({
+await createPost.trigger({
   body: { title: "New Post" },
   invalidate: ["posts", "users", "custom-tag"],
   // → Only explicit tags are invalidated
 });
 
 // Mode + Tags (array with mode keyword)
-await trigger({
+await createPost.trigger({
   body: { title: "New Post" },
   invalidate: ["all", "dashboard", "stats"],
   // → 'all' mode + explicit tags
 });
 
-await trigger({
+await createPost.trigger({
   body: { title: "New Post" },
   invalidate: ["posts", "self", "users"],
   // → 'self' mode + explicit tags
 });
 
 // Wildcard - global refetch
-await trigger({
+await createPost.trigger({
   body: { title: "New Post" },
   invalidate: "*", // Triggers ALL queries to refetch
 });
 
 // Combined with clearCache (from @spoosh/plugin-cache)
-await trigger({
+await createPost.trigger({
   clearCache: true, // Clear all cached data
   invalidate: "*", // Then refetch all queries
 });
@@ -202,12 +202,14 @@ These two options serve different purposes:
 - **`"*"`** - Triggers a **global refetch of every active query** in your app, regardless of tags. Use this sparingly for scenarios like "user logged out" or "full data sync from server".
 
 ```typescript
+createPost = injectWrite((api) => api("users/:id/posts").POST);
+
 // "all" - scoped to this mutation's path hierarchy
-await trigger({ invalidate: "all" });
+await createPost.trigger({ invalidate: "all" });
 // If path is users/123/posts → invalidates: users, users/123, users/123/posts
 
 // "*" - refetches ALL queries in the entire app
-await trigger({ invalidate: "*" });
+await createPost.trigger({ invalidate: "*" });
 // Every active injectRead will refetch
 ```
 
@@ -217,19 +219,19 @@ await trigger({ invalidate: "*" });
 
 ```typescript
 // Creating a new post
-const { trigger } = useWrite((api) => api("posts").POST);
+createPost = injectWrite((api) => api("posts").POST);
 
-await trigger({
+await createPost.trigger({
   body: { title: "New Post" },
   invalidate: "all",
 });
 // Invalidates: ["posts"]
 
 // Updating a specific post
-const { trigger } = useWrite((api) => api("posts/:id").PATCH);
+updatePost = injectWrite((api) => api("posts/:id").PATCH);
 
 const postId = 1;
-await trigger({
+await updatePost.trigger({
   params: { id: postId },
   body: { title: "Updated" },
   invalidate: "all",
@@ -237,11 +239,11 @@ await trigger({
 // Invalidates: ["posts", `posts/${postId}`]
 
 // Deleting a comment on a post
-const { trigger } = useWrite((api) => api("posts/:postId/comments/:id").DELETE);
+deleteComment = injectWrite((api) => api("posts/:postId/comments/:id").DELETE);
 
 const postId = 5;
 const commentId = 10;
-await trigger({
+await deleteComment.trigger({
   params: { postId, id: commentId },
   invalidate: "all",
 });
@@ -252,12 +254,12 @@ await trigger({
 
 ```typescript
 // Path: posts/:id/comments
-const { trigger } = useWrite((api) => api("posts/:id/comments").POST);
+createComment = injectWrite((api) => api("posts/:id/comments").POST);
 
 const postId = 1;
 
 // Mode "all" invalidates full hierarchy
-await trigger({
+await createComment.trigger({
   params: { id: postId },
   body: { text: "Great post!" },
   invalidate: "all",
@@ -265,7 +267,7 @@ await trigger({
 // Invalidates: ["posts", `posts/${postId}`, `posts/${postId}/comments`]
 
 // Mode "self" invalidates only exact endpoint
-await trigger({
+await createComment.trigger({
   params: { id: postId },
   body: { text: "Great post!" },
   invalidate: "self",
@@ -273,7 +275,7 @@ await trigger({
 // Invalidates: [`posts/${postId}/comments`]
 
 // Mode "none" invalidates nothing
-await trigger({
+await createComment.trigger({
   params: { id: postId },
   body: { text: "Great post!" },
   invalidate: "none",
@@ -284,10 +286,12 @@ await trigger({
 ### Combining Mode with Explicit Tags
 
 ```typescript
+createComment = injectWrite((api) => api("posts/:id/comments").POST);
+
 const postId = 1;
 
 // Invalidate hierarchy + specific tags
-await trigger({
+await createComment.trigger({
   params: { id: postId },
   body: { text: "Great post!" },
   invalidate: ["all", "dashboard", "user-stats"],
@@ -295,7 +299,7 @@ await trigger({
 // Invalidates: ["posts", `posts/${postId}`, `posts/${postId}/comments`, "dashboard", "user-stats"]
 
 // Invalidate self + specific tags
-await trigger({
+await createComment.trigger({
   params: { id: postId },
   body: { text: "Great post!" },
   invalidate: ["self", `posts/${postId}`, "dashboard"],
@@ -356,10 +360,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 For scenarios like logout or user switching, combine `invalidate: "*"` with `clearCache` from `@spoosh/plugin-cache`:
 
 ```typescript
-const { trigger } = injectWrite((api) => api("auth/logout").POST);
+logout = injectWrite((api) => api("auth/logout").POST);
 
 // Clear cache + trigger all queries to refetch
-await trigger({
+await logout.trigger({
   clearCache: true, // From cache plugin: clear all cached data
   invalidate: "*", // From invalidation plugin: trigger all queries to refetch
 });

@@ -217,19 +217,19 @@ await trigger({ invalidate: "*" });
 
 ```typescript
 // Creating a new post
-const { trigger } = useWrite((api) => api("posts").POST);
+const { trigger: createPost } = useWrite((api) => api("posts").POST);
 
-await trigger({
+await createPost({
   body: { title: "New Post" },
   invalidate: "all",
 });
 // Invalidates: ["posts"]
 
 // Updating a specific post
-const { trigger } = useWrite((api) => api("posts/:id").PATCH);
+const { trigger: updatePost } = useWrite((api) => api("posts/:id").PATCH);
 
 const postId = 1;
-await trigger({
+await updatePost({
   params: { id: postId },
   body: { title: "Updated" },
   invalidate: "all",
@@ -237,11 +237,13 @@ await trigger({
 // Invalidates: ["posts", `posts/${postId}`]
 
 // Deleting a comment on a post
-const { trigger } = useWrite((api) => api("posts/:postId/comments/:id").DELETE);
+const { trigger: deleteComment } = useWrite(
+  (api) => api("posts/:postId/comments/:id").DELETE
+);
 
 const postId = 5;
 const commentId = 10;
-await trigger({
+await deleteComment({
   params: { postId, id: commentId },
   invalidate: "all",
 });
@@ -284,10 +286,14 @@ await trigger({
 ### Combining Mode with Explicit Tags
 
 ```typescript
+const { trigger: createComment } = useWrite(
+  (api) => api("posts/:id/comments").POST
+);
+
 const postId = 1;
 
 // Invalidate hierarchy + specific tags
-await trigger({
+await createComment({
   params: { id: postId },
   body: { text: "Great post!" },
   invalidate: ["all", "dashboard", "user-stats"],
@@ -295,7 +301,7 @@ await trigger({
 // Invalidates: ["posts", `posts/${postId}`, `posts/${postId}/comments`, "dashboard", "user-stats"]
 
 // Invalidate self + specific tags
-await trigger({
+await createComment({
   params: { id: postId },
   body: { text: "Great post!" },
   invalidate: ["self", `posts/${postId}`, "dashboard"],

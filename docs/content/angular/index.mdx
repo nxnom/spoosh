@@ -26,7 +26,7 @@ injectRead((api) => api("users/:id/posts").GET({ params: { id: 123 } }));
 When you mutate data, Spoosh automatically invalidates related queries based on these tags. Create a post for user 123? Every query that depends on that user's data refreshes automatically.
 
 ```typescript
-const write = injectWrite((api) => api("users/:id/posts").POST);
+write = injectWrite((api) => api("users/:id/posts").POST);
 
 // This mutation automatically invalidates:
 // - users
@@ -41,8 +41,8 @@ Define your API schema once, then use a function-based API that gives you autoco
 
 ```typescript
 // Fully typed paths
-const user = injectRead((api) => api("users/:id").GET({ params: { id: 123 } }));
-const posts = injectRead((api) =>
+user = injectRead((api) => api("users/:id").GET({ params: { id: 123 } }));
+posts = injectRead((api) =>
   api("users/:id/posts").GET({ params: { id: 123 }, query: { page: 1 } })
 );
 ```
@@ -55,7 +55,7 @@ You can also specify custom tags manually using the unified `tags` option:
 
 ```typescript
 // Mode only - 'all' generates full hierarchy
-const posts = injectRead(
+posts = injectRead(
   (api) => api("users/:id/posts").GET({ params: { id: "123" } }),
   {
     tags: "all", // ['users', 'users/123', 'users/123/posts']
@@ -63,7 +63,7 @@ const posts = injectRead(
 );
 
 // Mode only - 'self' generates only exact path
-const posts = injectRead(
+posts = injectRead(
   (api) => api("users/:id/posts").GET({ params: { id: "123" } }),
   {
     tags: "self", // ['users/123/posts']
@@ -71,12 +71,12 @@ const posts = injectRead(
 );
 
 // Custom tags only - replaces auto-generated tags
-const users = injectRead((api) => api("users").GET(), {
+users = injectRead((api) => api("users").GET(), {
   tags: ["custom-users", "dashboard"], // ['custom-users', 'dashboard']
 });
 
 // Mode + custom tags - 'all' mode combined with custom tags
-const posts = injectRead(
+posts = injectRead(
   (api) => api("users/:id/posts").GET({ params: { id: "123" } }),
   {
     tags: ["all", "dashboard"], // ['users', 'users/123', 'users/123/posts', 'dashboard']
@@ -84,7 +84,7 @@ const posts = injectRead(
 );
 
 // Mode + custom tags - 'self' mode combined with custom tags
-const posts = injectRead(
+posts = injectRead(
   (api) => api("users/:id/posts").GET({ params: { id: "123" } }),
   {
     tags: ["self", "dashboard"], // ['users/123/posts', 'dashboard']
@@ -92,7 +92,9 @@ const posts = injectRead(
 );
 
 // On mutations, specify which tags to invalidate
-await trigger({
+createPost = injectWrite((api) => api("posts").POST);
+
+await createPost.trigger({
   body: { title: "New Post" },
   invalidate: ["posts", "stats", "custom-tag"],
 });

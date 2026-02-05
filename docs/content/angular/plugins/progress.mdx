@@ -23,24 +23,22 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([progressPlugin()]);
 Enable progress tracking per-request:
 
 ```typescript
-const { data, progress } = injectRead((api) => api("files/:id").GET(), {
+download = injectRead((api) => api("files/:id").GET(), {
   progress: true,
 });
 
-// progress?.loaded - bytes received
-// progress?.total  - total bytes (if known)
+// download.progress()?.loaded - bytes received
+// download.progress()?.total  - total bytes (if known)
 ```
 
 ## File Upload
 
 ```typescript
-const { trigger, progress } = injectWrite((api) => api("files").POST, {
-  progress: true,
-});
+uploadFile = injectWrite((api) => api("files").POST);
 
-trigger({ body: form({ file: selectedFile }) });
+uploadFile.trigger({ body: form({ file: selectedFile }), progress: true });
 
-// progress?.loaded tracks bytes uploaded
+// uploadFile.progress()?.loaded tracks bytes uploaded
 ```
 
 ## Custom Total Header

@@ -20,7 +20,7 @@ import { throttlePlugin } from "@spoosh/plugin-throttle";
 const client = new Spoosh<ApiSchema, Error>("/api").use([throttlePlugin()]);
 
 // Max 1 request per second - extras return cached data
-const data = injectRead((api) => api("expensive").GET(), { throttle: 1000 });
+data = injectRead((api) => api("expensive").GET(), { throttle: 1000 });
 ```
 
 ## Options

@@ -23,7 +23,7 @@ const client = new Spoosh<ApiSchema, Error>("/api").use([initialDataPlugin()]);
 Show prefetched data immediately, then refetch in background:
 
 ```typescript
-const posts = injectRead((api) => api("posts").GET(), {
+posts = injectRead((api) => api("posts").GET(), {
   initialData: prefetchedPosts,
 });
 
@@ -35,7 +35,7 @@ const posts = injectRead((api) => api("posts").GET(), {
 To skip the background refetch and just use the initial data:
 
 ```typescript
-const posts = injectRead((api) => api("posts").GET(), {
+posts = injectRead((api) => api("posts").GET(), {
   initialData: prefetchedPosts,
   refetchOnInitialData: false,
 });
