@@ -5,6 +5,34 @@ description: A type-safe API toolkit with automatic cache invalidation and zero 
 
 **Spoosh** is a type-safe API toolkit with automatic cache management. Define your API schema once, then get type-safe requests with automatic cache invalidation based on URL hierarchy.
 
+```typescript
+// 1. Define your schema (or infer it from Hono / Elysia / OpenAPI)
+type API = {
+  users: { GET: { data: User[]; query: { page?: number } } };
+  "users/:id": {
+    GET: { data: User };
+    PUT: { data: User; body: Partial<User> };
+  };
+  "users/:id/posts": {
+    GET: { data: Post[] };
+    POST: { data: Post; body: NewPost };
+  };
+};
+
+// 2. Create the client
+const spoosh = new Spoosh<API, Error>("/api").use([
+  cachePlugin({ staleTime: 5 * 60 * 1000 }),
+  deduplicationPlugin(),
+  invalidationPlugin(),
+  // ...other plugins
+]);
+
+// 3. Use in components — paths are fully typed from your schema
+export const { useRead, useWrite } = createReactSpoosh(spoosh);
+```
+
+Using [Hono](/docs/react/integrations/hono) or [Elysia](/docs/react/integrations/elysia)? You can infer the schema directly from your server routes for end-to-end type safety with zero manual definitions.
+
 ## What Makes Spoosh Different
 
 ### Hierarchical Cache Invalidation
