@@ -1,5 +1,9 @@
 # @spoosh/react
 
+## 0.7.2
+
+- Update documentation URLs to new `/docs/{framework}` format
+
 ## 0.7.1
 
 - Handle `refetchAll` event in read hooks to trigger refetching when cache is cleared

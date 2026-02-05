@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-nextjs",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Next.js integration plugin for Spoosh - server revalidation after mutations",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/react/docs/plugins/nextjs",
+  "homepage": "https://spoosh.dev/docs/react/plugins/nextjs",
   "publishConfig": {
     "access": "public"
   },

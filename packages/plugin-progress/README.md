@@ -2,7 +2,7 @@
 
 Upload and download progress tracking plugin for Spoosh via XHR transport.
 
-**[Documentation](https://spoosh.dev/docs/plugins/progress)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
+**[Documentation](https://spoosh.dev/docs/react/plugins/progress)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
 
 ## Installation
 

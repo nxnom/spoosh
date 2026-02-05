@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/elysia",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "license": "MIT",
   "description": "Elysia server adapter for Spoosh API definitions",
   "keywords": [
@@ -19,7 +19,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/react/docs/integrations/elysia",
+  "homepage": "https://spoosh.dev/docs/react/integrations/elysia",
   "publishConfig": {
     "access": "public"
   },

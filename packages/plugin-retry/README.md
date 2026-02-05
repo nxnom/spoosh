@@ -2,7 +2,7 @@
 
 Automatic retry plugin for Spoosh with configurable attempts and delay.
 
-**[Documentation](https://spoosh.dev/docs/plugins/retry)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
+**[Documentation](https://spoosh.dev/docs/react/plugins/retry)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
 
 ## Installation
 

@@ -20,7 +20,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/react/docs/core",
+  "homepage": "https://spoosh.dev/docs/react/core",
   "publishConfig": {
     "access": "public"
   },

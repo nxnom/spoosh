@@ -16,7 +16,7 @@ import type {
  *
  * @param config - Plugin configuration
  *
- * @see {@link https://spoosh.dev/docs/plugins/retry | Retry Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/retry | Retry Plugin Documentation}
  *
  * @example
  * ```ts

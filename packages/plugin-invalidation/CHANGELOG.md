@@ -1,5 +1,9 @@
 # @spoosh/plugin-invalidation
 
+## 0.5.4
+
+- Update documentation URLs to new `/docs/{framework}` format
+
 ## 0.5.3
 
 - Added wildcard `*` support in invalidation tags to match multiple paths

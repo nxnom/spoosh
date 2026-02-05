@@ -24,7 +24,7 @@ type DebugPhase =
  *
  * @param config - Plugin configuration
  *
- * @see {@link https://spoosh.dev/docs/plugins/debug | Debug Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/debug | Debug Plugin Documentation}
  *
  * @returns Debug plugin instance
  *

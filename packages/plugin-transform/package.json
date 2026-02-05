@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-transform",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Data transformation plugin for Spoosh with sync/async support",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/react/docs/plugins/transform",
+  "homepage": "https://spoosh.dev/docs/react/plugins/transform",
   "publishConfig": {
     "access": "public"
   },

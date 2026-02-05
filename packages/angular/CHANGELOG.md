@@ -1,5 +1,9 @@
 # @spoosh/angular
 
+## 0.6.2
+
+- Update documentation URLs to new `/docs/{framework}` format
+
 ## 0.6.1
 
 - Handle `refetchAll` event in read injectors to trigger refetching when cache is cleared

@@ -4,6 +4,7 @@
 
 - Set SpooshSchema `data` as optional field to allow endpoints with no response body
 - Introduce `xhr` transport option for custom XMLHttpRequest handling
+- Update documentation URLs to new `/docs/{framework}` format
 
 ## 0.9.3
 

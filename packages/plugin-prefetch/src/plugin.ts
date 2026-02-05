@@ -25,7 +25,7 @@ import { storePromiseInCache } from "./promise-cache";
  *
  * @param config - Configuration options (reserved for future use)
  *
- * @see {@link https://spoosh.dev/docs/plugins/prefetch | Prefetch Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/prefetch | Prefetch Plugin Documentation}
  *
  * @returns Prefetch plugin instance
  *

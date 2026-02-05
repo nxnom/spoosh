@@ -2,7 +2,7 @@
 
 Request throttling plugin for Spoosh - limits request frequency.
 
-**[Documentation](https://spoosh.dev/docs/plugins/throttle)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
+**[Documentation](https://spoosh.dev/docs/react/plugins/throttle)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
 
 ## Installation
 

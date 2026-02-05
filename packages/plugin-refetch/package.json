@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-refetch",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Auto-refetch plugin for Spoosh - refetch on focus and reconnect",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/react/docs/plugins/refetch",
+  "homepage": "https://spoosh.dev/docs/react/plugins/refetch",
   "publishConfig": {
     "access": "public"
   },

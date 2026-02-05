@@ -21,7 +21,7 @@ type HookListenerEntry = {
  *
  * @param config - Plugin configuration
  *
- * @see {@link https://spoosh.dev/docs/plugins/refetch | Refetch Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/refetch | Refetch Plugin Documentation}
  *
  * @returns Refetch plugin instance
  *

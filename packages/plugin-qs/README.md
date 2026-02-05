@@ -2,7 +2,7 @@
 
 Query string serialization plugin for Spoosh with nested object support.
 
-**[Documentation](https://spoosh.dev/docs/plugins/qs)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
+**[Documentation](https://spoosh.dev/docs/react/plugins/qs)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
 
 ## Installation
 

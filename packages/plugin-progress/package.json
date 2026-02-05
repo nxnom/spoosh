@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/react/docs/plugins/progress",
+  "homepage": "https://spoosh.dev/docs/react/plugins/progress",
   "publishConfig": {
     "access": "public"
   },

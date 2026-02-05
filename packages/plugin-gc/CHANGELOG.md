@@ -1,5 +1,9 @@
 # @spoosh/plugin-gc
 
+## 0.1.5
+
+- Update documentation URLs to new `/docs/{framework}` format
+
 ## 0.1.4
 
 ### Patch Changes

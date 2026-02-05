@@ -2,7 +2,7 @@
 
 Bidirectional conversion between Spoosh TypeScript schemas and OpenAPI 3.0/3.1 specifications.
 
-**[Documentation](https://spoosh.dev/docs/integrations/openapi)** · **Requirements:** TypeScript >= 5.0
+**[Documentation](https://spoosh.dev/docs/react/integrations/openapi)** · **Requirements:** TypeScript >= 5.0
 
 ## Installation
 

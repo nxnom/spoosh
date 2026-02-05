@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-qs",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Query string serialization plugin for Spoosh with nested object support",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/react/docs/plugins/qs",
+  "homepage": "https://spoosh.dev/docs/react/plugins/qs",
   "publishConfig": {
     "access": "public"
   },

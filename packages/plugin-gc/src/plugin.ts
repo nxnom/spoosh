@@ -83,7 +83,7 @@ function runGarbageCollection(
  *
  * @param options - Plugin options
  *
- * @see {@link https://spoosh.dev/docs/plugins/gc | GC Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/gc | GC Plugin Documentation}
  *
  * @example
  * ```ts

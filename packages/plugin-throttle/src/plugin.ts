@@ -14,7 +14,7 @@ import type {
  * Limits how frequently a query can be executed, returning cached data
  * if the throttle window hasn't elapsed.
  *
- * @see {@link https://spoosh.dev/docs/plugins/throttle | Throttle Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/throttle | Throttle Plugin Documentation}
  *
  * @example
  * ```ts

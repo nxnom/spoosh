@@ -2,7 +2,7 @@
 
 Automatic polling/refetching plugin for Spoosh.
 
-**[Documentation](https://spoosh.dev/docs/plugins/polling)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
+**[Documentation](https://spoosh.dev/docs/react/plugins/polling)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
 
 ## Installation
 

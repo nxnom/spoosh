@@ -1,5 +1,9 @@
 # @spoosh/plugin-deduplication
 
+## 0.1.6
+
+- Update documentation URLs to new `/docs/{framework}` format
+
 ## 0.1.5
 
 ### Patch Changes

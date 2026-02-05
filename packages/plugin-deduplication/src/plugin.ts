@@ -17,7 +17,7 @@ import type {
  *
  * @param config - Plugin configuration
  *
- * @see {@link https://spoosh.dev/docs/plugins/deduplication | Deduplication Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/deduplication | Deduplication Plugin Documentation}
  *
  * @example
  * ```ts

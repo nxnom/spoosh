@@ -14,7 +14,7 @@ import type {
  * Automatically refetches data at specified intervals to keep it fresh.
  * Supports dynamic intervals based on current data or error state.
  *
- * @see {@link https://spoosh.dev/docs/plugins/polling | Polling Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/polling | Polling Plugin Documentation}
  *
  * @example
  * ```ts

@@ -1,5 +1,9 @@
 # @spoosh/plugin-initial-data
 
+## 0.2.2
+
+- Update documentation URLs to new `/docs/{framework}` format
+
 ## 0.2.1
 
 ### Patch Changes

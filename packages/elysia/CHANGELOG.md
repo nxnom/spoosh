@@ -1,5 +1,9 @@
 # @spoosh/elysia
 
+## 0.3.1
+
+- Update documentation URLs to new `/docs/{framework}` format
+
 ## 0.3.0
 
 - Direct type infer from Elysia app without relying on Eden Treaty types

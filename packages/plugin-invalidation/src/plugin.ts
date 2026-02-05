@@ -90,7 +90,7 @@ function resolveInvalidateTags(
  *
  * @param config - Plugin configuration
  *
- * @see {@link https://spoosh.dev/docs/plugins/invalidation | Invalidation Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/invalidation | Invalidation Plugin Documentation}
  *
  * @example
  * ```ts

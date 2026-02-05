@@ -1,5 +1,9 @@
 # @spoosh/plugin-prefetch
 
+## 0.3.2
+
+- Update documentation URLs to new `/docs/{framework}` format
+
 ## 0.3.1
 
 - Updated dependencies

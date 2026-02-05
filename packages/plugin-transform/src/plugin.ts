@@ -15,7 +15,7 @@ import type {
  *
  * All transforms are per-request for full type inference.
  *
- * @see {@link https://spoosh.dev/docs/plugins/transform | Transform Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/transform | Transform Plugin Documentation}
  *
  * @example
  * ```ts

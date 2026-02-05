@@ -2,7 +2,7 @@
 
 Angular signals integration for Spoosh - `injectRead`, `injectWrite`, and `injectInfiniteRead`.
 
-**[Documentation](https://spoosh.dev/docs/integrations/angular)** · **Requirements:** TypeScript >= 5.0, Angular >= 16.0
+**[Documentation](https://spoosh.dev/docs/angular)** · **Requirements:** TypeScript >= 5.0, Angular >= 16.0
 
 ## Installation
 

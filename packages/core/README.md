@@ -2,7 +2,7 @@
 
 Core client and plugin system for Spoosh - a type-safe API client framework.
 
-**[Documentation](https://spoosh.dev/docs)** · **Requirements:** TypeScript >= 5.0
+**[Documentation](https://spoosh.dev/docs/react)** · **Requirements:** TypeScript >= 5.0
 
 ## Installation
 

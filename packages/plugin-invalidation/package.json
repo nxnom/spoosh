@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-invalidation",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Cache invalidation plugin for Spoosh - auto-invalidates after mutations",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/react/docs/plugins/invalidation",
+  "homepage": "https://spoosh.dev/docs/react/plugins/invalidation",
   "publishConfig": {
     "access": "public"
   },

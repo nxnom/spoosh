@@ -2,7 +2,7 @@
 
 Type adapter to convert [Hono](https://hono.dev) app types to Spoosh's ApiSchema format.
 
-**[Documentation](https://spoosh.dev/docs/integrations/hono)** · **Requirements:** TypeScript >= 5.0
+**[Documentation](https://spoosh.dev/docs/react/integrations/hono)** · **Requirements:** TypeScript >= 5.0
 
 ## Installation
 

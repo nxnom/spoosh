@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/angular",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "license": "MIT",
   "description": "Angular signals integration for Spoosh API client",
   "keywords": [
@@ -19,7 +19,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/angular/docs",
+  "homepage": "https://spoosh.dev/docs/angular",
   "publishConfig": {
     "access": "public"
   },

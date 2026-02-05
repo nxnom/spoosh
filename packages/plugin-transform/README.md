@@ -2,7 +2,7 @@
 
 Transform response data with full type inference.
 
-**[Documentation](https://spoosh.dev/docs/plugins/transform)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
+**[Documentation](https://spoosh.dev/docs/react/plugins/transform)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
 
 ## Installation
 

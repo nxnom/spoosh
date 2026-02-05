@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/hono",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "license": "MIT",
   "description": "Hono server adapter for Spoosh API definitions",
   "keywords": [
@@ -19,7 +19,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/react/docs/integrations/hono",
+  "homepage": "https://spoosh.dev/docs/react/integrations/hono",
   "publishConfig": {
     "access": "public"
   },

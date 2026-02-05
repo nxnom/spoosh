@@ -24,7 +24,7 @@ const DEFAULT_OPTIONS = {
  *
  * @param config - Plugin configuration
  *
- * @see {@link https://spoosh.dev/docs/plugins/qs | QS Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/qs | QS Plugin Documentation}
  *
  * @example
  * ```ts

@@ -2,7 +2,7 @@
 
 Request debouncing plugin for Spoosh - waits for inactivity before fetching.
 
-**[Documentation](https://spoosh.dev/docs/plugins/debounce)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
+**[Documentation](https://spoosh.dev/docs/react/plugins/debounce)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
 
 ## Installation
 

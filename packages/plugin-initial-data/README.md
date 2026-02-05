@@ -2,7 +2,7 @@
 
 Initial data plugin for Spoosh - show data immediately before fetch completes.
 
-**[Documentation](https://spoosh.dev/docs/plugins/initial-data)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
+**[Documentation](https://spoosh.dev/docs/react/plugins/initial-data)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
 
 ## Installation
 

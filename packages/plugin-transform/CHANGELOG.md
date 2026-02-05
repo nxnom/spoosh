@@ -1,5 +1,9 @@
 # @spoosh/plugin-transform
 
+## 0.5.1
+
+- Update documentation URLs to new `/docs/{framework}` format
+
 ## 0.5.0
 
 ### Breaking Changes

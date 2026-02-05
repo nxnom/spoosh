@@ -2,7 +2,7 @@
 
 Response caching plugin for Spoosh with configurable stale time.
 
-**[Documentation](https://spoosh.dev/docs/plugins/cache)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
+**[Documentation](https://spoosh.dev/docs/react/plugins/cache)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`
 
 ## Installation
 

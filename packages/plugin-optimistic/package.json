@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-optimistic",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Optimistic updates plugin for Spoosh - instant UI updates with automatic rollback",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/react/docs/plugins/optimistic",
+  "homepage": "https://spoosh.dev/docs/react/plugins/optimistic",
   "publishConfig": {
     "access": "public"
   },

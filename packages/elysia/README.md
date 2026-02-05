@@ -2,7 +2,7 @@
 
 Type adapter to convert [Elysia](https://elysiajs.com) app types to Spoosh's ApiSchema format.
 
-**[Documentation](https://spoosh.dev/docs/integrations/elysia)** · **Requirements:** TypeScript >= 5.0
+**[Documentation](https://spoosh.dev/docs/react/integrations/elysia)** · **Requirements:** TypeScript >= 5.0
 
 ## Installation
 

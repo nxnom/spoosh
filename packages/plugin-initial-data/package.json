@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-initial-data",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Initial data plugin for Spoosh - show data immediately before fetch completes",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/nxnom/spoosh/issues"
   },
-  "homepage": "https://spoosh.dev/react/docs/plugins/initial-data",
+  "homepage": "https://spoosh.dev/docs/react/plugins/initial-data",
   "publishConfig": {
     "access": "public"
   },

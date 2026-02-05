@@ -15,7 +15,7 @@ import type {
  *
  * @param config - Plugin configuration
  *
- * @see {@link https://spoosh.dev/docs/plugins/nextjs | Next.js Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/nextjs | Next.js Plugin Documentation}
  *
  * @returns Next.js plugin instance
  *

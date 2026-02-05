@@ -221,7 +221,7 @@ function rollbackOptimistic(
  * unnecessary refetches that would override the optimistic data. You can override
  * this by explicitly setting the `invalidate` option with a mode string or array.
  *
- * @see {@link https://spoosh.dev/docs/plugins/optimistic | Optimistic Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/optimistic | Optimistic Plugin Documentation}
  *
  * @returns Optimistic plugin instance
  *

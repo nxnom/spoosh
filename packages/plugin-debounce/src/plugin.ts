@@ -34,7 +34,7 @@ function resolveDebounceMs(
  * Delays requests until input stops changing, useful for search inputs
  * to avoid excessive API calls while typing.
  *
- * @see {@link https://spoosh.dev/docs/plugins/debounce | Debounce Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/debounce | Debounce Plugin Documentation}
  *
  * @example
  * ```ts

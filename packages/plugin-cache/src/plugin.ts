@@ -19,7 +19,7 @@ import type {
  *
  * @param config - Plugin configuration
  *
- * @see {@link https://spoosh.dev/docs/plugins/cache | Cache Plugin Documentation}
+ * @see {@link https://spoosh.dev/docs/react/plugins/cache | Cache Plugin Documentation}
  *
  * @example
  * ```ts

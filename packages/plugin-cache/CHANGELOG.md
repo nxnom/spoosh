@@ -1,5 +1,9 @@
 # @spoosh/plugin-cache
 
+## 0.3.1
+
+- Update documentation URLs to new `/docs/{framework}` format
+
 ## 0.3.0
 
 - Emit `refetchAll` event when cache is cleared

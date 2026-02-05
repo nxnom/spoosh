@@ -2,7 +2,7 @@
 
 Optimistic updates plugin for Spoosh - instant UI updates with automatic rollback on error.
 
-**[Documentation](https://spoosh.dev/docs/plugins/optimistic)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`, `@spoosh/plugin-invalidation`
+**[Documentation](https://spoosh.dev/docs/react/plugins/optimistic)** · **Requirements:** TypeScript >= 5.0 · **Peer Dependencies:** `@spoosh/core`, `@spoosh/plugin-invalidation`
 
 ## Installation
 
