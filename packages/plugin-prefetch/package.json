@@ -5,11 +5,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nxnom/spoosh.git",
+    "url": "git+https://github.com/spooshdev/spoosh.git",
     "directory": "packages/plugin-prefetch"
   },
   "bugs": {
-    "url": "https://github.com/nxnom/spoosh/issues"
+    "url": "https://github.com/spooshdev/spoosh/issues"
   },
   "homepage": "https://spoosh.dev/docs/react/plugins/prefetch",
   "publishConfig": {
