@@ -16,6 +16,7 @@
     "initial-data",
     "qs",
     "transform",
+    "progress",
     "gc",
     "debug"
   ]

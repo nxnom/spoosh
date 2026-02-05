@@ -1,0 +1,75 @@
+---
+title: Progress
+description: Upload and download progress tracking
+---
+
+The progress plugin tracks upload and download progress by automatically switching to XHR transport.
+
+## Installation
+
+```package-install
+@spoosh/plugin-progress
+```
+
+## Usage
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { progressPlugin } from "@spoosh/plugin-progress";
+
+const client = new Spoosh<ApiSchema, Error>("/api").use([progressPlugin()]);
+```
+
+Enable progress tracking per-request:
+
+```typescript
+const { data, progress } = useRead((api) => api("files/:id").GET(), {
+  progress: true,
+});
+
+// progress?.loaded - bytes received
+// progress?.total  - total bytes (if known)
+```
+
+## File Upload
+
+```typescript
+const { trigger, progress } = useWrite((api) => api("files").POST, {
+  progress: true,
+});
+
+trigger({ body: form({ file: selectedFile }) });
+
+// progress?.loaded tracks bytes uploaded
+```
+
+## Custom Total Header
+
+When the server doesn't set `Content-Length` (e.g. streaming responses), you can read the total size from a custom header:
+
+```typescript
+useRead((api) => api("files/:id").GET(), {
+  progress: { totalHeader: "X-Total-Size" },
+});
+```
+
+## Per-Request Options
+
+| Option     | Type                         | Description                                                 |
+| ---------- | ---------------------------- | ----------------------------------------------------------- |
+| `progress` | `boolean \| ProgressOptions` | Enable progress tracking. Automatically uses XHR transport. |
+
+### ProgressOptions
+
+| Option        | Type     | Description                                                                  |
+| ------------- | -------- | ---------------------------------------------------------------------------- |
+| `totalHeader` | `string` | Response header to read total size from when `Content-Length` is unavailable |
+
+## Result
+
+When progress is enabled, the result includes a `progress` field:
+
+| Field    | Type     | Description                |
+| -------- | -------- | -------------------------- |
+| `loaded` | `number` | Bytes transferred so far   |
+| `total`  | `number` | Total bytes (0 if unknown) |
