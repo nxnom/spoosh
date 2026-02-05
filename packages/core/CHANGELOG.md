@@ -1,5 +1,9 @@
 # @spoosh/core
 
+## [Unreleased]
+
+- Set SpooshSchema `data` as optional to allow endpoints with no response body
+
 ## 0.9.3
 
 - Add `refetchAll` event to reset all listen controllers

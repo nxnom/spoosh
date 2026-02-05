@@ -27,7 +27,7 @@ export type { HttpMethod, WriteMethod };
 export type ApiSchema = {
   [path: string]: {
     [method in HttpMethod]?: {
-      data: unknown;
+      data?: unknown;
       body?: unknown;
       query?: unknown;
       error?: unknown;
@@ -38,7 +38,7 @@ export type ApiSchema = {
 /**
  * Extract data type from an endpoint.
  */
-export type ExtractData<T> = T extends { data: infer D } ? D : never;
+export type ExtractData<T> = T extends { data: infer D } ? D : void;
 
 /**
  * Extract body type from an endpoint.
