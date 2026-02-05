@@ -10,7 +10,7 @@ import type { SpooshReactHooks, SpooshInstanceShape } from "./types";
  * @template TSchema - The API schema type
  * @template TDefaultError - The default error type
  * @template TPlugins - The plugins array type
- * @template TApi - The API client type
+ * @template TApi - The API type
  * @param instance - The Spoosh instance containing api, stateManager, eventEmitter, and pluginExecutor
  * @returns An object containing useRead, useWrite, useInfiniteRead hooks and plugin instance APIs
  *

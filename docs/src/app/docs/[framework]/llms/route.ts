@@ -9,7 +9,7 @@ const ANGULAR_RAW_BASE = `${RAW_BASE}/angular`;
 
 const reactContent = `# Spoosh React
 
-> Spoosh is a type-safe API client with a powerful plugin system. Define your API schema once and get full TypeScript autocomplete everywhere.
+> Spoosh is a type-safe API toolkit with a powerful plugin system. Define your API schema once and get full TypeScript autocomplete everywhere.
 
 ## Docs
 
@@ -78,7 +78,7 @@ const reactContent = `# Spoosh React
 
 const angularContent = `# Spoosh Angular
 
-> Spoosh is a type-safe API client with a powerful plugin system. Define your API schema once and get full TypeScript autocomplete everywhere.
+> Spoosh is a type-safe API toolkit with a powerful plugin system. Define your API schema once and get full TypeScript autocomplete everywhere.
 
 ## Docs
 

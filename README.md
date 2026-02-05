@@ -8,9 +8,9 @@
 
 <h1 align="center">Spoosh</h1>
 
-> Type-safe API client with composable plugins for TypeScript
+> Type-safe API toolkit with composable plugins for TypeScript
 
-Spoosh is a lightweight, type-safe API client framework with a unique plugin architecture. Build exactly what you need by composing plugins together.
+Spoosh is a lightweight, type-safe API toolkit with a unique plugin architecture. Build exactly what you need by composing plugins together.
 
 **[Documentation](https://spoosh.dev)** · [Getting Started](https://spoosh.dev/docs/getting-started) · [Plugins](https://spoosh.dev/docs/plugins)
 

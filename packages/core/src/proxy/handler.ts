@@ -45,7 +45,7 @@ function resolvePath(
 }
 
 /**
- * Creates an API client proxy that uses path strings instead of chained property access.
+ * Creates an API proxy that uses path strings instead of chained property access.
  * Methods use HTTP names directly: GET, POST, PUT, PATCH, DELETE.
  *
  * @param config - Proxy handler configuration

@@ -10,13 +10,13 @@ export type SpooshClientConfig = {
 };
 
 /**
- * Creates a lightweight type-safe API client for vanilla JavaScript/TypeScript usage.
+ * Creates a lightweight type-safe API instance for vanilla JavaScript/TypeScript usage.
  *
  * This is a simpler alternative to `Spoosh` for users who don't need
  * the full plugin system, state management, or React integration.
  *
  * @param config - Client configuration
- * @returns Type-safe API client
+ * @returns Type-safe API instance
  *
  * @example
  * ```ts

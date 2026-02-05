@@ -1,4 +1,4 @@
-/** All supported HTTP method keys used in the API client */
+/** All supported HTTP method keys used in the API toolkit */
 export const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 
 /** Union type of all HTTP method keys */

@@ -173,7 +173,7 @@ export class Spoosh<
   }
 
   /**
-   * The type-safe API client for making requests.
+   * The type-safe API interface for making requests.
    *
    * Provides a proxy-based interface for accessing endpoints defined in your schema.
    *

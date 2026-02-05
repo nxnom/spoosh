@@ -1,6 +1,6 @@
 # @spoosh/docs
 
-Documentation site for Spoosh - a type-safe API client with a powerful plugin system.
+Documentation site for Spoosh - a type-safe API toolkit with a powerful plugin system.
 
 **Live:** [spoosh.dev](https://spoosh.dev)
 

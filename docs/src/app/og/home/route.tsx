@@ -6,7 +6,7 @@ export const revalidate = false;
 export async function GET() {
   return new ImageResponse(
     <OGImage
-      title="Type-Safe API Client"
+      title="Type-Safe API Toolkit"
       description="A powerful plugin system for caching, invalidation, retry, polling, and more."
     />,
     {

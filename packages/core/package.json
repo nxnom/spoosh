@@ -2,10 +2,10 @@
   "name": "@spoosh/core",
   "version": "0.10.0",
   "license": "MIT",
-  "description": "Type-safe API client with plugin middleware system",
+  "description": "Type-safe API toolkit with plugin middleware system",
   "keywords": [
     "spoosh",
-    "api-client",
+    "api-toolkit",
     "fetch",
     "typescript",
     "middleware",

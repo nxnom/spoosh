@@ -251,7 +251,7 @@ export type SpooshReactHooks<
  * Shape of a Spoosh instance required for creating React hooks.
  */
 export type SpooshInstanceShape<TApi, TSchema, TDefaultError, TPlugins> = {
-  /** The API client instance */
+  /** The API instance */
   api: TApi;
 
   /** State manager for caching and state */

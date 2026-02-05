@@ -12,14 +12,14 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://spoosh.dev";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Spoosh - Type-Safe API Client",
+    default: "Spoosh - Type-Safe API Toolkit",
     template: "%s | Spoosh",
   },
   description:
-    "A type-safe API client with a powerful plugin system. Features caching, invalidation, retry, polling, and more.",
+    "A type-safe API toolkit with a powerful plugin system. Features caching, invalidation, retry, polling, and more.",
   keywords: [
     "spoosh",
-    "api client",
+    "api toolkit",
     "typescript",
     "type-safe",
     "fetch",
@@ -44,22 +44,22 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: siteUrl,
     siteName: "Spoosh",
-    title: "Spoosh - Type-Safe API Client",
+    title: "Spoosh - Type-Safe API Toolkit",
     description:
-      "A type-safe API client with a powerful plugin system. Features caching, invalidation, retry, polling, and more.",
+      "A type-safe API toolkit with a powerful plugin system. Features caching, invalidation, retry, polling, and more.",
     images: [
       {
         url: "/og/home",
         width: 1200,
         height: 630,
-        alt: "Spoosh - Type-Safe API Client",
+        alt: "Spoosh - Type-Safe API Toolkit",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Spoosh - Type-Safe API Client",
-    description: "A type-safe API client with a powerful plugin system.",
+    title: "Spoosh - Type-Safe API Toolkit",
+    description: "A type-safe API toolkit with a powerful plugin system.",
     images: ["/og/home"],
   },
   robots: {

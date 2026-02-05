@@ -1,6 +1,6 @@
 # @spoosh/core
 
-Core client and plugin system for Spoosh - a type-safe API client framework.
+Core client and plugin system for Spoosh - a type-safe API toolkit.
 
 **[Documentation](https://spoosh.dev/docs/react)** · **Requirements:** TypeScript >= 5.0
 
@@ -188,7 +188,7 @@ Path parameters are defined using `:param` syntax in the path key (e.g., `"users
 
 ### createClient(config)
 
-Creates a lightweight type-safe API client.
+Creates a lightweight type-safe API instance.
 
 | Option           | Type                 | Description                                        |
 | ---------------- | -------------------- | -------------------------------------------------- |
@@ -228,12 +228,12 @@ const { data } = await api("users").GET();
 
 **Properties:**
 
-| Property          | Description                              |
-| ----------------- | ---------------------------------------- |
-| `.api`            | Type-safe API client for making requests |
-| `.stateManager`   | Cache and state management               |
-| `.eventEmitter`   | Event system for refetch/invalidation    |
-| `.pluginExecutor` | Plugin lifecycle management              |
+| Property          | Description                                 |
+| ----------------- | ------------------------------------------- |
+| `.api`            | Type-safe API interface for making requests |
+| `.stateManager`   | Cache and state management                  |
+| `.eventEmitter`   | Event system for refetch/invalidation       |
+| `.pluginExecutor` | Plugin lifecycle management                 |
 
 ## Creating Plugins
 

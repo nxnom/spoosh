@@ -7,13 +7,13 @@ import { baseOptions } from "@/lib/layout.shared";
 import { GITHUB_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: "Spoosh - Type-Safe API Client",
+  title: "Spoosh - Type-Safe API Toolkit",
   description:
-    "A type-safe API client with a powerful plugin system. Features caching, invalidation, retry, polling, optimistic updates, and more.",
+    "A type-safe API toolkit with a powerful plugin system. Features caching, invalidation, retry, polling, optimistic updates, and more.",
   openGraph: {
-    title: "Spoosh - Type-Safe API Client",
+    title: "Spoosh - Type-Safe API Toolkit",
     description:
-      "A type-safe API client with a powerful plugin system. Features caching, invalidation, retry, polling, optimistic updates, and more.",
+      "A type-safe API toolkit with a powerful plugin system. Features caching, invalidation, retry, polling, optimistic updates, and more.",
     images: ["/og/home"],
   },
 };
@@ -90,7 +90,7 @@ export default function HomePage() {
           </div>
 
           <p className="text-xl md:text-2xl text-fd-muted-foreground max-w-2xl mb-8">
-            A type-safe API client with a powerful plugin system
+            A type-safe API toolkit with a powerful plugin system
           </p>
 
           <div className="flex flex-wrap gap-4 justify-center mb-12">
@@ -302,7 +302,7 @@ export default function HomePage() {
               Ready to get started?
             </h2>
             <p className="text-fd-muted-foreground mb-8">
-              Install Spoosh and build type-safe API clients in minutes.
+              Install Spoosh and build type-safe API integrations in minutes.
             </p>
             <CodeBlock
               code="npm install @spoosh/core @spoosh/react"

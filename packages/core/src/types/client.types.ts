@@ -151,7 +151,7 @@ type PathMethods<TSchema, TPath extends string, TDefaultError> =
 export type SchemaPaths<TSchema> = keyof TSchema & string;
 
 /**
- * An API client that uses path strings instead of chained property access.
+ * An API interface that uses path strings instead of chained property access.
  * Methods use HTTP names directly: GET, POST, PUT, PATCH, DELETE.
  *
  * @example
@@ -195,7 +195,7 @@ type ReadPathMethods<TSchema, TPath extends string, TDefaultError> =
     : never;
 
 /**
- * A read-only API client that only exposes GET methods.
+ * A read-only API interface that only exposes GET methods.
  * Used by useRead and injectRead hooks.
  */
 export type ReadClient<TSchema, TDefaultError = unknown> = <
@@ -224,7 +224,7 @@ type WritePathMethods<TSchema, TPath extends string, TDefaultError> =
     : never;
 
 /**
- * A write-only API client that only exposes mutation methods (POST, PUT, PATCH, DELETE).
+ * A write-only API interface that only exposes mutation methods (POST, PUT, PATCH, DELETE).
  * Used by useWrite and injectWrite hooks.
  */
 export type WriteClient<TSchema, TDefaultError = unknown> = <

@@ -2,12 +2,12 @@
   "name": "@spoosh/angular",
   "version": "0.6.2",
   "license": "MIT",
-  "description": "Angular signals integration for Spoosh API client",
+  "description": "Angular signals integration for Spoosh API toolkit",
   "keywords": [
     "spoosh",
     "angular",
     "signals",
-    "api-client",
+    "api-toolkit",
     "injectRead",
     "injectWrite"
   ],
