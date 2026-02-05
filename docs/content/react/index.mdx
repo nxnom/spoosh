@@ -102,7 +102,7 @@ await trigger({
 
 ## Composable Plugin System
 
-Spoosh has a rich plugin ecosystem with 14+ official plugins. Each plugin adds specific functionality, and TypeScript knows exactly what options are available based on which plugins you install.
+Spoosh has a rich plugin ecosystem. Each plugin adds specific functionality, and TypeScript knows exactly what options are available based on which plugins you install.
 
 ```typescript
 import { Spoosh } from "@spoosh/core";
@@ -163,6 +163,7 @@ At ~10KB gzipped for the core, Spoosh keeps your bundle size minimal. Add only t
 | `@spoosh/plugin-gc`               | Garbage collection for cache management                |
 | `@spoosh/plugin-transform`        | Transform request and response data                    |
 | `@spoosh/plugin-qs`               | Query string serialization for nested objects          |
+| `@spoosh/plugin-progress`         | Upload/download progress tracking via XHR              |
 | `@spoosh/plugin-nextjs`           | Next.js server revalidation                            |
 | `@spoosh/plugin-debug`            | Debug logging                                          |
 
