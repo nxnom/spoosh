@@ -77,6 +77,13 @@ const reactContent = `# Spoosh React
 
 ### Developer Tools
 - [Debug](${REACT_RAW_BASE}/plugins/debug.mdx): Debug logging for development
+
+## Guides
+
+- [Tags & Invalidation](${REACT_RAW_BASE}/guides/tags-and-invalidation.mdx): Tag modes, custom tags, invalidation strategies
+- [Infinite Queries](${REACT_RAW_BASE}/guides/infinite-queries.mdx): Infinite queries with useInfiniteRead
+- [Authentication](${REACT_RAW_BASE}/guides/authentication.mdx): Token management and auth flows
+- [Error Handling](${REACT_RAW_BASE}/guides/error-handling.mdx): Global, per-request, and typed errors
 `;
 
 const angularContent = `# Spoosh Angular
@@ -146,6 +153,13 @@ const angularContent = `# Spoosh Angular
 
 ### Developer Tools
 - [Debug](${ANGULAR_RAW_BASE}/plugins/debug.mdx): Debug logging for development
+
+## Guides
+
+- [Tags & Invalidation](${ANGULAR_RAW_BASE}/guides/tags-and-invalidation.mdx): Tag modes, custom tags, invalidation strategies
+- [Infinite Queries](${ANGULAR_RAW_BASE}/guides/infinite-queries.mdx): Infinite queries with injectInfiniteRead
+- [Authentication](${ANGULAR_RAW_BASE}/guides/authentication.mdx): Token management and auth flows
+- [Error Handling](${ANGULAR_RAW_BASE}/guides/error-handling.mdx): Global, per-request, and typed errors
 `;
 
 export const revalidate = false;
