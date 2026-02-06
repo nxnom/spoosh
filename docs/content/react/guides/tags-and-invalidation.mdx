@@ -1,182 +1,114 @@
 ---
 title: Tags & Invalidation
-description: Control how queries are tagged and when they refresh
+description: Understand how queries are tagged and when they refresh
 ---
 
-The invalidation plugin uses tags to determine which queries to refresh after a mutation. Understanding how tags work gives you fine-grained control over cache behavior.
+Spoosh uses **tags** to determine which queries should refresh after a mutation. Understanding this system helps you control cache behavior effectively.
 
-## Installation
+> This guide covers the [Invalidation Plugin](/docs/react/plugins/invalidation). See the plugin page for installation and configuration.
 
-```package-install
-@spoosh/plugin-cache @spoosh/plugin-invalidation
-```
+## The Mental Model
 
-```typescript
-import { Spoosh } from "@spoosh/core";
-import { cachePlugin } from "@spoosh/plugin-cache";
-import { invalidationPlugin } from "@spoosh/plugin-invalidation";
-
-const client = new Spoosh<ApiSchema, Error>("/api").use([
-  cachePlugin({ staleTime: 5000 }),
-  invalidationPlugin(),
-]);
-```
-
-## How Tags Are Generated
-
-Tags are automatically derived from the API path hierarchy:
+Every query is automatically tagged based on its API path. When a mutation succeeds, Spoosh finds all active queries with matching tags and refetches them.
 
 ```typescript
-useRead((api) => api("users").GET());
-// tags: ["users"]
-
-useRead((api) => api("users/:id").GET({ params: { id: 123 } }));
-// tags: ["users", "users/123"]
-
+// This query gets tagged with: ["users", "users/123", "users/123/posts"]
 useRead((api) => api("users/:id/posts").GET({ params: { id: 123 } }));
-// tags: ["users", "users/123", "users/123/posts"]
+
+// When this mutation succeeds...
+const { trigger } = useWrite((api) => api("users/:id").PATCH);
+await trigger({ params: { id: 123 }, body: updated });
+// → Tags ["users", "users/123"] are invalidated
+// → The query above refetches because its tags overlap
 ```
 
-When a mutation like `api("users/:id").PATCH` succeeds, the invalidation plugin collects tags from the mutation path and refetches every active query whose tags overlap.
+This hierarchical tagging means mutations automatically refresh related queries without manual wiring.
 
 ## Tag Modes
 
-The `tags` option on read operations controls which tags are generated.
+Control how granular your query's tags are:
 
-### `"all"` (default)
-
-Generates the full path hierarchy:
-
-```typescript
-useRead((api) => api("users/:id/posts").GET({ params: { id: "5" } }), {
-  tags: "all",
-});
-// tags: ["users", "users/5", "users/5/posts"]
-```
-
-Use `"all"` when you want queries to refresh for any mutation that touches a parent or sibling resource.
-
-### `"self"`
-
-Generates only the exact endpoint tag:
+| Mode              | Tags Generated      | Use When                                         |
+| ----------------- | ------------------- | ------------------------------------------------ |
+| `"all"` (default) | Full path hierarchy | You want refreshes from parent/sibling mutations |
+| `"self"`          | Exact endpoint only | You only want refreshes from this exact endpoint |
 
 ```typescript
+// "all" mode (default) — refreshes when users, users/5, or users/5/posts mutate
+useRead((api) => api("users/:id/posts").GET({ params: { id: "5" } }));
+
+// "self" mode — only refreshes when users/5/posts specifically mutates
 useRead((api) => api("users/:id/posts").GET({ params: { id: "5" } }), {
   tags: "self",
 });
-// tags: ["users/5/posts"]
 ```
 
-Use `"self"` when you only want refreshes from mutations targeting this exact endpoint.
+### Custom Tags
 
-## Custom Tags
-
-Pass an array of strings to replace auto-generated tags entirely:
+Add your own tags for cross-domain invalidation:
 
 ```typescript
+// Replace auto-generated tags entirely
 useRead((api) => api("dashboard/stats").GET(), {
   tags: ["dashboard", "analytics"],
 });
-// tags: ["dashboard", "analytics"]
-```
 
-### Combining Mode with Custom Tags
-
-Include a mode keyword (`"all"` or `"self"`) as the first element to combine auto-generated and custom tags:
-
-```typescript
+// Combine mode with custom tags
 useRead((api) => api("users/:id/posts").GET({ params: { id: "5" } }), {
-  tags: ["all", "dashboard"],
+  tags: ["all", "dashboard"], // hierarchy + custom
 });
-// tags: ["users", "users/5", "users/5/posts", "dashboard"]
-
-useRead((api) => api("users/:id/posts").GET({ params: { id: "5" } }), {
-  tags: ["self", "dashboard"],
-});
-// tags: ["users/5/posts", "dashboard"]
 ```
 
 ## Invalidation Strategies
 
-Control what happens after a mutation with the `invalidate` option on `useWrite`:
+After a mutation, you control what gets invalidated:
+
+| Strategy           | Effect                                         |
+| ------------------ | ---------------------------------------------- |
+| `"all"` (default)  | Invalidate full path hierarchy of the mutation |
+| `"self"`           | Invalidate only the exact mutation endpoint    |
+| `"none"`           | Skip invalidation entirely                     |
+| `"*"`              | Global refetch — every active query refetches  |
+| `["tag1", "tag2"]` | Invalidate specific tags                       |
 
 ```typescript
 const { trigger } = useWrite((api) => api("posts").POST);
 
-// Default: invalidate full path hierarchy
+// Standard CRUD — let related queries refresh
 await trigger({ body: newPost, invalidate: "all" });
 
-// Only invalidate the exact endpoint
+// Surgical update — only this endpoint's queries refresh
 await trigger({ body: newPost, invalidate: "self" });
 
-// Skip invalidation entirely
-await trigger({ body: newPost, invalidate: "none" });
-
-// Global refetch — every active query refetches
-await trigger({ body: newPost, invalidate: "*" });
-
-// Target specific tags
-await trigger({ body: newPost, invalidate: ["posts", "dashboard"] });
-
-// Mode + extra tags
-await trigger({ body: newPost, invalidate: ["all", "dashboard", "stats"] });
+// Cross-domain — refresh unrelated queries too
+await trigger({ body: newPost, invalidate: ["all", "dashboard"] });
 ```
 
 ## Manual Invalidation
 
-For events that happen outside mutations (WebSocket messages, timers, external state changes), use the `invalidate` function from `createReactSpoosh`:
+For events outside mutations (WebSocket, timers, external state), trigger invalidation manually:
 
 ```typescript
-import { createReactSpoosh } from "@spoosh/react";
-
-const { useRead, invalidate } = createReactSpoosh(client);
-
-// Invalidate specific tags
-invalidate(["users", "posts"]);
-
-// Invalidate a single tag
-invalidate("posts");
-
-// Global refetch
-invalidate("*");
-```
-
-### WebSocket Example
-
-```typescript
-import { useEffect } from "react";
 import { invalidate } from "./spoosh";
 
-function RealtimeDashboard() {
-  useEffect(() => {
-    const ws = new WebSocket("wss://api.example.com/ws");
+// From a WebSocket handler
+socket.on("data-changed", (tags) => invalidate(tags));
 
-    ws.onmessage = (event) => {
-      const { type, tags } = JSON.parse(event.data);
-
-      if (type === "invalidate") {
-        invalidate(tags);
-      }
-
-      if (type === "full-sync") {
-        invalidate("*");
-      }
-    };
-
-    return () => ws.close();
-  }, []);
-
-  return <div>...</div>;
-}
+// Force everything to refresh
+socket.on("full-sync", () => invalidate("*"));
 ```
 
 ## Choosing the Right Strategy
 
-| Scenario | Strategy |
-| --- | --- |
-| Standard CRUD | `invalidate: "all"` (default) |
-| Updating a single resource | `invalidate: "self"` |
-| No related queries to refresh | `invalidate: "none"` |
-| User logout / account switch | `invalidate: "*"` + `clearCache: true` |
-| Cross-domain updates | `invalidate: ["posts", "dashboard"]` |
-| External events (WebSocket) | `invalidate(tags)` manually |
+| Scenario                      | Strategy                               |
+| ----------------------------- | -------------------------------------- |
+| Standard CRUD                 | `invalidate: "all"` (default)          |
+| Updating a single resource    | `invalidate: "self"`                   |
+| No related queries to refresh | `invalidate: "none"`                   |
+| User logout / account switch  | `invalidate: "*"` + `clearCache: true` |
+| Cross-domain updates          | `invalidate: ["posts", "dashboard"]`   |
+| External events (WebSocket)   | `invalidate(tags)` manually            |
+
+---
+
+For complete API reference, configuration options, and advanced examples, see the [Invalidation Plugin](/docs/react/plugins/invalidation).
