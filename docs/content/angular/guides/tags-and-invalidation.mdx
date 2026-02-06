@@ -1,0 +1,199 @@
+---
+title: Tags & Invalidation
+description: Control how queries are tagged and when they refresh
+---
+
+The invalidation plugin uses tags to determine which queries to refresh after a mutation. Understanding how tags work gives you fine-grained control over cache behavior.
+
+## Installation
+
+```package-install
+@spoosh/plugin-cache @spoosh/plugin-invalidation
+```
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { cachePlugin } from "@spoosh/plugin-cache";
+import { invalidationPlugin } from "@spoosh/plugin-invalidation";
+
+const client = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+  invalidationPlugin(),
+]);
+```
+
+## How Tags Are Generated
+
+Tags are automatically derived from the API path hierarchy:
+
+```typescript
+injectRead((api) => api("users").GET());
+// tags: ["users"]
+
+injectRead((api) => api("users/:id").GET({ params: { id: 123 } }));
+// tags: ["users", "users/123"]
+
+injectRead((api) => api("users/:id/posts").GET({ params: { id: 123 } }));
+// tags: ["users", "users/123", "users/123/posts"]
+```
+
+When a mutation like `api("users/:id").PATCH` succeeds, the invalidation plugin collects tags from the mutation path and refetches every active query whose tags overlap.
+
+## Tag Modes
+
+The `tags` option on read operations controls which tags are generated.
+
+### `"all"` (default)
+
+Generates the full path hierarchy:
+
+```typescript
+injectRead((api) => api("users/:id/posts").GET({ params: { id: "5" } }), {
+  tags: "all",
+});
+// tags: ["users", "users/5", "users/5/posts"]
+```
+
+Use `"all"` when you want queries to refresh for any mutation that touches a parent or sibling resource.
+
+### `"self"`
+
+Generates only the exact endpoint tag:
+
+```typescript
+injectRead((api) => api("users/:id/posts").GET({ params: { id: "5" } }), {
+  tags: "self",
+});
+// tags: ["users/5/posts"]
+```
+
+Use `"self"` when you only want refreshes from mutations targeting this exact endpoint.
+
+## Custom Tags
+
+Pass an array of strings to replace auto-generated tags entirely:
+
+```typescript
+injectRead((api) => api("dashboard/stats").GET(), {
+  tags: ["dashboard", "analytics"],
+});
+// tags: ["dashboard", "analytics"]
+```
+
+### Combining Mode with Custom Tags
+
+Include a mode keyword (`"all"` or `"self"`) as the first element to combine auto-generated and custom tags:
+
+```typescript
+injectRead((api) => api("users/:id/posts").GET({ params: { id: "5" } }), {
+  tags: ["all", "dashboard"],
+});
+// tags: ["users", "users/5", "users/5/posts", "dashboard"]
+
+injectRead((api) => api("users/:id/posts").GET({ params: { id: "5" } }), {
+  tags: ["self", "dashboard"],
+});
+// tags: ["users/5/posts", "dashboard"]
+```
+
+## Invalidation Strategies
+
+Control what happens after a mutation with the `invalidate` option on `injectWrite`:
+
+```typescript
+@Component({
+  selector: "app-post-form",
+  template: `<button (click)="submit()">Submit</button>`,
+})
+export class PostFormComponent {
+  private postWriter = injectWrite((api) => api("posts").POST);
+
+  async submit() {
+    // Default: invalidate full path hierarchy
+    await this.postWriter.trigger({ body: this.newPost, invalidate: "all" });
+
+    // Only invalidate the exact endpoint
+    await this.postWriter.trigger({ body: this.newPost, invalidate: "self" });
+
+    // Skip invalidation entirely
+    await this.postWriter.trigger({ body: this.newPost, invalidate: "none" });
+
+    // Global refetch — every active query refetches
+    await this.postWriter.trigger({ body: this.newPost, invalidate: "*" });
+
+    // Target specific tags
+    await this.postWriter.trigger({
+      body: this.newPost,
+      invalidate: ["posts", "dashboard"],
+    });
+
+    // Mode + extra tags
+    await this.postWriter.trigger({
+      body: this.newPost,
+      invalidate: ["all", "dashboard", "stats"],
+    });
+  }
+}
+```
+
+## Manual Invalidation
+
+For events that happen outside mutations (WebSocket messages, timers, external state changes), use the `invalidate` function from `createAngularSpoosh`:
+
+```typescript
+import { createAngularSpoosh } from "@spoosh/angular";
+
+const { injectRead, invalidate } = createAngularSpoosh(client);
+
+// Invalidate specific tags
+invalidate(["users", "posts"]);
+
+// Invalidate a single tag
+invalidate("posts");
+
+// Global refetch
+invalidate("*");
+```
+
+### WebSocket Example
+
+```typescript
+@Component({
+  selector: "app-realtime-dashboard",
+  template: `<div>...</div>`,
+})
+export class RealtimeDashboardComponent implements OnInit, OnDestroy {
+  private ws: WebSocket | null = null;
+
+  ngOnInit() {
+    this.ws = new WebSocket("wss://api.example.com/ws");
+
+    this.ws.onmessage = (event) => {
+      const { type, tags } = JSON.parse(event.data);
+
+      if (type === "invalidate") {
+        invalidate(tags);
+      }
+
+      if (type === "full-sync") {
+        invalidate("*");
+      }
+    };
+  }
+
+  ngOnDestroy() {
+    this.ws?.close();
+  }
+}
+```
+
+## Choosing the Right Strategy
+
+| Scenario                      | Strategy                               |
+| ----------------------------- | -------------------------------------- |
+| Standard CRUD                 | `invalidate: "all"` (default)          |
+| Updating a single resource    | `invalidate: "self"`                   |
+| No related queries to refresh | `invalidate: "none"`                   |
+| User logout / account switch  | `invalidate: "*"` + `clearCache: true` |
+| Cross-domain updates          | `invalidate: ["posts", "dashboard"]`   |
+| External events (WebSocket)   | `invalidate(tags)` manually            |
