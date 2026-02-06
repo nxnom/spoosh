@@ -3,18 +3,41 @@ import { containsFile, isJsonBody } from "./isJsonBody";
 import { objectToFormData } from "./objectToFormData";
 import { objectToUrlEncoded } from "./objectToUrlEncoded";
 
-export type SpooshBody<T = unknown> = {
+/**
+ * @internal
+ */
+export type SpooshBodyInternal<T = unknown> = {
   readonly __spooshBody: true;
   readonly kind: "form" | "json" | "urlencoded";
   readonly value: T;
 };
+
+/**
+ * Opaque type representing a transformed body. Create using `form()`, `json()`, or `urlencoded()` helpers.
+ * Do not create this type manually - use the helper functions instead.
+ *
+ * @example
+ * ```ts
+ * import { form, json, urlencoded } from "@spoosh/core";
+ *
+ * // Use helpers to create SpooshBody
+ * trigger({ body: form({ file: myFile }) });
+ * trigger({ body: json({ data: "value" }) });
+ * trigger({ body: urlencoded({ key: "value" }) });
+ * ```
+ */
+declare class SpooshBodyClass<T> {
+  private __brand: T;
+}
+
+export type SpooshBody<T = unknown> = SpooshBodyClass<T>;
 
 export function isSpooshBody(value: unknown): value is SpooshBody {
   return (
     typeof value === "object" &&
     value !== null &&
     "__spooshBody" in value &&
-    (value as SpooshBody).__spooshBody === true
+    (value as SpooshBodyInternal).__spooshBody === true
   );
 }
 
@@ -23,7 +46,7 @@ export function form<T>(value: T): SpooshBody<T> {
     __spooshBody: true as const,
     kind: "form" as const,
     value,
-  });
+  }) as unknown as SpooshBody<T>;
 }
 
 export function json<T>(value: T): SpooshBody<T> {
@@ -31,7 +54,7 @@ export function json<T>(value: T): SpooshBody<T> {
     __spooshBody: true as const,
     kind: "json" as const,
     value,
-  });
+  }) as unknown as SpooshBody<T>;
 }
 
 export function urlencoded<T>(value: T): SpooshBody<T> {
@@ -39,7 +62,7 @@ export function urlencoded<T>(value: T): SpooshBody<T> {
     __spooshBody: true as const,
     kind: "urlencoded" as const,
     value,
-  });
+  }) as unknown as SpooshBody<T>;
 }
 
 export function resolveRequestBody(
@@ -50,21 +73,23 @@ export function resolveRequestBody(
   }
 
   if (isSpooshBody(rawBody)) {
-    switch (rawBody.kind) {
+    const body = rawBody as unknown as SpooshBodyInternal;
+
+    switch (body.kind) {
       case "form":
         return {
-          body: objectToFormData(rawBody.value as Record<string, unknown>),
+          body: objectToFormData(body.value as Record<string, unknown>),
         };
 
       case "json":
         return {
-          body: JSON.stringify(rawBody.value),
+          body: JSON.stringify(body.value),
           headers: { "Content-Type": "application/json" },
         };
 
       case "urlencoded":
         return {
-          body: objectToUrlEncoded(rawBody.value as Record<string, unknown>),
+          body: objectToUrlEncoded(body.value as Record<string, unknown>),
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
         };
     }

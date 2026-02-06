@@ -4,15 +4,17 @@ import {
   urlencoded,
   isSpooshBody,
   resolveRequestBody,
+  type SpooshBodyInternal,
 } from "./body";
 
 describe("form()", () => {
   it("should return a frozen tagged object with kind 'form'", () => {
     const result = form({ name: "test" });
 
-    expect(result.__spooshBody).toBe(true);
-    expect(result.kind).toBe("form");
-    expect(result.value).toEqual({ name: "test" });
+    const internal = result as unknown as SpooshBodyInternal;
+    expect(internal.__spooshBody).toBe(true);
+    expect(internal.kind).toBe("form");
+    expect(internal.value).toEqual({ name: "test" });
     expect(Object.isFrozen(result)).toBe(true);
   });
 });
@@ -21,9 +23,10 @@ describe("json()", () => {
   it("should return a frozen tagged object with kind 'json'", () => {
     const result = json({ name: "test" });
 
-    expect(result.__spooshBody).toBe(true);
-    expect(result.kind).toBe("json");
-    expect(result.value).toEqual({ name: "test" });
+    const internal = result as unknown as SpooshBodyInternal;
+    expect(internal.__spooshBody).toBe(true);
+    expect(internal.kind).toBe("json");
+    expect(internal.value).toEqual({ name: "test" });
     expect(Object.isFrozen(result)).toBe(true);
   });
 });
@@ -32,9 +35,10 @@ describe("urlencoded()", () => {
   it("should return a frozen tagged object with kind 'urlencoded'", () => {
     const result = urlencoded({ name: "test" });
 
-    expect(result.__spooshBody).toBe(true);
-    expect(result.kind).toBe("urlencoded");
-    expect(result.value).toEqual({ name: "test" });
+    const internal = result as unknown as SpooshBodyInternal;
+    expect(internal.__spooshBody).toBe(true);
+    expect(internal.kind).toBe("urlencoded");
+    expect(internal.value).toEqual({ name: "test" });
     expect(Object.isFrozen(result)).toBe(true);
   });
 });
