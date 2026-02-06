@@ -1,5 +1,3 @@
-import type { SpooshMiddleware } from "./middleware.types";
-
 type QueryField<TQuery> = [TQuery] extends [never] ? object : { query: TQuery };
 
 type BodyField<TBody> = [TBody] extends [never] ? object : { body: TBody };
@@ -46,7 +44,3 @@ export type SpooshResponse<
       aborted?: boolean;
       readonly __requestOptions?: TRequestOptions;
     } & InputFieldWrapper<TQuery, TBody, TParamNames>);
-
-export type SpooshOptionsExtra<TData = unknown, TError = unknown> = {
-  middlewares?: SpooshMiddleware<TData, TError>[];
-};

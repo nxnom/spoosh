@@ -2,8 +2,16 @@
 
 ## 0.11.0
 
-- Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API
-- Expose `getSubscribersCount` method in listen controllers to get current number of subscribers
+### Breaking Changes
+
+- **Removed legacy middleware system**: `createMiddleware`, `applyMiddlewares`, and `composeMiddlewares` functions have been removed. Use the plugin-based middleware system instead.
+- **Removed `middlewares` option** from `createClient` config. Migrate to plugin-based middleware.
+- **Changed `createClient` API signature** from `createClient(config)` to `createClient(baseUrl, defaultOptions?)` to match the `Spoosh` class style.
+- Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API.
+
+### Other Changes
+
+- Expose `getSubscribersCount` method in listen controllers to get current number of subscribers.
 - Remove unnecessary plugin options from plugin context.
 
 ## 0.10.1

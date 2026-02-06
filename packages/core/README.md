@@ -47,8 +47,11 @@ type ApiSchema = {
 ```typescript
 import { createClient } from "@spoosh/core";
 
-const api = createClient<ApiSchema>({
-  baseUrl: "/api",
+const api = createClient<ApiSchema>("/api");
+
+// With custom options
+const apiWithAuth = createClient<ApiSchema>("/api", {
+  headers: { Authorization: "Bearer token" },
 });
 
 // Import body wrappers for explicit serialization
@@ -115,7 +118,7 @@ When using `createClient`, Next.js cache tags are automatically generated from t
 // Server component
 import { createClient } from "@spoosh/core";
 
-const api = createClient<ApiSchema>({ baseUrl: process.env.API_URL! });
+const api = createClient<ApiSchema>(process.env.API_URL!);
 
 // Auto-generates next: { tags: ['posts'] }
 const { data: posts } = await api("posts").GET();
@@ -127,51 +130,6 @@ const { data: userPosts } = await api("users/:id/posts").GET({
 ```
 
 This enables automatic cache invalidation with `revalidateTag()` in Next.js.
-
-### With Middlewares
-
-```typescript
-import { createClient, createMiddleware } from "@spoosh/core";
-
-const authMiddleware = createMiddleware("auth", "before", async (ctx) => {
-  ctx.requestOptions = {
-    ...ctx.requestOptions,
-    headers: { Authorization: `Bearer ${token}` },
-  };
-  return ctx;
-});
-
-const api = createClient<ApiSchema>({
-  baseUrl: "/api",
-  middlewares: [authMiddleware],
-});
-```
-
-### Middleware Utilities
-
-```typescript
-import {
-  createMiddleware,
-  applyMiddlewares,
-  composeMiddlewares,
-} from "@spoosh/core";
-
-// createMiddleware(name, phase, handler) - Create a named middleware
-const logMiddleware = createMiddleware("logger", "after", async (ctx) => {
-  console.log(ctx.response?.status);
-  return ctx;
-});
-
-// composeMiddlewares(...lists) - Combine multiple middleware arrays
-const allMiddlewares = composeMiddlewares(
-  [authMiddleware],
-  [logMiddleware],
-  conditionalMiddlewares
-);
-
-// applyMiddlewares(context, middlewares, phase) - Run middlewares for a phase
-const updatedContext = await applyMiddlewares(context, middlewares, "before");
-```
 
 ## Schema Types
 
@@ -186,15 +144,16 @@ Path parameters are defined using `:param` syntax in the path key (e.g., `"users
 
 ## API Reference
 
-### createClient(config)
+### createClient(baseUrl, defaultOptions?)
 
 Creates a lightweight type-safe API instance.
 
-| Option           | Type                 | Description                                        |
-| ---------------- | -------------------- | -------------------------------------------------- |
-| `baseUrl`        | `string`             | Base URL for all API requests                      |
-| `defaultOptions` | `RequestInit`        | Default fetch options (headers, credentials, etc.) |
-| `middlewares`    | `SpooshMiddleware[]` | Request/response middlewares                       |
+**Parameters:**
+
+| Parameter        | Type          | Description                                                   |
+| ---------------- | ------------- | ------------------------------------------------------------- |
+| `baseUrl`        | `string`      | Base URL for all API requests                                 |
+| `defaultOptions` | `RequestInit` | (Optional) Default fetch options (headers, credentials, etc.) |
 
 ### Spoosh (class)
 

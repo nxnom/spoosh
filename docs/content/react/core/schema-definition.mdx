@@ -46,7 +46,7 @@ type ApiSchema = {
   };
 };
 
-const api = createClient<ApiSchema>({ baseUrl: "/api" });
+const api = createClient<ApiSchema>("/api");
 // ---cut---
 const { data } = await api("users").GET();
 ```
@@ -66,7 +66,7 @@ type ApiSchema = {
   };
 };
 
-const api = createClient<ApiSchema>({ baseUrl: "/api" });
+const api = createClient<ApiSchema>("/api");
 // ---cut---
 const { data } = await api("users").POST({
   body: { name: "John", email: "john@example.com" },
@@ -88,7 +88,7 @@ type ApiSchema = {
   };
 };
 
-const api = createClient<ApiSchema>({ baseUrl: "/api" });
+const api = createClient<ApiSchema>("/api");
 // ---cut---
 const { data } = await api("users").GET({
   query: { page: 1, limit: 10 },
@@ -113,7 +113,7 @@ declare const myFile: File;
 // ---cut---
 import { form } from "@spoosh/core";
 
-const api = createClient<ApiSchema>({ baseUrl: "/api" });
+const api = createClient<ApiSchema>("/api");
 
 const { data } = await api("users/avatar").POST({
   body: form({ file: myFile }),

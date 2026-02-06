@@ -139,9 +139,7 @@ Combine with `initialDataPlugin` for server-rendered pages with client-side hydr
 import { createClient } from "@spoosh/core";
 import type { ApiSchema } from "./schema";
 
-export const serverApi = createClient<ApiSchema>({
-  baseUrl: process.env.API_URL!,
-});
+export const serverApi = createClient<ApiSchema>(process.env.API_URL!);
 ```
 
 ```typescript title="src/app/posts/page.tsx"

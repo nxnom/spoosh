@@ -123,25 +123,33 @@ A lightweight client without plugin support. Use this for server-side data fetch
 ```typescript
 import { createClient } from "@spoosh/core";
 
-const api = createClient<ApiSchema>({
-  baseUrl: process.env.API_URL!,
-});
+const api = createClient<ApiSchema>(process.env.API_URL!);
 
 const { data } = await api("users").GET();
 ```
 
-| Option           | Type                 | Description                                             |
-| ---------------- | -------------------- | ------------------------------------------------------- |
-| `baseUrl`        | `string`             | Base URL for all API requests                           |
-| `defaultOptions` | `SpooshOptionsInput` | Default options (headers, credentials, transport, etc.) |
-| `middlewares`    | `SpooshMiddleware[]` | Request/response middlewares                            |
+### Parameters
+
+| Parameter        | Type                 | Required | Description                                             |
+| ---------------- | -------------------- | -------- | ------------------------------------------------------- |
+| `baseUrl`        | `string`             | Yes      | Base URL for all API requests                           |
+| `defaultOptions` | `SpooshOptionsInput` | No       | Default options (headers, credentials, transport, etc.) |
+
+### With Custom Options
+
+```typescript
+const api = createClient<ApiSchema>(process.env.API_URL!, {
+  headers: { Authorization: "Bearer token" },
+  credentials: "include",
+});
+```
 
 ### Next.js Cache Tags
 
 `createClient` automatically generates Next.js cache tags from the API path:
 
 ```typescript
-const api = createClient<ApiSchema>({ baseUrl: process.env.API_URL! });
+const api = createClient<ApiSchema>(process.env.API_URL!);
 
 // Auto-generates: next: { tags: ['posts'] }
 await api("posts").GET();

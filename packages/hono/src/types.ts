@@ -151,7 +151,7 @@ type CleanupRootPath<T> = {
  *
  * type ApiSchema = HonoToSpoosh<AppType>;
  *
- * const api = createClient<ApiSchema>({ baseUrl: "/api" });
+ * const api = createClient<ApiSchema>("/api");
  * await api("posts").GET();
  * await api("posts/:id").GET({ params: { id: "123" } });
  * ```

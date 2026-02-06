@@ -1,4 +1,3 @@
-import { applyMiddlewares } from "./middleware";
 import {
   buildUrl,
   generateTags,
@@ -7,12 +6,9 @@ import {
 } from "./utils";
 import type {
   AnyRequestOptions,
-  SpooshOptionsExtra,
-  SpooshMiddleware,
   SpooshOptions,
   SpooshResponse,
   HttpMethod,
-  MiddlewareContext,
 } from "./types";
 import type { Transport, TransportOption } from "./transport/types";
 import { fetchTransport } from "./transport/fetch";
@@ -29,45 +25,19 @@ export async function executeFetch<TData, TError>(
   baseUrl: string,
   path: string[],
   method: HttpMethod,
-  defaultOptions: SpooshOptions & SpooshOptionsExtra,
+  defaultOptions: SpooshOptions,
   requestOptions?: AnyRequestOptions,
   nextTags?: boolean
 ): Promise<SpooshResponse<TData, TError>> {
-  const middlewares = (defaultOptions.middlewares ?? []) as SpooshMiddleware<
-    TData,
-    TError
-  >[];
-
-  let context: MiddlewareContext<TData, TError> = {
+  return executeCoreFetch<TData, TError>({
     baseUrl,
     path,
     method,
     defaultOptions,
     requestOptions,
-    metadata: {},
-  };
-
-  if (middlewares.length > 0) {
-    context = await applyMiddlewares(context, middlewares, "before");
-  }
-
-  const response = await executeCoreFetch<TData, TError>({
-    baseUrl: context.baseUrl,
-    path: context.path,
-    method: context.method,
-    defaultOptions: context.defaultOptions,
-    requestOptions: context.requestOptions,
-    middlewareFetchInit: context.fetchInit,
+    middlewareFetchInit: undefined,
     nextTags,
   });
-
-  context.response = response;
-
-  if (middlewares.length > 0) {
-    context = await applyMiddlewares(context, middlewares, "after");
-  }
-
-  return response;
 }
 
 function buildInputFields(
@@ -106,7 +76,7 @@ type CoreFetchConfig = {
   baseUrl: string;
   path: string[];
   method: HttpMethod;
-  defaultOptions: SpooshOptions & SpooshOptionsExtra;
+  defaultOptions: SpooshOptions;
   requestOptions?: AnyRequestOptions;
   middlewareFetchInit?: RequestInit;
   nextTags?: boolean;
@@ -125,12 +95,10 @@ async function executeCoreFetch<TData, TError>(
     nextTags,
   } = config;
   const {
-    middlewares: _,
     headers: defaultHeaders,
     transport: defaultTransport,
     ...fetchDefaults
   } = defaultOptions;
-  void _;
 
   const inputFields = buildInputFields(requestOptions);
 
