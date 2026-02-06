@@ -585,6 +585,42 @@ describe("createStateManager", () => {
       expect(cached?.meta.get("retryCount")).toBe(3);
     });
 
+    it("should allow setCache to update tags on entry created by setMeta", () => {
+      const manager = createStateManager();
+      const key = "test-key";
+
+      manager.setMeta(key, { fromPlugin: true });
+
+      const entryAfterSetMeta = manager.getCache(key);
+      expect(entryAfterSetMeta?.tags).toEqual([]);
+
+      manager.setCache(key, {
+        state: createState({ data: "data" }),
+        tags: ["posts", "list"],
+      });
+
+      const entryAfterSetCache = manager.getCache(key);
+      expect(entryAfterSetCache?.tags).toEqual(["posts", "list"]);
+      expect(entryAfterSetCache?.meta.get("fromPlugin")).toBe(true);
+    });
+
+    it("should preserve meta when setCache updates tags on setMeta-created entry", () => {
+      const manager = createStateManager();
+      const key = "test-key";
+
+      manager.setMeta(key, { initialData: true, timestamp: 12345 });
+      manager.setCache(key, {
+        state: createState({ data: "fetched-data" }),
+        tags: ["users"],
+      });
+
+      const cached = manager.getCache(key);
+      expect(cached?.meta.get("initialData")).toBe(true);
+      expect(cached?.meta.get("timestamp")).toBe(12345);
+      expect(cached?.tags).toEqual(["users"]);
+      expect(cached?.state.data).toBe("fetched-data");
+    });
+
     it("should merge multiple plugin results", () => {
       const manager = createStateManager();
       const key = "test-key";
@@ -687,6 +723,38 @@ describe("createStateManager", () => {
       });
 
       expect(() => manager.markStale(["nonexistent"])).not.toThrow();
+    });
+
+    it("should mark entry as stale after setCache updates tags on setMeta-created entry", () => {
+      const manager = createStateManager();
+      const key = "test-key";
+
+      manager.setMeta(key, { fromInitialDataPlugin: true });
+
+      const entryBeforeTagUpdate = manager.getCache(key);
+      expect(entryBeforeTagUpdate?.tags).toEqual([]);
+
+      manager.setCache(key, {
+        state: createState({ data: "data" }),
+        tags: ["posts"],
+      });
+
+      manager.markStale(["posts"]);
+
+      const cached = manager.getCache(key);
+      expect(cached?.stale).toBe(true);
+    });
+
+    it("should NOT mark entry as stale if setMeta created it and tags were never updated", () => {
+      const manager = createStateManager();
+      const key = "test-key";
+
+      manager.setMeta(key, { fromPlugin: true });
+
+      manager.markStale(["posts"]);
+
+      const cached = manager.getCache(key);
+      expect(cached?.stale).toBeUndefined();
     });
   });
 

@@ -125,6 +125,7 @@ export function createOperationController<TData, TError>(
     if (cached) {
       stateManager.setCache<TData, TError>(queryKey, {
         state: { ...cached.state, ...updater },
+        tags,
         stale: false,
       });
     } else {

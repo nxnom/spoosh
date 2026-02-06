@@ -1,5 +1,9 @@
 # @spoosh/core
 
+## 0.10.1
+
+- Fix invalidation not working properly when using initial data.
+
 ## 0.10.0
 
 - Set SpooshSchema `data` as optional field to allow endpoints with no response body
