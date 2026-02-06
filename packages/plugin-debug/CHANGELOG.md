@@ -1,5 +1,9 @@
 # @spoosh/plugin-debug
 
+## 0.2.2
+
+- Use cache state directly insteads of getting state value directly from context
+
 ## 0.2.1
 
 - Update documentation URLs to new `/docs/{framework}` format

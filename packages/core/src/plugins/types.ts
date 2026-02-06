@@ -29,7 +29,12 @@ export type CacheEntry<TData = unknown, TError = unknown> = {
   stale?: boolean;
 };
 
-export type PluginContext<TData = unknown, TError = unknown> = {
+/** RequestOptions in plugin context have headers already resolved to Record */
+export type PluginRequestOptions = Omit<AnyRequestOptions, "headers"> & {
+  headers: Record<string, string>;
+};
+
+export type PluginContext = {
   readonly operationType: OperationType;
   readonly path: string[];
   readonly method: HttpMethod;
@@ -42,20 +47,11 @@ export type PluginContext<TData = unknown, TError = unknown> = {
   /** Unique identifier for the hook instance. Persists across queryKey changes within the same hook. */
   readonly hookId?: string;
 
-  requestOptions: AnyRequestOptions;
-  state: OperationState<TData, TError>;
-  response?: SpooshResponse<TData, TError>;
+  requestOptions: PluginRequestOptions;
   metadata: Map<string, unknown>;
 
-  abort: () => void;
   stateManager: StateManager;
   eventEmitter: EventEmitter;
-
-  /** Resolved headers as a plain object. Modify via setHeaders(). */
-  headers: Record<string, string>;
-
-  /** Add/update headers. Merges with existing headers. */
-  setHeaders: (headers: Record<string, string>) => void;
 
   /** Access other plugins' exported APIs */
   plugins: PluginAccessor;
@@ -68,10 +64,7 @@ export type PluginContext<TData = unknown, TError = unknown> = {
 };
 
 /** Input type for creating PluginContext (without injected properties) */
-export type PluginContextInput<TData = unknown, TError = unknown> = Omit<
-  PluginContext<TData, TError>,
-  "plugins" | "setHeaders" | "headers"
->;
+export type PluginContextInput = Omit<PluginContext, "plugins">;
 
 /**
  * Middleware function that wraps the fetch flow.
@@ -102,18 +95,18 @@ export type PluginContextInput<TData = unknown, TError = unknown> = Omit<
  * }
  * ```
  */
-export type PluginMiddleware<TData = unknown, TError = unknown> = (
-  context: PluginContext<TData, TError>,
-  next: () => Promise<SpooshResponse<TData, TError>>
-) => Promise<SpooshResponse<TData, TError>>;
+export type PluginMiddleware = (
+  context: PluginContext,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  next: () => Promise<SpooshResponse<any, any>>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+) => Promise<SpooshResponse<any, any>>;
 
-export type PluginHandler<TData = unknown, TError = unknown> = (
-  context: PluginContext<TData, TError>
-) => void | Promise<void>;
+export type PluginHandler = (context: PluginContext) => void | Promise<void>;
 
-export type PluginUpdateHandler<TData = unknown, TError = unknown> = (
-  context: PluginContext<TData, TError>,
-  previousContext: PluginContext<TData, TError>
+export type PluginUpdateHandler = (
+  context: PluginContext,
+  previousContext: PluginContext
 ) => void | Promise<void>;
 
 /**
@@ -121,23 +114,25 @@ export type PluginUpdateHandler<TData = unknown, TError = unknown> = (
  * Can return a new response to transform it, or void for side effects only.
  * Returned responses are chained through plugins in order.
  */
-export type PluginResponseHandler<TData = unknown, TError = unknown> = (
-  context: PluginContext<TData, TError>,
-  response: SpooshResponse<TData, TError>
-) =>
-  | SpooshResponse<TData, TError>
+export type PluginResponseHandler = (
+  context: PluginContext,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  response: SpooshResponse<any, any>
+) => // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | SpooshResponse<any, any>
   | void
-  | Promise<SpooshResponse<TData, TError> | void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | Promise<SpooshResponse<any, any> | void>;
 
-export type PluginLifecycle<TData = unknown, TError = unknown> = {
+export type PluginLifecycle = {
   /** Called on component mount */
-  onMount?: PluginHandler<TData, TError>;
+  onMount?: PluginHandler;
 
   /** Called when options/query changes. Receives both new and previous context. */
-  onUpdate?: PluginUpdateHandler<TData, TError>;
+  onUpdate?: PluginUpdateHandler;
 
   /** Called on component unmount */
-  onUnmount?: PluginHandler<TData, TError>;
+  onUnmount?: PluginHandler;
 };
 
 /**
@@ -441,13 +436,12 @@ export type RefetchEvent = {
 export type InstancePluginExecutor = {
   executeMiddleware: <TData, TError>(
     operationType: OperationType,
-    context: PluginContext<TData, TError>,
-    coreFetch: () => Promise<SpooshResponse<TData, TError>>
+    context: PluginContext,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    coreFetch: () => Promise<SpooshResponse<any, any>>
   ) => Promise<SpooshResponse<TData, TError>>;
 
-  createContext: <TData, TError>(
-    input: PluginContextInput<TData, TError>
-  ) => PluginContext<TData, TError>;
+  createContext: (input: PluginContextInput) => PluginContext;
 };
 
 /**

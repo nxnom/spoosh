@@ -4,9 +4,9 @@ import { createPluginExecutor } from "./executor";
 import { createStateManager } from "../state/manager";
 import { createEventEmitter } from "../events/emitter";
 
-function createMockContext<TData = unknown, TError = unknown>(
-  overrides: Partial<PluginContext<TData, TError>> = {}
-): PluginContext<TData, TError> {
+function createMockContext(
+  overrides: Partial<PluginContext> = {}
+): PluginContext {
   const stateManager = createStateManager();
   const eventEmitter = createEventEmitter();
 
@@ -17,23 +17,13 @@ function createMockContext<TData = unknown, TError = unknown>(
     queryKey: "test-key",
     tags: ["test"],
     requestTimestamp: Date.now(),
-    requestOptions: {},
-    state: {
-      loading: false,
-      fetching: false,
-      data: undefined,
-      error: undefined,
-      timestamp: 0,
-    },
+    requestOptions: { headers: {} },
     metadata: new Map(),
-    abort: () => {},
     stateManager,
     eventEmitter,
-    headers: {},
-    setHeaders: () => {},
     plugins: { get: () => undefined },
     ...overrides,
-  } as PluginContext<TData, TError>;
+  } as PluginContext;
 }
 
 function createMockPlugin(
@@ -680,14 +670,8 @@ describe("createPluginExecutor", () => {
         queryKey: "test-key",
         tags: ["test"],
         requestTimestamp: Date.now(),
-        requestOptions: {},
-        state: {
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
+        requestOptions: { headers: {} },
         metadata: new Map(),
-        abort: () => {},
         stateManager,
         eventEmitter,
       });
@@ -696,7 +680,7 @@ describe("createPluginExecutor", () => {
       expect(typeof context.plugins.get).toBe("function");
     });
 
-    it("creates context with setHeaders function", () => {
+    it("allows direct mutation of requestOptions.headers", () => {
       const executor = createPluginExecutor([]);
       const stateManager = createStateManager();
       const eventEmitter = createEventEmitter();
@@ -708,109 +692,24 @@ describe("createPluginExecutor", () => {
         queryKey: "test-key",
         tags: ["test"],
         requestTimestamp: Date.now(),
-        requestOptions: {},
-        state: {
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
+        requestOptions: { headers: {} },
         metadata: new Map(),
-        abort: () => {},
         stateManager,
         eventEmitter,
       });
 
-      expect(typeof context.setHeaders).toBe("function");
-    });
-
-    it("initializes headers as empty object", () => {
-      const executor = createPluginExecutor([]);
-      const stateManager = createStateManager();
-      const eventEmitter = createEventEmitter();
-
-      const context = executor.createContext({
-        operationType: "read",
-        path: ["test"],
-        method: "GET",
-        queryKey: "test-key",
-        tags: ["test"],
-        requestTimestamp: Date.now(),
-        requestOptions: {},
-        state: {
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
-        metadata: new Map(),
-        abort: () => {},
-        stateManager,
-        eventEmitter,
-      });
-
-      expect(context.headers).toEqual({});
-    });
-
-    it("setHeaders merges with existing headers", () => {
-      const executor = createPluginExecutor([]);
-      const stateManager = createStateManager();
-      const eventEmitter = createEventEmitter();
-
-      const context = executor.createContext({
-        operationType: "read",
-        path: ["test"],
-        method: "GET",
-        queryKey: "test-key",
-        tags: ["test"],
-        requestTimestamp: Date.now(),
-        requestOptions: {},
-        state: {
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
-        metadata: new Map(),
-        abort: () => {},
-        stateManager,
-        eventEmitter,
-      });
-
-      context.setHeaders({ "Content-Type": "application/json" });
-      context.setHeaders({ Authorization: "Bearer token" });
-
-      expect(context.headers).toEqual({
+      context.requestOptions.headers = {
+        ...context.requestOptions.headers,
         "Content-Type": "application/json",
+      };
+      context.requestOptions.headers = {
+        ...context.requestOptions.headers,
         Authorization: "Bearer token",
-      });
-    });
-
-    it("setHeaders updates requestOptions.headers", () => {
-      const executor = createPluginExecutor([]);
-      const stateManager = createStateManager();
-      const eventEmitter = createEventEmitter();
-
-      const context = executor.createContext({
-        operationType: "read",
-        path: ["test"],
-        method: "GET",
-        queryKey: "test-key",
-        tags: ["test"],
-        requestTimestamp: Date.now(),
-        requestOptions: {},
-        state: {
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
-        metadata: new Map(),
-        abort: () => {},
-        stateManager,
-        eventEmitter,
-      });
-
-      context.setHeaders({ "X-Custom-Header": "value" });
+      };
 
       expect(context.requestOptions.headers).toEqual({
-        "X-Custom-Header": "value",
+        "Content-Type": "application/json",
+        Authorization: "Bearer token",
       });
     });
 
@@ -830,14 +729,8 @@ describe("createPluginExecutor", () => {
         queryKey: "test-key",
         tags: ["test"],
         requestTimestamp: Date.now(),
-        requestOptions: {},
-        state: {
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
+        requestOptions: { headers: {} },
         metadata: new Map(),
-        abort: () => {},
         stateManager,
         eventEmitter,
       });
@@ -861,14 +754,8 @@ describe("createPluginExecutor", () => {
         queryKey: "test-key",
         tags: ["test"],
         requestTimestamp: Date.now(),
-        requestOptions: {},
-        state: {
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
+        requestOptions: { headers: {} },
         metadata: new Map(),
-        abort: () => {},
         stateManager,
         eventEmitter,
       });
@@ -889,14 +776,8 @@ describe("createPluginExecutor", () => {
         queryKey: "test-key",
         tags: ["test"],
         requestTimestamp: Date.now(),
-        requestOptions: {},
-        state: {
-          data: undefined,
-          error: undefined,
-          timestamp: 0,
-        },
+        requestOptions: { headers: {} },
         metadata: new Map(),
-        abort: () => {},
         stateManager,
         eventEmitter,
       });

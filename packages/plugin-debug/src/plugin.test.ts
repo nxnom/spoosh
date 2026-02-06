@@ -1,5 +1,5 @@
 import { createStateManager } from "@spoosh/core";
-import type { OperationState, PluginContext } from "@spoosh/core";
+import type { PluginContext } from "@spoosh/core";
 import {
   createMockContext as baseCreateMockContext,
   type MockContextOptions,
@@ -85,7 +85,7 @@ describe("debugPlugin", () => {
         "Request Options:",
         context.requestOptions
       );
-      expect(consoleLogSpy).toHaveBeenCalledWith("State:", context.state);
+      expect(consoleLogSpy).toHaveBeenCalledWith("Cache State:", undefined);
       expect(consoleGroupEndSpy).toHaveBeenCalled();
     });
 
@@ -526,35 +526,57 @@ describe("debugPlugin", () => {
   });
 
   describe("state logging", () => {
-    it("should log complete state information", async () => {
+    it("should log complete cache state information", async () => {
       const plugin = debugPlugin({ enabled: true });
-      const state: OperationState = {
-        data: { cached: true },
-        error: undefined,
-        timestamp: 12345,
-      };
-      const context = createMockContext({ state });
+      const stateManager = createStateManager();
+      const queryKey = stateManager.createQueryKey({
+        path: ["users", "1"],
+        method: "GET",
+      });
+
+      stateManager.setCache(queryKey, {
+        state: {
+          data: { cached: true },
+          error: undefined,
+          timestamp: 12345,
+        },
+        tags: ["users", "users/1"],
+      });
+
+      const context = createMockContext({ stateManager, queryKey });
       const next = vi.fn().mockResolvedValue({ data: {}, status: 200 });
 
       await plugin.middleware!(context, next);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith("State:", state);
+      const cached = stateManager.getCache(queryKey);
+      expect(consoleLogSpy).toHaveBeenCalledWith("Cache State:", cached?.state);
     });
 
-    it("should log error state when present", async () => {
+    it("should log error cache state when present", async () => {
       const plugin = debugPlugin({ enabled: true });
+      const stateManager = createStateManager();
+      const queryKey = stateManager.createQueryKey({
+        path: ["users", "1"],
+        method: "GET",
+      });
+
       const errorObj = { message: "Previous error" };
-      const state: OperationState = {
-        data: undefined,
-        error: errorObj,
-        timestamp: 12345,
-      };
-      const context = createMockContext({ state });
+      stateManager.setCache(queryKey, {
+        state: {
+          data: undefined,
+          error: errorObj,
+          timestamp: 12345,
+        },
+        tags: ["users", "users/1"],
+      });
+
+      const context = createMockContext({ stateManager, queryKey });
       const next = vi.fn().mockResolvedValue({ data: {}, status: 200 });
 
       await plugin.middleware!(context, next);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith("State:", state);
+      const cached = stateManager.getCache(queryKey);
+      expect(consoleLogSpy).toHaveBeenCalledWith("Cache State:", cached?.state);
     });
   });
 });

@@ -9,32 +9,31 @@ import type { SpooshResponse } from "../types/response.types";
 
 export type PluginExecutor = {
   /** Execute lifecycle hooks for onMount or onUnmount */
-  executeLifecycle: <TData, TError>(
+  executeLifecycle: (
     phase: "onMount" | "onUnmount",
     operationType: OperationType,
-    context: PluginContext<TData, TError>
+    context: PluginContext
   ) => Promise<void>;
 
   /** Execute onUpdate lifecycle with previous context */
-  executeUpdateLifecycle: <TData, TError>(
+  executeUpdateLifecycle: (
     operationType: OperationType,
-    context: PluginContext<TData, TError>,
-    previousContext: PluginContext<TData, TError>
+    context: PluginContext,
+    previousContext: PluginContext
   ) => Promise<void>;
 
-  /** Execute middleware chain with a core fetch function, then run afterResponse handlers */
-  executeMiddleware: <TData, TError>(
+  executeMiddleware: (
     operationType: OperationType,
-    context: PluginContext<TData, TError>,
-    coreFetch: () => Promise<SpooshResponse<TData, TError>>
-  ) => Promise<SpooshResponse<TData, TError>>;
+    context: PluginContext,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    coreFetch: () => Promise<SpooshResponse<any, any>>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) => Promise<SpooshResponse<any, any>>;
 
   getPlugins: () => readonly SpooshPlugin[];
 
   /** Creates a full PluginContext with plugins accessor injected */
-  createContext: <TData, TError>(
-    input: PluginContextInput<TData, TError>
-  ) => PluginContext<TData, TError>;
+  createContext: (input: PluginContextInput) => PluginContext;
 };
 
 function validateDependencies(plugins: SpooshPlugin[]): void {
@@ -99,10 +98,10 @@ export function createPluginExecutor(
     },
   });
 
-  const executeLifecycleImpl = async <TData, TError>(
+  const executeLifecycleImpl = async (
     phase: "onMount" | "onUnmount",
     operationType: OperationType,
-    context: PluginContext<TData, TError>
+    context: PluginContext
   ): Promise<void> => {
     for (const plugin of plugins) {
       if (!plugin.operations.includes(operationType)) {
@@ -115,14 +114,14 @@ export function createPluginExecutor(
         continue;
       }
 
-      await handler(context as PluginContext<unknown, unknown>);
+      await handler(context as PluginContext);
     }
   };
 
-  const executeUpdateLifecycleImpl = async <TData, TError>(
+  const executeUpdateLifecycleImpl = async (
     operationType: OperationType,
-    context: PluginContext<TData, TError>,
-    previousContext: PluginContext<TData, TError>
+    context: PluginContext,
+    previousContext: PluginContext
   ): Promise<void> => {
     for (const plugin of plugins) {
       if (!plugin.operations.includes(operationType)) {
@@ -135,10 +134,7 @@ export function createPluginExecutor(
         continue;
       }
 
-      await handler(
-        context as PluginContext<unknown, unknown>,
-        previousContext as PluginContext<unknown, unknown>
-      );
+      await handler(context as PluginContext, previousContext as PluginContext);
     }
   };
 
@@ -146,11 +142,13 @@ export function createPluginExecutor(
     executeLifecycle: executeLifecycleImpl,
     executeUpdateLifecycle: executeUpdateLifecycleImpl,
 
-    async executeMiddleware<TData, TError>(
+    async executeMiddleware(
       operationType: OperationType,
-      context: PluginContext<TData, TError>,
-      coreFetch: () => Promise<SpooshResponse<TData, TError>>
-    ): Promise<SpooshResponse<TData, TError>> {
+      context: PluginContext,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      coreFetch: () => Promise<SpooshResponse<any, any>>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ): Promise<SpooshResponse<any, any>> {
       const applicablePlugins = plugins.filter((p) =>
         p.operations.includes(operationType)
       );
@@ -159,20 +157,23 @@ export function createPluginExecutor(
         .filter((p) => p.middleware)
         .map((p) => p.middleware!);
 
-      let response: SpooshResponse<TData, TError>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let response: SpooshResponse<any, any>;
 
       if (middlewares.length === 0) {
         response = await coreFetch();
       } else {
-        type NextFn = () => Promise<SpooshResponse<TData, TError>>;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        type NextFn = () => Promise<SpooshResponse<any, any>>;
 
         const chain: NextFn = middlewares.reduceRight<NextFn>(
           (next, middleware) => {
             return () =>
               middleware(
-                context as PluginContext<unknown, unknown>,
+                context as PluginContext,
                 next as () => Promise<SpooshResponse<unknown, unknown>>
-              ) as Promise<SpooshResponse<TData, TError>>;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ) as Promise<SpooshResponse<any, any>>;
           },
           coreFetch
         );
@@ -183,12 +184,13 @@ export function createPluginExecutor(
       for (const plugin of applicablePlugins) {
         if (plugin.afterResponse) {
           const newResponse = await plugin.afterResponse(
-            context as PluginContext<unknown, unknown>,
+            context as PluginContext,
             response as SpooshResponse<unknown, unknown>
           );
 
           if (newResponse) {
-            response = newResponse as SpooshResponse<TData, TError>;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            response = newResponse as SpooshResponse<any, any>;
           }
         }
       }
@@ -200,14 +202,9 @@ export function createPluginExecutor(
       return frozenPlugins;
     },
 
-    createContext<TData, TError>(input: PluginContextInput<TData, TError>) {
-      const ctx = input as PluginContext<TData, TError>;
+    createContext(input: PluginContextInput) {
+      const ctx = input as PluginContext;
       ctx.plugins = createPluginAccessor(ctx);
-      ctx.headers = {};
-      ctx.setHeaders = (newHeaders) => {
-        ctx.headers = { ...ctx.headers, ...newHeaders };
-        ctx.requestOptions.headers = ctx.headers;
-      };
       return ctx;
     },
   };

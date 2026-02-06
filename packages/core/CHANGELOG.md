@@ -3,6 +3,7 @@
 ## 0.10.2
 
 - Expose `getSubscribersCount` method in listen controllers to get current number of subscribers
+- Remove unnecessary plugin options from plugin context.
 
 ## 0.10.1
 

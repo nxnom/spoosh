@@ -89,6 +89,8 @@ export function debugPlugin(config: DebugPluginConfig = {}): SpooshPlugin<{
           .map(({ key, entry }) => ({ key, data: entry.state.data }))
       : undefined;
 
+    const cached = context.stateManager.getCache(context.queryKey);
+
     const entry: DebugLogEntry = {
       phase,
       operationType: context.operationType,
@@ -99,9 +101,9 @@ export function debugPlugin(config: DebugPluginConfig = {}): SpooshPlugin<{
       tags: context.tags,
       requestOptions: context.requestOptions,
       state: {
-        data: context.state.data,
-        error: context.state.error,
-        timestamp: context.state.timestamp,
+        data: cached?.state.data,
+        error: cached?.state.error,
+        timestamp: cached?.state.timestamp ?? Date.now(),
       },
       response: response
         ? {
@@ -132,7 +134,7 @@ export function debugPlugin(config: DebugPluginConfig = {}): SpooshPlugin<{
     console.log("Query Key:", context.queryKey);
     console.log("Tags:", context.tags);
     console.log("Request Options:", context.requestOptions);
-    console.log("State:", context.state);
+    console.log("Cache State:", cached?.state);
 
     if (response) {
       console.log("Response:", response);

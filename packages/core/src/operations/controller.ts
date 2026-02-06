@@ -1,5 +1,8 @@
 import type { HttpMethod } from "../types/common.types";
-import type { AnyRequestOptions } from "../types/request.types";
+import type {
+  AnyRequestOptions,
+  HeadersInitOrGetter,
+} from "../types/request.types";
 import type { SpooshResponse } from "../types/response.types";
 import type {
   OperationState,
@@ -33,10 +36,10 @@ export type OperationController<TData = unknown, TError = unknown> = {
   unmount: () => void;
 
   /** Called when options/query changes. Pass previous context for cleanup. */
-  update: (previousContext: PluginContext<TData, TError>) => void;
+  update: (previousContext: PluginContext) => void;
 
   /** Get current context (for passing to update as previousContext) */
-  getContext: () => PluginContext<TData, TError>;
+  getContext: () => PluginContext;
 
   setPluginOptions: (options: unknown) => void;
   setMetadata: (key: string, value: unknown) => void;
@@ -91,15 +94,13 @@ export function createOperationController<TData, TError>(
 
   const createContext = (
     requestOptions: AnyRequestOptions = {},
-    requestTimestamp: number = Date.now()
-  ): PluginContext<TData, TError> => {
-    const cached = stateManager.getCache<TData, TError>(queryKey);
-    const state = cached?.state ?? createInitialState<TData, TError>();
-
+    requestTimestamp: number = Date.now(),
+    resolvedHeaders?: Record<string, string>
+  ): PluginContext => {
     const resolvedTags =
       (pluginOptions as { tags?: string[] } | undefined)?.tags ?? tags;
 
-    return pluginExecutor.createContext<TData, TError>({
+    return pluginExecutor.createContext({
       operationType,
       path,
       method,
@@ -107,11 +108,13 @@ export function createOperationController<TData, TError>(
       tags: resolvedTags,
       requestTimestamp,
       hookId,
-      requestOptions: { ...initialRequestOptions, ...requestOptions },
-      state,
+      requestOptions: {
+        ...initialRequestOptions,
+        ...requestOptions,
+        headers: resolvedHeaders ?? {},
+      },
       metadata,
       pluginOptions,
-      abort: () => abortController?.abort(),
       stateManager,
       eventEmitter,
     });
@@ -149,17 +152,20 @@ export function createOperationController<TData, TError>(
       }
       isFirstExecute = false;
 
-      const context = createContext(opts, currentRequestTimestamp);
+      const mergedOptions = { ...initialRequestOptions, ...opts };
+      const resolvedHeaders = await resolveHeadersToRecord(
+        mergedOptions.headers as HeadersInitOrGetter
+      );
+
+      const context = createContext(
+        opts,
+        currentRequestTimestamp,
+        resolvedHeaders
+      );
 
       if (force) {
         context.forceRefetch = true;
       }
-
-      context.headers = await resolveHeadersToRecord(
-        context.requestOptions.headers
-      );
-
-      context.requestOptions.headers = context.headers;
 
       const coreFetch = async (): Promise<SpooshResponse<TData, TError>> => {
         abortController = new AbortController();
@@ -170,7 +176,6 @@ export function createOperationController<TData, TError>(
         > => {
           try {
             const response = await fetchFn(context.requestOptions);
-            context.response = response;
 
             return response;
           } catch (err) {
@@ -179,8 +184,6 @@ export function createOperationController<TData, TError>(
               error: err as TError,
               data: undefined,
             };
-
-            context.response = errorResponse;
 
             return errorResponse;
           }
@@ -249,7 +252,7 @@ export function createOperationController<TData, TError>(
       pluginExecutor.executeLifecycle("onUnmount", operationType, context);
     },
 
-    update(previousContext: PluginContext<TData, TError>) {
+    update(previousContext) {
       const context = createContext({}, currentRequestTimestamp);
       pluginExecutor.executeUpdateLifecycle(
         operationType,

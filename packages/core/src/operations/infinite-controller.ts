@@ -1,4 +1,4 @@
-import type { PluginContext, OperationState } from "../plugins/types";
+import type { PluginContext } from "../plugins/types";
 import type { PluginExecutor } from "../plugins/executor";
 import type { StateManager } from "../state/manager";
 import type { EventEmitter } from "../events/emitter";
@@ -40,8 +40,8 @@ export type InfiniteReadController<TData, TItem, TError> = {
 
   mount: () => void;
   unmount: () => void;
-  update: (previousContext: PluginContext<TData, TError>) => void;
-  getContext: () => PluginContext<TData, TError>;
+  update: (previousContext: PluginContext) => void;
+  getContext: () => PluginContext;
   setPluginOptions: (options: unknown) => void;
 };
 
@@ -294,14 +294,8 @@ export function createInfiniteReadController<
     );
   };
 
-  const createContext = (pageKey: string): PluginContext<TData, TError> => {
-    const initialState: OperationState<TData, TError> = {
-      data: undefined,
-      error: undefined,
-      timestamp: 0,
-    };
-
-    return pluginExecutor.createContext<TData, TError>({
+  const createContext = (pageKey: string): PluginContext => {
+    return pluginExecutor.createContext({
       operationType: "infiniteRead",
       path,
       method,
@@ -309,11 +303,9 @@ export function createInfiniteReadController<
       tags,
       requestTimestamp: Date.now(),
       hookId,
-      requestOptions: {},
-      state: initialState,
+      requestOptions: { headers: {} },
       metadata: new Map(),
       pluginOptions,
-      abort: () => abortController?.abort(),
       stateManager,
       eventEmitter,
     });
@@ -352,7 +344,6 @@ export function createInfiniteReadController<
       > => {
         try {
           const response = await fetchFn(mergedRequest, signal);
-          context.response = response;
 
           if (signal.aborted) {
             return {
@@ -378,7 +369,6 @@ export function createInfiniteReadController<
             data: undefined,
           };
 
-          context.response = errorResponse;
           latestError = err as TError;
 
           return errorResponse;
@@ -575,7 +565,7 @@ export function createInfiniteReadController<
       refetchUnsubscribe = null;
     },
 
-    update(previousContext: PluginContext<TData, TError>) {
+    update(previousContext) {
       const context = createContext(trackerKey);
       pluginExecutor.executeUpdateLifecycle(
         "infiniteRead",

@@ -67,7 +67,7 @@ export async function executeFetch<TData, TError>(
     context = await applyMiddlewares(context, middlewares, "after");
   }
 
-  return context.response!;
+  return response;
 }
 
 function buildInputFields(
