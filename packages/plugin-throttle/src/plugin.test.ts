@@ -41,11 +41,11 @@ describe("throttlePlugin", () => {
     it("should allow first request with different paths", async () => {
       const plugin = throttlePlugin();
       const context1 = createMockContext({
-        path: ["users", "1"],
+        path: "users/1",
         pluginOptions: { throttle: 1000 },
       });
       const context2 = createMockContext({
-        path: ["users", "2"],
+        path: "users/2",
         pluginOptions: { throttle: 1000 },
       });
       const next = vi.fn().mockResolvedValue({ data: { id: 1 }, status: 200 });
@@ -59,12 +59,12 @@ describe("throttlePlugin", () => {
     it("should throttle same path with different query params", async () => {
       const plugin = throttlePlugin();
       const context1 = createMockContext({
-        path: ["users"],
+        path: "users",
         queryKey: '{"method":"GET","path":["users"],"query":{"page":1}}',
         pluginOptions: { throttle: 1000 },
       });
       const context2 = createMockContext({
-        path: ["users"],
+        path: "users",
         queryKey: '{"method":"GET","path":["users"],"query":{"page":2}}',
         pluginOptions: { throttle: 1000 },
       });
@@ -83,11 +83,11 @@ describe("throttlePlugin", () => {
       const plugin = throttlePlugin();
 
       const context1 = createMockContext({
-        path: ["users"],
+        path: "users",
         pluginOptions: { throttle: 1000 },
       });
       const context2 = createMockContext({
-        path: ["users"],
+        path: "users",
         pluginOptions: { throttle: 1000 },
       });
 
@@ -108,7 +108,7 @@ describe("throttlePlugin", () => {
 
       const createCtx = () =>
         createMockContext({
-          path: ["users"],
+          path: "users",
           pluginOptions: { throttle: 2000 },
         });
 
@@ -133,11 +133,11 @@ describe("throttlePlugin", () => {
       const plugin = throttlePlugin();
 
       const context1 = createMockContext({
-        path: ["users"],
+        path: "users",
         pluginOptions: { throttle: 1000 },
       });
       const context2 = createMockContext({
-        path: ["users"],
+        path: "users",
         pluginOptions: { throttle: 1000 },
       });
 
@@ -156,11 +156,11 @@ describe("throttlePlugin", () => {
       const plugin = throttlePlugin();
 
       const context1 = createMockContext({
-        path: ["users"],
+        path: "users",
         pluginOptions: { throttle: 1000 },
       });
       const context2 = createMockContext({
-        path: ["users"],
+        path: "users",
         pluginOptions: { throttle: 1000 },
       });
 
@@ -181,7 +181,7 @@ describe("throttlePlugin", () => {
 
       const createCtx = () =>
         createMockContext({
-          path: ["users"],
+          path: "users",
           pluginOptions: { throttle: 500 },
         });
 
@@ -199,7 +199,7 @@ describe("throttlePlugin", () => {
 
       const createCtx = () =>
         createMockContext({
-          path: ["users"],
+          path: "users",
           pluginOptions: { throttle: 1000 },
         });
 
@@ -275,7 +275,7 @@ describe("throttlePlugin", () => {
 
       const createCtx = () =>
         createMockContext({
-          path: ["users"],
+          path: "users",
           pluginOptions: { throttle: 999999999 },
         });
 
@@ -297,12 +297,12 @@ describe("throttlePlugin", () => {
 
       const context1 = createMockContext({
         operationType: "infiniteRead",
-        path: ["users"],
+        path: "users",
         pluginOptions: { throttle: 1000 },
       });
       const context2 = createMockContext({
         operationType: "infiniteRead",
-        path: ["users"],
+        path: "users",
         pluginOptions: { throttle: 1000 },
       });
 
@@ -324,12 +324,12 @@ describe("throttlePlugin", () => {
       const plugin = throttlePlugin();
 
       const getContext = createMockContext({
-        path: ["users"],
+        path: "users",
         method: "GET",
         pluginOptions: { throttle: 1000 },
       });
       const postContext = createMockContext({
-        path: ["users"],
+        path: "users",
         method: "POST",
         pluginOptions: { throttle: 1000 },
       });

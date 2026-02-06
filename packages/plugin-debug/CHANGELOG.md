@@ -1,5 +1,9 @@
 # @spoosh/plugin-debug
 
+## 0.2.3
+
+- Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API
+
 ## 0.2.2
 
 - Use cache state directly insteads of getting state value directly from context

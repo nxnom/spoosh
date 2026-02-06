@@ -162,7 +162,7 @@ export function createInjectInfiniteRead<
     let currentQueryKey: string | null = null;
     let currentSubscription: (() => void) | null = null;
     let currentResolvedTags: string[] = [];
-    let prevContext: PluginContext<TData, TError> | null = null;
+    let prevContext: PluginContext | null = null;
     let isMounted = false;
     let unsubInvalidate: (() => void) | null = null;
     let unsubRefetchAll: (() => void) | null = null;

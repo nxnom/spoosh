@@ -26,7 +26,7 @@ function resolveModeTags(
     case "all":
       return context.tags;
     case "self":
-      return [context.path.join("/")];
+      return [context.path];
     case "none":
       return [];
   }

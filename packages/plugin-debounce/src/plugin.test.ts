@@ -433,7 +433,7 @@ describe("debouncePlugin", () => {
       const context1 = createMockContext({
         stateManager,
         eventEmitter,
-        path: ["users", "1"],
+        path: "users/1",
         queryKey: '{"method":"GET","path":["users","1"]}',
         requestOptions: { params: { id: 1 } },
         pluginOptions: { debounce: debounceFn },
@@ -446,7 +446,7 @@ describe("debouncePlugin", () => {
       const context2 = createMockContext({
         stateManager,
         eventEmitter,
-        path: ["users", "1"],
+        path: "users/1",
         queryKey: '{"method":"GET","path":["users","2"]}',
         requestOptions: { params: { id: 2 } },
         pluginOptions: { debounce: debounceFn },
@@ -502,7 +502,7 @@ describe("debouncePlugin", () => {
       const context1 = createMockContext({
         stateManager,
         eventEmitter,
-        path: ["api", "search"],
+        path: "api/search",
         method: "GET",
         queryKey: '{"method":"GET","path":["api","search"],"query":{"q":"a"}}',
         requestOptions: { query: { q: "a" } },
@@ -513,7 +513,7 @@ describe("debouncePlugin", () => {
       const context2 = createMockContext({
         stateManager,
         eventEmitter,
-        path: ["api", "users"],
+        path: "api/users",
         method: "GET",
         queryKey: '{"method":"GET","path":["api","users"],"query":{"q":"b"}}',
         requestOptions: { query: { q: "b" } },
@@ -545,7 +545,7 @@ describe("debouncePlugin", () => {
       const getContext = createMockContext({
         stateManager,
         eventEmitter,
-        path: ["api", "data"],
+        path: "api/data",
         method: "GET",
         queryKey: '{"method":"GET","path":["api","data"]}',
         requestOptions: {},
@@ -556,7 +556,7 @@ describe("debouncePlugin", () => {
       const postContext = createMockContext({
         stateManager,
         eventEmitter,
-        path: ["api", "data"],
+        path: "api/data",
         method: "POST",
         queryKey: '{"method":"POST","path":["api","data"]}',
         requestOptions: {},

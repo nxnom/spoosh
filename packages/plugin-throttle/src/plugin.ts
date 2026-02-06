@@ -56,7 +56,7 @@ export function throttlePlugin(): SpooshPlugin<{
       }
 
       const { path, method } = context;
-      const stableKey = `${path.join("/")}:${method}`;
+      const stableKey = `${path}:${method}`;
       const now = Date.now();
       const lastTime = lastFetchTime.get(stableKey) ?? 0;
       const elapsed = now - lastTime;

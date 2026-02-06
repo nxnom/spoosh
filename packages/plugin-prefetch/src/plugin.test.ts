@@ -617,58 +617,6 @@ describe("prefetchPlugin", () => {
     });
   });
 
-  describe("abort handling", () => {
-    it("should return aborted response when request is aborted", async () => {
-      const plugin = prefetchPlugin();
-      const stateManager = createStateManager();
-      const eventEmitter = createEventEmitter();
-      const pluginExecutor = createMockPluginExecutor();
-      const api = createMockApi();
-
-      api("posts").GET.mockImplementation(
-        (options: { signal?: AbortSignal }) => {
-          return new Promise((_, reject) => {
-            if (options?.signal) {
-              options.signal.addEventListener("abort", () => {
-                reject(new DOMException("Aborted", "AbortError"));
-              });
-            }
-          });
-        }
-      );
-
-      const { prefetch } = plugin.instanceApi!({
-        api,
-        stateManager,
-        eventEmitter,
-        pluginExecutor,
-      });
-
-      let capturedContext: { abort?: () => void } | undefined;
-      pluginExecutor.createContext = vi.fn().mockImplementation((input) => {
-        capturedContext = {
-          ...input,
-          headers: {},
-          setHeaders: vi.fn(),
-          plugins: { get: vi.fn() },
-        };
-        return capturedContext;
-      });
-
-      const prefetchPromise = prefetch((apiProxy) =>
-        (apiProxy as unknown as MockApi)("posts").GET()
-      );
-
-      await vi.advanceTimersByTimeAsync(10);
-
-      capturedContext?.abort?.();
-
-      const result = await prefetchPromise;
-
-      expect(result.aborted).toBe(true);
-    });
-  });
-
   describe("tags handling", () => {
     it("should resolve and store tags with cache entry", async () => {
       const plugin = prefetchPlugin();
@@ -731,7 +679,7 @@ describe("prefetchPlugin", () => {
         "read",
         expect.objectContaining({
           operationType: "read",
-          path: ["posts"],
+          path: "posts",
           method: "GET",
         }),
         expect.any(Function)
@@ -759,7 +707,7 @@ describe("prefetchPlugin", () => {
       expect(pluginExecutor.createContext).toHaveBeenCalledWith(
         expect.objectContaining({
           operationType: "read",
-          path: ["posts"],
+          path: "posts",
           method: "GET",
           stateManager,
           eventEmitter,

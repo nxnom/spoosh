@@ -1,7 +1,8 @@
 # @spoosh/core
 
-## 0.10.2
+## 0.11.0
 
+- Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API
 - Expose `getSubscribersCount` method in listen controllers to get current number of subscribers
 - Remove unnecessary plugin options from plugin context.
 

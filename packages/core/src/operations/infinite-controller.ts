@@ -297,7 +297,7 @@ export function createInfiniteReadController<
   const createContext = (pageKey: string): PluginContext => {
     return pluginExecutor.createContext({
       operationType: "infiniteRead",
-      path,
+      path: path.join("/"),
       method,
       queryKey: pageKey,
       tags,

@@ -199,7 +199,7 @@ describe("deduplicationPlugin", () => {
         stateManager,
         operationType: "write",
         method: "POST",
-        path: ["users"],
+        path: "users",
         queryKey,
       });
       const expectedResponse = { data: { id: 2 }, status: 201 };
@@ -227,7 +227,7 @@ describe("deduplicationPlugin", () => {
         stateManager,
         operationType: "write",
         method: "POST",
-        path: ["users"],
+        path: "users",
         queryKey,
       });
       const next = vi.fn();
@@ -308,7 +308,7 @@ describe("deduplicationPlugin", () => {
       const context = createMockContext({
         stateManager,
         operationType: "infiniteRead",
-        path: ["posts"],
+        path: "posts",
         queryKey,
       });
       const next = vi.fn();

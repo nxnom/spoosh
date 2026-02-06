@@ -36,7 +36,7 @@ export type PluginRequestOptions = Omit<AnyRequestOptions, "headers"> & {
 
 export type PluginContext = {
   readonly operationType: OperationType;
-  readonly path: string[];
+  readonly path: string;
   readonly method: HttpMethod;
   readonly queryKey: string;
   readonly tags: string[];

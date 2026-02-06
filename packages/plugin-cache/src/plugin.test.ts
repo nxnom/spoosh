@@ -84,7 +84,7 @@ describe("cachePlugin", () => {
       const context = createMockContext({
         stateManager,
         queryKey: '{"method":"GET","path":["users","1"]}',
-        path: ["users", "1"],
+        path: "users/1",
         tags: ["users", "users/1"],
       });
       const next = vi.fn();
@@ -117,7 +117,7 @@ describe("cachePlugin", () => {
       const context = createMockContext({
         stateManager,
         queryKey: '{"method":"GET","path":["users","1"]}',
-        path: ["users", "1"],
+        path: "users/1",
         tags: ["users", "users/1"],
       });
       const next = vi.fn().mockResolvedValue({
@@ -148,7 +148,7 @@ describe("cachePlugin", () => {
       const context = createMockContext({
         stateManager,
         queryKey: '{"method":"GET","path":["users","1"]}',
-        path: ["users", "1"],
+        path: "users/1",
         tags: ["users", "users/1"],
       });
       const next = vi.fn().mockResolvedValue({
@@ -183,7 +183,7 @@ describe("cachePlugin", () => {
       const context = createMockContext({
         stateManager,
         queryKey: '{"method":"GET","path":["users","1"]}',
-        path: ["users", "1"],
+        path: "users/1",
         tags: ["users", "users/1"],
       });
       const next = vi.fn().mockResolvedValue({
@@ -217,7 +217,7 @@ describe("cachePlugin", () => {
       const context = createMockContext({
         stateManager,
         queryKey: '{"method":"GET","path":["users","1"]}',
-        path: ["users", "1"],
+        path: "users/1",
         tags: ["users", "users/1"],
         pluginOptions: { staleTime: 5000 },
       });
@@ -248,7 +248,7 @@ describe("cachePlugin", () => {
       const context = createMockContext({
         stateManager,
         queryKey: '{"method":"GET","path":["users","1"]}',
-        path: ["users", "1"],
+        path: "users/1",
         tags: ["users", "users/1"],
         forceRefetch: true,
       });
@@ -498,7 +498,7 @@ describe("cachePlugin", () => {
       const context = createMockContext({
         stateManager,
         queryKey: '{"method":"GET","path":["users","1"]}',
-        path: ["users", "1"],
+        path: "users/1",
         tags: ["users", "users/1"],
       });
       const next = vi.fn().mockResolvedValue({

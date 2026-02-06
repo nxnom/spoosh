@@ -75,7 +75,7 @@ export function debouncePlugin(): SpooshPlugin<{
     lifecycle: {
       onUnmount: (context) => {
         const { path, method } = context;
-        const stableKey = `${path.join("/")}:${method}`;
+        const stableKey = `${path}:${method}`;
 
         const existingTimer = timers.get(stableKey);
 
@@ -100,7 +100,7 @@ export function debouncePlugin(): SpooshPlugin<{
       }
 
       const { queryKey, requestOptions, path, method } = context;
-      const stableKey = `${path.join("/")}:${method}`;
+      const stableKey = `${path}:${method}`;
 
       const opts = requestOptions as
         | (RequestOptionsSnapshot & Record<string, unknown>)

@@ -1,5 +1,9 @@
 # @spoosh/plugin-invalidation
 
+## 0.5.5
+
+- Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API
+
 ## 0.5.4
 
 - Update documentation URLs to new `/docs/{framework}` format

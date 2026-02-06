@@ -16,11 +16,11 @@ type ExtendedMockContextOptions<
 
 function createMockContext<TData = unknown, TError = unknown>(
   options: ExtendedMockContextOptions<TData, TError> = {}
-): PluginContext<TData, TError> {
+): PluginContext {
   const { requestTimestamp, ...restOptions } = options;
 
   const context = baseCreateMockContext<TData, TError>({
-    path: ["users", "1"],
+    path: "users/1",
     queryKey: '{"method":"GET","path":["users","1"]}',
     tags: ["users", "users/1"],
     ...restOptions,
@@ -131,7 +131,7 @@ describe("debugPlugin", () => {
       const context = createMockContext({
         operationType: "write",
         method: "POST",
-        path: ["users"],
+        path: "users",
       });
       const next = vi.fn().mockResolvedValue({ data: { id: 1 }, status: 201 });
 
@@ -146,7 +146,7 @@ describe("debugPlugin", () => {
       const plugin = debugPlugin({ enabled: true });
       const context = createMockContext({
         operationType: "infiniteRead",
-        path: ["posts"],
+        path: "posts",
       });
       const next = vi
         .fn()
@@ -347,7 +347,7 @@ describe("debugPlugin", () => {
       const context = createMockContext({
         operationType: "write",
         method: "POST",
-        path: ["users"],
+        path: "users",
       });
       const response = { data: { id: 1 }, status: 201 };
 

@@ -169,7 +169,7 @@ describe("invalidationPlugin", () => {
       const context = createMockContext({
         stateManager,
         eventEmitter,
-        path: ["users", "1"],
+        path: "users/1",
         tags: ["users", "users/1"],
       });
 
@@ -266,7 +266,7 @@ describe("invalidationPlugin", () => {
       const context = createMockContext({
         stateManager,
         eventEmitter,
-        path: ["users", "1"],
+        path: "users/1",
         tags: ["users", "users/1"],
         pluginOptions: {
           invalidate: "self",
@@ -603,7 +603,7 @@ describe("invalidationPlugin", () => {
       const context = createMockContext({
         stateManager,
         eventEmitter,
-        path: ["users", "1"],
+        path: "users/1",
         tags: ["users", "users/1"],
         pluginOptions: {
           invalidate: ["posts", "dashboard", "self"],

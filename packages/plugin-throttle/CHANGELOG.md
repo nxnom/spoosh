@@ -1,5 +1,9 @@
 # @spoosh/plugin-throttle
 
+## 0.1.8
+
+- Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API
+
 ## 0.1.7
 
 - Update documentation URLs to new `/docs/{framework}` format

@@ -12,7 +12,7 @@ function createMockContext(
 
   return {
     operationType: "read",
-    path: ["test"],
+    path: "test",
     method: "GET",
     queryKey: "test-key",
     tags: ["test"],
@@ -665,7 +665,7 @@ describe("createPluginExecutor", () => {
 
       const context = executor.createContext({
         operationType: "read",
-        path: ["test"],
+        path: "test",
         method: "GET",
         queryKey: "test-key",
         tags: ["test"],
@@ -687,7 +687,7 @@ describe("createPluginExecutor", () => {
 
       const context = executor.createContext({
         operationType: "read",
-        path: ["test"],
+        path: "test",
         method: "GET",
         queryKey: "test-key",
         tags: ["test"],
@@ -724,7 +724,7 @@ describe("createPluginExecutor", () => {
 
       const context = executor.createContext({
         operationType: "read",
-        path: ["test"],
+        path: "test",
         method: "GET",
         queryKey: "test-key",
         tags: ["test"],
@@ -749,7 +749,7 @@ describe("createPluginExecutor", () => {
 
       const context = executor.createContext({
         operationType: "read",
-        path: ["test"],
+        path: "test",
         method: "GET",
         queryKey: "test-key",
         tags: ["test"],
@@ -771,7 +771,7 @@ describe("createPluginExecutor", () => {
 
       const context = executor.createContext({
         operationType: "read",
-        path: ["test"],
+        path: "test",
         method: "GET",
         queryKey: "test-key",
         tags: ["test"],

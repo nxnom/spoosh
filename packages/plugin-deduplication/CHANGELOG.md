@@ -1,5 +1,9 @@
 # @spoosh/plugin-deduplication
 
+## 0.1.7
+
+- Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API
+
 ## 0.1.6
 
 - Update documentation URLs to new `/docs/{framework}` format

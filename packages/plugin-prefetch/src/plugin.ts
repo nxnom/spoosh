@@ -122,18 +122,16 @@ export function prefetchPlugin(
 
         const abortController = new AbortController();
 
-        const pluginContext = pluginExecutor.createContext<TData, TError>({
+        const pluginContext = pluginExecutor.createContext({
           operationType: "read",
-          path: pathSegments,
+          path: pathSegments.join("/"),
           method: callMethod as "GET",
           queryKey,
           tags: resolvedTags,
           requestTimestamp: Date.now(),
-          requestOptions: (callOptions ?? {}) as Record<string, unknown>,
-          state: initialState,
+          requestOptions: { headers: {}, ...(callOptions ?? {}) },
           metadata: new Map(),
           pluginOptions: options,
-          abort: () => abortController.abort(),
           stateManager,
           eventEmitter,
         });
@@ -172,7 +170,6 @@ export function prefetchPlugin(
             };
 
             const response = await method(mergedOptions);
-            pluginContext.response = response;
 
             if (response.data !== undefined && !response.error) {
               updateState({
@@ -199,8 +196,6 @@ export function prefetchPlugin(
               data: undefined,
             };
 
-            pluginContext.response = errorResponse;
-
             return errorResponse;
           }
         };
@@ -215,7 +210,7 @@ export function prefetchPlugin(
           "read",
           pluginContext,
           coreFetch
-        );
+        ) as Promise<SpooshResponse<TData, TError>>;
 
         storePromiseInCache(fetchPromise, {
           stateManager,

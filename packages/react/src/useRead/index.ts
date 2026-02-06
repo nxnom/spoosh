@@ -153,7 +153,7 @@ export function createUseRead<
 
     const lifecycleRef = useRef<{
       initialized: boolean;
-      prevContext: PluginContext<TData, TError> | null;
+      prevContext: PluginContext | null;
     }>({
       initialized: false,
       prevContext: null,

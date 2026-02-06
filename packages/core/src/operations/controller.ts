@@ -102,7 +102,7 @@ export function createOperationController<TData, TError>(
 
     return pluginExecutor.createContext({
       operationType,
-      path,
+      path: path.join("/"),
       method,
       queryKey,
       tags: resolvedTags,

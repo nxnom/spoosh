@@ -32,7 +32,7 @@ export type MockContextOptions<TData = unknown, TError = unknown> = {
 
   queryKey?: string;
 
-  path?: string[];
+  path?: string;
 
   method?: string;
 
@@ -62,25 +62,22 @@ export type MockContextOptions<TData = unknown, TError = unknown> = {
  */
 export function createMockContext<TData = unknown, TError = unknown>(
   options: MockContextOptions<TData, TError> = {}
-): PluginContext<TData, TError> {
+): PluginContext {
   const {
     stateManager = createStateManager(),
     eventEmitter = createEventEmitter(),
     queryKey = '{"method":"GET","path":["test"]}',
-    path = ["test"],
+    path = "test",
     method = "GET",
     tags = ["test"],
     operationType = "read",
     pluginOptions,
     forceRefetch,
     hookId,
-    state: stateOverrides,
     requestOptions = {},
     metadata = new Map(),
     plugins = { get: vi.fn() },
   } = options;
-
-  const state = createState<TData, TError>(stateOverrides);
 
   return {
     operationType,
@@ -90,18 +87,14 @@ export function createMockContext<TData = unknown, TError = unknown>(
     tags,
     requestTimestamp: Date.now(),
     requestOptions,
-    state,
     metadata,
-    abort: vi.fn(),
     stateManager,
     eventEmitter,
-    headers: {},
-    setHeaders: vi.fn(),
     plugins,
     pluginOptions,
     forceRefetch,
     hookId,
-  } as unknown as PluginContext<TData, TError>;
+  } as unknown as PluginContext;
 }
 
 /**

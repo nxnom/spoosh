@@ -1,5 +1,9 @@
 # @spoosh/plugin-cache
 
+## 0.3.2
+
+- Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API
+
 ## 0.3.1
 
 - Update documentation URLs to new `/docs/{framework}` format

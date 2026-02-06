@@ -1,5 +1,9 @@
 # @spoosh/react
 
+## 0.7.3
+
+- Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API
+
 ## 0.7.2
 
 - Update documentation URLs to new `/docs/{framework}` format

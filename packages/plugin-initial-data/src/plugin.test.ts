@@ -8,7 +8,7 @@ import { initialDataPlugin } from "./plugin";
 
 function createMockContext(options: MockContextOptions = {}) {
   return baseCreateMockContext({
-    path: ["users", "1"],
+    path: "users/1",
     queryKey: '{"method":"GET","path":["users","1"]}',
     tags: ["users", "users/1"],
     ...options,

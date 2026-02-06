@@ -95,7 +95,7 @@ export function debugPlugin(config: DebugPluginConfig = {}): SpooshPlugin<{
       phase,
       operationType: context.operationType,
       method: context.method,
-      path: context.path.join("/"),
+      path: context.path,
       queryKey: context.queryKey,
       requestTimestamp: context.requestTimestamp,
       tags: context.tags,
@@ -128,7 +128,7 @@ export function debugPlugin(config: DebugPluginConfig = {}): SpooshPlugin<{
     }
     lastRequestTimestamp = context.requestTimestamp;
 
-    const label = `[spoosh] ${context.operationType} ${context.method} /${context.path.join("/")} → ${phase}`;
+    const label = `[spoosh] ${context.operationType} ${context.method} /${context.path} → ${phase}`;
 
     console.groupCollapsed(label);
     console.log("Query Key:", context.queryKey);
