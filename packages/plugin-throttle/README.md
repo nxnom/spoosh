@@ -34,6 +34,6 @@ const { data } = useRead((api) => api("expensive").GET(), { throttle: 1000 });
 
 ## Notes
 
-- Register this plugin at the end of your plugin list, to make sure it block even force fetch requests.
+- This plugin runs with priority 100, automatically executing last in the middleware chain to block all requests (including force fetches) that exceed the throttle limit
 - Unlike debounce (which delays), throttle immediately returns cached data for extra requests
 - Useful for rate-limiting expensive endpoints

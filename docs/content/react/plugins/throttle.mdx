@@ -39,18 +39,19 @@ const { data } = useRead((api) => api("expensive").GET(), { throttle: 1000 });
 | Extra requests | Returns cached data               | Resets the delay timer    |
 | Use case       | Rate-limiting expensive endpoints | Waiting for input to stop |
 
-## Plugin Order
+## How It Works
 
-Register the throttle plugin at the end of your plugin list to ensure it blocks all requests, including force fetches:
+The throttle plugin runs with **priority 100**, meaning it executes last in the middleware chain. This ensures it blocks all requests (including force fetches and retries) that exceed the throttle limit.
+
+You can register plugins in any order - the priority system handles execution order automatically:
 
 ```typescript
 import { Spoosh } from "@spoosh/core";
 
 const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
-  deduplicationPlugin(),
-  invalidationPlugin(),
   retryPlugin(),
+  invalidationPlugin(),
   throttlePlugin(),
 ]);
 ```

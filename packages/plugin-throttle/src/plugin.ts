@@ -14,6 +14,9 @@ import type {
  * Limits how frequently a query can be executed, returning cached data
  * if the throttle window hasn't elapsed.
  *
+ * This plugin runs with priority 100, meaning it executes last in the middleware chain
+ * to block all requests (including force fetches) that exceed the throttle limit.
+ *
  * @see {@link https://spoosh.dev/docs/react/plugins/throttle | Throttle Plugin Documentation}
  *
  * @example
@@ -22,8 +25,8 @@ import type {
  *
  * const spoosh = new Spoosh<ApiSchema, Error>("/api")
  *   .use([
- *     // ... other plugins
  *     throttlePlugin(),
+ *     // ... other plugins
  *   ]);
  *
  * // Throttle to max once per second
@@ -44,6 +47,7 @@ export function throttlePlugin(): SpooshPlugin<{
   return {
     name: "spoosh:throttle",
     operations: ["read", "infiniteRead"],
+    priority: 100,
 
     middleware: async (context, next) => {
       const pluginOptions = context.pluginOptions as

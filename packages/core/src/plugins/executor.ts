@@ -36,59 +36,43 @@ export type PluginExecutor = {
   createContext: (input: PluginContextInput) => PluginContext;
 };
 
+/**
+ * Validates that all plugin dependencies are satisfied.
+ * Throws if a plugin depends on another that isn't registered.
+ */
 function validateDependencies(plugins: SpooshPlugin[]): void {
-  const names = new Set(plugins.map((p) => p.name));
+  const pluginNames = new Set(plugins.map((p) => p.name));
 
   for (const plugin of plugins) {
-    for (const dep of plugin.dependencies ?? []) {
-      if (!names.has(dep)) {
-        throw new Error(
-          `Plugin "${plugin.name}" depends on "${dep}" which is not registered`
-        );
+    if (plugin.dependencies) {
+      for (const dep of plugin.dependencies) {
+        if (!pluginNames.has(dep)) {
+          throw new Error(
+            `Plugin "${plugin.name}" depends on "${dep}", but "${dep}" is not registered.`
+          );
+        }
       }
     }
   }
 }
 
-function sortByDependencies(plugins: SpooshPlugin[]): SpooshPlugin[] {
-  const sorted: SpooshPlugin[] = [];
-  const visited = new Set<string>();
-  const visiting = new Set<string>();
-  const pluginMap = new Map(plugins.map((p) => [p.name, p]));
-
-  function visit(plugin: SpooshPlugin): void {
-    if (visited.has(plugin.name)) return;
-
-    if (visiting.has(plugin.name)) {
-      throw new Error(
-        `Circular dependency detected involving "${plugin.name}"`
-      );
-    }
-
-    visiting.add(plugin.name);
-
-    for (const dep of plugin.dependencies ?? []) {
-      const depPlugin = pluginMap.get(dep);
-      if (depPlugin) visit(depPlugin);
-    }
-
-    visiting.delete(plugin.name);
-    visited.add(plugin.name);
-    sorted.push(plugin);
-  }
-
-  for (const plugin of plugins) {
-    visit(plugin);
-  }
-
-  return sorted;
+/**
+ * Sort plugins by priority. Lower priority values run first.
+ * Plugins with the same priority maintain their registration order (stable sort).
+ */
+function sortByPriority(plugins: SpooshPlugin[]): SpooshPlugin[] {
+  return [...plugins].sort((a, b) => {
+    const priorityA = a.priority ?? 0;
+    const priorityB = b.priority ?? 0;
+    return priorityA - priorityB;
+  });
 }
 
 export function createPluginExecutor(
   initialPlugins: SpooshPlugin[] = []
 ): PluginExecutor {
   validateDependencies(initialPlugins);
-  const plugins = sortByDependencies(initialPlugins);
+  const plugins = sortByPriority(initialPlugins);
   const frozenPlugins = Object.freeze([...plugins]);
 
   const createPluginAccessor = (context: PluginContext): PluginAccessor => ({

@@ -17,6 +17,9 @@ import type {
  * Returns cached data immediately if available and not stale,
  * avoiding unnecessary network requests.
  *
+ * This plugin runs with priority -10, meaning it executes early in the middleware chain
+ * to check the cache before other plugins (like retry, debug) run.
+ *
  * @param config - Plugin configuration
  *
  * @see {@link https://spoosh.dev/docs/react/plugins/cache | Cache Plugin Documentation}
@@ -27,8 +30,8 @@ import type {
  *
  * const spoosh = new Spoosh<ApiSchema, Error>("/api")
  *   .use([
- *     // ... other plugins
  *     cachePlugin({ staleTime: 5000 }),
+ *     // ... other plugins
  *   ]);
  *
  * // Per-query override
@@ -50,6 +53,7 @@ export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
   return {
     name: "spoosh:cache",
     operations: ["read", "infiniteRead", "write"],
+    priority: -10,
 
     middleware: async (context, next) => {
       if (!context.forceRefetch) {

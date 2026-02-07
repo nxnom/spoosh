@@ -50,6 +50,8 @@ injectRead((api) => api("live").GET(), { staleTime: 0 });
 
 ## How It Works
 
+The cache plugin runs with **priority -10**, meaning it executes early in the middleware chain to check the cache before other plugins (like retry, debug) run.
+
 1. First request fetches from network and stores in cache
 2. Subsequent requests within `staleTime` return cached data instantly
 3. After `staleTime` expires, next request fetches fresh data

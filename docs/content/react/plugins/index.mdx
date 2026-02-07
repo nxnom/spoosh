@@ -88,15 +88,11 @@ import { Spoosh } from "@spoosh/core";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
-import { retryPlugin } from "@spoosh/plugin-retry";
-import { refetchPlugin } from "@spoosh/plugin-refetch";
 
 const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
   deduplicationPlugin(),
   invalidationPlugin(),
-  retryPlugin({ retries: 3 }),
-  refetchPlugin({ refetchOnFocus: true }),
 ]);
 ```
 
@@ -105,23 +101,33 @@ This gives you:
 - **Caching** - Avoid redundant network requests
 - **Deduplication** - Prevent duplicate requests when multiple queries invalidate at once
 - **Auto-invalidation** - Queries refresh automatically after mutations
-- **Retry** - Automatic recovery from transient failures
-- **Refetch** - Fresh data when users return to your app
 
-## Plugin Order
+## Plugin Execution Order
 
-Most plugins work in any order. The exceptions are:
+Plugins are executed based on their **priority** value, not their registration order. This means you can register plugins in any order you like.
 
-- **`cachePlugin`** - should be registered early to check cache before making requests
-- **`throttlePlugin`** - should be registered last to block all requests including force fetches
+- **Lower priority** runs first (e.g., `cachePlugin` with priority -10)
+- **Higher priority** runs last (e.g., `throttlePlugin` with priority 100)
+- **Default priority** is 0 (most plugins)
+
+Key plugins with non-default priorities:
+
+- **`cachePlugin`** (priority: -10) - Runs early to check cache before other plugins
+- **`throttlePlugin`** (priority: 100) - Runs last to block all requests including force fetches
 
 ```typescript
+// These produce the same execution order:
 const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
-  cachePlugin({ staleTime: 5000 }), // Early - check cache first
-  deduplicationPlugin(),
-  invalidationPlugin(),
-  retryPlugin(),
-  throttlePlugin(), // Last - blocks everything
+  throttlePlugin(), // priority: 100 (runs last)
+  retryPlugin(), // priority: 0 (default)
+  cachePlugin({ staleTime: 5000 }), // priority: -10 (runs first)
+]);
+
+// Same as:
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }), // priority: -10 (runs first)
+  retryPlugin(), // priority: 0 (default)
+  throttlePlugin(), // priority: 100 (runs last)
 ]);
 ```
 

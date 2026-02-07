@@ -77,83 +77,118 @@ describe("createPluginExecutor", () => {
     });
   });
 
-  describe("plugin ordering and dependency resolution", () => {
-    it("sorts plugins by dependencies", () => {
-      const pluginA = createMockPlugin("plugin-a", ["read"], {
-        dependencies: ["plugin-b"],
-      });
-      const pluginB = createMockPlugin("plugin-b");
-      const executor = createPluginExecutor([pluginA, pluginB]);
-      const plugins = executor.getPlugins();
-
-      expect(plugins[0]?.name).toBe("plugin-b");
-      expect(plugins[1]?.name).toBe("plugin-a");
-    });
-
-    it("handles complex dependency chains", () => {
-      const pluginA = createMockPlugin("plugin-a", ["read"], {
-        dependencies: ["plugin-b"],
-      });
-      const pluginB = createMockPlugin("plugin-b", ["read"], {
-        dependencies: ["plugin-c"],
-      });
-      const pluginC = createMockPlugin("plugin-c");
+  describe("plugin ordering by priority", () => {
+    it("sorts plugins by priority (lower runs first)", () => {
+      const pluginA = createMockPlugin("plugin-a", ["read"], { priority: 10 });
+      const pluginB = createMockPlugin("plugin-b", ["read"], { priority: -10 });
+      const pluginC = createMockPlugin("plugin-c", ["read"], { priority: 0 });
       const executor = createPluginExecutor([pluginA, pluginB, pluginC]);
       const plugins = executor.getPlugins();
 
-      expect(plugins[0]?.name).toBe("plugin-c");
+      expect(plugins[0]?.name).toBe("plugin-b"); // priority: -10
+      expect(plugins[1]?.name).toBe("plugin-c"); // priority: 0
+      expect(plugins[2]?.name).toBe("plugin-a"); // priority: 10
+    });
+
+    it("uses default priority of 0 when not specified", () => {
+      const pluginA = createMockPlugin("plugin-a");
+      const pluginB = createMockPlugin("plugin-b", ["read"], { priority: -10 });
+      const pluginC = createMockPlugin("plugin-c", ["read"], { priority: 10 });
+      const executor = createPluginExecutor([pluginA, pluginB, pluginC]);
+      const plugins = executor.getPlugins();
+
+      expect(plugins[0]?.name).toBe("plugin-b"); // priority: -10
+      expect(plugins[1]?.name).toBe("plugin-a"); // priority: 0 (default)
+      expect(plugins[2]?.name).toBe("plugin-c"); // priority: 10
+    });
+
+    it("maintains registration order for plugins with same priority (stable sort)", () => {
+      const pluginA = createMockPlugin("plugin-a", ["read"], { priority: 0 });
+      const pluginB = createMockPlugin("plugin-b", ["read"], { priority: 0 });
+      const pluginC = createMockPlugin("plugin-c", ["read"], { priority: 0 });
+      const executor = createPluginExecutor([pluginA, pluginB, pluginC]);
+      const plugins = executor.getPlugins();
+
+      expect(plugins[0]?.name).toBe("plugin-a");
       expect(plugins[1]?.name).toBe("plugin-b");
-      expect(plugins[2]?.name).toBe("plugin-a");
+      expect(plugins[2]?.name).toBe("plugin-c");
     });
 
-    it("throws error when dependency is not registered", () => {
-      const plugin = createMockPlugin("plugin-a", ["read"], {
-        dependencies: ["missing-plugin"],
-      });
-
-      expect(() => createPluginExecutor([plugin])).toThrow(
-        'Plugin "plugin-a" depends on "missing-plugin" which is not registered'
-      );
-    });
-
-    it("throws error on circular dependencies", () => {
+    it("handles negative priorities", () => {
       const pluginA = createMockPlugin("plugin-a", ["read"], {
-        dependencies: ["plugin-b"],
+        priority: -100,
       });
+      const pluginB = createMockPlugin("plugin-b", ["read"], { priority: -10 });
+      const pluginC = createMockPlugin("plugin-c", ["read"], { priority: -1 });
+      const executor = createPluginExecutor([pluginC, pluginB, pluginA]);
+      const plugins = executor.getPlugins();
+
+      expect(plugins[0]?.name).toBe("plugin-a"); // priority: -100
+      expect(plugins[1]?.name).toBe("plugin-b"); // priority: -10
+      expect(plugins[2]?.name).toBe("plugin-c"); // priority: -1
+    });
+
+    it("handles mixed positive and negative priorities", () => {
+      const pluginA = createMockPlugin("plugin-a", ["read"], { priority: 100 });
+      const pluginB = createMockPlugin("plugin-b", ["read"], { priority: -10 });
+      const pluginC = createMockPlugin("plugin-c"); // default: 0
+      const executor = createPluginExecutor([pluginA, pluginC, pluginB]);
+      const plugins = executor.getPlugins();
+
+      expect(plugins[0]?.name).toBe("plugin-b"); // priority: -10
+      expect(plugins[1]?.name).toBe("plugin-c"); // priority: 0
+      expect(plugins[2]?.name).toBe("plugin-a"); // priority: 100
+    });
+  });
+
+  describe("dependency validation", () => {
+    it("validates plugins with no dependencies", () => {
+      const pluginA = createMockPlugin("plugin-a");
+      const pluginB = createMockPlugin("plugin-b");
+
+      expect(() => createPluginExecutor([pluginA, pluginB])).not.toThrow();
+    });
+
+    it("validates plugins with satisfied dependencies", () => {
+      const pluginA = createMockPlugin("plugin-a");
       const pluginB = createMockPlugin("plugin-b", ["read"], {
         dependencies: ["plugin-a"],
       });
 
-      expect(() => createPluginExecutor([pluginA, pluginB])).toThrow(
-        /Circular dependency detected/
-      );
+      expect(() => createPluginExecutor([pluginA, pluginB])).not.toThrow();
     });
 
-    it("throws error on self-referencing dependency", () => {
-      const plugin = createMockPlugin("plugin-a", ["read"], {
+    it("throws error when dependency is missing", () => {
+      const pluginB = createMockPlugin("plugin-b", ["read"], {
         dependencies: ["plugin-a"],
       });
 
-      expect(() => createPluginExecutor([plugin])).toThrow(
-        /Circular dependency detected/
+      expect(() => createPluginExecutor([pluginB])).toThrow(
+        'Plugin "plugin-b" depends on "plugin-a", but "plugin-a" is not registered.'
       );
     });
 
-    it("handles plugins with multiple dependencies", () => {
-      const pluginA = createMockPlugin("plugin-a", ["read"], {
-        dependencies: ["plugin-b", "plugin-c"],
-      });
+    it("validates multiple dependencies", () => {
+      const pluginA = createMockPlugin("plugin-a");
       const pluginB = createMockPlugin("plugin-b");
-      const pluginC = createMockPlugin("plugin-c");
-      const executor = createPluginExecutor([pluginA, pluginB, pluginC]);
-      const plugins = executor.getPlugins();
+      const pluginC = createMockPlugin("plugin-c", ["read"], {
+        dependencies: ["plugin-a", "plugin-b"],
+      });
 
-      const indexA = plugins.findIndex((p) => p.name === "plugin-a");
-      const indexB = plugins.findIndex((p) => p.name === "plugin-b");
-      const indexC = plugins.findIndex((p) => p.name === "plugin-c");
+      expect(() =>
+        createPluginExecutor([pluginA, pluginB, pluginC])
+      ).not.toThrow();
+    });
 
-      expect(indexB).toBeLessThan(indexA);
-      expect(indexC).toBeLessThan(indexA);
+    it("throws error when one of multiple dependencies is missing", () => {
+      const pluginA = createMockPlugin("plugin-a");
+      const pluginC = createMockPlugin("plugin-c", ["read"], {
+        dependencies: ["plugin-a", "plugin-b"],
+      });
+
+      expect(() => createPluginExecutor([pluginA, pluginC])).toThrow(
+        'Plugin "plugin-c" depends on "plugin-b", but "plugin-b" is not registered.'
+      );
     });
   });
 

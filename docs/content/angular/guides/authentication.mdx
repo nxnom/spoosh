@@ -114,6 +114,9 @@ function tokenRefreshPlugin(): SpooshPlugin {
   return {
     name: "token-refresh",
     operations: ["read", "write", "infiniteRead"],
+    // Priority -20: Run before cache plugin (-10) to ensure tokens are refreshed
+    // before checking cache, preventing stale token issues
+    priority: -20,
     middleware: async (context, next) => {
       let token = localStorage.getItem("accessToken");
 
@@ -143,11 +146,13 @@ Use it in your client:
 
 ```typescript
 const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
-  tokenRefreshPlugin(),
-  cachePlugin({ staleTime: 5000 }),
-  invalidationPlugin(),
+  tokenRefreshPlugin(), // priority: -20 (runs first)
+  cachePlugin({ staleTime: 5000 }), // priority: -10 (runs second)
+  invalidationPlugin(), // priority: 0 (default)
 ]);
 ```
+
+> **Note:** Plugins are sorted by priority (lower runs first). For plugins with the same priority, registration order is preserved. Since these plugins have different priorities (-20, -10, 0), their execution order is guaranteed regardless of registration order.
 
 ## Handling Unauthorized Responses
 
@@ -171,10 +176,10 @@ function authErrorPlugin(): SpooshPlugin {
 
 ```typescript
 const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
-  tokenRefreshPlugin(),
-  authErrorPlugin(),
-  cachePlugin({ staleTime: 5000 }),
-  invalidationPlugin(),
+  tokenRefreshPlugin(), // priority: -20 (runs first to refresh tokens)
+  authErrorPlugin(), // priority: 0 (default, runs after cache)
+  cachePlugin({ staleTime: 5000 }), // priority: -10 (runs second)
+  invalidationPlugin(), // priority: 0 (default)
 ]);
 ```
 

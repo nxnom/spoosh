@@ -1,5 +1,9 @@
 # @spoosh/plugin-throttle
 
+## 0.1.11
+
+- Set `priority` to `100` to ensure throttle plugin runs after other plugins
+
 ## 0.1.10
 
 - Updated dependencies

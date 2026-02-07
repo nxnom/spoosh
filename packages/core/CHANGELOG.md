@@ -1,5 +1,9 @@
 # @spoosh/core
 
+## 0.12.1
+
+- Add `priority` option in plugin interface to control execution order of plugins.
+
 ## 0.12.0
 
 - Renamed `PluginContext.hookId` to `PluginContext.instanceId` for framework-agnostic terminology.

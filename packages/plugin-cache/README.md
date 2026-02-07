@@ -24,6 +24,10 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
 useRead((api) => api("posts").GET(), { staleTime: 10000 });
 ```
 
+## How It Works
+
+The cache plugin runs with **priority -10**, meaning it executes early in the middleware chain to check the cache before other plugins (like retry, debug) run. This ensures maximum efficiency by short-circuiting requests when cached data is available.
+
 ## Options
 
 ### Plugin Config

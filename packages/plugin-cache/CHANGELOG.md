@@ -1,5 +1,9 @@
 # @spoosh/plugin-cache
 
+## 0.3.5
+
+- Set `priority` to `-10` to ensure cache plugin runs before other plugins
+
 ## 0.3.4
 
 - Updated dependencies

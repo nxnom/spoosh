@@ -242,7 +242,38 @@ export interface SpooshPlugin<T extends PluginTypeConfig = PluginTypeConfig> {
     context: InstanceApiContext
   ) => T extends { instanceApi: infer A } ? A : object;
 
-  /** Declare plugin dependencies. These plugins must be registered before this one. */
+  /**
+   * Plugin execution priority. Lower numbers run first, higher numbers run last.
+   * Default: 0
+   *
+   * @example
+   * ```ts
+   * // Cache plugin runs early (checks cache before other plugins)
+   * { name: "cache", priority: -10, ... }
+   *
+   * // Throttle plugin runs last (blocks all requests including force fetches)
+   * { name: "throttle", priority: 100, ... }
+   *
+   * // Most plugins use default priority
+   * { name: "retry", priority: 0, ... } // or omit priority
+   * ```
+   */
+  priority?: number;
+
+  /**
+   * List of plugin names that this plugin depends on.
+   * Used to validate that required plugins are registered.
+   * Does not affect execution order - use `priority` for that.
+   *
+   * @example
+   * ```ts
+   * {
+   *   name: "spoosh:optimistic",
+   *   dependencies: ["spoosh:invalidation"],
+   *   // ...
+   * }
+   * ```
+   */
   dependencies?: string[];
 
   /** @internal Type carrier for inference - do not use directly */
