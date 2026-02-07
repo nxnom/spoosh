@@ -25,7 +25,7 @@ import type {
   InfiniteReadApiClient,
   AnyInfiniteRequestOptions,
 } from "./types";
-import type { SpooshInstanceShape } from "../createReactSpoosh/types";
+import type { SpooshInstanceShape } from "../create/types";
 
 export function createUseInfiniteRead<
   TSchema,

@@ -1,4 +1,4 @@
-export { createAngularSpoosh } from "./createAngularSpoosh";
+export { create } from "./create";
 
 export type {
   SpooshInstanceShape,

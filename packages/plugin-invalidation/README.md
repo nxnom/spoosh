@@ -172,9 +172,9 @@ await trigger({ invalidate: "*" });
 The plugin exposes `invalidate` for manually triggering cache invalidation outside of mutations:
 
 ```typescript
-import { createReactSpoosh } from "@spoosh/react";
+import { create } from "@spoosh/react";
 
-const { useRead, invalidate } = createReactSpoosh(client);
+const { useRead, invalidate } = create(spoosh);
 
 // Invalidate with string array
 invalidate(["users", "posts"]);

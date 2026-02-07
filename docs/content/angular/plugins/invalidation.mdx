@@ -312,9 +312,9 @@ await createComment.trigger({
 The plugin exposes `invalidate` for manually triggering cache invalidation outside of mutations. This is useful for external events like WebSocket messages or other state changes.
 
 ```typescript
-import { createAngularSpoosh } from "@spoosh/angular";
+import { create } from "@spoosh/angular";
 
-const { injectRead, invalidate } = createAngularSpoosh(client);
+const { injectRead, invalidate } = create(spoosh);
 
 // Invalidate with string array
 invalidate(["users", "posts"]);

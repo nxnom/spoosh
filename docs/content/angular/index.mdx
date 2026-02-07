@@ -28,7 +28,7 @@ const spoosh = new Spoosh<API, Error>("/api").use([
 ]);
 
 // 3. Use in components — paths are fully typed from your schema
-export const { injectRead, injectWrite } = createAngularSpoosh(spoosh);
+export const { injectRead, injectWrite } = create(spoosh);
 ```
 
 Using [Hono](/docs/angular/type-adapters/hono) or [Elysia](/docs/angular/type-adapters/elysia)? You can infer the schema directly from your server routes for end-to-end type safety with zero manual definitions.

@@ -99,9 +99,9 @@ This is useful for scenarios like user logout or switching organizations where y
 The plugin also exposes a `clearCache` function for manually clearing all cached data outside of mutations:
 
 ```typescript
-import { createReactSpoosh } from "@spoosh/react";
+import { create } from "@spoosh/react";
 
-const { useRead, clearCache } = createReactSpoosh(client);
+const { useRead, clearCache } = create(spoosh);
 
 function LogoutButton() {
   const handleLogout = () => {

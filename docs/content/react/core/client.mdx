@@ -52,7 +52,7 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
 
 ```typescript title="src/api/client.ts"
 import { Spoosh } from "@spoosh/core";
-import { createReactSpoosh } from "@spoosh/react";
+import { create } from "@spoosh/react";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
 import type { ApiSchema } from "./schema";
@@ -62,7 +62,7 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   invalidationPlugin(),
 ]);
 
-export const { useRead, useWrite, useInfiniteRead } = createReactSpoosh(spoosh);
+export const { useRead, useWrite, useInfiniteRead } = create(spoosh);
 ```
 
 ## Request Options

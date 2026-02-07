@@ -16,15 +16,14 @@ npm install @spoosh/core @spoosh/angular
 
 ```typescript
 import { Spoosh } from "@spoosh/core";
-import { createAngularSpoosh } from "@spoosh/angular";
+import { create } from "@spoosh/angular";
 import { cachePlugin } from "@spoosh/plugin-cache";
 
 const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
 ]);
 
-export const { injectRead, injectWrite, injectInfiniteRead } =
-  createAngularSpoosh(spoosh);
+export const { injectRead, injectWrite, injectInfiniteRead } = create(spoosh);
 ```
 
 ### injectRead

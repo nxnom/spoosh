@@ -99,9 +99,9 @@ This is useful for scenarios like user logout or switching organizations where y
 The plugin also exposes a `clearCache` function for manually clearing all cached data outside of mutations:
 
 ```typescript
-import { createAngularSpoosh } from "@spoosh/angular";
+import { create } from "@spoosh/angular";
 
-const { injectRead, clearCache } = createAngularSpoosh(client);
+const { injectRead, clearCache } = create(spoosh);
 
 @Component({
   template: `

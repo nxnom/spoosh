@@ -61,9 +61,9 @@ await trigger({ clearCache: true, invalidate: "*" });
 The plugin exposes a `clearCache` function for manually clearing all cached data:
 
 ```typescript
-import { createReactSpoosh } from "@spoosh/react";
+import { create } from "@spoosh/react";
 
-const { useRead, clearCache } = createReactSpoosh(client);
+const { useRead, clearCache } = create(spoosh);
 
 // Clear all cached data only (no refetch)
 function handleLogout() {

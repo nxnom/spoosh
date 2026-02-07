@@ -23,7 +23,7 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
 ]);
 
-const { injectRead, injectWrite, prefetch } = createAngularSpoosh(client);
+const { injectRead, injectWrite, prefetch } = create(spoosh);
 ```
 
 ## Basic Prefetch

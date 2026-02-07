@@ -185,9 +185,9 @@ Unlike `middleware`, `afterResponse` runs after every response — even when oth
 Combine `clearCache` and `invalidate("*")` to wipe all cached data:
 
 ```typescript
-import { createReactSpoosh } from "@spoosh/react";
+import { create } from "@spoosh/react";
 
-const { useWrite, clearCache } = createReactSpoosh(client);
+const { useWrite, clearCache } = create(spoosh);
 
 function LogoutButton() {
   const { trigger } = useWrite((api) => api("auth/logout").POST);

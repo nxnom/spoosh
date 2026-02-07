@@ -55,7 +55,7 @@ Set up the Spoosh client with plugins:
 
 ```typescript title="src/api/client.ts"
 import { Spoosh } from "@spoosh/core";
-import { createAngularSpoosh } from "@spoosh/angular";
+import { create } from "@spoosh/angular";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
@@ -67,7 +67,7 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   invalidationPlugin(), // Auto-refresh queries after mutations
 ]);
 
-export const { injectRead, injectWrite } = createAngularSpoosh(spoosh);
+export const { injectRead, injectWrite } = create(spoosh);
 ```
 
 > **Why these plugins?**

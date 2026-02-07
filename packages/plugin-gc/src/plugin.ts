@@ -106,7 +106,7 @@ function runGarbageCollection(
  *   ]);
  *
  * // Manual GC trigger
- * const { runGc } = createReactSpoosh(client);
+ * const { runGc } = create(client);
  * const removedCount = runGc();
  * ```
  */

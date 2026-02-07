@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 const heroCode = `import { Spoosh } from "@spoosh/core";
-import { createReactSpoosh } from "@spoosh/react";
+import { create } from "@spoosh/react";
 import { cachePlugin } from "@spoosh/plugin-cache";
 import { deduplicationPlugin } from "@spoosh/plugin-deduplication";
 import { invalidationPlugin } from "@spoosh/plugin-invalidation";
@@ -30,7 +30,7 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   invalidationPlugin(), // Auto-refresh queries after mutations
 ]);
 
-export const { useRead, useWrite } = createReactSpoosh(spoosh);`;
+export const { useRead, useWrite } = create(spoosh);`;
 
 const exampleCode = `function UserList() {
   const { data, loading, error } = useRead(

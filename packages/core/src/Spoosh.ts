@@ -30,12 +30,12 @@ import type { SpooshOptions, SpooshOptionsInput } from "./types/request.types";
  *
  * @example With React hooks
  * ```ts
- * import { createReactSpoosh } from '@spoosh/react';
+ * import { create } from '@spoosh/react';
  *
  * const spoosh = new Spoosh<ApiSchema, Error>('/api')
  *   .use([cachePlugin(), retryPlugin()]);
  *
- * const { useRead, useWrite } = createReactSpoosh(client);
+ * const { useRead, useWrite } = create(client);
  *
  * // In component
  * const { data } = useRead((api) => api("posts").GET());

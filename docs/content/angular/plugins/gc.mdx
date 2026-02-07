@@ -44,7 +44,7 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
 The plugin exposes a manual trigger function on the Spoosh instance:
 
 ```typescript
-const { runGc } = createAngularSpoosh(api);
+const { runGc } = create(api);
 
 // Manually trigger garbage collection
 const removedCount = runGc();

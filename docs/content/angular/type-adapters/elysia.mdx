@@ -58,7 +58,7 @@ Use `ElysiaToSpoosh` with your Elysia app type. Since the server uses a prefix (
 
 ```typescript title="client.ts"
 import { Spoosh, StripPrefix } from "@spoosh/core";
-import { createAngularSpoosh } from "@spoosh/angular";
+import { create } from "@spoosh/angular";
 import type { ElysiaToSpoosh } from "@spoosh/elysia";
 import type { App } from "./server";
 
@@ -71,7 +71,7 @@ type ApiSchema = StripPrefix<FullSchema, "api">;
 
 const spoosh = new Spoosh<ApiSchema, Error>("http://localhost:3000/api");
 
-export const { injectRead, injectWrite } = createAngularSpoosh(spoosh);
+export const { injectRead, injectWrite } = create(spoosh);
 ```
 
 ## Usage

@@ -1,9 +1,4 @@
-"use client";
-
-export { createReactSpoosh, type SpooshReactHooks } from "./createReactSpoosh";
-export { createUseRead } from "./useRead";
-export { createUseWrite } from "./useWrite";
-export { createUseInfiniteRead } from "./useInfiniteRead";
+export { create, type SpooshReactHooks } from "./create";
 
 export type { PluginHooksConfig } from "./types/shared";
 export type {

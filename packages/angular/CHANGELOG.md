@@ -1,5 +1,9 @@
 # @spoosh/angular
 
+## 0.7.0
+
+- Rename awkward `createAngularSpoosh` to `create` for simpler import
+
 ## 0.6.5
 
 - Updated dependencies

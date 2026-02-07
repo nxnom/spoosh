@@ -227,7 +227,7 @@ export interface SpooshPlugin<T extends PluginTypeConfig = PluginTypeConfig> {
   exports?: (context: PluginContext) => object;
 
   /**
-   * Expose functions/properties on the framework adapter return value (e.g., createReactSpoosh).
+   * Expose functions/properties on the framework adapter return value (e.g., create).
    * Unlike `exports`, these are accessible directly from the instance, not just within plugin context.
    *
    * @example

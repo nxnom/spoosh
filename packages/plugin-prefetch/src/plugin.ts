@@ -41,7 +41,7 @@ import { storePromiseInCache } from "./promise-cache";
  *     retryPlugin(),
  *   ]);
  *
- * const { prefetch } = createReactSpoosh(client);
+ * const { prefetch } = create(client);
  *
  * // Basic prefetch
  * await prefetch((api) => api("posts").GET());

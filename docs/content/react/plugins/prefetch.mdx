@@ -23,7 +23,7 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
 ]);
 
-const { useRead, useWrite, prefetch } = createReactSpoosh(client);
+const { useRead, useWrite, prefetch } = create(spoosh);
 ```
 
 ## Basic Prefetch

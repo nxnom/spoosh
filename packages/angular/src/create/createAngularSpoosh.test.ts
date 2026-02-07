@@ -1,10 +1,38 @@
-/**
- * @vitest-environment jsdom
- */
 import { vi, describe, it, expect } from "vitest";
 import { createStateManager, createEventEmitter } from "@spoosh/test-utils";
 import { createPluginExecutor, type SpooshPlugin } from "@spoosh/core";
-import { createReactSpoosh } from "./index";
+import { create } from "../index";
+
+vi.mock("@angular/core", () => ({
+  signal: <T>(initial: T) => {
+    let value = initial;
+    const sig = () => value;
+    sig.set = (newValue: T) => {
+      value = newValue;
+    };
+    sig.update = (fn: (v: T) => T) => {
+      value = fn(value);
+    };
+    return sig;
+  },
+  computed: <T>(fn: () => T) => {
+    let value = fn();
+    const sig = () => value;
+    sig.set = (newValue: T) => {
+      value = newValue;
+    };
+    return sig;
+  },
+  effect: (fn: () => void | (() => void)) => {
+    const cleanup = fn();
+    return { destroy: () => cleanup?.() };
+  },
+  inject: () => ({
+    onDestroy: () => {},
+  }),
+  DestroyRef: class DestroyRef {},
+  untracked: <T>(fn: () => T) => fn(),
+}));
 
 function createMockApi() {
   return (path: string) => ({
@@ -32,30 +60,30 @@ function createTestInstance(plugins: SpooshPlugin[] = []) {
   };
 }
 
-describe("createReactSpoosh", () => {
+describe("create", () => {
   describe("Hook Creation", () => {
-    it("returns useRead hook", () => {
+    it("returns injectRead function", () => {
       const instance = createTestInstance();
-      const result = createReactSpoosh(instance);
+      const result = create(instance);
 
-      expect(result.useRead).toBeDefined();
-      expect(typeof result.useRead).toBe("function");
+      expect(result.injectRead).toBeDefined();
+      expect(typeof result.injectRead).toBe("function");
     });
 
-    it("returns useWrite hook", () => {
+    it("returns injectWrite function", () => {
       const instance = createTestInstance();
-      const result = createReactSpoosh(instance);
+      const result = create(instance);
 
-      expect(result.useWrite).toBeDefined();
-      expect(typeof result.useWrite).toBe("function");
+      expect(result.injectWrite).toBeDefined();
+      expect(typeof result.injectWrite).toBe("function");
     });
 
-    it("returns useInfiniteRead hook", () => {
+    it("returns injectInfiniteRead function", () => {
       const instance = createTestInstance();
-      const result = createReactSpoosh(instance);
+      const result = create(instance);
 
-      expect(result.useInfiniteRead).toBeDefined();
-      expect(typeof result.useInfiniteRead).toBe("function");
+      expect(result.injectInfiniteRead).toBeDefined();
+      expect(typeof result.injectInfiniteRead).toBe("function");
     });
   });
 
@@ -73,7 +101,7 @@ describe("createReactSpoosh", () => {
       };
 
       const instance = createTestInstance([plugin]);
-      const result = createReactSpoosh(instance);
+      const result = create(instance);
 
       expect(mockInstanceApi).toHaveBeenCalled();
       expect(result).toHaveProperty("customMethod");
@@ -92,9 +120,7 @@ describe("createReactSpoosh", () => {
       };
 
       const instance = createTestInstance([plugin]);
-      const result = createReactSpoosh(instance) as ReturnType<
-        typeof createReactSpoosh
-      > & {
+      const result = create(instance) as ReturnType<typeof create> & {
         customMethod: typeof customMethodImpl;
       };
 

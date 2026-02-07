@@ -16,14 +16,14 @@ npm install @spoosh/core @spoosh/react
 
 ```typescript
 import { Spoosh } from "@spoosh/core";
-import { createReactSpoosh } from "@spoosh/react";
+import { create } from "@spoosh/react";
 import { cachePlugin } from "@spoosh/plugin-cache";
 
 const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
   cachePlugin({ staleTime: 5000 }),
 ]);
 
-export const { useRead, useWrite, useInfiniteRead } = createReactSpoosh(spoosh);
+export const { useRead, useWrite, useInfiniteRead } = create(spoosh);
 ```
 
 ### useRead

@@ -185,9 +185,9 @@ Unlike `middleware`, `afterResponse` runs after every response — even when oth
 Combine `clearCache` and `invalidate("*")` to wipe all cached data:
 
 ```typescript
-import { createAngularSpoosh } from "@spoosh/angular";
+import { create } from "@spoosh/angular";
 
-const { injectWrite, clearCache } = createAngularSpoosh(client);
+const { injectWrite, clearCache } = create(spoosh);
 
 @Component({
   selector: "app-logout-button",

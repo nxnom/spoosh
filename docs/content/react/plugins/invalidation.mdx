@@ -314,9 +314,9 @@ await createComment({
 The plugin exposes `invalidate` for manually triggering cache invalidation outside of mutations. This is useful for external events like WebSocket messages or other state changes.
 
 ```typescript
-import { createReactSpoosh } from "@spoosh/react";
+import { create } from "@spoosh/react";
 
-const { useRead, invalidate } = createReactSpoosh(client);
+const { useRead, invalidate } = create(spoosh);
 
 // Invalidate with string array
 invalidate(["users", "posts"]);

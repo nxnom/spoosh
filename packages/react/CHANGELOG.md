@@ -1,5 +1,9 @@
 # @spoosh/react
 
+## 0.8.0
+
+- Rename awkward `createReactSpoosh` to `create` for simpler import
+
 ## 0.7.5
 
 - Updated dependencies

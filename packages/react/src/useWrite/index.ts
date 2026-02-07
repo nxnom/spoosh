@@ -34,7 +34,7 @@ import type {
   ExtractResponseBody,
   ExtractResponseParamNames,
 } from "../types/extraction";
-import type { SpooshInstanceShape } from "../createReactSpoosh/types";
+import type { SpooshInstanceShape } from "../create/types";
 
 export function createUseWrite<
   TSchema,

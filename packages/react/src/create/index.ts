@@ -16,7 +16,7 @@ import type { SpooshReactHooks, SpooshInstanceShape } from "./types";
  *
  * @example
  * ```ts
- * const { useRead, useWrite, useInfiniteRead } = createReactSpoosh(spooshInstance);
+ * const { useRead, useWrite, useInfiniteRead } = create(spooshInstance);
  *
  * function MyComponent() {
  *   const { data, loading } = useRead((api) => api("posts").GET());
@@ -24,7 +24,7 @@ import type { SpooshReactHooks, SpooshInstanceShape } from "./types";
  * }
  * ```
  */
-export function createReactSpoosh<
+export function create<
   TSchema,
   TDefaultError,
   TPlugins extends PluginArray,

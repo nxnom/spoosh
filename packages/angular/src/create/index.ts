@@ -4,7 +4,7 @@ import { createInjectWrite } from "../injectWrite";
 import { createInjectInfiniteRead } from "../injectInfiniteRead";
 import type { SpooshAngularFunctions, SpooshInstanceShape } from "./types";
 
-export function createAngularSpoosh<
+export function create<
   TSchema,
   TDefaultError,
   TPlugins extends PluginArray,

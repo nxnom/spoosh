@@ -20,10 +20,10 @@ Spoosh is a lightweight, type-safe API toolkit with a unique plugin architecture
 
 ```typescript
 // Direct usage with path strings
-const { data } = await client.api("users/:userId/posts").GET({
+const { data } = await spoosh.api("users/:userId/posts").GET({
   params: { userId: 123 },
 });
-const { data } = await client.api("posts/:postId/comments").GET({
+const { data } = await spoosh.api("posts/:postId/comments").GET({
   params: { postId: 456 },
 });
 ```
@@ -113,16 +113,16 @@ const spoosh = new Spoosh<ApiSchema, Error>("/api")
   .use([cachePlugin({ staleTime: 5000 })]);
 
 // Fully typed API calls
-const { data, error } = await client.api("users").GET();
-const { data: user } = await client.api("users/:id").GET({ params: { id: 123 } });
+const { data, error } = await spoosh.api("users").GET();
+const { data: user } = await spoosh.api("users/:id").GET({ params: { id: 123 } });
 ```
 
 ### With React
 
 ```typescript
-import { createReactSpoosh } from "@spoosh/react";
+import { create } from "@spoosh/react";
 
-const { useRead, useWrite } = createReactSpoosh(client);
+const { useRead, useWrite } = create(spoosh);
 
 function UserList() {
   const { data, loading, error } = useRead((api) => api("users").GET());
@@ -135,9 +135,9 @@ function UserList() {
 ### With Angular
 
 ```typescript
-import { createAngularSpoosh } from "@spoosh/angular";
+import { create } from "@spoosh/angular";
 
-const { injectRead, injectWrite } = createAngularSpoosh(client);
+const { injectRead, injectWrite } = create(spoosh);
 
 @Component({
   selector: 'app-user-list',
