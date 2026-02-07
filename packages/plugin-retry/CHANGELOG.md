@@ -1,5 +1,10 @@
 # @spoosh/plugin-retry
 
+## 0.1.8
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.1.7
 
 - Renamed `PluginContext.requestOptions` to `PluginContext.request` for cleaner API

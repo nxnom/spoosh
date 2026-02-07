@@ -1,5 +1,10 @@
 # @spoosh/plugin-cache
 
+## 0.3.3
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.3.2
 
 - Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API

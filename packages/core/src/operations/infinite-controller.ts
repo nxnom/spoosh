@@ -304,7 +304,7 @@ export function createInfiniteReadController<
       requestTimestamp: Date.now(),
       hookId,
       request: { headers: {} },
-      metadata: new Map(),
+      temp: new Map(),
       pluginOptions,
       stateManager,
       eventEmitter,

@@ -43,7 +43,7 @@ function resolveInvalidateTags(
   const invalidateOption = pluginOptions?.invalidate;
 
   if (!invalidateOption) {
-    const overrideDefault = context.metadata.get(INVALIDATION_DEFAULT_KEY) as
+    const overrideDefault = context.temp.get(INVALIDATION_DEFAULT_KEY) as
       | InvalidationMode
       | undefined;
     const effectiveDefault = overrideDefault ?? defaultMode;
@@ -142,7 +142,7 @@ export function invalidationPlugin(
     exports(context): InvalidationPluginExports {
       return {
         setDefaultMode(value: InvalidationMode) {
-          context.metadata.set(INVALIDATION_DEFAULT_KEY, value);
+          context.temp.set(INVALIDATION_DEFAULT_KEY, value);
         },
       };
     },

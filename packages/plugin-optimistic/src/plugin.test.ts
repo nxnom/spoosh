@@ -1,7 +1,7 @@
 import type { SpooshResponse } from "@spoosh/core";
 import { createMockContext, createStateManager } from "@spoosh/test-utils";
 
-import { optimisticPlugin, OPTIMISTIC_SNAPSHOTS_KEY } from "./plugin";
+import { optimisticPlugin } from "./plugin";
 import type { OptimisticWriteOptions, OptimisticTarget } from "./types";
 
 function createOptimisticTarget(
@@ -233,10 +233,9 @@ describe("optimisticPlugin", () => {
       expect(previousDataDuringNext).toEqual(originalData);
     });
 
-    it("should store snapshots in metadata", async () => {
+    it("should preserve previousData during optimistic update", async () => {
       const plugin = optimisticPlugin();
       const stateManager = createStateManager();
-      const metadata = new Map();
 
       const cacheKey = '{"method":"GET","path":"posts"}';
       setupCacheEntry(stateManager, cacheKey, [{ id: 1 }], "posts");
@@ -248,22 +247,19 @@ describe("optimisticPlugin", () => {
 
       const context = createMockContext({
         stateManager,
-        metadata,
         pluginOptions,
       });
 
-      let snapshotsDuringNext: unknown;
+      let previousDataDuringNext: unknown;
 
       const next = vi.fn().mockImplementation(() => {
-        snapshotsDuringNext = metadata.get(OPTIMISTIC_SNAPSHOTS_KEY);
+        previousDataDuringNext = stateManager.getCache(cacheKey)?.previousData;
         return Promise.resolve({ data: { success: true }, status: 200 });
       });
 
       await plugin.middleware!(context, next);
 
-      expect(snapshotsDuringNext).toEqual([
-        { key: cacheKey, previousData: [{ id: 1 }] },
-      ]);
+      expect(previousDataDuringNext).toEqual([{ id: 1 }]);
     });
   });
 

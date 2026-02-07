@@ -50,8 +50,8 @@ export type MockContextOptions<TData = unknown, TError = unknown> = {
 
   request?: Record<string, unknown>;
 
-  /** Custom metadata map for the context */
-  metadata?: Map<string, unknown>;
+  /** Custom temp map for the context */
+  temp?: Map<string, unknown>;
 
   /** Custom plugins object with get function */
   plugins?: { get: ReturnType<typeof vi.fn> };
@@ -75,7 +75,7 @@ export function createMockContext<TData = unknown, TError = unknown>(
     forceRefetch,
     hookId,
     request = {},
-    metadata = new Map(),
+    temp = new Map(),
     plugins = { get: vi.fn() },
   } = options;
 
@@ -87,7 +87,7 @@ export function createMockContext<TData = unknown, TError = unknown>(
     tags,
     requestTimestamp: Date.now(),
     request,
-    metadata,
+    temp,
     stateManager,
     eventEmitter,
     plugins,

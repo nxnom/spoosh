@@ -1,5 +1,10 @@
 # @spoosh/plugin-refetch
 
+## 0.1.7
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.1.6
 
 - Update documentation URLs to new `/docs/{framework}` format

@@ -1,5 +1,9 @@
 # @spoosh/core
 
+## 0.11.1
+
+- Rename `metadata` to `temp` in internal plugin communication.
+
 ## 0.11.0
 
 ### Breaking Changes

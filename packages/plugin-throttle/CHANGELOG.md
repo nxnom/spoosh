@@ -1,5 +1,10 @@
 # @spoosh/plugin-throttle
 
+## 0.1.9
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.1.8
 
 - Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API

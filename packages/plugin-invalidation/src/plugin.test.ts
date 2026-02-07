@@ -54,17 +54,17 @@ describe("invalidationPlugin", () => {
       expect(typeof pluginExports.setDefaultMode).toBe("function");
     });
 
-    it("should store defaultMode in metadata", () => {
+    it("should store defaultMode in temp", () => {
       const plugin = invalidationPlugin();
-      const metadata = new Map();
-      const context = createMockContext({ metadata });
+      const temp = new Map();
+      const context = createMockContext({ temp });
       const pluginExports = plugin.exports!(
         context
       ) as InvalidationPluginExports;
 
       pluginExports.setDefaultMode("none");
 
-      expect(metadata.get("invalidation:defaultMode")).toBe("none");
+      expect(temp.get("invalidation:defaultMode")).toBe("none");
     });
   });
 
@@ -655,14 +655,14 @@ describe("invalidationPlugin", () => {
     });
   });
 
-  describe("metadata override via exports", () => {
-    it("should use metadata override when set via exports", () => {
+  describe("temp override via exports", () => {
+    it("should use temp override when set via exports", () => {
       const plugin = invalidationPlugin({ defaultMode: "all" });
       const stateManager = createStateManager();
       const eventEmitter = createEventEmitter();
-      const metadata = new Map();
+      const temp = new Map();
 
-      metadata.set("invalidation:defaultMode", "none");
+      temp.set("invalidation:defaultMode", "none");
 
       const invalidateHandler = vi.fn();
       eventEmitter.on("invalidate", invalidateHandler);
@@ -670,7 +670,7 @@ describe("invalidationPlugin", () => {
       const context = createMockContext({
         stateManager,
         eventEmitter,
-        metadata,
+        temp,
         tags: ["users"],
       });
 

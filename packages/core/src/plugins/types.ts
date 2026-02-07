@@ -48,7 +48,7 @@ export type PluginContext = {
   readonly hookId?: string;
 
   request: PluginRequestOptions;
-  metadata: Map<string, unknown>;
+  temp: Map<string, unknown>;
 
   stateManager: StateManager;
   eventEmitter: EventEmitter;

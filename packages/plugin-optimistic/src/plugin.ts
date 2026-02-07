@@ -10,8 +10,6 @@ import type {
   OptimisticTarget,
 } from "./types";
 
-export const OPTIMISTIC_SNAPSHOTS_KEY = "optimistic:snapshots";
-
 type OptimisticSnapshot = {
   key: string;
   previousData: unknown;
@@ -294,24 +292,15 @@ export function optimisticPlugin(): SpooshPlugin<{
         allSnapshots.push(...snapshots);
       }
 
-      if (allSnapshots.length > 0) {
-        context.metadata.set(OPTIMISTIC_SNAPSHOTS_KEY, allSnapshots);
-      }
-
       const response = await next();
-
-      const snapshots =
-        (context.metadata.get(
-          OPTIMISTIC_SNAPSHOTS_KEY
-        ) as OptimisticSnapshot[]) ?? [];
 
       if (response.error) {
         const shouldRollback = targets.some(
           (t) => t.rollbackOnError && t.timing !== "onSuccess"
         );
 
-        if (shouldRollback && snapshots.length > 0) {
-          rollbackOptimistic(stateManager, snapshots);
+        if (shouldRollback && allSnapshots.length > 0) {
+          rollbackOptimistic(stateManager, allSnapshots);
         }
 
         for (const target of targets) {
@@ -320,8 +309,8 @@ export function optimisticPlugin(): SpooshPlugin<{
           }
         }
       } else {
-        if (snapshots.length > 0) {
-          confirmOptimistic(stateManager, snapshots);
+        if (allSnapshots.length > 0) {
+          confirmOptimistic(stateManager, allSnapshots);
         }
 
         const onSuccessTargets = targets.filter(

@@ -1,5 +1,10 @@
 # @spoosh/plugin-deduplication
 
+## 0.1.8
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.1.7
 
 - Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API

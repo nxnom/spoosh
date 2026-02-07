@@ -1,5 +1,10 @@
 # @spoosh/plugin-optimistic
 
+## 0.4.3
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.4.2
 
 - Update documentation URLs to new `/docs/{framework}` format

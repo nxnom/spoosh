@@ -1,5 +1,10 @@
 # @spoosh/plugin-nextjs
 
+## 0.1.6
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.1.5
 
 - Update documentation URLs to new `/docs/{framework}` format

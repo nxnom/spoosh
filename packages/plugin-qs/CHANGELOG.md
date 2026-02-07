@@ -1,5 +1,10 @@
 # @spoosh/plugin-qs
 
+## 0.2.4
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.2.3
 
 - Renamed `PluginContext.requestOptions` to `PluginContext.request` for cleaner API

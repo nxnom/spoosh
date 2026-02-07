@@ -18,7 +18,7 @@ function createMockContext(
     tags: ["test"],
     requestTimestamp: Date.now(),
     request: { headers: {} },
-    metadata: new Map(),
+    temp: new Map(),
     stateManager,
     eventEmitter,
     plugins: { get: () => undefined },
@@ -428,7 +428,7 @@ describe("createPluginExecutor", () => {
 
     it("preserves response when afterResponse returns void", async () => {
       const afterResponse = vi.fn().mockImplementation((ctx) => {
-        ctx.metadata.set("processed", true);
+        ctx.temp.set("processed", true);
       });
 
       const plugin = createMockPlugin("test-plugin", ["read"], {
@@ -448,7 +448,7 @@ describe("createPluginExecutor", () => {
       );
 
       expect(response).toEqual({ data: "original", status: 200 });
-      expect(context.metadata.get("processed")).toBe(true);
+      expect(context.temp.get("processed")).toBe(true);
     });
   });
 
@@ -671,7 +671,7 @@ describe("createPluginExecutor", () => {
         tags: ["test"],
         requestTimestamp: Date.now(),
         request: { headers: {} },
-        metadata: new Map(),
+        temp: new Map(),
         stateManager,
         eventEmitter,
       });
@@ -693,7 +693,7 @@ describe("createPluginExecutor", () => {
         tags: ["test"],
         requestTimestamp: Date.now(),
         request: { headers: {} },
-        metadata: new Map(),
+        temp: new Map(),
         stateManager,
         eventEmitter,
       });
@@ -730,7 +730,7 @@ describe("createPluginExecutor", () => {
         tags: ["test"],
         requestTimestamp: Date.now(),
         request: { headers: {} },
-        metadata: new Map(),
+        temp: new Map(),
         stateManager,
         eventEmitter,
       });
@@ -755,7 +755,7 @@ describe("createPluginExecutor", () => {
         tags: ["test"],
         requestTimestamp: Date.now(),
         request: { headers: {} },
-        metadata: new Map(),
+        temp: new Map(),
         stateManager,
         eventEmitter,
       });
@@ -777,7 +777,7 @@ describe("createPluginExecutor", () => {
         tags: ["test"],
         requestTimestamp: Date.now(),
         request: { headers: {} },
-        metadata: new Map(),
+        temp: new Map(),
         stateManager,
         eventEmitter,
       });

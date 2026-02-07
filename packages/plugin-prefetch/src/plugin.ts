@@ -130,7 +130,7 @@ export function prefetchPlugin(
           tags: resolvedTags,
           requestTimestamp: Date.now(),
           request: { headers: {}, ...(callOptions ?? {}) },
-          metadata: new Map(),
+          temp: new Map(),
           pluginOptions: options,
           stateManager,
           eventEmitter,

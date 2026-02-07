@@ -85,7 +85,7 @@ export function createOperationController<TData, TError>(
   });
 
   let abortController: AbortController | null = null;
-  const metadata = new Map<string, unknown>();
+  const temp = new Map<string, unknown>();
   let pluginOptions: unknown = undefined;
   const initialState = createInitialState<TData, TError>();
   let cachedState: OperationState<TData, TError> = initialState;
@@ -113,7 +113,7 @@ export function createOperationController<TData, TError>(
         ...requestOptions,
         headers: resolvedHeaders ?? {},
       },
-      metadata,
+      temp,
       pluginOptions,
       stateManager,
       eventEmitter,
@@ -270,7 +270,7 @@ export function createOperationController<TData, TError>(
     },
 
     setMetadata(key, value) {
-      metadata.set(key, value);
+      temp.set(key, value);
     },
   };
 

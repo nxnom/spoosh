@@ -1,5 +1,10 @@
 # @spoosh/plugin-prefetch
 
+## 0.3.4
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.3.3
 
 - Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API

@@ -1,5 +1,10 @@
 # @spoosh/plugin-gc
 
+## 0.1.7
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.1.6
 
 - Prevent garbage collection for active listeners

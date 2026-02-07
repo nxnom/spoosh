@@ -1,5 +1,10 @@
 # @spoosh/react
 
+## 0.7.4
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.7.3
 
 - Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API

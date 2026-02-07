@@ -1,5 +1,10 @@
 # @spoosh/plugin-polling
 
+## 0.2.3
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.2.2
 
 - Update documentation URLs to new `/docs/{framework}` format

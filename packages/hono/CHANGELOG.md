@@ -1,5 +1,10 @@
 # @spoosh/hono
 
+## 0.6.2
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.6.1
 
 - Update documentation URLs to new `/docs/{framework}` format

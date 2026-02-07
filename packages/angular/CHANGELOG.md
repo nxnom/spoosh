@@ -1,5 +1,10 @@
 # @spoosh/angular
 
+## 0.6.4
+
+- Updated dependencies
+  - @spoosh/core@0.11.1
+
 ## 0.6.3
 
 - Changed `PluginContext.path` from `string[]` to `string` for simpler plugin API
