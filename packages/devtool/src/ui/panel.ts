@@ -5,11 +5,17 @@ import type {
   DevToolTheme,
   OperationTrace,
   PluginStepEvent,
-  DiffLine,
 } from "../types";
 import { injectStyles, removeStyles } from "./styles/inject";
 import { getThemeCSS, resolveTheme } from "./styles/theme";
-import { computeDiff } from "../store/diff";
+import {
+  computeDiff,
+  escapeHtml,
+  formatJson,
+  formatQueryParams,
+  getDiffLinesWithContext,
+  renderDiffLines,
+} from "./utils";
 
 interface DevToolPanelOptions {
   store: DevToolStoreInterface;
@@ -173,7 +179,7 @@ export class DevToolPanel {
     const hasError = !!trace.response?.error;
     const statusClass = isPending ? "pending" : hasError ? "error" : "success";
     const duration = trace.duration?.toFixed(0) ?? "...";
-    const queryParams = this.formatQueryParams(
+    const queryParams = formatQueryParams(
       trace.request.query as Record<string, unknown> | undefined
     );
 
@@ -182,21 +188,11 @@ export class DevToolPanel {
         <div class="spoosh-trace-status ${statusClass}"></div>
         <div class="spoosh-trace-info">
           <span class="spoosh-trace-method method-${trace.method}">${trace.method}</span>
-          <span class="spoosh-trace-path">${trace.path}${queryParams ? `<span class="spoosh-trace-query">?${this.escapeHtml(queryParams)}</span>` : ""}</span>
+          <span class="spoosh-trace-path">${trace.path}${queryParams ? `<span class="spoosh-trace-query">?${escapeHtml(queryParams)}</span>` : ""}</span>
         </div>
         <span class="spoosh-trace-time">${duration}ms</span>
       </div>
     `;
-  }
-
-  private formatQueryParams(query?: Record<string, unknown>): string | null {
-    if (!query) return null;
-
-    const entries = Object.entries(query);
-
-    if (entries.length === 0) return null;
-
-    return entries.map(([k, v]) => `${k}=${v ?? ""}`).join("&");
   }
 
   private renderEmptyDetail(): string {
@@ -283,7 +279,7 @@ export class DevToolPanel {
       return `
         <div class="spoosh-data-section">
           <div class="spoosh-data-label">Error</div>
-          <pre class="spoosh-json error">${this.formatJson(response.error)}</pre>
+          <pre class="spoosh-json error">${formatJson(response.error)}</pre>
         </div>
       `;
     }
@@ -291,7 +287,7 @@ export class DevToolPanel {
     return `
       <div class="spoosh-data-section">
         <div class="spoosh-data-label">Response Data</div>
-        <pre class="spoosh-json">${this.formatJson(response.data)}</pre>
+        <pre class="spoosh-json">${formatJson(response.data)}</pre>
       </div>
     `;
   }
@@ -302,7 +298,7 @@ export class DevToolPanel {
     return `
       <div class="spoosh-data-section">
         <div class="spoosh-data-label">Tags</div>
-        <pre class="spoosh-json">${this.formatJson(trace.tags)}</pre>
+        <pre class="spoosh-json">${formatJson(trace.tags)}</pre>
       </div>
 
       ${
@@ -310,7 +306,7 @@ export class DevToolPanel {
           ? `
         <div class="spoosh-data-section">
           <div class="spoosh-data-label">Params</div>
-          <pre class="spoosh-json">${this.formatJson(params)}</pre>
+          <pre class="spoosh-json">${formatJson(params)}</pre>
         </div>
       `
           : ""
@@ -321,7 +317,7 @@ export class DevToolPanel {
           ? `
         <div class="spoosh-data-section">
           <div class="spoosh-data-label">Query</div>
-          <pre class="spoosh-json">${this.formatJson(query)}</pre>
+          <pre class="spoosh-json">${formatJson(query)}</pre>
         </div>
       `
           : ""
@@ -332,7 +328,7 @@ export class DevToolPanel {
           ? `
         <div class="spoosh-data-section">
           <div class="spoosh-data-label">Body</div>
-          <pre class="spoosh-json">${this.formatJson(body)}</pre>
+          <pre class="spoosh-json">${formatJson(body)}</pre>
         </div>
       `
           : ""
@@ -343,7 +339,7 @@ export class DevToolPanel {
           ? `
         <div class="spoosh-data-section">
           <div class="spoosh-data-label">Headers</div>
-          <pre class="spoosh-json">${this.formatJson(headers)}</pre>
+          <pre class="spoosh-json">${formatJson(headers)}</pre>
         </div>
       `
           : ""
@@ -471,7 +467,7 @@ export class DevToolPanel {
             <span class="spoosh-plugin-name">${displayName}</span>
             <span class="spoosh-plugin-stage">${step.stage}</span>
           </div>
-          ${step.reason ? `<span class="spoosh-plugin-reason">${this.escapeHtml(step.reason)}</span>` : ""}
+          ${step.reason ? `<span class="spoosh-plugin-reason">${escapeHtml(step.reason)}</span>` : ""}
           ${hasDiff ? `<span class="spoosh-plugin-expand">${isExpanded ? "▼" : "▶"}</span>` : ""}
         </div>
         ${isExpanded && step.diff ? this.renderPluginDiff(stepKey, step.diff) : ""}
@@ -495,12 +491,12 @@ export class DevToolPanel {
               Show changes only
             </button>
           </div>
-          <pre class="spoosh-diff-lines">${this.renderDiffLines(diffLines)}</pre>
+          <pre class="spoosh-diff-lines">${renderDiffLines(diffLines)}</pre>
         </div>
       `;
     }
 
-    const linesWithContext = this.getDiffLinesWithContext(diffLines, 2);
+    const linesWithContext = getDiffLinesWithContext(diffLines, 2);
 
     if (linesWithContext.length === 0) {
       return `<div class="spoosh-plugin-diff"><div class="spoosh-empty-tab">No changes</div></div>`;
@@ -513,132 +509,13 @@ export class DevToolPanel {
             Show full
           </button>
         </div>
-        <pre class="spoosh-diff-lines">${this.renderDiffLines(linesWithContext)}</pre>
+        <pre class="spoosh-diff-lines">${renderDiffLines(linesWithContext)}</pre>
       </div>
     `;
   }
 
-  private getDiffLinesWithContext(
-    lines: DiffLine[],
-    contextSize: number
-  ): DiffLine[] {
-    const result: DiffLine[] = [];
-    const includeIndices = new Set<number>();
-
-    lines.forEach((line, i) => {
-      if (line.type !== "unchanged") {
-        for (
-          let j = Math.max(0, i - contextSize);
-          j <= Math.min(lines.length - 1, i + contextSize);
-          j++
-        ) {
-          includeIndices.add(j);
-        }
-      }
-    });
-
-    let lastIncluded = -2;
-    const sortedIndices = Array.from(includeIndices).sort((a, b) => a - b);
-
-    for (const i of sortedIndices) {
-      if (lastIncluded >= 0 && i > lastIncluded + 1) {
-        result.push({ type: "unchanged", content: "···" });
-      }
-      const line = lines[i];
-      if (line) result.push(line);
-      lastIncluded = i;
-    }
-
-    return result;
-  }
-
-  private renderDiffLines(lines: DiffLine[]): string {
-    return lines
-      .map((line) => {
-        const prefix =
-          line.type === "added" ? "+" : line.type === "removed" ? "-" : " ";
-        const className = `spoosh-diff-line-${line.type}`;
-        return `<div class="${className}"><span class="spoosh-diff-prefix">${prefix}</span>${this.highlightJson(line.content)}</div>`;
-      })
-      .join("");
-  }
-
   private getActivePluginCount(trace: OperationTrace): number {
     return trace.steps.filter((step) => step.stage !== "skip").length;
-  }
-
-  private formatJson(data: unknown): string {
-    if (data === undefined)
-      return '<span class="spoosh-syn-null">undefined</span>';
-    if (data === null) return '<span class="spoosh-syn-null">null</span>';
-
-    try {
-      const json = JSON.stringify(data, this.jsonReplacer, 2);
-      return this.highlightJson(json);
-    } catch {
-      return this.escapeHtml(String(data));
-    }
-  }
-
-  private jsonReplacer = (_key: string, value: unknown): unknown => {
-    if (value instanceof File) {
-      return `[File: ${value.name} (${this.formatBytes(value.size)}, ${value.type || "unknown type"})]`;
-    }
-
-    if (value instanceof Blob) {
-      return `[Blob: ${this.formatBytes(value.size)}, ${value.type || "unknown type"}]`;
-    }
-
-    if (value instanceof FormData) {
-      const entries: Record<string, string> = {};
-      value.forEach((v, k) => {
-        if (v instanceof File) {
-          entries[k] = `[File: ${v.name}]`;
-        } else {
-          entries[k] = String(v);
-        }
-      });
-      return { "[FormData]": entries };
-    }
-
-    if (value instanceof ArrayBuffer) {
-      return `[ArrayBuffer: ${this.formatBytes(value.byteLength)}]`;
-    }
-
-    if (typeof value === "function") {
-      return `[Function: ${value.name || "anonymous"}]`;
-    }
-
-    return value;
-  };
-
-  private formatBytes(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
-
-  private highlightJson(json: string): string {
-    return json.replace(
-      /("(?:\\.|[^"\\])*")\s*:|("(?:\\.|[^"\\])*")|(\b\d+\.?\d*\b)|(\btrue\b|\bfalse\b)|(\bnull\b)/g,
-      (match, key, str, num, bool, nil) => {
-        if (key)
-          return `<span class="spoosh-syn-key">${this.escapeHtml(key)}</span>:`;
-        if (str)
-          return `<span class="spoosh-syn-str">${this.escapeHtml(str)}</span>`;
-        if (num) return `<span class="spoosh-syn-num">${num}</span>`;
-        if (bool) return `<span class="spoosh-syn-bool">${bool}</span>`;
-        if (nil) return `<span class="spoosh-syn-null">${nil}</span>`;
-        return match;
-      }
-    );
-  }
-
-  private escapeHtml(str: string): string {
-    return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
   }
 
   private attachEvents(): void {

@@ -46,27 +46,6 @@ export interface DiffLine {
   content: string;
 }
 
-export interface LazyDiff {
-  hasChanges: boolean;
-  getDiff(): DiffLine[];
-}
-
-export interface CacheChange {
-  key: string;
-  type: "added" | "removed" | "modified";
-  diff: unknown | LazyDiff;
-}
-
-export interface CacheDiff {
-  hasChanges: boolean;
-  getChanges(): CacheChange[];
-}
-
-export interface PluginDiff {
-  request: LazyDiff | null;
-  cache: CacheDiff | null;
-}
-
 /**
  * Plugin step event stored in trace history.
  * Derived from TraceEvent emitted by plugins.

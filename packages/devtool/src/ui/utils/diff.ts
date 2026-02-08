@@ -1,11 +1,5 @@
-import type { DiffLine, LazyDiff, CacheDiff, CacheChange } from "../types";
-
-export function computeDiff(before: unknown, after: unknown): DiffLine[] {
-  const beforeLines = jsonToLines(before);
-  const afterLines = jsonToLines(after);
-
-  return diffLines(beforeLines, afterLines);
-}
+import type { DiffLine } from "../../types";
+import { highlightJson } from "./format";
 
 function jsonToLines(obj: unknown, indent = 0): string[] {
   if (obj === undefined) return ["undefined"];
@@ -95,52 +89,56 @@ function diffLines(before: string[], after: string[]): DiffLine[] {
   return result;
 }
 
-export function createLazyDiff(before: unknown, after: unknown): LazyDiff {
-  let cached: DiffLine[] | null = null;
-  const beforeStr = JSON.stringify(before);
-  const afterStr = JSON.stringify(after);
+export function computeDiff(before: unknown, after: unknown): DiffLine[] {
+  const beforeLines = jsonToLines(before);
+  const afterLines = jsonToLines(after);
 
-  return {
-    hasChanges: beforeStr !== afterStr,
-
-    getDiff(): DiffLine[] {
-      if (!cached) {
-        cached = computeDiff(before, after);
-      }
-
-      return cached;
-    },
-  };
+  return diffLines(beforeLines, afterLines);
 }
 
-export function createCacheDiff(
-  before: Map<string, unknown>,
-  after: Map<string, unknown>
-): CacheDiff {
-  const changes: CacheChange[] = [];
+export function getDiffLinesWithContext(
+  lines: DiffLine[],
+  contextSize: number
+): DiffLine[] {
+  const result: DiffLine[] = [];
+  const includeIndices = new Set<number>();
 
-  for (const [key, beforeValue] of before) {
-    const afterValue = after.get(key);
-
-    if (!after.has(key)) {
-      changes.push({ key, type: "removed", diff: beforeValue });
-    } else if (JSON.stringify(beforeValue) !== JSON.stringify(afterValue)) {
-      changes.push({
-        key,
-        type: "modified",
-        diff: createLazyDiff(beforeValue, afterValue),
-      });
+  lines.forEach((line, i) => {
+    if (line.type !== "unchanged") {
+      for (
+        let j = Math.max(0, i - contextSize);
+        j <= Math.min(lines.length - 1, i + contextSize);
+        j++
+      ) {
+        includeIndices.add(j);
+      }
     }
+  });
+
+  let lastIncluded = -2;
+  const sortedIndices = Array.from(includeIndices).sort((a, b) => a - b);
+
+  for (const i of sortedIndices) {
+    if (lastIncluded >= 0 && i > lastIncluded + 1) {
+      result.push({ type: "unchanged", content: "···" });
+    }
+
+    const line = lines[i];
+
+    if (line) result.push(line);
+    lastIncluded = i;
   }
 
-  for (const [key, afterValue] of after) {
-    if (!before.has(key)) {
-      changes.push({ key, type: "added", diff: afterValue });
-    }
-  }
+  return result;
+}
 
-  return {
-    hasChanges: changes.length > 0,
-    getChanges: () => changes,
-  };
+export function renderDiffLines(lines: DiffLine[]): string {
+  return lines
+    .map((line) => {
+      const prefix =
+        line.type === "added" ? "+" : line.type === "removed" ? "-" : " ";
+      const className = `spoosh-diff-line-${line.type}`;
+      return `<div class="${className}"><span class="spoosh-diff-prefix">${prefix}</span>${highlightJson(line.content)}</div>`;
+    })
+    .join("");
 }
