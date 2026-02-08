@@ -141,11 +141,17 @@ export function createPluginExecutor(
         .filter((p) => p.middleware)
         .map((p) => p.middleware!);
 
+      const tracedCoreFetch = async () => {
+        const fetchTracer = context.tracer?.("fetch");
+        fetchTracer?.log("Network request");
+        return coreFetch();
+      };
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let response: SpooshResponse<any, any>;
 
       if (middlewares.length === 0) {
-        response = await coreFetch();
+        response = await tracedCoreFetch();
       } else {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         type NextFn = () => Promise<SpooshResponse<any, any>>;
@@ -159,7 +165,7 @@ export function createPluginExecutor(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ) as Promise<SpooshResponse<any, any>>;
           },
-          coreFetch
+          tracedCoreFetch
         );
 
         response = await chain();

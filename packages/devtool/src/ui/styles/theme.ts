@@ -524,6 +524,83 @@ export function getThemeCSS(theme: DevToolTheme): string {
       gap: 8px;
     }
 
+    .spoosh-timeline {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .spoosh-timeline-step {
+      border-bottom: 1px solid var(--spoosh-border);
+    }
+
+    .spoosh-timeline-step.skipped {
+      opacity: 0.5;
+    }
+
+    .spoosh-timeline-step-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      cursor: pointer;
+    }
+
+    .spoosh-timeline-step-header:hover {
+      background: var(--spoosh-surface);
+      margin: 0 -16px;
+      padding: 10px 16px;
+    }
+
+    .spoosh-timeline-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .spoosh-timeline-plugin {
+      font-weight: 500;
+    }
+
+    .spoosh-timeline-stage {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--spoosh-border);
+      color: var(--spoosh-text-muted);
+    }
+
+    .spoosh-timeline-reason {
+      flex: 1;
+      color: var(--spoosh-text-muted);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .spoosh-timeline-fetch {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+    }
+
+    .spoosh-fetch-line {
+      flex: 1;
+      height: 1px;
+      background: var(--spoosh-warning);
+      opacity: 0.5;
+    }
+
+    .spoosh-fetch-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--spoosh-warning);
+      padding: 4px 12px;
+      border: 1px solid var(--spoosh-warning);
+      border-radius: 12px;
+      background: rgba(210, 153, 34, 0.1);
+    }
+
     .spoosh-plugin-item {
       background: var(--spoosh-surface);
       border: 1px solid var(--spoosh-border);

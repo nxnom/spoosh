@@ -366,198 +366,128 @@ export class DevToolPanel {
 
   private renderPluginsTab(trace: OperationTrace): string {
     const knownPlugins = this.store.getKnownPlugins(trace.operationType);
-
-    if (knownPlugins.length === 0 && trace.steps.length === 0) {
-      return `<div class="spoosh-empty-tab">No plugin events recorded</div>`;
-    }
+    const sortedSteps = [...trace.steps].sort(
+      (a, b) => a.timestamp - b.timestamp
+    );
 
     const stepsByPlugin = new Map<string, PluginStepEvent[]>();
 
-    for (const step of trace.steps) {
+    for (const step of sortedSteps) {
       const existing = stepsByPlugin.get(step.plugin) || [];
       existing.push(step);
       stepsByPlugin.set(step.plugin, existing);
     }
 
-    const allPlugins =
-      knownPlugins.length > 0 ? knownPlugins : trace.steps.map((s) => s.plugin);
+    const pluginsWithEvents = new Set(
+      sortedSteps.filter((s) => s.plugin !== "fetch").map((s) => s.plugin)
+    );
+    const passedPlugins = knownPlugins.filter((p) => !pluginsWithEvents.has(p));
 
-    const uniquePlugins = [...new Set(allPlugins)];
+    if (sortedSteps.length === 0 && knownPlugins.length === 0) {
+      return `<div class="spoosh-empty-tab">No plugin events recorded</div>`;
+    }
 
-    const isPassedPlugin = (name: string): boolean => {
-      const steps = stepsByPlugin.get(name);
-      return !steps || steps.every((s) => s.stage === "skip");
-    };
+    const timelineItems: string[] = [];
 
-    const activePlugins = uniquePlugins.filter((name) => !isPassedPlugin(name));
-    const passedPlugins = uniquePlugins.filter((name) => isPassedPlugin(name));
-    const passedCount = passedPlugins.length;
+    for (const pluginName of knownPlugins) {
+      const steps = stepsByPlugin.get(pluginName);
 
-    const pluginsToShow = this.showPassedPlugins
-      ? uniquePlugins
-      : activePlugins;
+      if (steps && steps.length > 0) {
+        for (const step of steps) {
+          timelineItems.push(this.renderTimelineStep(trace.id, step));
+        }
+      } else if (this.showPassedPlugins) {
+        timelineItems.push(this.renderPassedPlugin(pluginName));
+      }
+    }
 
-    if (pluginsToShow.length === 0 && !this.showPassedPlugins) {
-      return `
-        <div class="spoosh-plugins-header">
-          <button class="spoosh-toggle-passed" data-action="toggle-passed">
-            Show ${passedCount} passed
-          </button>
-        </div>
-        <div class="spoosh-empty-tab">No plugins ran</div>
-      `;
+    const fetchSteps = stepsByPlugin.get("fetch") || [];
+
+    for (const step of fetchSteps) {
+      timelineItems.push(this.renderTimelineStep(trace.id, step));
     }
 
     return `
       ${
-        passedCount > 0
+        passedPlugins.length > 0
           ? `
         <div class="spoosh-plugins-header">
           <button class="spoosh-toggle-passed" data-action="toggle-passed">
-            ${this.showPassedPlugins ? "Hide" : "Show"} ${passedCount} passed
+            ${this.showPassedPlugins ? "Hide" : "Show"} ${passedPlugins.length} passed
           </button>
         </div>
       `
           : ""
       }
-      <div class="spoosh-plugins-list">
-        ${pluginsToShow
-          .map((pluginName) => {
-            const steps = stepsByPlugin.get(pluginName) || [];
-            const isPassed = isPassedPlugin(pluginName);
-            return this.renderPluginSteps(
-              trace.id,
-              pluginName,
-              steps,
-              isPassed
-            );
-          })
-          .join("")}
+      <div class="spoosh-timeline">
+        ${timelineItems.join("")}
       </div>
     `;
   }
 
-  private renderPluginSteps(
-    traceId: string,
-    pluginName: string,
-    steps: PluginStepEvent[],
-    isPassed: boolean
-  ): string {
+  private renderPassedPlugin(pluginName: string): string {
     const displayName = pluginName.replace("spoosh:", "");
 
-    if (steps.length === 0) {
+    return `
+      <div class="spoosh-timeline-step skipped">
+        <div class="spoosh-timeline-step-header">
+          <div class="spoosh-timeline-dot" style="background: var(--spoosh-border)"></div>
+          <span class="spoosh-timeline-plugin">${displayName}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderTimelineStep(traceId: string, step: PluginStepEvent): string {
+    const isFetch = step.plugin === "fetch";
+    const isSkip = step.stage === "skip";
+    const stepKey = `${traceId}:${step.plugin}:${step.timestamp}`;
+    const isExpanded = this.expandedSteps.has(stepKey);
+    const hasDiff =
+      step.diff &&
+      JSON.stringify(step.diff.before) !== JSON.stringify(step.diff.after);
+
+    const colorMap: Record<string, string> = {
+      success: "var(--spoosh-success)",
+      warning: "var(--spoosh-warning)",
+      error: "var(--spoosh-error)",
+      info: "var(--spoosh-primary)",
+      muted: "var(--spoosh-text-muted)",
+    };
+
+    const stageColors: Record<string, string> = {
+      return: "var(--spoosh-success)",
+      log: "var(--spoosh-primary)",
+      skip: "var(--spoosh-text-muted)",
+      fetch: "var(--spoosh-warning)",
+    };
+
+    const dotColor = step.color
+      ? colorMap[step.color]
+      : stageColors[step.stage] || "var(--spoosh-text-muted)";
+
+    const displayName = step.plugin.replace("spoosh:", "");
+
+    if (isFetch) {
       return `
-        <div class="spoosh-plugin-item passed">
-          <div class="spoosh-plugin-header">
-            <div class="spoosh-plugin-status" style="background: var(--spoosh-border)"></div>
-            <div class="spoosh-plugin-info">
-              <span class="spoosh-plugin-name">${displayName}</span>
-            </div>
-          </div>
+        <div class="spoosh-timeline-fetch">
+          <div class="spoosh-fetch-line"></div>
+          <div class="spoosh-fetch-label">⚡ Fetch</div>
+          <div class="spoosh-fetch-line"></div>
         </div>
       `;
     }
 
-    const lastStep = steps[steps.length - 1]!;
-    const stepKey = `${traceId}:${pluginName}`;
-    const isExpanded = this.expandedSteps.has(stepKey);
-
-    const colorMap: Record<string, string> = {
-      success: "var(--spoosh-success)",
-      warning: "var(--spoosh-warning)",
-      error: "var(--spoosh-error)",
-      info: "var(--spoosh-primary)",
-      muted: "var(--spoosh-text-muted)",
-    };
-
-    const stageColors: Record<string, string> = {
-      return: "var(--spoosh-success)",
-      log: "var(--spoosh-primary)",
-      skip: "var(--spoosh-text-muted)",
-    };
-
-    const dotColor = lastStep.color
-      ? colorMap[lastStep.color]
-      : stageColors[lastStep.stage] || "var(--spoosh-text-muted)";
-
-    const hasMultipleSteps = steps.length > 1;
-    const singleStepDiff =
-      steps.length === 1 &&
-      lastStep.diff &&
-      JSON.stringify(lastStep.diff.before) !==
-        JSON.stringify(lastStep.diff.after)
-        ? lastStep.diff
-        : null;
-    const hasDiff = steps.some(
-      (s) =>
-        s.diff && JSON.stringify(s.diff.before) !== JSON.stringify(s.diff.after)
-    );
-    const canExpand = hasMultipleSteps || hasDiff;
-
     return `
-      <div class="spoosh-plugin-item ${isPassed ? "passed" : ""} ${isExpanded ? "expanded" : ""}" data-step-key="${stepKey}">
-        <div class="spoosh-plugin-header" ${canExpand ? 'data-action="toggle-step"' : ""}>
-          <div class="spoosh-plugin-status" style="background: ${dotColor}"></div>
-          <div class="spoosh-plugin-info">
-            <span class="spoosh-plugin-name">${displayName}</span>
-            <span class="spoosh-plugin-stage">${lastStep.stage}</span>
-            ${hasMultipleSteps ? `<span class="spoosh-plugin-count">${steps.length}</span>` : ""}
-          </div>
-          ${lastStep.reason ? `<span class="spoosh-plugin-reason">${escapeHtml(lastStep.reason)}</span>` : ""}
-          ${canExpand ? `<span class="spoosh-plugin-expand">${isExpanded ? "▼" : "▶"}</span>` : ""}
+      <div class="spoosh-timeline-step ${isSkip ? "skipped" : ""} ${isExpanded ? "expanded" : ""}" data-step-key="${stepKey}">
+        <div class="spoosh-timeline-step-header" ${hasDiff ? 'data-action="toggle-step"' : ""}>
+          <div class="spoosh-timeline-dot" style="background: ${dotColor}"></div>
+          <span class="spoosh-timeline-plugin">${displayName}</span>
+          <span class="spoosh-timeline-stage">${step.stage}</span>
+          ${step.reason ? `<span class="spoosh-timeline-reason">${escapeHtml(step.reason)}</span>` : ""}
+          ${hasDiff ? `<span class="spoosh-plugin-expand">${isExpanded ? "▼" : "▶"}</span>` : ""}
         </div>
-        ${isExpanded && singleStepDiff ? this.renderPluginDiff(stepKey, singleStepDiff) : ""}
-        ${isExpanded && hasMultipleSteps ? this.renderPluginStepDetails(traceId, steps) : ""}
-      </div>
-    `;
-  }
-
-  private renderPluginStepDetails(
-    traceId: string,
-    steps: PluginStepEvent[]
-  ): string {
-    const colorMap: Record<string, string> = {
-      success: "var(--spoosh-success)",
-      warning: "var(--spoosh-warning)",
-      error: "var(--spoosh-error)",
-      info: "var(--spoosh-primary)",
-      muted: "var(--spoosh-text-muted)",
-    };
-
-    const stageColors: Record<string, string> = {
-      return: "var(--spoosh-success)",
-      log: "var(--spoosh-primary)",
-      skip: "var(--spoosh-text-muted)",
-    };
-
-    return `
-      <div class="spoosh-plugin-details">
-        ${steps
-          .map((step, index) => {
-            const stepKey = `${traceId}:${step.plugin}:${step.timestamp}`;
-            const hasDiff =
-              step.diff &&
-              JSON.stringify(step.diff.before) !==
-                JSON.stringify(step.diff.after);
-            const isDiffExpanded = this.expandedSteps.has(stepKey);
-            const dotColor = step.color
-              ? colorMap[step.color]
-              : stageColors[step.stage] || "var(--spoosh-text-muted)";
-
-            return `
-              <div class="spoosh-step-detail" data-step-key="${stepKey}">
-                <div class="spoosh-step-detail-header" ${hasDiff ? 'data-action="toggle-step"' : ""}>
-                  <span class="spoosh-step-index">${index + 1}</span>
-                  <span class="spoosh-step-dot" style="background: ${dotColor}"></span>
-                  <span class="spoosh-step-stage">${step.stage}</span>
-                  ${step.reason ? `<span class="spoosh-step-reason">${escapeHtml(step.reason)}</span>` : ""}
-                  ${hasDiff ? `<span class="spoosh-plugin-expand">${isDiffExpanded ? "▼" : "▶"}</span>` : ""}
-                </div>
-                ${isDiffExpanded && step.diff ? this.renderPluginDiff(stepKey, step.diff) : ""}
-              </div>
-            `;
-          })
-          .join("")}
+        ${isExpanded && step.diff ? this.renderPluginDiff(stepKey, step.diff) : ""}
       </div>
     `;
   }
@@ -603,7 +533,9 @@ export class DevToolPanel {
 
   private getActivePluginCount(trace: OperationTrace): number {
     const activePlugins = new Set(
-      trace.steps.filter((step) => step.stage !== "skip").map((step) => step.plugin)
+      trace.steps
+        .filter((step) => step.stage !== "skip")
+        .map((step) => step.plugin)
     );
     return activePlugins.size;
   }

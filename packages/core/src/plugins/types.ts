@@ -509,7 +509,7 @@ export type InstanceApiContext<TApi = unknown> = {
 /**
  * Stage of plugin execution for tracing.
  */
-export type TraceStage = "return" | "log" | "skip";
+export type TraceStage = "return" | "log" | "skip" | "fetch";
 
 /**
  * Color hint for devtools visualization.
