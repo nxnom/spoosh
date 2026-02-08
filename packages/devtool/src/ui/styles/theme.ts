@@ -59,16 +59,16 @@ export function getThemeCSS(theme: DevToolTheme): string {
 
     #spoosh-devtool-fab {
       position: fixed;
-      width: 48px;
-      height: 48px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
-      background: linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.success});
-      border: none;
+      background: ${theme.colors.surface};
+      border: 1px solid ${theme.colors.border};
+      color: ${theme.colors.text};
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
       z-index: 999998;
       transition: transform 0.2s, box-shadow 0.2s;
@@ -86,19 +86,19 @@ export function getThemeCSS(theme: DevToolTheme): string {
 
     #spoosh-devtool-fab .badge {
       position: absolute;
-      top: -4px;
-      right: -4px;
+      top: -6px;
+      right: -6px;
       background: ${theme.colors.error};
       color: white;
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 600;
-      min-width: 18px;
-      height: 18px;
-      border-radius: 9px;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0 5px;
+      padding: 0 4px;
       font-family: ${theme.fonts.mono};
     }
 
@@ -206,7 +206,9 @@ export function getThemeCSS(theme: DevToolTheme): string {
     }
 
     .spoosh-logo {
-      font-size: 14px;
+      display: flex;
+      align-items: center;
+      color: var(--spoosh-text);
     }
 
     .spoosh-actions {

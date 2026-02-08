@@ -22,6 +22,9 @@ export interface DevToolConfig {
 
   /** Maximum number of traces to keep in history. Defaults to 50. */
   maxHistory?: number;
+
+  /** Show floating icon. If false, use devtools.open() manually. Defaults to true. */
+  showFloatingIcon?: boolean;
 }
 
 export interface DevToolTheme {
@@ -98,7 +101,7 @@ export interface DevToolApi {
 }
 
 export interface DevToolInstanceApi {
-  devtool: DevToolApi;
+  devtools: DevToolApi;
 }
 
 export interface DevToolPanelOptions {
@@ -107,6 +110,7 @@ export interface DevToolPanelOptions {
   position: "bottom-right" | "bottom-left" | "top-right" | "top-left";
   stateManager: StateManager;
   eventEmitter: EventEmitter;
+  showFloatingIcon: boolean;
 }
 
 export interface DevToolStoreInterface {

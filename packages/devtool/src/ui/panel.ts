@@ -19,6 +19,7 @@ import {
   formatJson,
   formatQueryParams,
   getDiffLinesWithContext,
+  getLogo,
   renderDiffLines,
 } from "./utils";
 
@@ -28,6 +29,7 @@ interface DevToolPanelOptions {
   position: "bottom-right" | "bottom-left" | "top-right" | "top-left";
   stateManager: StateManager;
   eventEmitter: EventEmitter;
+  showFloatingIcon: boolean;
 }
 
 type DetailTab = "data" | "request" | "plugins";
@@ -41,6 +43,7 @@ export class DevToolPanel {
   private store: DevToolStoreInterface;
   private theme: DevToolTheme;
   private position: string;
+  private showFloatingIcon: boolean;
   private isOpen = false;
   private selectedTraceId: string | null = null;
   private activeTab: DetailTab = "data";
@@ -64,6 +67,7 @@ export class DevToolPanel {
     this.store = options.store;
     this.theme = resolveTheme(options.theme);
     this.position = options.position;
+    this.showFloatingIcon = options.showFloatingIcon;
     this.boundHandleMouseMove = this.handleMouseMove.bind(this);
     this.boundHandleMouseUp = this.handleMouseUp.bind(this);
   }
@@ -79,12 +83,14 @@ export class DevToolPanel {
 
     injectStyles(getThemeCSS(this.theme), this.shadowRoot);
 
-    this.fab = document.createElement("button");
-    this.fab.id = "spoosh-devtool-fab";
-    this.fab.className = this.position;
-    this.fab.innerHTML = "⚡";
-    this.fab.onclick = () => this.toggle();
-    this.shadowRoot.appendChild(this.fab);
+    if (this.showFloatingIcon) {
+      this.fab = document.createElement("button");
+      this.fab.id = "spoosh-devtool-fab";
+      this.fab.className = this.position;
+      this.fab.innerHTML = getLogo(20, 18);
+      this.fab.onclick = () => this.toggle();
+      this.shadowRoot.appendChild(this.fab);
+    }
 
     this.sidebar = document.createElement("div");
     this.sidebar.id = "spoosh-devtool-sidebar";
@@ -185,7 +191,7 @@ export class DevToolPanel {
     return `
       <div class="spoosh-header">
         <div class="spoosh-title">
-          <span class="spoosh-logo">⚡</span>
+          <span class="spoosh-logo">${getLogo(16, 14)}</span>
           <span>Spoosh</span>
         </div>
         <div class="spoosh-actions">

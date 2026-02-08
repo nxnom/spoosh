@@ -43,6 +43,7 @@ export function devtool(
     theme = "dark",
     position = "bottom-right",
     maxHistory = 50,
+    showFloatingIcon = true,
   } = config;
 
   if (!enabled || typeof window === "undefined") {
@@ -158,6 +159,7 @@ export function devtool(
           position,
           stateManager: ctx.stateManager,
           eventEmitter: ctx.eventEmitter,
+          showFloatingIcon,
         });
         globalPanel.mount();
       }
@@ -182,7 +184,7 @@ export function devtool(
       });
 
       return {
-        devtool: {
+        devtools: {
           getHistory: () => store.getTraces(),
           clearHistory: () => store.clear(),
           setEnabled: (value: boolean) => globalPanel?.setVisible(value),
