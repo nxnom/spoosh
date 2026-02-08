@@ -464,7 +464,7 @@ export function getThemeCSS(theme: DevToolTheme): string {
       margin-bottom: 12px;
     }
 
-    .spoosh-toggle-inactive {
+    .spoosh-toggle-passed {
       background: transparent;
       border: 1px solid var(--spoosh-border);
       color: var(--spoosh-text-muted);
@@ -476,7 +476,7 @@ export function getThemeCSS(theme: DevToolTheme): string {
       transition: all 0.15s;
     }
 
-    .spoosh-toggle-inactive:hover {
+    .spoosh-toggle-passed:hover {
       border-color: var(--spoosh-text-muted);
       color: var(--spoosh-text);
     }
@@ -494,15 +494,15 @@ export function getThemeCSS(theme: DevToolTheme): string {
       overflow: hidden;
     }
 
-    .spoosh-plugin-item.inactive {
+    .spoosh-plugin-item.passed {
       opacity: 0.4;
     }
 
-    .spoosh-plugin-item.inactive .spoosh-plugin-header {
+    .spoosh-plugin-item.passed .spoosh-plugin-header {
       cursor: default;
     }
 
-    .spoosh-plugin-item.inactive .spoosh-plugin-header:hover {
+    .spoosh-plugin-item.passed .spoosh-plugin-header:hover {
       background: transparent;
     }
 

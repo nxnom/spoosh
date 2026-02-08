@@ -79,7 +79,6 @@ export interface PluginStepEvent {
   reason?: string;
   color?: TraceColor;
   diff?: { before: unknown; after: unknown };
-  meta?: Record<string, unknown>;
 }
 
 export interface OperationTrace {
@@ -131,7 +130,8 @@ export interface DevToolPanelOptions {
 
 export interface DevToolStoreInterface {
   startTrace(context: TraceContext): OperationTrace;
-  endTrace(queryKey: string, response?: SpooshResponse<unknown, unknown>): void;
+  endTrace(traceId: string, response?: SpooshResponse<unknown, unknown>): void;
+  discardTrace(traceId: string): void;
   getCurrentTrace(queryKey: string): OperationTrace | undefined;
   getTrace(traceId: string): OperationTrace | undefined;
   getTraces(): OperationTrace[];

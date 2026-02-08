@@ -1,8 +1,10 @@
 import type {
   SpooshPlugin,
   SpooshResponse,
-  Trace,
-  TraceEvent,
+  PluginTracer,
+  PluginContext,
+  TraceOptions,
+  TraceStage,
 } from "@spoosh/core";
 
 import { DevToolStore } from "./store";
@@ -62,6 +64,12 @@ export function devtool(
     priority: -100,
 
     middleware: async (context, next) => {
+      const existingTrace = store.getCurrentTrace(context.queryKey);
+
+      if (existingTrace) {
+        return next();
+      }
+
       const resolvedPath = resolvePathWithParams(
         context.path,
         context.request.params as Record<string, string | number> | undefined
@@ -75,22 +83,45 @@ export function devtool(
         tags: context.tags,
       });
 
-      const traceApi: Trace = {
-        step: (eventOrFn: TraceEvent | (() => TraceEvent)) => {
-          const event =
-            typeof eventOrFn === "function" ? eventOrFn() : eventOrFn;
-          trace.addStep(event, performance.now());
-        },
+      const createPluginTracer = (plugin: string): PluginTracer => {
+        const step = (stage: TraceStage, msg: string, options?: TraceOptions) => {
+          trace.addStep(
+            {
+              plugin,
+              stage,
+              reason: msg,
+              color: options?.color,
+              diff: options?.diff,
+            },
+            performance.now()
+          );
+        };
+
+        return {
+          return: (msg, options) => step("return", msg, options),
+          log: (msg, options) => step("log", msg, options),
+          skip: (msg, options) => step("skip", msg, options),
+        };
       };
 
-      (context as { trace: Trace }).trace = traceApi;
+      (context as unknown as { tracer: PluginContext["tracer"] }).tracer = createPluginTracer;
 
       const response = await next();
 
-      store.endTrace(
-        context.queryKey,
-        response as SpooshResponse<unknown, unknown>
-      );
+      const isDebounced =
+        response?.status === 0 &&
+        response?.data === undefined &&
+        !response?.error &&
+        !response?.aborted;
+
+      if (isDebounced) {
+        store.discardTrace(trace.id);
+      } else {
+        store.endTrace(
+          trace.id,
+          response as SpooshResponse<unknown, unknown>
+        );
+      }
 
       return response;
     },

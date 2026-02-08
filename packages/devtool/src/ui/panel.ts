@@ -31,7 +31,7 @@ export class DevToolPanel {
   private expandedSteps = new Set<string>();
   private unsubscribe: (() => void) | null = null;
   private traceCount = 0;
-  private showInactivePlugins = false;
+  private showPassedPlugins = false;
 
   constructor(options: DevToolPanelOptions) {
     this.store = options.store;
@@ -221,7 +221,7 @@ export class DevToolPanel {
             Request
           </button>
           <button class="spoosh-tab ${this.activeTab === "plugins" ? "active" : ""}" data-tab="plugins">
-            Plugins ${trace.steps.length > 0 ? `(${trace.steps.length})` : ""}
+            Plugins ${this.getActivePluginCount(trace) > 0 ? `(${this.getActivePluginCount(trace)})` : ""}
           </button>
         </div>
 
@@ -325,19 +325,22 @@ export class DevToolPanel {
     const allPlugins =
       knownPlugins.length > 0 ? knownPlugins : trace.steps.map((s) => s.plugin);
 
-    const activePlugins = allPlugins.filter((name) => stepsByPlugin.has(name));
-    const inactivePlugins = allPlugins.filter(
-      (name) => !stepsByPlugin.has(name)
-    );
-    const inactiveCount = inactivePlugins.length;
+    const isPassedPlugin = (name: string): boolean => {
+      const step = stepsByPlugin.get(name);
+      return !step || step.stage === "skip";
+    };
 
-    const pluginsToShow = this.showInactivePlugins ? allPlugins : activePlugins;
+    const activePlugins = allPlugins.filter((name) => !isPassedPlugin(name));
+    const passedPlugins = allPlugins.filter((name) => isPassedPlugin(name));
+    const passedCount = passedPlugins.length;
 
-    if (pluginsToShow.length === 0 && !this.showInactivePlugins) {
+    const pluginsToShow = this.showPassedPlugins ? allPlugins : activePlugins;
+
+    if (pluginsToShow.length === 0 && !this.showPassedPlugins) {
       return `
         <div class="spoosh-plugins-header">
-          <button class="spoosh-toggle-inactive" data-action="toggle-inactive">
-            Show ${inactiveCount} inactive
+          <button class="spoosh-toggle-passed" data-action="toggle-passed">
+            Show ${passedCount} passed
           </button>
         </div>
         <div class="spoosh-empty-tab">No plugins ran</div>
@@ -346,11 +349,11 @@ export class DevToolPanel {
 
     return `
       ${
-        inactiveCount > 0
+        passedCount > 0
           ? `
         <div class="spoosh-plugins-header">
-          <button class="spoosh-toggle-inactive" data-action="toggle-inactive">
-            ${this.showInactivePlugins ? "Hide" : "Show"} ${inactiveCount} inactive
+          <button class="spoosh-toggle-passed" data-action="toggle-passed">
+            ${this.showPassedPlugins ? "Hide" : "Show"} ${passedCount} passed
           </button>
         </div>
       `
@@ -360,7 +363,8 @@ export class DevToolPanel {
         ${pluginsToShow
           .map((pluginName) => {
             const step = stepsByPlugin.get(pluginName);
-            return this.renderPluginStep(trace.id, pluginName, step);
+            const isPassed = isPassedPlugin(pluginName);
+            return this.renderPluginStep(trace.id, pluginName, step, isPassed);
           })
           .join("")}
       </div>
@@ -370,12 +374,13 @@ export class DevToolPanel {
   private renderPluginStep(
     traceId: string,
     pluginName: string,
-    step: PluginStepEvent | undefined
+    step: PluginStepEvent | undefined,
+    isPassed: boolean
   ): string {
-    const isInactive = !step;
+    const hasNoStep = !step;
     const stepKey = step
       ? `${traceId}:${step.plugin}:${step.timestamp}`
-      : `${traceId}:${pluginName}:inactive`;
+      : `${traceId}:${pluginName}:passed`;
     const isExpanded = this.expandedSteps.has(stepKey);
     const hasDiff = !!step?.diff;
 
@@ -388,22 +393,22 @@ export class DevToolPanel {
     };
 
     const stageColors: Record<string, string> = {
-      before: "var(--spoosh-primary)",
-      after: "var(--spoosh-success)",
-      skip: "var(--spoosh-warning)",
+      return: "var(--spoosh-success)",
+      log: "var(--spoosh-primary)",
+      skip: "var(--spoosh-text-muted)",
     };
 
-    const dotColor = isInactive
+    const dotColor = hasNoStep
       ? "var(--spoosh-border)"
       : step?.color
         ? colorMap[step.color]
-        : stageColors[step?.stage || "before"] || "var(--spoosh-text-muted)";
+        : stageColors[step?.stage || "log"] || "var(--spoosh-text-muted)";
 
     const displayName = pluginName.replace("spoosh:", "");
 
-    if (isInactive) {
+    if (hasNoStep) {
       return `
-        <div class="spoosh-plugin-item inactive">
+        <div class="spoosh-plugin-item passed">
           <div class="spoosh-plugin-header">
             <div class="spoosh-plugin-status" style="background: ${dotColor}"></div>
             <div class="spoosh-plugin-info">
@@ -415,8 +420,8 @@ export class DevToolPanel {
     }
 
     return `
-      <div class="spoosh-plugin-item ${isExpanded ? "expanded" : ""}" data-step-key="${stepKey}">
-        <div class="spoosh-plugin-header" data-action="toggle-step">
+      <div class="spoosh-plugin-item ${isPassed ? "passed" : ""} ${isExpanded ? "expanded" : ""}" data-step-key="${stepKey}">
+        <div class="spoosh-plugin-header" ${hasDiff ? 'data-action="toggle-step"' : ""}>
           <div class="spoosh-plugin-status" style="background: ${dotColor}"></div>
           <div class="spoosh-plugin-info">
             <span class="spoosh-plugin-name">${displayName}</span>
@@ -443,6 +448,10 @@ export class DevToolPanel {
         </div>
       </div>
     `;
+  }
+
+  private getActivePluginCount(trace: OperationTrace): number {
+    return trace.steps.filter((step) => step.stage !== "skip").length;
   }
 
   private formatJson(data: unknown): string {
@@ -497,8 +506,8 @@ export class DevToolPanel {
           this.expandedSteps.add(stepKey);
         }
         this.render();
-      } else if (action === "toggle-inactive") {
-        this.showInactivePlugins = !this.showInactivePlugins;
+      } else if (action === "toggle-passed") {
+        this.showPassedPlugins = !this.showPassedPlugins;
         this.render();
       } else if (traceId && !action) {
         this.selectedTraceId = traceId;

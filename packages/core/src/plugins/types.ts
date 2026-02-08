@@ -70,23 +70,22 @@ export type PluginContext = {
   forceRefetch?: boolean;
 
   /**
-   * Trace API for emitting structured debug events.
-   * Only available when devtools plugin is active. Check before use.
+   * Creates a scoped tracer for devtools debugging.
+   * Only available when devtools plugin is active.
    *
    * @example
    * ```ts
-   * ctx.trace?.step({
-   *   plugin: "my-plugin",
-   *   stage: "after",
-   *   meta: { reason: "Transformed response" }
-   * });
+   * const t = ctx.tracer?.("my-plugin");
+   * t?.skip("Cache hit", "success");
+   * t?.before("Processing", "info");
+   * t?.after("Done", "success", { before: old, after: new });
    * ```
    */
-  trace?: Trace;
+  tracer?: (plugin: string) => PluginTracer;
 };
 
 /** Input type for creating PluginContext (without injected properties) */
-export type PluginContextInput = Omit<PluginContext, "plugins" | "trace">;
+export type PluginContextInput = Omit<PluginContext, "plugins" | "tracer">;
 
 /**
  * Middleware function that wraps the fetch flow.
@@ -510,7 +509,7 @@ export type InstanceApiContext<TApi = unknown> = {
 /**
  * Stage of plugin execution for tracing.
  */
-export type TraceStage = "before" | "after" | "skip";
+export type TraceStage = "return" | "log" | "skip";
 
 /**
  * Color hint for devtools visualization.
@@ -528,20 +527,14 @@ export type TraceEvent = {
   /** Execution stage */
   stage: TraceStage;
 
-  /** Metadata including reason and computed diff */
-  meta?: {
-    /** Human-readable explanation of what happened */
-    reason?: string;
+  /** Human-readable explanation of what happened */
+  reason?: string;
 
-    /** Color hint for devtools (success=green, warning=yellow, error=red, info=blue) */
-    color?: TraceColor;
+  /** Color hint for devtools (success=green, warning=yellow, error=red, info=blue) */
+  color?: TraceColor;
 
-    /** Pre-computed diff (plugin decides when diffs matter) */
-    diff?: { before: unknown; after: unknown };
-
-    /** Additional structured metadata */
-    [key: string]: unknown;
-  };
+  /** Before/after diff */
+  diff?: { before: unknown; after: unknown };
 };
 
 /**
@@ -597,3 +590,31 @@ export type Trace = {
 export type TraceListener = (
   event: TraceEvent & { queryKey: string; timestamp: number }
 ) => void;
+
+export type TraceOptions = {
+  color?: TraceColor;
+  diff?: { before: unknown; after: unknown };
+};
+
+/**
+ * Scoped tracer API for plugins.
+ * Created via `context.tracer?.(pluginName)`.
+ *
+ * @example
+ * ```ts
+ * const t = context.tracer?.("my-plugin");
+ * t?.return("Cache hit", { color: "success" });
+ * t?.log("Transformed", { color: "info", diff: { before, after } });
+ * t?.skip("Nothing to do", { color: "muted" });
+ * ```
+ */
+export interface PluginTracer {
+  /** Returned early without calling next() */
+  return(msg: string, options?: TraceOptions): void;
+
+  /** Did something (any activity worth noting) */
+  log(msg: string, options?: TraceOptions): void;
+
+  /** Nothing to do, passed through */
+  skip(msg: string, options?: TraceOptions): void;
+}

@@ -62,26 +62,25 @@ export class DevToolStore implements DevToolStoreInterface {
           plugin: event.plugin,
           stage: event.stage,
           timestamp,
-          reason: event.meta?.reason,
-          color: event.meta?.color,
-          diff: event.meta?.diff,
-          meta: event.meta,
+          reason: event.reason,
+          color: event.color,
+          diff: event.diff,
         });
         notifyFn();
       },
     };
 
-    this.activeTraces.set(context.queryKey, trace);
+    this.activeTraces.set(trace.id, trace);
     this.notify();
 
     return trace;
   }
 
   endTrace(
-    queryKey: string,
+    traceId: string,
     response?: SpooshResponse<unknown, unknown>
   ): void {
-    const trace = this.activeTraces.get(queryKey);
+    const trace = this.activeTraces.get(traceId);
 
     if (!trace) return;
 
@@ -90,12 +89,23 @@ export class DevToolStore implements DevToolStoreInterface {
     trace.response = response;
 
     this.traces.push(trace);
-    this.activeTraces.delete(queryKey);
+    this.activeTraces.delete(traceId);
+    this.notify();
+  }
+
+  discardTrace(traceId: string): void {
+    this.activeTraces.delete(traceId);
     this.notify();
   }
 
   getCurrentTrace(queryKey: string): OperationTrace | undefined {
-    return this.activeTraces.get(queryKey);
+    for (const trace of this.activeTraces.values()) {
+      if (trace.queryKey === queryKey) {
+        return trace;
+      }
+    }
+
+    return undefined;
   }
 
   getTrace(traceId: string): OperationTrace | undefined {
@@ -140,14 +150,16 @@ export class DevToolStore implements DevToolStoreInterface {
     const trace = this.getCurrentTrace(context.queryKey);
 
     if (trace) {
+      const reason =
+        phase === "onUpdate" && prevContext
+          ? `Lifecycle: ${phase} (from ${prevContext.queryKey})`
+          : `Lifecycle: ${phase}`;
+
       trace.addStep(
         {
           plugin: "lifecycle",
-          stage: phase === "onUnmount" ? "after" : "before",
-          meta: {
-            reason: `Lifecycle: ${phase}`,
-            ...(prevContext ? { prevQueryKey: prevContext.queryKey } : {}),
-          },
+          stage: "log",
+          reason,
         },
         performance.now()
       );
