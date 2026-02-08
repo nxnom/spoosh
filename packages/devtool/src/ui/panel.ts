@@ -488,7 +488,7 @@ export class DevToolPanel {
 
       return `
         <div class="spoosh-data-section">
-          <div class="spoosh-data-label">Body <span class="spoosh-body-type">${kind}</span></div>
+          <div class="spoosh-data-label">Body <span class="spoosh-body-type ${kind}">${kind}</span></div>
           <pre class="spoosh-json">${formatJson(value)}</pre>
         </div>
       `;
@@ -496,7 +496,7 @@ export class DevToolPanel {
 
     return `
       <div class="spoosh-data-section">
-        <div class="spoosh-data-label">Body</div>
+        <div class="spoosh-data-label">Body <span class="spoosh-body-type json">json</span></div>
         <pre class="spoosh-json">${formatJson(body)}</pre>
       </div>
     `;

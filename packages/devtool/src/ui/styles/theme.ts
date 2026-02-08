@@ -630,14 +630,27 @@ export function getThemeCSS(theme: DevToolTheme): string {
     }
 
     .spoosh-body-type {
-      font-weight: 400;
+      font-weight: 500;
       font-size: 9px;
-      color: var(--spoosh-text-muted);
-      background: var(--spoosh-surface);
       padding: 1px 4px;
       border-radius: 3px;
       margin-left: 6px;
       text-transform: lowercase;
+    }
+
+    .spoosh-body-type.json {
+      color: var(--spoosh-text-muted);
+      background: var(--spoosh-surface);
+    }
+
+    .spoosh-body-type.form {
+      color: var(--spoosh-success);
+      background: rgba(63, 185, 80, 0.15);
+    }
+
+    .spoosh-body-type.urlencoded {
+      color: var(--spoosh-warning);
+      background: rgba(210, 153, 34, 0.15);
     }
 
     .spoosh-plugins-header {
