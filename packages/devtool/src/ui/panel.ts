@@ -411,15 +411,32 @@ export class DevToolPanel {
 
   private renderRequestTab(trace: OperationTrace): string {
     const { query, body, params, headers } = trace.request;
+    const isReadOperation = trace.method === "GET";
+
+    const hasTags = isReadOperation && trace.tags.length > 0;
+    const hasParams = params && Object.keys(params).length > 0;
+    const hasQuery = query && Object.keys(query).length > 0;
+    const hasBody = body !== undefined;
+    const hasHeaders = headers && Object.keys(headers).length > 0;
+
+    if (!hasTags && !hasParams && !hasQuery && !hasBody && !hasHeaders) {
+      return `<div class="spoosh-empty-tab">No request data</div>`;
+    }
 
     return `
-      <div class="spoosh-data-section">
-        <div class="spoosh-data-label">Tags</div>
-        <pre class="spoosh-json">${formatJson(trace.tags)}</pre>
-      </div>
+      ${
+        hasTags
+          ? `
+        <div class="spoosh-data-section">
+          <div class="spoosh-data-label">Tags</div>
+          <pre class="spoosh-json">${formatJson(trace.tags)}</pre>
+        </div>
+      `
+          : ""
+      }
 
       ${
-        params && Object.keys(params).length > 0
+        hasParams
           ? `
         <div class="spoosh-data-section">
           <div class="spoosh-data-label">Params</div>
@@ -430,7 +447,7 @@ export class DevToolPanel {
       }
 
       ${
-        query && Object.keys(query).length > 0
+        hasQuery
           ? `
         <div class="spoosh-data-section">
           <div class="spoosh-data-label">Query</div>
@@ -440,19 +457,10 @@ export class DevToolPanel {
           : ""
       }
 
-      ${
-        body !== undefined
-          ? `
-        <div class="spoosh-data-section">
-          <div class="spoosh-data-label">Body</div>
-          <pre class="spoosh-json">${formatJson(body)}</pre>
-        </div>
-      `
-          : ""
-      }
+      ${hasBody ? this.renderBody(body) : ""}
 
       ${
-        headers && Object.keys(headers).length > 0
+        hasHeaders
           ? `
         <div class="spoosh-data-section">
           <div class="spoosh-data-label">Headers</div>
@@ -461,6 +469,36 @@ export class DevToolPanel {
       `
           : ""
       }
+    `;
+  }
+
+  private renderBody(body: unknown): string {
+    const spooshBody = body as {
+      __spooshBody?: boolean;
+      kind?: "form" | "json" | "urlencoded";
+      value?: unknown;
+    };
+
+    if (
+      spooshBody?.__spooshBody &&
+      spooshBody.kind &&
+      spooshBody.value !== undefined
+    ) {
+      const { kind, value } = spooshBody;
+
+      return `
+        <div class="spoosh-data-section">
+          <div class="spoosh-data-label">Body <span class="spoosh-body-type">${kind}</span></div>
+          <pre class="spoosh-json">${formatJson(value)}</pre>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="spoosh-data-section">
+        <div class="spoosh-data-label">Body</div>
+        <pre class="spoosh-json">${formatJson(body)}</pre>
+      </div>
     `;
   }
 
@@ -705,7 +743,6 @@ export class DevToolPanel {
         }
       } else if (traceId && !action) {
         this.selectedTraceId = traceId;
-        this.activeTab = "data";
         this.expandedSteps.clear();
         this.render();
       } else if (tab) {

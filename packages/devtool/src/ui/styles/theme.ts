@@ -629,6 +629,17 @@ export function getThemeCSS(theme: DevToolTheme): string {
       background: rgba(248, 81, 73, 0.05);
     }
 
+    .spoosh-body-type {
+      font-weight: 400;
+      font-size: 9px;
+      color: var(--spoosh-text-muted);
+      background: var(--spoosh-surface);
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-left: 6px;
+      text-transform: lowercase;
+    }
+
     .spoosh-plugins-header {
       display: flex;
       justify-content: flex-end;
