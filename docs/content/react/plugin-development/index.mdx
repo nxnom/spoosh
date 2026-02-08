@@ -1,0 +1,287 @@
+---
+title: Plugin Development
+description: Create custom plugins for Spoosh
+---
+
+Plugins add features to Spoosh. They run before or after requests to add functionality like authentication, logging, or caching.
+
+## Your First Plugin
+
+Here's a simple plugin that logs every request:
+
+```typescript
+import type { SpooshPlugin } from "@spoosh/core";
+
+function loggerPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:logger",
+    operations: ["read", "write"],
+
+    middleware: async (context, next) => {
+      console.log("Request:", context.path);
+      const response = await next();
+      console.log("Response:", response.status);
+      return response;
+    },
+  };
+}
+```
+
+### How to Use It
+
+```typescript
+const spoosh = new Spoosh("/api").use([loggerPlugin()]);
+```
+
+That's it! Your plugin will now log all requests and responses.
+
+## How Plugins Work
+
+Every plugin has:
+
+- `name` - A unique identifier (use `"your-app:plugin-name"` format)
+- `operations` - Which operations it handles (`"read"`, `"write"`, `"infiniteRead"`)
+- `middleware` - A function that runs during requests (optional)
+- `afterResponse` - A function that runs after every response (optional)
+
+The `middleware` function:
+
+- Receives `context` (info about the request)
+- Calls `next()` to continue to the next plugin or make the actual request
+- Can modify the request before calling `next()`
+- Can modify the response after `next()` returns
+- Can skip `next()` to return early
+
+The `afterResponse` function:
+
+- Always runs after the request completes
+- Can return a modified response or void for side effects
+- Perfect for logging, analytics, and transforming responses
+
+## The Onion Model
+
+Plugins wrap each other like layers of an onion. Each middleware wraps the next:
+
+```
+┌─────────────────────────────────────┐
+│ Plugin A: Start                     │
+│  ┌───────────────────────────────┐  │
+│  │ Plugin B: Start               │  │
+│  │  ┌─────────────────────────┐  │  │
+│  │  │ Plugin C: Start         │  │  │
+│  │  │  ┌───────────────────┐  │  │  │
+│  │  │  │  ACTUAL FETCH     │  │  │  │
+│  │  │  └───────────────────┘  │  │  │
+│  │  │ Plugin C: End           │  │  │
+│  │  └─────────────────────────┘  │  │
+│  │ Plugin B: End                 │  │
+│  └───────────────────────────────┘  │
+│ Plugin A: End                       │
+└─────────────────────────────────────┘
+```
+
+**What this means:**
+
+- Plugin A runs first (before fetch)
+- Plugin A's code after `await next()` runs last (after fetch)
+- Inner plugins can return early — outer plugins' middleware will not resume
+- `afterResponse` runs for **all** plugins after a response is produced, even if middleware returned early (e.g. from cache)
+
+**Example flow:**
+
+```typescript
+const spoosh = new Spoosh("/api").use([
+  cachePlugin(), // Plugin A
+  retryPlugin(), // Plugin B
+  loggerPlugin(), // Plugin C
+]);
+
+// Request flow:
+// 1. cachePlugin middleware starts
+// 2. Cache miss, calls next()
+// 3. retryPlugin middleware starts
+// 4. Calls next()
+// 5. loggerPlugin middleware starts
+// 6. Calls next()
+// 7. ACTUAL FETCH happens
+// 8. loggerPlugin middleware ends
+// 9. retryPlugin middleware ends
+// 10. cachePlugin middleware ends
+// 11. ALL afterResponse hooks run (cache, retry, logger)
+```
+
+## middleware vs afterResponse
+
+| Feature                 | middleware                                 | afterResponse                        |
+| ----------------------- | ------------------------------------------ | ------------------------------------ |
+| **Can prevent request** | ✅ Yes (return early without calling next) | ❌ No (response already exists)      |
+| **Always runs**         | ❌ No (skipped if earlier plugin returns)  | ✅ Yes (runs even if cache returned) |
+| **Can modify response** | ✅ Yes                                     | ✅ Yes                               |
+| **Best for**            | Cache, retry, deduplication                | Logging, analytics, adding metadata  |
+
+**Rule of thumb:**
+
+- If you need control flow → use `middleware`
+- If you need guarantees → use `afterResponse`
+
+## Essential Middleware Patterns
+
+### Pattern 1: Do Something Before and After
+
+Run code before and after a request:
+
+```typescript
+function timingPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:timing",
+    operations: ["read", "write"],
+
+    middleware: async (context, next) => {
+      const start = Date.now();
+      const response = await next();
+      const duration = Date.now() - start;
+      console.log(`Request took ${duration}ms`);
+      return response;
+    },
+  };
+}
+```
+
+### Pattern 2: Return Early
+
+Skip the actual request by returning without calling `next()`:
+
+```typescript
+function mockPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:mock",
+    operations: ["read"],
+
+    middleware: async (context, next) => {
+      if (context.path === "users/123") {
+        return {
+          data: { id: "123", name: "Mock User" },
+          status: 200,
+        };
+      }
+      return next();
+    },
+  };
+}
+```
+
+**Important:** Middleware must return a valid `SpooshResponse` when returning early (with `data` or `error` and `status`).
+
+### Pattern 3: React to Responses
+
+Use `afterResponse` for side effects or to transform responses:
+
+```typescript
+// Example 1: Side effects (logging)
+function analyticsPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:analytics",
+    operations: ["read", "write"],
+
+    afterResponse(context, response) {
+      trackEvent("api_request", {
+        path: context.path,
+        method: context.method,
+        status: response.status,
+        success: !response.error,
+      });
+    },
+  };
+}
+
+// Example 2: Transform response
+function timestampPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:timestamp",
+    operations: ["read"],
+
+    afterResponse(context, response) {
+      if (response.data) {
+        return {
+          ...response,
+          data: {
+            ...response.data,
+            fetchedAt: Date.now(),
+          },
+        };
+      }
+    },
+  };
+}
+```
+
+**Why use afterResponse?**
+
+- Always runs, even if cache returned early
+- Can return modified response or void for side effects
+- Perfect for logging, analytics, adding metadata
+
+### Pattern 4: Clean Up Resources
+
+Use lifecycle hooks to clean up when components unmount:
+
+```typescript
+function trackingPlugin(): SpooshPlugin {
+  const activeRequests = new Set<string>();
+
+  return {
+    name: "my-app:tracking",
+    operations: ["read"],
+
+    middleware: async (context, next) => {
+      activeRequests.add(context.queryKey);
+      const response = await next();
+      activeRequests.delete(context.queryKey);
+      return response;
+    },
+
+    lifecycle: {
+      onUnmount(context) {
+        activeRequests.delete(context.queryKey);
+      },
+    },
+  };
+}
+```
+
+## Plugin Properties
+
+Here are the main properties you can use in a plugin:
+
+```typescript
+{
+  name: string;                    // Required: unique identifier
+  operations: string[];            // Required: ["read", "write", "infiniteRead"]
+  priority?: number;               // Optional: execution order (lower runs first)
+
+  middleware?: Function;           // Intercept requests
+  afterResponse?: Function;        // Run after responses
+  lifecycle?: {                    // Handle component lifecycle
+    onMount?: Function;
+    onUpdate?: Function;
+    onUnmount?: Function;
+  };
+  exports?: Function;              // Provide APIs to other plugins
+}
+```
+
+## What's Next?
+
+Want to learn more advanced techniques?
+
+- **[Patterns](/docs/react/plugin-development/advanced/patterns)** - Middleware patterns, retry logic, caching strategies
+- **[After Response](/docs/react/plugin-development/advanced/after-response)** - Side effects and transformations that always run
+- **[Meta Storage](/docs/react/plugin-development/advanced/meta-storage)** - Storing user-facing data for hook results
+- **[Plugin Communication](/docs/react/plugin-development/advanced/plugin-communication)** - How plugins share data and coordinate
+- **[Lifecycle](/docs/react/plugin-development/advanced/lifecycle)** - Managing state, tracking instances, cleanup
+- **[Architecture](/docs/react/plugin-development/advanced/architecture)** - How plugins work internally, execution order, PluginContext
+- **[Type Safety](/docs/react/plugin-development/advanced/type-safety)** - Making your plugins type-safe with TypeScript
+- **[Instance APIs](/docs/react/plugin-development/advanced/instance-api)** - Extending the Spoosh instance with custom methods (advanced)
+- **[Testing](/docs/react/plugin-development/advanced/testing)** - Unit tests, integration tests, test utilities
+
+Check out the [official plugins](/docs/react/plugins) for real-world examples.
