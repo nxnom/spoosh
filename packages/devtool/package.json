@@ -1,0 +1,50 @@
+{
+  "name": "@spoosh/devtool",
+  "version": "0.1.0",
+  "description": "Visual debugging plugin for Spoosh - floating devtool panel with plugin execution visualization",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spooshdev/spoosh.git",
+    "directory": "packages/devtool"
+  },
+  "bugs": {
+    "url": "https://github.com/spooshdev/spoosh/issues"
+  },
+  "homepage": "https://spoosh.dev/docs/react/plugins/devtool",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "spoosh",
+    "plugin",
+    "devtool",
+    "debug",
+    "api-client",
+    "visualization"
+  ],
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsup --watch",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --max-warnings 0",
+    "format": "prettier --write 'src/**/*.ts'"
+  },
+  "peerDependencies": {
+    "@spoosh/core": ">=0.12.1"
+  },
+  "devDependencies": {
+    "@spoosh/core": "workspace:*",
+    "@spoosh/test-utils": "workspace:*"
+  }
+}

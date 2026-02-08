@@ -135,6 +135,7 @@ export class Spoosh<
       });
       const stateManager = createStateManager();
       const eventEmitter = createEventEmitter();
+
       const pluginExecutor = createPluginExecutor([...this._plugins]);
 
       this._instance = {

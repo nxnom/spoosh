@@ -4,6 +4,7 @@ import type {
   PluginAccessor,
   PluginContext,
   PluginContextInput,
+  Trace,
 } from "./types";
 import type { SpooshResponse } from "../types/response.types";
 
@@ -32,8 +33,8 @@ export type PluginExecutor = {
 
   getPlugins: () => readonly SpooshPlugin[];
 
-  /** Creates a full PluginContext with plugins accessor injected */
-  createContext: (input: PluginContextInput) => PluginContext;
+  /** Creates a full PluginContext with plugins accessor and optional trace injected */
+  createContext: (input: PluginContextInput, trace?: Trace) => PluginContext;
 };
 
 /**
@@ -186,9 +187,14 @@ export function createPluginExecutor(
       return frozenPlugins;
     },
 
-    createContext(input: PluginContextInput) {
+    createContext(input: PluginContextInput, trace?: Trace) {
       const ctx = input as PluginContext;
       ctx.plugins = createPluginAccessor(ctx);
+
+      if (trace) {
+        ctx.trace = trace;
+      }
+
       return ctx;
     },
   };

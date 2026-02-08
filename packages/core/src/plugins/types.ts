@@ -68,10 +68,25 @@ export type PluginContext = {
 
   /** Force a network request even if cached data exists. Used by plugins to communicate intent. */
   forceRefetch?: boolean;
+
+  /**
+   * Trace API for emitting structured debug events.
+   * Only available when devtools plugin is active. Check before use.
+   *
+   * @example
+   * ```ts
+   * ctx.trace?.step({
+   *   plugin: "my-plugin",
+   *   stage: "after",
+   *   meta: { reason: "Transformed response" }
+   * });
+   * ```
+   */
+  trace?: Trace;
 };
 
 /** Input type for creating PluginContext (without injected properties) */
-export type PluginContextInput = Omit<PluginContext, "plugins">;
+export type PluginContextInput = Omit<PluginContext, "plugins" | "trace">;
 
 /**
  * Middleware function that wraps the fetch flow.
@@ -489,3 +504,97 @@ export type InstanceApiContext<TApi = unknown> = {
   eventEmitter: EventEmitter;
   pluginExecutor: InstancePluginExecutor;
 };
+
+/**
+ * Stage of plugin execution for tracing.
+ */
+export type TraceStage = "before" | "after" | "skip";
+
+/**
+ * Intent of the operation for filtering in devtools.
+ */
+export type TraceIntent = "read" | "write" | "side-effect";
+
+/**
+ * Structured trace event emitted by plugins.
+ * Plugins self-report what they did and why.
+ */
+export type TraceEvent = {
+  /** Plugin name */
+  plugin: string;
+
+  /** Execution stage */
+  stage: TraceStage;
+
+  /** Operation intent for filtering */
+  intent?: TraceIntent;
+
+  /** Optional data payload (before/after state) */
+  data?: unknown;
+
+  /** Metadata including reason and computed diff */
+  meta?: {
+    /** Human-readable explanation of what happened */
+    reason?: string;
+
+    /** Pre-computed diff (plugin decides when diffs matter) */
+    diff?: { before: unknown; after: unknown };
+
+    /** Additional structured metadata */
+    [key: string]: unknown;
+  };
+};
+
+/**
+ * Trace API available to plugins via ctx.trace.
+ * Plugins emit structured events; devtools renders them.
+ *
+ * @example
+ * ```ts
+ * middleware: async (ctx, next) => {
+ *   const cached = getCache(ctx.queryKey);
+ *   if (cached) {
+ *     ctx.trace?.step({
+ *       plugin: "cache",
+ *       stage: "skip",
+ *       meta: { reason: "Cache hit (TTL valid)" }
+ *     });
+ *     return cached;
+ *   }
+ *
+ *   ctx.trace?.step({
+ *     plugin: "cache",
+ *     stage: "before",
+ *     intent: "read",
+ *   });
+ *
+ *   const result = await next();
+ *
+ *   ctx.trace?.step({
+ *     plugin: "cache",
+ *     stage: "after",
+ *     meta: {
+ *       reason: "Stored in cache",
+ *       diff: { before: null, after: result.data }
+ *     }
+ *   });
+ *
+ *   return result;
+ * }
+ * ```
+ */
+export type Trace = {
+  /**
+   * Emit a trace event. Lazy evaluation - only computed when devtools is active.
+   *
+   * @param event - Trace event or function that returns trace event (for lazy evaluation)
+   */
+  step: (event: TraceEvent | (() => TraceEvent)) => void;
+};
+
+/**
+ * Listener for trace events emitted by plugins.
+ */
+export type TraceListener = (
+  event: TraceEvent & { queryKey: string; timestamp: number }
+) => void;
