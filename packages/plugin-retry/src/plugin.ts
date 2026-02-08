@@ -10,6 +10,8 @@ import type {
   RetryWriteResult,
 } from "./types";
 
+const PLUGIN_NAME = "spoosh:retry";
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
@@ -49,10 +51,12 @@ export function retryPlugin(config: RetryPluginConfig = {}): SpooshPlugin<{
     config;
 
   return {
-    name: "spoosh:retry",
+    name: PLUGIN_NAME,
     operations: ["read", "write", "infiniteRead"],
+    priority: 200,
 
     middleware: async (context, next) => {
+      const t = context.tracer?.(PLUGIN_NAME);
       const pluginOptions = context.pluginOptions as
         | RetryReadOptions
         | undefined;
@@ -63,6 +67,7 @@ export function retryPlugin(config: RetryPluginConfig = {}): SpooshPlugin<{
       const maxRetries = retriesConfig === false ? 0 : retriesConfig;
 
       if (!maxRetries || maxRetries < 0) {
+        t?.skip("Disabled");
         return next();
       }
 
@@ -79,11 +84,14 @@ export function retryPlugin(config: RetryPluginConfig = {}): SpooshPlugin<{
           context.request.headers = clone(originalRequest.headers);
           context.request.params = clone(originalRequest.params);
           context.request.body = clone(originalRequest.body);
+
+          t?.log(`Retry ${attempt}/${maxRetries}`, { color: "warning" });
         }
 
         res = await next();
 
         if (isAbortError(res.error)) {
+          t?.log("Aborted", { color: "muted" });
           return res;
         }
 
@@ -91,6 +99,16 @@ export function retryPlugin(config: RetryPluginConfig = {}): SpooshPlugin<{
           const delayMs = retryDelayConfig * Math.pow(2, attempt);
           await delay(delayMs);
           continue;
+        }
+
+        if (attempt > 0) {
+          if (isNetworkError(res.error)) {
+            t?.log("Max retries reached or non-retryable error", {
+              color: "error",
+            });
+          } else {
+            t?.log("Retry succeeded", { color: "success" });
+          }
         }
 
         return res;
