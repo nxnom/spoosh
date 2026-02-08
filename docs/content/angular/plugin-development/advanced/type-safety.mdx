@@ -1,0 +1,678 @@
+---
+title: Type Safety
+description: Making your plugins type-safe with TypeScript
+---
+
+<Callout type="warning">
+**Advanced Guide**
+
+This guide is for advanced plugin authors. If you're building a simple plugin, start with the [Plugin Development](/docs/angular/plugin-development) guide first.
+
+</Callout>
+
+This guide shows you how to make your plugins fully type-safe using TypeScript generics and module augmentation.
+
+## Type Structure
+
+Every plugin can define up to 6 type interfaces:
+
+```typescript
+// types.ts
+export interface MyPluginConfig {
+  // Plugin-level configuration (passed to plugin factory)
+  defaultTimeout?: number;
+}
+
+export interface MyReadOptions {
+  // Per-request options for read operations
+  timeout?: number;
+}
+
+export interface MyWriteOptions {
+  // Per-request options for write operations
+  timeout?: number;
+}
+
+export interface MyInfiniteReadOptions {
+  // Per-request options for infinite read operations
+  timeout?: number;
+}
+
+export interface MyReadResult {
+  // What gets added to injectRead result
+  timedOut: boolean;
+}
+
+export interface MyWriteResult {
+  // What gets added to injectWrite result
+  timedOut: boolean;
+}
+
+export interface MyInstanceApi {
+  // Methods added to create() return value
+  setTimeout: (timeout: number) => void;
+}
+```
+
+## Basic Type Safety
+
+Use the `SpooshPlugin` generic to tell TypeScript about your types:
+
+```typescript
+// plugin.ts
+import type { SpooshPlugin } from "@spoosh/core";
+import type {
+  MyPluginConfig,
+  MyReadOptions,
+  MyWriteOptions,
+  MyReadResult,
+  MyWriteResult,
+  MyInstanceApi,
+} from "./types";
+
+export function myPlugin(config: MyPluginConfig = {}): SpooshPlugin<{
+  readOptions: MyReadOptions;
+  writeOptions: MyWriteOptions;
+  readResult: MyReadResult;
+  writeResult: MyWriteResult;
+  instanceApi: MyInstanceApi;
+}> {
+  return {
+    name: "my-app:timeout",
+    operations: ["read", "write"],
+
+    middleware: async (context, next) => {
+      // Implementation
+      return next();
+    },
+
+    instanceApi: ({ stateManager }) => ({
+      setTimeout(timeout: number) {
+        // Implementation
+      },
+    }),
+  };
+}
+```
+
+**Now TypeScript knows:**
+
+- `injectRead` accepts `MyReadOptions`
+- `injectWrite` accepts `MyWriteOptions`
+- Hook results include `MyReadResult` / `MyWriteResult`
+- `create()` return includes `MyInstanceApi`
+
+## Minimal Example
+
+You only need to specify the types you use:
+
+```typescript
+// Plugin that only has read options
+export function simplePlugin(): SpooshPlugin<{
+  readOptions: { enabled?: boolean };
+}> {
+  return {
+    name: "simple",
+    operations: ["read"],
+    middleware: async (context, next) => next(),
+  };
+}
+```
+
+```typescript
+// Plugin that only has instance API
+export function apiOnlyPlugin(): SpooshPlugin<{
+  instanceApi: { reset: () => void };
+}> {
+  return {
+    name: "api-only",
+    operations: [],
+    instanceApi: () => ({ reset: () => {} }),
+  };
+}
+```
+
+## Real-World Example: Cache Plugin
+
+<Callout type="info">
+**Pattern from Official Cache Plugin**
+
+This shows the complete type structure used in production.
+
+</Callout>
+
+**Step 1: Define Types**
+
+```typescript
+// types.ts
+export interface CachePluginConfig {
+  /** Default stale time in milliseconds. */
+  staleTime?: number;
+}
+
+export interface ClearCacheOptions {
+  /** Whether to trigger all queries to refetch after clearing. */
+  refetchAll?: boolean;
+}
+
+export interface CacheInstanceApi {
+  /** Clear all cached data. */
+  clearCache: (options?: ClearCacheOptions) => void;
+}
+
+export interface CacheReadOptions {
+  /** Time in milliseconds before cached data is considered stale. */
+  staleTime?: number;
+}
+
+export interface CacheWriteOptions {
+  /** Clear all cached data after mutation completes successfully. */
+  clearCache?: boolean;
+}
+
+export interface CacheInfiniteReadOptions {
+  /** Time in milliseconds before cached data is considered stale. */
+  staleTime?: number;
+}
+
+export type CacheReadResult = object;
+
+export type CacheWriteResult = object;
+```
+
+**Step 2: Use in Plugin**
+
+```typescript
+// plugin.ts
+import type { SpooshPlugin, InstanceApiContext } from "@spoosh/core";
+import type {
+  CachePluginConfig,
+  CacheReadOptions,
+  CacheWriteOptions,
+  CacheInfiniteReadOptions,
+  CacheReadResult,
+  CacheWriteResult,
+  CacheInstanceApi,
+  ClearCacheOptions,
+} from "./types";
+
+export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
+  readOptions: CacheReadOptions;
+  writeOptions: CacheWriteOptions;
+  infiniteReadOptions: CacheInfiniteReadOptions;
+  readResult: CacheReadResult;
+  writeResult: CacheWriteResult;
+  instanceApi: CacheInstanceApi;
+}> {
+  const { staleTime: defaultStaleTime = 0 } = config;
+
+  return {
+    name: "spoosh:cache",
+    operations: ["read", "infiniteRead", "write"],
+    priority: -10,
+
+    middleware: async (context, next) => {
+      if (!context.forceRefetch) {
+        const cached = context.stateManager.getCache(context.queryKey);
+
+        if (cached?.state.data && !cached.stale) {
+          const pluginOptions = context.pluginOptions as
+            | CacheReadOptions
+            | undefined;
+          const staleTime = pluginOptions?.staleTime ?? defaultStaleTime;
+          const isTimeStale = Date.now() - cached.state.timestamp > staleTime;
+
+          if (!isTimeStale) {
+            return { data: cached.state.data, status: 200 };
+          }
+        }
+      }
+
+      return await next();
+    },
+
+    afterResponse(context, response) {
+      if (!response.error) {
+        const pluginOptions = context.pluginOptions as
+          | CacheWriteOptions
+          | undefined;
+
+        if (pluginOptions?.clearCache) {
+          context.stateManager.clear();
+        }
+      }
+    },
+
+    instanceApi(context: InstanceApiContext) {
+      const { stateManager, eventEmitter } = context;
+
+      const clearCache = (options?: ClearCacheOptions): void => {
+        stateManager.clear();
+
+        if (options?.refetchAll) {
+          eventEmitter.emit("refetchAll", undefined);
+        }
+      };
+
+      return { clearCache };
+    },
+  };
+}
+```
+
+**Step 3: Export Types**
+
+```typescript
+// index.ts
+export * from "./types";
+export * from "./plugin";
+```
+
+**Step 4: TypeScript Knows Everything**
+
+```typescript
+const spoosh = new Spoosh("/api").use([cachePlugin({ staleTime: 5000 })]);
+export const { injectRead, clearCache } = create(spoosh);
+
+// In your component - Type-safe read options
+posts = injectRead(() => this.api("posts").GET(), {
+  staleTime: 10000, // ✅ TypeScript knows this option
+});
+
+// Type-safe instance API
+clearCache({ refetchAll: true }); // ✅ TypeScript knows this method
+```
+
+## Advanced: Module Augmentation
+
+<Callout type="info">
+**Module Augmentation is Optional**
+
+Module augmentation is only needed for schema-aware or inferred typing. Most plugins don't need it — basic `SpooshPlugin<{...}>` generics are sufficient.
+
+</Callout>
+
+For advanced type inference, extend core interfaces via module augmentation.
+
+If your types don't depend on schema, response data, or option inference, do not use module augmentation.
+
+### Use Case: Schema-Aware Options
+
+When your plugin needs to know the API schema, use `PluginResolvers`:
+
+```typescript
+// types.ts
+import type { ResolverContext } from "@spoosh/core";
+
+export type Transformer<TIn = unknown, TOut = unknown> = (
+  data: TIn
+) => TOut | Promise<TOut>;
+
+export interface TransformReadOptions {
+  /** Transform response data. */
+  transform?: Transformer<unknown, unknown>;
+}
+
+export interface TransformWriteOptions {
+  /** Transform response data. */
+  transform?: Transformer<unknown, unknown>;
+}
+
+export type TransformReadResult = object;
+
+export type TransformWriteResult = {
+  transformedData?: unknown;
+};
+
+// Module augmentation for type resolution
+declare module "@spoosh/core" {
+  interface PluginResolvers<TContext extends ResolverContext> {
+    // TContext["data"] gives you the actual response type
+    transform: Transformer<TContext["data"], unknown> | undefined;
+  }
+
+  interface PluginResultResolvers<TOptions> {
+    // Infer transformed data type from transform function return type
+    transformedData: TOptions extends {
+      transform?: (data: any) => Promise<infer R> | infer R;
+    }
+      ? Awaited<R> | undefined
+      : never;
+  }
+}
+```
+
+**Now TypeScript automatically infers:**
+
+```typescript
+posts = injectRead(() => this.api("posts").GET(), {
+  transform: (posts) => ({
+    // TypeScript knows posts is Post[]
+    count: posts.length,
+    titles: posts.map((p) => p.title),
+  }),
+});
+
+// TypeScript knows posts.meta()?.transformedData is { count: number; titles: string[] } | undefined
+console.log(posts.meta()?.transformedData.count); // ✅ Fully typed!
+```
+
+### Available Augmentation Interfaces
+
+<Callout type="info">
+**Choose the Right Interface**
+
+Each interface solves a different type inference problem.
+
+</Callout>
+
+**`PluginResolvers<TContext>`** - Resolve option types based on context
+
+```typescript
+declare module "@spoosh/core" {
+  interface PluginResolvers<TContext extends ResolverContext> {
+    // Access schema
+    myOption: MyFn<TContext["schema"]> | undefined;
+
+    // Access data/error
+    myTransform: (data: TContext["data"]) => TContext["data"];
+
+    // Access request input
+    myFilter: (query: TContext["input"]["query"]) => boolean;
+  }
+}
+```
+
+**`PluginResultResolvers<TOptions>`** - Infer result types from options
+
+```typescript
+declare module "@spoosh/core" {
+  interface PluginResultResolvers<TOptions> {
+    // Infer from function return type
+    processedData: TOptions extends {
+      process?: (data: any) => infer R;
+    }
+      ? R | undefined
+      : never;
+  }
+}
+```
+
+**`InstanceApiResolvers<TSchema>`** - Schema-aware instance APIs
+
+```typescript
+declare module "@spoosh/core" {
+  interface InstanceApiResolvers<TSchema> {
+    prefetch: PrefetchFn<TSchema>;
+    invalidate: InvalidateFn<TSchema>;
+  }
+}
+```
+
+**`PluginExportsRegistry`** - Type-safe plugin exports
+
+```typescript
+declare module "@spoosh/core" {
+  interface PluginExportsRegistry {
+    "my-plugin": {
+      doSomething: () => void;
+    };
+  }
+}
+```
+
+## Real Example: Initial Data Plugin
+
+Shows how to use `PluginResolvers` for schema-aware options:
+
+```typescript
+// types.ts
+export interface InitialDataReadOptions<TData = unknown> {
+  /** Data to use immediately on first mount */
+  initialData?: TData;
+
+  /** Refetch fresh data after showing initial data */
+  refetchOnInitialData?: boolean;
+}
+
+export type InitialDataInfiniteReadOptions<TData = unknown> =
+  InitialDataReadOptions<TData>;
+
+export interface InitialDataReadResult {
+  /** True if currently showing initial data */
+  isInitialData: boolean;
+}
+
+export type InitialDataWriteOptions = object;
+
+export type InitialDataWriteResult = object;
+
+// Module augmentation
+declare module "@spoosh/core" {
+  interface PluginResolvers<TContext> {
+    // TContext["data"] resolves to the actual data type
+    initialData: TContext["data"] | undefined;
+  }
+}
+```
+
+**Usage:**
+
+```typescript
+posts = injectRead(() => this.api("posts").GET(), {
+  initialData: [
+    // TypeScript knows this must be Post[]
+    { id: 1, title: "Hello" },
+  ],
+});
+```
+
+## Real Example: Optimistic Plugin
+
+Shows complex schema-aware type inference:
+
+```typescript
+// types.ts (simplified)
+export type OptimisticCallbackFn<TSchema = unknown, TResponse = unknown> = (
+  api: OptimisticApiHelper<TSchema, TResponse>
+) => CompletedOptimisticBuilder | CompletedOptimisticBuilder[];
+
+export interface OptimisticWriteOptions<
+  TSchema = unknown,
+  TResponse = unknown,
+> {
+  optimistic?: OptimisticCallbackFn<TSchema, TResponse>;
+}
+
+// Module augmentation
+declare module "@spoosh/core" {
+  interface PluginResolvers<TContext> {
+    // TContext["schema"] gives you the API schema
+    // TContext["data"] gives you the response type
+    optimistic:
+      | OptimisticCallbackFn<TContext["schema"], TContext["data"]>
+      | undefined;
+  }
+}
+```
+
+**Usage:**
+
+```typescript
+const { trigger } = injectWrite(() => this.api("posts/:id").DELETE(), {
+  // TypeScript knows the schema and response types
+  optimistic: (api) =>
+    api("posts")
+      .GET()
+      .UPDATE_CACHE((posts) => posts.filter((p) => p.id !== deletedId)),
+});
+```
+
+## Type Safety Checklist
+
+When building a type-safe plugin:
+
+**Basic (Required):**
+
+- ✅ Define type interfaces for options and results
+- ✅ Pass types to `SpooshPlugin<{...}>` generic
+- ✅ Export all types from index.ts
+
+**Advanced (Optional):**
+
+- ✅ Use `PluginResolvers` for schema-aware options
+- ✅ Use `PluginResultResolvers` for inferred results
+- ✅ Use `InstanceApiResolvers` for schema-aware instance APIs
+- ✅ Use `PluginExportsRegistry` for type-safe exports
+
+**Documentation:**
+
+- ✅ Add JSDoc comments to all interfaces
+- ✅ Document each option's purpose and default value
+- ✅ Include usage examples in comments
+
+## Common Patterns
+
+### Pattern: Empty Results
+
+If your plugin doesn't add to hook results, use empty object:
+
+```typescript
+export type MyReadResult = object;
+export type MyWriteResult = object;
+```
+
+### Pattern: Shared Options
+
+If read/write have same options, reuse the type:
+
+```typescript
+export interface TimeoutOptions {
+  timeout?: number;
+}
+
+export type MyReadOptions = TimeoutOptions;
+export type MyWriteOptions = TimeoutOptions;
+```
+
+### Pattern: Conditional Types
+
+Use conditional types for complex inference:
+
+```typescript
+export type InferTransformedData<TOptions> = TOptions extends {
+  transform: (data: never) => Promise<infer R> | infer R;
+}
+  ? Awaited<R>
+  : never;
+```
+
+### Pattern: Type Guards
+
+For runtime type checking in plugins:
+
+```typescript
+function isMyOptions(opts: unknown): opts is MyReadOptions {
+  return typeof opts === "object" && opts !== null && "timeout" in opts;
+}
+
+// In middleware
+middleware: async (context, next) => {
+  const opts = context.pluginOptions;
+
+  if (isMyOptions(opts) && opts.timeout) {
+    // TypeScript knows opts is MyReadOptions
+  }
+
+  return next();
+};
+```
+
+## Best Practices
+
+### 1. Always Export Types
+
+```typescript
+// ✅ Good - Users can import types
+export interface MyReadOptions {
+  enabled?: boolean;
+}
+
+// ❌ Bad - Types not accessible
+interface MyReadOptions {
+  enabled?: boolean;
+}
+```
+
+### 2. Use JSDoc Comments
+
+```typescript
+// ✅ Good - Helpful autocomplete
+export interface CacheReadOptions {
+  /**
+   * Time in milliseconds before cached data is considered stale.
+   * Overrides plugin default.
+   *
+   * @default 0
+   */
+  staleTime?: number;
+}
+
+// ❌ Bad - No context
+export interface CacheReadOptions {
+  staleTime?: number;
+}
+```
+
+### 3. Organize Files
+
+```typescript
+// ✅ Good - Separate concerns
+my-plugin/
+├── index.ts      // Export everything
+├── types.ts      // Type definitions
+└── plugin.ts     // Plugin implementation
+
+// ❌ Bad - Everything in one file
+my-plugin/
+└── index.ts
+```
+
+### 4. Use Specific Types
+
+```typescript
+// ✅ Good - Precise types
+export interface RetryReadOptions {
+  retries?: number | false;
+  retryDelay?: number;
+}
+
+// ❌ Bad - Too loose
+export interface RetryReadOptions {
+  retries?: any;
+  retryDelay?: any;
+}
+```
+
+## Summary
+
+**Basic Type Safety:**
+
+1. Define 6 type interfaces (config, options, results, instanceApi)
+2. Pass to `SpooshPlugin<{...}>` generic
+3. Export from index.ts
+
+**Advanced Type Safety:**
+
+1. Use `PluginResolvers` for schema-aware options
+2. Use `PluginResultResolvers` for inferred results
+3. Use module augmentation for complex inference
+
+**Key Benefits:**
+
+- Autocomplete in user's IDE
+- Compile-time error checking
+- Better developer experience
+- Self-documenting code
+
+For more examples, see the [official plugins source code](https://github.com/spooshdev/spoosh/tree/main/packages).

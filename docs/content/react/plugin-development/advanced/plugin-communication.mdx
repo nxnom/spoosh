@@ -1,0 +1,732 @@
+---
+title: Plugin Communication
+description: How plugins share data and coordinate with each other
+---
+
+Plugins often need to share data or coordinate behavior. Spoosh provides two mechanisms: `context.temp` for passing data within the same plugin (middleware → afterResponse), and `exports` + `context.plugins.get()` for plugin-to-plugin communication.
+
+## Two Communication Patterns
+
+| Pattern          | Scope                        | Use When                                             |
+| ---------------- | ---------------------------- | ---------------------------------------------------- |
+| **context.temp** | Within same plugin           | Pass data from middleware to afterResponse/lifecycle |
+| **exports**      | Between plugins (persistent) | Expose APIs other plugins can call                   |
+
+**Decision rule:** If another plugin needs to call you, use `exports`. If only you need the data during this request, use `context.temp`.
+
+## context.temp - Internal Plugin Data
+
+`context.temp` is a `Map<string, unknown>` that exists only during a single request. It's primarily for **passing data within the same plugin** from middleware to afterResponse or lifecycle hooks.
+
+<Callout type="warning">
+**Not for Plugin-to-Plugin Communication**
+
+While `context.temp` can technically be accessed by other plugins, this is **not recommended**. Reading another plugin's `context.temp` is considered an internal implementation detail and may break at any time. Use `exports` and `context.plugins.get()` for plugin-to-plugin communication instead.
+
+</Callout>
+
+### When to Use
+
+- ✅ Store data in middleware, use in afterResponse (same plugin)
+- ✅ Pass timing/state from middleware to lifecycle hooks (same plugin)
+- ✅ Store data in middleware, use in onUnmount for cleanup (same plugin)
+- ✅ Temporary calculations within your plugin's request flow
+- ❌ NOT for sharing data between different plugins (use `exports` instead)
+
+### Basic Example: Within Same Plugin
+
+```typescript
+function timingPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:timing",
+    operations: ["read", "write"],
+
+    middleware: async (context, next) => {
+      // ✅ Set data BEFORE next() - guaranteed to run
+      context.temp.set("timing:start", Date.now());
+
+      const response = await next();
+
+      // ❌ DON'T set temp data here - might not run if cache hit
+      // context.temp.set("something", value);
+
+      return response;
+    },
+
+    afterResponse(context, response) {
+      // Read start time from temp (same plugin)
+      const start = context.temp.get("timing:start") as number | undefined;
+
+      if (start) {
+        const duration = Date.now() - start;
+        console.log(`Request took ${duration}ms`);
+      }
+    },
+  };
+}
+```
+
+<Callout type="info">
+**Why Set Temp Data BEFORE next()?**
+
+Code after `await next()` might not run if another plugin returns early (cache hit, early return). If you need data in `afterResponse`, set it **before** calling `next()`.
+
+**afterResponse always runs** - even if middleware returns early.
+
+</Callout>
+
+**Why this works:**
+
+- Middleware sets the start time BEFORE next()
+- afterResponse reads it (always runs, even if cache returned early)
+- Data is scoped to this request only
+
+### Common Mistake: Setting Data After next()
+
+**❌ WRONG - Data set after next() might not be available:**
+
+```typescript
+function analyticsPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:analytics",
+    operations: ["read"],
+
+    middleware: async (context, next) => {
+      const response = await next();
+
+      // ❌ This might NOT run if cache plugin returned early!
+      context.temp.set("analytics:completed", true);
+
+      return response;
+    },
+
+    afterResponse(context, response) {
+      const completed = context.temp.get("analytics:completed");
+      // ❌ completed will be undefined if cache hit!
+      if (completed) {
+        trackEvent("request_completed");
+      }
+    },
+  };
+}
+```
+
+**Why it fails:**
+
+1. Cache plugin runs before analytics plugin
+2. Cache finds data and returns early (doesn't call `next()`)
+3. Analytics middleware never runs code after `await next()`
+4. `analytics:completed` is never set
+5. afterResponse can't find the data
+
+**✅ CORRECT - Set data BEFORE next():**
+
+```typescript
+function analyticsPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:analytics",
+    operations: ["read"],
+
+    middleware: async (context, next) => {
+      // ✅ Set BEFORE next() - always runs
+      context.temp.set("analytics:started", Date.now());
+
+      const response = await next();
+      return response;
+    },
+
+    afterResponse(context, response) {
+      const started = context.temp.get("analytics:started") as number;
+      // ✅ started is always available because it's set before next()
+      trackEvent("request_duration", { duration: Date.now() - started });
+    },
+  };
+}
+```
+
+### Namespacing Pattern
+
+Always prefix keys with your plugin name to avoid collisions:
+
+```typescript
+// ✅ Good - Namespaced keys
+context.temp.set("my-plugin:flag", true);
+context.temp.set("my-plugin:timestamp", Date.now());
+
+// ❌ Bad - Generic keys (might collide)
+context.temp.set("flag", true);
+context.temp.set("timestamp", Date.now());
+```
+
+### Another Example: Request ID Tracking
+
+```typescript
+function requestIdPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:request-id",
+    operations: ["read", "write"],
+
+    middleware: async (context, next) => {
+      // Generate and store request ID
+      const requestId = crypto.randomUUID();
+      context.temp.set("request-id:id", requestId);
+      context.request.headers["X-Request-ID"] = requestId;
+
+      return next();
+    },
+
+    afterResponse(context, response) {
+      // Use the same request ID for logging
+      const requestId = context.temp.get("request-id:id") as string;
+
+      console.log(
+        `[${requestId}] ${context.method} ${context.path} - ${response.status}`
+      );
+    },
+  };
+}
+```
+
+### Using temp with Lifecycle Hooks
+
+`context.temp` can also pass data from middleware to lifecycle hooks like `onUnmount` for cleanup:
+
+```typescript
+function pollingPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:polling",
+    operations: ["read"],
+
+    middleware: async (context, next) => {
+      const response = await next();
+
+      // Start polling and store timer ID in temp
+      if (context.pluginOptions?.enablePolling) {
+        const intervalId = setInterval(() => {
+          context.refetch();
+        }, 5000);
+
+        context.temp.set("polling:intervalId", intervalId);
+      }
+
+      return response;
+    },
+
+    lifecycle: {
+      onUnmount(context) {
+        // Read timer ID from temp and clean up
+        const intervalId = context.temp.get("polling:intervalId") as
+          | NodeJS.Timeout
+          | undefined;
+
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+      },
+    },
+  };
+}
+```
+
+**Why this works:**
+
+- Middleware sets the interval ID in temp
+- onUnmount reads it to clean up the timer
+- Data persists for the lifetime of the request and its associated lifecycle hooks
+- Cleanup always happens, even if component unmounts early
+
+## exports - Persistent Plugin APIs
+
+The `exports` property lets plugins expose functions that other plugins can call via `context.plugins.get()`.
+
+### When to Use
+
+- Provide APIs for other plugins to call
+- Coordinate behavior across multiple plugins
+- Share functionality that persists beyond a single request
+- Build plugin dependencies (plugin A requires plugin B)
+
+### Basic Example
+
+```typescript
+// Plugin A: Exports an API
+function featureFlagPlugin(): SpooshPlugin {
+  const flags = new Map<string, boolean>();
+
+  return {
+    name: "my-app:feature-flags",
+    operations: ["read", "write"],
+
+    exports(context) {
+      return {
+        isEnabled(flag: string): boolean {
+          return flags.get(flag) ?? false;
+        },
+        enable(flag: string) {
+          flags.set(flag, true);
+        },
+        disable(flag: string) {
+          flags.set(flag, false);
+        },
+      };
+    },
+  };
+}
+
+// Plugin B: Uses Plugin A's API
+function conditionalCachePlugin(): SpooshPlugin {
+  return {
+    name: "my-app:conditional-cache",
+    operations: ["read"],
+
+    middleware: async (context, next) => {
+      const featureFlags = context.plugins.get("my-app:feature-flags") as
+        | {
+            isEnabled: (flag: string) => boolean;
+          }
+        | undefined;
+
+      // Only cache if feature is enabled
+      if (featureFlags?.isEnabled("advanced-caching")) {
+        const cached = context.stateManager.getCache(context.queryKey);
+        if (cached?.state.data) {
+          return { data: cached.state.data, status: 200 };
+        }
+      }
+
+      return next();
+    },
+  };
+}
+```
+
+## Real-World Example: Optimistic + Invalidation
+
+The optimistic plugin depends on the invalidation plugin and coordinates with it.
+
+**Invalidation Plugin (Exports API):**
+
+```typescript
+export interface InvalidationPluginExports {
+  setDefaultMode: (value: InvalidationMode) => void;
+}
+
+export function invalidationPlugin(
+  config: InvalidationPluginConfig = {}
+): SpooshPlugin {
+  return {
+    name: "spoosh:invalidation",
+    operations: ["write"],
+
+    exports(context): InvalidationPluginExports {
+      return {
+        setDefaultMode(value: InvalidationMode) {
+          context.temp.set("invalidation:defaultMode", value);
+        },
+      };
+    },
+
+    afterResponse(context, response) {
+      // Implementation...
+    },
+  };
+}
+```
+
+**Optimistic Plugin (Uses Invalidation API):**
+
+```typescript
+export function optimisticPlugin(): SpooshPlugin {
+  return {
+    name: "spoosh:optimistic",
+    operations: ["write"],
+    dependencies: ["spoosh:invalidation"], // Declares dependency
+
+    middleware: async (context, next) => {
+      const targets = resolveOptimisticTargets(context);
+
+      if (targets.length > 0) {
+        // Tell invalidation plugin to NOT invalidate (we're doing optimistic update)
+        context.plugins.get("spoosh:invalidation")?.setDefaultMode("none");
+      }
+
+      // Apply optimistic updates...
+      const response = await next();
+
+      return response;
+    },
+  };
+}
+```
+
+**Why this works:**
+
+1. Optimistic updates immediately modify cache
+2. By default, invalidation would mark cache as stale (defeating the purpose)
+3. Optimistic plugin calls `setDefaultMode("none")` to disable invalidation for this request
+4. User can still override with explicit `invalidate` option
+
+## Type-Safe Exports
+
+Use module augmentation to make `context.plugins.get()` type-safe:
+
+### Step 1: Define Export Types
+
+```typescript
+// types.ts
+export interface MyPluginExports {
+  doSomething: (value: string) => void;
+  getSomething: () => string;
+}
+```
+
+### Step 2: Register in Module Augmentation
+
+```typescript
+// types.ts
+declare module "@spoosh/core" {
+  interface PluginExportsRegistry {
+    "my-plugin": MyPluginExports;
+  }
+}
+```
+
+### Step 3: Use in Plugin
+
+```typescript
+// plugin.ts
+import type { MyPluginExports } from "./types";
+
+export function myPlugin(): SpooshPlugin {
+  return {
+    name: "my-plugin",
+    operations: ["read"],
+
+    exports(context): MyPluginExports {
+      return {
+        doSomething(value: string) {
+          console.log(value);
+        },
+        getSomething() {
+          return "hello";
+        },
+      };
+    },
+  };
+}
+```
+
+### Step 4: TypeScript Knows the Types
+
+```typescript
+// Other plugins get full type safety
+middleware: async (context, next) => {
+  const myPlugin = context.plugins.get("my-plugin");
+
+  if (myPlugin) {
+    // TypeScript knows these methods exist!
+    myPlugin.doSomething("test"); // ✅ Type-safe
+    const value = myPlugin.getSomething(); // ✅ Type-safe
+  }
+
+  return next();
+};
+```
+
+## Real Example: Invalidation Plugin Types
+
+```typescript
+// types.ts
+export interface InvalidationPluginExports {
+  setDefaultMode: (value: InvalidationMode) => void;
+}
+
+declare module "@spoosh/core" {
+  interface PluginExportsRegistry {
+    "spoosh:invalidation": InvalidationPluginExports;
+  }
+}
+```
+
+Now other plugins get autocomplete and type checking:
+
+```typescript
+// Fully type-safe!
+context.plugins.get("spoosh:invalidation")?.setDefaultMode("none");
+```
+
+## When to Use Each Pattern
+
+### Use context.temp When (Intra-Plugin)
+
+- ✅ Passing data from middleware to afterResponse **in the same plugin**
+- ✅ Passing data from middleware to lifecycle hooks **in the same plugin**
+- ✅ Storing cleanup references (timer IDs, subscriptions) for onUnmount
+- ✅ Storing temporary calculations within your plugin's request flow
+- ✅ Request-scoped state that only your plugin needs
+
+**Example:** Your plugin starts polling in middleware, stores the timer ID in temp, cleans it up in onUnmount
+
+### Use exports When (Inter-Plugin)
+
+- ✅ **Plugin-to-plugin communication** - Other plugins need to call your APIs
+- ✅ Exposing functionality other plugins can use
+- ✅ Coordinating behavior between different plugins
+- ✅ Plugin dependencies (Plugin A requires Plugin B's API)
+
+**Example:** Optimistic plugin calls invalidation plugin's `setDefaultMode()` API
+
+### Wrong vs Right: Cross-Plugin Communication
+
+**❌ WRONG - Using temp for cross-plugin communication:**
+
+```typescript
+// Plugin A
+middleware: async (context, next) => {
+  context.temp.set("plugin-a:data", "some data");
+  return next();
+};
+
+// Plugin B (different plugin)
+middleware: async (context, next) => {
+  // DON'T DO THIS - reading another plugin's temp data
+  const data = context.temp.get("plugin-a:data");
+  return next();
+};
+```
+
+**✅ RIGHT - Using exports for cross-plugin communication:**
+
+```typescript
+// Plugin A - Expose API via exports
+exports(context) {
+  return {
+    getData(): string {
+      return "some data";
+    },
+  };
+}
+
+// Plugin B - Use Plugin A's API
+middleware: async (context, next) => {
+  const pluginA = context.plugins.get("plugin-a");
+  const data = pluginA?.getData();  // ✅ Correct!
+  return next();
+}
+```
+
+### Don't Use Either When
+
+- ❌ Sharing data with users → use [`setMeta`](/docs/react/plugin-development/advanced/meta-storage)
+- ❌ Adding methods to create() return → use [`instanceApi`](/docs/react/plugin-development/advanced/instance-api)
+- ❌ Modifying the response → return modified response in middleware/afterResponse
+
+## Common Patterns
+
+### Pattern: Conditional Behavior
+
+```typescript
+// Plugin A provides feature flag
+exports(context) {
+  return {
+    shouldCache(): boolean {
+      return context.pluginOptions?.enableCache ?? true;
+    },
+  };
+}
+
+// Plugin B uses it
+middleware: async (context, next) => {
+  const cachePlugin = context.plugins.get("my-app:cache");
+
+  if (cachePlugin?.shouldCache()) {
+    // Cache logic
+  }
+
+  return next();
+};
+```
+
+### Pattern: Coordinated State
+
+```typescript
+// Plugin A manages request IDs
+const requestIds = new Map<string, string>();
+
+exports(context) {
+  return {
+    getRequestId(queryKey: string): string | undefined {
+      return requestIds.get(queryKey);
+    },
+    setRequestId(queryKey: string, id: string) {
+      requestIds.set(queryKey, id);
+    },
+  };
+}
+
+// Plugin B uses request IDs for deduplication
+middleware: async (context, next) => {
+  const idManager = context.plugins.get("my-app:request-ids");
+  const existingId = idManager?.getRequestId(context.queryKey);
+
+  if (existingId) {
+    // Deduplicate based on ID
+  }
+
+  return next();
+};
+```
+
+### Pattern: Request Scoped Override
+
+```typescript
+// Plugin exposes both persistent and temporary APIs
+exports(context) {
+  return {
+    setTemporaryFlag(key: string, value: boolean) {
+      // Store in temp for this request only
+      context.temp.set(`my-plugin:${key}`, value);
+    },
+  };
+}
+
+// Other plugin can set flags for specific requests
+middleware: async (context, next) => {
+  const config = context.plugins.get("my-app:config");
+
+  if (shouldDisableCache) {
+    config?.setTemporaryFlag("cache-disabled", true);
+  }
+
+  return next();
+};
+```
+
+## Plugin Dependencies
+
+Use the `dependencies` array to ensure required plugins are registered:
+
+```typescript
+export function optimisticPlugin(): SpooshPlugin {
+  return {
+    name: "spoosh:optimistic",
+    operations: ["write"],
+    dependencies: ["spoosh:invalidation"], // Required!
+
+    middleware: async (context, next) => {
+      // Safe to assume invalidation plugin exists
+      context.plugins.get("spoosh:invalidation")?.setDefaultMode("none");
+      return next();
+    },
+  };
+}
+```
+
+If invalidation plugin is missing, Spoosh will throw an error during plugin registration.
+
+## Best Practices
+
+### 1. Always Check for Undefined
+
+```typescript
+// ✅ Good - Defensive
+const plugin = context.plugins.get("other-plugin");
+if (plugin) {
+  plugin.doSomething();
+}
+
+// ❌ Bad - Might crash
+context.plugins.get("other-plugin").doSomething();
+```
+
+### 2. Use Namespaced Keys for context.temp
+
+```typescript
+// ✅ Good
+context.temp.set("my-plugin:flag", true);
+
+// ❌ Bad - Might collide with other plugins
+context.temp.set("flag", true);
+```
+
+### 3. Document Exported APIs
+
+```typescript
+exports(context) {
+  return {
+    /**
+     * Sets the default invalidation mode for this request.
+     * @param value - "all" | "self" | "none"
+     */
+    setDefaultMode(value: InvalidationMode) {
+      context.temp.set("invalidation:defaultMode", value);
+    },
+  };
+}
+```
+
+### 4. Type Your Exports
+
+```typescript
+// ✅ Good - Type-safe via module augmentation
+declare module "@spoosh/core" {
+  interface PluginExportsRegistry {
+    "my-plugin": MyPluginExports;
+  }
+}
+
+// ❌ Bad - Untyped
+context.plugins.get("my-plugin") as any;
+```
+
+### 5. Keep Exports Focused
+
+```typescript
+// ✅ Good - Focused API
+exports(context) {
+  return {
+    setMode(mode: string) { ... },
+    getMode(): string { ... },
+  };
+}
+
+// ❌ Bad - Too many methods
+exports(context) {
+  return {
+    setMode() { ... },
+    getMode() { ... },
+    resetMode() { ... },
+    validateMode() { ... },
+    listModes() { ... },
+    // ... 10 more methods
+  };
+}
+```
+
+## Summary
+
+**context.temp:**
+
+- **Intra-plugin communication** (within same plugin)
+- Pass data from middleware → afterResponse
+- Pass data from middleware → lifecycle hooks (onMount, onUpdate, onUnmount)
+- Store cleanup references (timer IDs, subscriptions) for lifecycle
+- Request-scoped, cleared after each request
+- NOT recommended for plugin-to-plugin communication
+
+**exports:**
+
+- **Inter-plugin communication** (between different plugins)
+- Persistent APIs other plugins can call
+- Accessed via `context.plugins.get()`
+- Recommended for all plugin-to-plugin coordination
+
+**Type Safety:**
+
+- Use `PluginExportsRegistry` for type-safe exports
+- Always check for undefined when using `plugins.get()`
+- Use `dependencies` array for required plugins
+
+For more on plugin architecture, see [Architecture](/docs/react/plugin-development/advanced/architecture).
+
+For storing user-facing data, see [Meta Storage](/docs/react/plugin-development/advanced/meta-storage).

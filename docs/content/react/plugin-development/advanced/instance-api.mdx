@@ -1,0 +1,470 @@
+---
+title: Instance APIs
+description: Providing custom methods via create()
+---
+
+`instanceApi` allows a plugin to provide custom methods through the `create()` return value, enabling client-level APIs instead of request-level hooks.
+
+## When to Use Instance APIs
+
+| Feature               | exports                       | instanceApi             |
+| --------------------- | ----------------------------- | ----------------------- |
+| **Access location**   | Plugin context only           | `create()` return value |
+| **Use case**          | Plugin-to-plugin coordination | Public client APIs      |
+| **Runs per request**  | Yes                           | No                      |
+| **Affects typing**    | No                            | Yes                     |
+| **Beginner-friendly** | ✅                            | ❌                      |
+
+**Good uses:**
+
+- `refetchAll()` - Refetch all active queries
+- `clearCache()` - Clear all cache entries
+- `prefetch()` - Prefetch data before navigation
+- `reset()` - Reset client state
+- Devtools integration
+- Framework-specific adapters
+
+**Bad uses:**
+
+- Request-specific logic (use `middleware`)
+- Logging (use `afterResponse`)
+- Auth headers (use `middleware`)
+- Caching decisions (use `middleware`)
+
+<Callout type="warning">
+**Use `instanceApi` sparingly**
+
+Prefer `middleware`, `afterResponse`, or `exports` unless you intentionally want to extend the public client API.
+
+</Callout>
+
+## Basic Example
+
+```typescript
+function refetchPlugin(): SpooshPlugin {
+  return {
+    name: "core:refetch",
+    operations: ["read", "write"],
+
+    instanceApi: ({ eventEmitter }) => ({
+      refetchAll() {
+        eventEmitter.emit("refetchAll", undefined);
+      },
+    }),
+  };
+}
+```
+
+**Usage:**
+
+```typescript
+const spoosh = new Spoosh("/api").use([refetchPlugin()]);
+const { useRead, useWrite, refetchAll } = create(spoosh);
+
+// Now you can call refetchAll
+refetchAll();
+```
+
+## Real-World Example: Cache Plugin
+
+The cache plugin uses `instanceApi` to provide a `clearCache` method:
+
+```typescript
+function cachePlugin(): SpooshPlugin {
+  return {
+    name: "spoosh:cache",
+    operations: ["read", "write"],
+
+    middleware: async (context, next) => {
+      // Cache logic...
+      return next();
+    },
+
+    instanceApi(context) {
+      const { stateManager, eventEmitter } = context;
+
+      return {
+        clearCache(options?: { refetchAll?: boolean }) {
+          stateManager.clear();
+
+          if (options?.refetchAll) {
+            eventEmitter.emit("refetchAll", undefined);
+          }
+        },
+      };
+    },
+  };
+}
+```
+
+**Usage:**
+
+```typescript
+const spoosh = new Spoosh("/api").use([cachePlugin()]);
+const { useRead, clearCache } = create(spoosh);
+
+// Clear all cache
+clearCache();
+
+// Clear and refetch all active queries
+clearCache({ refetchAll: true });
+```
+
+## Instance API Context
+
+The `instanceApi` function receives an `InstanceApiContext`:
+
+```typescript
+interface InstanceApiContext {
+  api: SpooshApi; // Spoosh instance API
+  stateManager: StateManager; // Cache and state access
+  eventEmitter: EventEmitter; // Emit refetch/invalidate events
+  pluginExecutor: PluginExecutor; // Plugin execution
+}
+```
+
+## Combining with Exports
+
+You can use both `instanceApi` (for users) and `exports` (for other plugins):
+
+```typescript
+function refetchPlugin(): SpooshPlugin {
+  return {
+    name: "spoosh:refetch",
+    operations: ["read", "write"],
+
+    // For other plugins to use
+    exports(context) {
+      return {
+        setRefetchMode(mode: "all" | "active") {
+          context.temp.set("refetch:mode", mode);
+        },
+      };
+    },
+
+    // For users to use
+    instanceApi(context) {
+      return {
+        refetchAll() {
+          context.eventEmitter.emit("refetchAll", undefined);
+        },
+      };
+    },
+  };
+}
+```
+
+**Usage:**
+
+```typescript
+const spoosh = new Spoosh("/api").use([refetchPlugin()]);
+const { useRead, refetchAll } = create(spoosh);
+
+// Users call methods from create()
+refetchAll();
+
+// Other plugins use exports
+context.plugins.get("spoosh:refetch").setRefetchMode("active");
+```
+
+## TypeScript Support
+
+To make `instanceApi` type-safe:
+
+1. **Define your instanceApi interface**
+2. **Pass it as a generic to `SpooshPlugin`**
+3. **Export the interface** so users can import it
+
+### Step 1: Define Interface
+
+```typescript
+// types.ts
+export interface RefetchInstanceApi {
+  refetchAll: () => void;
+}
+```
+
+### Step 2: Use in Plugin
+
+```typescript
+// plugin.ts
+import type { SpooshPlugin } from "@spoosh/core";
+import type { RefetchInstanceApi } from "./types";
+
+export function refetchPlugin(): SpooshPlugin<{
+  instanceApi: RefetchInstanceApi;
+}> {
+  return {
+    name: "spoosh:refetch",
+    operations: ["read", "write"],
+
+    instanceApi: ({ eventEmitter }) => ({
+      refetchAll() {
+        eventEmitter.emit("refetchAll", undefined);
+      },
+    }),
+  };
+}
+```
+
+### Step 3: TypeScript Knows the Types
+
+```typescript
+const spoosh = new Spoosh("/api").use([refetchPlugin(), cachePlugin()]);
+const hooks = create(spoosh);
+
+// TypeScript knows these methods exist!
+hooks.refetchAll(); // ✅ Type-safe
+hooks.clearCache({ refetchAll: true }); // ✅ Type-safe
+```
+
+### Real Example: Cache Plugin
+
+```typescript
+// types.ts
+export interface CacheInstanceApi {
+  clearCache: (options?: ClearCacheOptions) => void;
+}
+
+// plugin.ts
+export function cachePlugin(): SpooshPlugin<{
+  readOptions: CacheReadOptions;
+  writeOptions: CacheWriteOptions;
+  readResult: CacheReadResult;
+  writeResult: CacheWriteResult;
+  instanceApi: CacheInstanceApi; // ← instanceApi types here
+}> {
+  return {
+    name: "spoosh:cache",
+    operations: ["read", "write"],
+
+    instanceApi(context) {
+      return {
+        clearCache(options) {
+          context.stateManager.clear();
+          if (options?.refetchAll) {
+            context.eventEmitter.emit("refetchAll", undefined);
+          }
+        },
+      };
+    },
+  };
+}
+```
+
+### Multiple Plugins
+
+When using multiple plugins, TypeScript automatically merges the types:
+
+```typescript
+const spoosh = new Spoosh("/api").use([
+  cachePlugin(), // Adds clearCache
+  refetchPlugin(), // Adds refetchAll
+]);
+
+const hooks = create(spoosh);
+
+// Both methods are available and type-safe
+hooks.clearCache(); // ✅ From cachePlugin
+hooks.refetchAll(); // ✅ From refetchPlugin
+```
+
+## Best Practices
+
+### 1. Prefer Simpler Alternatives
+
+Before using `instanceApi`, ask:
+
+- Can this be `middleware`? (for request-specific logic)
+- Can this be `afterResponse`? (for side effects)
+- Can this be `exports`? (for plugin-to-plugin APIs)
+
+Only use `instanceApi` when you need a **public client-level API**.
+
+### 2. Keep APIs Minimal
+
+Don't expose every internal function:
+
+```typescript
+// ❌ Bad - Too many methods
+instanceApi: () => ({
+  clearCache() {
+    /* ... */
+  },
+  getCacheSize() {
+    /* ... */
+  },
+  getCacheEntry() {
+    /* ... */
+  },
+  setCacheEntry() {
+    /* ... */
+  },
+  deleteCacheEntry() {
+    /* ... */
+  },
+});
+
+// ✅ Good - Essential methods only
+instanceApi: () => ({
+  clearCache(options?) {
+    /* ... */
+  },
+});
+```
+
+### 3. Use Clear Names
+
+Instance methods become part of the public API:
+
+```typescript
+// ❌ Bad - Unclear
+spoosh.do();
+spoosh.run();
+spoosh.exec();
+
+// ✅ Good - Self-explanatory
+spoosh.prefetch();
+spoosh.invalidateAll();
+spoosh.clearCache();
+```
+
+### 4. Document Side Effects
+
+If your method has side effects, document them:
+
+```typescript
+instanceApi: () => ({
+  /**
+   * Clears all cache entries and optionally refetches active queries.
+   *
+   * @param options.refetchAll - If true, refetch all active queries
+   */
+  clearCache(options?: { refetchAll?: boolean }) {
+    // ...
+  },
+});
+```
+
+## Common Patterns
+
+### Pattern: Imperative Actions
+
+For actions users trigger manually:
+
+```typescript
+instanceApi: ({ eventEmitter }) => ({
+  refetchAll() {
+    eventEmitter.emit("refetchAll", undefined);
+  },
+
+  resetAll() {
+    eventEmitter.emit("resetAll", undefined);
+  },
+});
+```
+
+### Pattern: State Inspection
+
+For debugging or devtools:
+
+```typescript
+instanceApi: ({ stateManager }) => ({
+  getDebugInfo() {
+    return {
+      cacheSize: stateManager.getSize(),
+      queries: Array.from(stateManager.keys()),
+    };
+  },
+});
+```
+
+### Pattern: Framework Integration
+
+For framework-specific utilities:
+
+```typescript
+instanceApi: ({ stateManager, eventEmitter }) => ({
+  getQueryData(queryKey: string) {
+    const cached = stateManager.getCache(queryKey);
+    return cached?.state.data;
+  },
+
+  setQueryData(queryKey: string, data: unknown) {
+    stateManager.setCache(queryKey, {
+      state: { data, error: undefined, timestamp: Date.now() },
+      tags: [],
+    });
+  },
+});
+```
+
+## When NOT to Use
+
+### ❌ Don't use for request-specific logic
+
+```typescript
+// ❌ Bad - This should be middleware
+instanceApi: () => ({
+  addAuthHeader(token: string) {
+    // This affects all requests - should be middleware
+  },
+});
+
+// ✅ Good - Use middleware instead
+middleware: async (context, next) => {
+  context.request.headers.Authorization = `Bearer ${token}`;
+  return next();
+};
+```
+
+### ❌ Don't use for logging
+
+```typescript
+// ❌ Bad - This should be afterResponse
+instanceApi: () => ({
+  enableLogging() {
+    // This affects request flow - should be afterResponse
+  },
+});
+
+// ✅ Good - Use afterResponse instead
+afterResponse: (context, response) => {
+  console.log(context.path, response.status);
+};
+```
+
+### ❌ Don't use for plugin-to-plugin communication
+
+```typescript
+// ❌ Bad - This should be exports
+instanceApi: () => ({
+  setRefetchMode(mode: string) {
+    // Other plugins need this, not users
+  },
+});
+
+// ✅ Good - Use exports instead
+exports: (context) => ({
+  setRefetchMode(mode: string) {
+    context.temp.set("mode", mode);
+  },
+});
+```
+
+## Summary
+
+**Use `instanceApi` when:**
+
+- Building public client-level APIs (prefetch, invalidateAll)
+- Creating framework integrations
+- Providing imperative actions for users
+
+**Don't use `instanceApi` when:**
+
+- Request-specific logic → use `middleware`
+- Side effects / logging → use `afterResponse`
+- Plugin-to-plugin APIs → use `exports`
+- Per-request state → use `lifecycle`
+
+When in doubt, prefer simpler alternatives. `instanceApi` is powerful but should be treated as an advanced escape hatch.

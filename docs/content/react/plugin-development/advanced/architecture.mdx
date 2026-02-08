@@ -1,0 +1,342 @@
+---
+title: Plugin Architecture
+description: How plugins work internally
+---
+
+<Callout type="info">
+**Internal Details**
+
+This page explains how plugins work under the hood. You don't need to understand this to build plugins — it's here for those who want to know the internals.
+
+</Callout>
+
+This page explains how plugins work under the hood, their execution flow, and the PluginContext object.
+
+## Plugin Registration Flow
+
+When you register plugins with `.use([...])`, Spoosh processes them in this sequence:
+
+```
+Registration
+    ↓
+Priority Sorting
+    ↓
+Plugin Executor Initialization
+    ↓
+Request/Response Flow
+    ↓
+Component Lifecycle (onMount, onUpdate, onUnmount)
+```
+
+### What Happens When `.use([...])` is Called
+
+```typescript
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin(),
+  retryPlugin(),
+  debugPlugin(),
+]);
+```
+
+1. **Priority Sorting** - Plugins are sorted by `priority` (lower numbers run first, default: 0)
+2. **Plugin Storage** - Sorted plugins are stored in the Spoosh instance
+3. **Executor Creation** - A PluginExecutor is created to manage middleware chains
+4. **Framework Adapter** - When you call `create(spoosh)`, plugins' `instanceApi` functions execute
+
+## The PluginContext Object
+
+The `PluginContext` object is passed to every plugin function and contains all information about the current request.
+
+### Complete Property Reference
+
+```typescript
+interface PluginContext {
+  readonly operationType: "read" | "write" | "infiniteRead";
+  readonly path: string;
+  readonly method: HttpMethod;
+  readonly queryKey: string;
+  readonly tags: string[];
+  readonly requestTimestamp: number;
+  readonly instanceId?: string;
+
+  request: PluginRequestOptions;
+  temp: Map<string, unknown>;
+  stateManager: StateManager;
+  eventEmitter: EventEmitter;
+  plugins: PluginAccessor;
+  pluginOptions?: unknown;
+  forceRefetch?: boolean;
+}
+```
+
+### Critical Distinction: instanceId vs queryKey
+
+**queryKey** - Identifies a unique query configuration (path + method + options)
+
+**instanceId** - Identifies a unique hook instance in your component tree
+
+#### Why This Matters
+
+Multiple hook instances can share the same queryKey:
+
+```typescript
+function UserProfile({ userId }: { userId: string }) {
+  const profile = useRead((api) => api("users/:id").GET({ params: { id: userId } }));
+  return <div>{profile.data?.name}</div>;
+}
+
+function UserAvatar({ userId }: { userId: string }) {
+  const profile = useRead((api) => api("users/:id").GET({ params: { id: userId } }));
+  return <img src={profile.data?.avatar} />;
+}
+
+// Both components request the same data
+// queryKey: '{"path":"users/123","method":"GET",...}'
+// instanceId: "unique-id-1" and "unique-id-2"
+```
+
+#### When to Use Each
+
+| Use Case                    | Use                                                |
+| --------------------------- | -------------------------------------------------- |
+| **Cache operations**        | `queryKey` - All hooks share the same cache        |
+| **Per-hook state tracking** | `instanceId` - Track which hooks are mounted       |
+| **Event listeners**         | `instanceId` - Each hook has its own listeners     |
+| **Timers/Intervals**        | `instanceId` - Cleanup when specific hook unmounts |
+
+### request vs temp vs stateManager
+
+**request** - Modify the actual HTTP request options:
+
+```typescript
+middleware: async (context, next) => {
+  context.request.headers["Authorization"] = `Bearer ${token}`;
+  context.request.retries = 3;
+  return next();
+};
+```
+
+**temp** - Share data between plugins during a single request:
+
+```typescript
+// Plugin A sets data
+middleware: async (context, next) => {
+  context.temp.set("my-plugin:timestamp", Date.now());
+  return next();
+}
+
+// Plugin B reads data
+afterResponse(context, response) {
+  const timestamp = context.temp.get("my-plugin:timestamp");
+  console.log(`Request took ${Date.now() - timestamp}ms`);
+}
+```
+
+**stateManager** - Access and modify cache:
+
+```typescript
+middleware: async (context, next) => {
+  const cached = context.stateManager.getCache(context.queryKey);
+
+  if (cached?.state.data) {
+    return { data: cached.state.data, status: 200 };
+  }
+
+  return next();
+};
+```
+
+## Execution Order
+
+### Middleware Chain
+
+Plugins execute in registration order, creating an "onion" pattern:
+
+```typescript
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  pluginA(),
+  pluginB(),
+  pluginC(),
+]);
+
+// Request flow:
+// pluginA.middleware() start
+//   pluginB.middleware() start
+//     pluginC.middleware() start
+//       [ACTUAL FETCH]
+//     pluginC.middleware() end
+//   pluginB.middleware() end
+// pluginA.middleware() end
+```
+
+### Call Stack Example
+
+```typescript
+// Plugin A
+middleware: async (context, next) => {
+  console.log("A: before");
+  const result = await next();
+  console.log("A: after");
+  return result;
+};
+
+// Plugin B
+middleware: async (context, next) => {
+  console.log("B: before");
+  const result = await next();
+  console.log("B: after");
+  return result;
+};
+
+// Output:
+// A: before
+// B: before
+// [FETCH]
+// B: after
+// A: after
+```
+
+### Plugin Priority
+
+The `priority` property controls plugin execution order (lower numbers run first):
+
+```typescript
+function cachePlugin(): SpooshPlugin {
+  return {
+    name: "spoosh:cache",
+    operations: ["read"],
+    priority: -10,
+
+    middleware: async (context, next) => {
+      const cached = context.stateManager.getCache(context.queryKey);
+      if (cached?.state.data) {
+        return { data: cached.state.data, status: 200 };
+      }
+      return next();
+    },
+  };
+}
+```
+
+**Priority Sorting:** Plugins are automatically sorted by priority (stable sort):
+
+```typescript
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  retryPlugin(),
+  throttlePlugin(),
+  cachePlugin(),
+  debugPlugin(),
+]);
+
+// Spoosh sorts to:
+// 1. cachePlugin (priority: -10)
+// 2. retryPlugin (priority: 0)
+// 3. debugPlugin (priority: 0, maintains registration order)
+// 4. throttlePlugin (priority: 100)
+```
+
+### When Priority Matters
+
+**Cache should be early (priority: -10)** - Check cache before other operations
+
+**Throttle should be last (priority: 100)** - Block all requests including force fetches
+
+**Most plugins use default priority (0)** - Retry, debug, transform, etc.
+
+## Type System
+
+### PluginTypeConfig
+
+The `PluginTypeConfig` generic parameter defines what types your plugin contributes:
+
+```typescript
+interface PluginTypeConfig {
+  readOptions?: object;
+  writeOptions?: object;
+  infiniteReadOptions?: object;
+  readResult?: object;
+  writeResult?: object;
+  instanceApi?: object;
+}
+```
+
+### Example: Full Type Safety
+
+```typescript
+interface CachePluginConfig {
+  staleTime?: number;
+}
+
+interface CacheReadOptions {
+  staleTime?: number;
+}
+
+interface CacheReadResult {
+  isFromCache?: boolean;
+}
+
+interface CacheInstanceApi {
+  clearCache: (options?: { refetchAll?: boolean }) => void;
+}
+
+export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
+  readOptions: CacheReadOptions;
+  readResult: CacheReadResult;
+  instanceApi: CacheInstanceApi;
+}> {
+  return {
+    name: "spoosh:cache",
+    operations: ["read"],
+
+    middleware: async (context, next) => {
+      const pluginOptions = context.pluginOptions as
+        | CacheReadOptions
+        | undefined;
+      const staleTime = pluginOptions?.staleTime ?? config.staleTime ?? 0;
+      // ...
+    },
+
+    instanceApi(context) {
+      return {
+        clearCache: (options) => {
+          context.stateManager.clear();
+          if (options?.refetchAll) {
+            context.eventEmitter.emit("refetchAll", undefined);
+          }
+        },
+      };
+    },
+  };
+}
+```
+
+### Type Inference Flow
+
+```typescript
+const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+  cachePlugin({ staleTime: 5000 }),
+]);
+
+const { data, meta, clearCache } = useRead((api) => api("users").GET(), {
+  staleTime: 10000,
+});
+
+console.log(meta.isFromCache);
+clearCache({ refetchAll: true });
+```
+
+## PluginMiddleware Type
+
+```typescript
+type PluginMiddleware = (
+  context: PluginContext,
+  next: () => Promise<SpooshResponse<any, any>>
+) => Promise<SpooshResponse<any, any>>;
+```
+
+Key points:
+
+- `context` - Contains all request info and utilities
+- `next` - Continues to the next middleware or actual fetch
+- Return value - Must be a `SpooshResponse`
+- Async - Always returns a Promise

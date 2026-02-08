@@ -1,0 +1,14 @@
+{
+  "title": "Advanced",
+  "pages": [
+    "patterns",
+    "after-response",
+    "lifecycle",
+    "meta-storage",
+    "plugin-communication",
+    "instance-api",
+    "type-safety",
+    "architecture",
+    "testing"
+  ]
+}

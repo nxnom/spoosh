@@ -1,0 +1,410 @@
+---
+title: Testing Plugins
+description: Unit and integration testing strategies for plugins
+---
+
+Testing plugins ensures they work correctly in isolation and when combined with other plugins.
+
+**Why test plugins?**
+
+- Plugins run on every request — bugs affect all users
+- Complex logic (retry, cache, deduplication) needs verification
+- Interactions between plugins can be subtle
+- Tests document expected behavior
+
+**What to test:**
+
+- Middleware calls `next()` correctly
+- Early returns work (cache, deduplication)
+- Context modifications (headers, options)
+- Lifecycle hooks clean up resources
+- Integration with other plugins
+
+## Testing Strategy
+
+**Unit Tests** - Test plugin logic in isolation with mocked context
+
+**Integration Tests** - Test plugins with real Spoosh instance and hooks
+
+## Unit Testing Middleware
+
+### Basic Test Setup
+
+```typescript
+import { createMockContext } from "@spoosh/test-utils";
+import { describe, it, expect, vi } from "vitest";
+import { myPlugin } from "./my-plugin";
+
+describe("myPlugin", () => {
+  it("should have correct name", () => {
+    const plugin = myPlugin();
+    expect(plugin.name).toBe("my-app:my-plugin");
+  });
+
+  it("should operate on read operations", () => {
+    const plugin = myPlugin();
+    expect(plugin.operations).toEqual(["read"]);
+  });
+});
+```
+
+### Testing Middleware Calls next()
+
+```typescript
+it("should call next() and return response", async () => {
+  const plugin = myPlugin();
+  const context = createMockContext();
+  const expectedResponse = { data: { id: 1 }, status: 200 };
+  const next = vi.fn().mockResolvedValue(expectedResponse);
+
+  const result = await plugin.middleware!(context, next);
+
+  expect(next).toHaveBeenCalled();
+  expect(result).toEqual(expectedResponse);
+});
+```
+
+### Testing Early Return (Cache Pattern)
+
+```typescript
+it("should return cached data when available", async () => {
+  const plugin = cachePlugin({ staleTime: 5000 });
+  const stateManager = createStateManager();
+
+  stateManager.setCache('{"method":"GET","path":["users","1"]}', {
+    state: {
+      data: { id: 1, name: "Cached User" },
+      error: undefined,
+      timestamp: Date.now(),
+    },
+    tags: ["users", "users/1"],
+    stale: false,
+  });
+
+  const context = createMockContext({
+    stateManager,
+    queryKey: '{"method":"GET","path":["users","1"]}',
+  });
+  const next = vi.fn();
+
+  const result = await plugin.middleware!(context, next);
+
+  expect(next).not.toHaveBeenCalled();
+  expect(result.data).toEqual({ id: 1, name: "Cached User" });
+});
+```
+
+**Key points:**
+
+- Use `createStateManager()` from test utils
+- Set up cache state before testing
+- Verify `next()` is **not** called for early returns
+
+### Testing Context Modification
+
+```typescript
+it("should modify request context", async () => {
+  const plugin = retryPlugin({ retries: 5 });
+  const context = createMockContext();
+  const next = vi.fn().mockResolvedValue({ data: { id: 1 }, status: 200 });
+
+  await plugin.middleware!(context, next);
+
+  expect(context.request.retries).toBe(5);
+});
+
+it("should override with request option", async () => {
+  const plugin = retryPlugin({ retries: 3 });
+  const context = createMockContext({
+    pluginOptions: { retries: 10 },
+  });
+  const next = vi.fn().mockResolvedValue({ data: { id: 1 }, status: 200 });
+
+  await plugin.middleware!(context, next);
+
+  expect(context.request.retries).toBe(10);
+});
+```
+
+### Testing Error Handling
+
+```typescript
+it("should handle error responses", async () => {
+  const plugin = myPlugin();
+  const context = createMockContext();
+  const errorResponse = { error: { message: "Not found" }, status: 404 };
+  const next = vi.fn().mockResolvedValue(errorResponse);
+
+  const result = await plugin.middleware!(context, next);
+
+  expect(result).toEqual(errorResponse);
+});
+
+it("should handle thrown errors", async () => {
+  const plugin = myPlugin();
+  const context = createMockContext();
+  const error = new Error("Network error");
+  const next = vi.fn().mockRejectedValue(error);
+
+  await expect(plugin.middleware!(context, next)).rejects.toThrow(error);
+});
+```
+
+## Unit Testing Lifecycle
+
+### Testing onMount
+
+```typescript
+it("should set up resource on mount", () => {
+  const plugin = myPlugin();
+  const context = createMockContext({
+    instanceId: "test-instance-1",
+  });
+
+  plugin.lifecycle!.onMount!(context);
+
+  // Verify resource was set up
+});
+```
+
+### Testing onUnmount Cleanup
+
+```typescript
+it("should clean up resource on unmount", () => {
+  const plugin = pollingPlugin();
+  const context = createMockContext({
+    instanceId: "test-instance-1",
+    pluginOptions: { pollingInterval: 5000 },
+  });
+
+  vi.useFakeTimers();
+
+  plugin.lifecycle!.onMount!(context);
+  plugin.lifecycle!.onUnmount!(context);
+
+  vi.advanceTimersByTime(10000);
+
+  expect(context.eventEmitter.emit).not.toHaveBeenCalled();
+
+  vi.useRealTimers();
+});
+```
+
+**Key points:**
+
+- Use `vi.useFakeTimers()` to control time
+- Mount → Unmount → Verify cleanup
+- Test that resources are actually released
+
+### Testing Memory Leaks
+
+```typescript
+it("should not leak memory on repeated mount/unmount", () => {
+  const plugin = myPlugin();
+
+  for (let i = 0; i < 100; i++) {
+    const context = createMockContext({
+      instanceId: `test-instance-${i}`,
+    });
+
+    plugin.lifecycle!.onMount!(context);
+    plugin.lifecycle!.onUnmount!(context);
+  }
+
+  // Verify internal maps/sets are empty
+});
+```
+
+## Unit Testing AfterResponse
+
+```typescript
+it("should process response in afterResponse", () => {
+  const plugin = transformPlugin();
+  const stateManager = createStateManager();
+  const context = createMockContext({
+    stateManager,
+    pluginOptions: {
+      transform: (data) => ({ ...data, processed: true }),
+    },
+  });
+
+  const response = { data: { id: 1 }, status: 200 };
+
+  plugin.afterResponse!(context, response);
+
+  const meta = stateManager.getMeta(context.queryKey);
+  expect(meta).toHaveProperty("transformedData");
+});
+```
+
+## Integration Testing
+
+### Testing with Real Spoosh Instance
+
+```typescript
+import { Spoosh } from "@spoosh/core";
+import { create } from "@spoosh/react";
+import { renderHook, waitFor } from "@testing-library/react";
+import { myPlugin } from "./my-plugin";
+
+it("should work with real Spoosh instance", async () => {
+  const spoosh = new Spoosh<ApiSchema, Error>("/api").use([myPlugin()]);
+
+  const { useRead } = create(spoosh);
+
+  const { result } = renderHook(() => useRead((api) => api("users").GET()));
+
+  await waitFor(() => expect(result.current.data).toBeDefined());
+
+  expect(result.current.data).toEqual(mockData);
+});
+```
+
+### Testing Plugin Combinations
+
+```typescript
+it("should work with multiple plugins", async () => {
+  const spoosh = new Spoosh<ApiSchema, Error>("/api").use([
+    cachePlugin({ staleTime: 5000 }),
+    retryPlugin({ retries: 3 }),
+    myPlugin(),
+  ]);
+
+  const { useRead } = create(spoosh);
+
+  const { result, rerender } = renderHook(() =>
+    useRead((api) => api("users").GET())
+  );
+
+  await waitFor(() => expect(result.current.data).toBeDefined());
+
+  rerender();
+
+  // Verify cache was used
+});
+```
+
+## Test Utilities
+
+### createMockContext
+
+Creates a mock `PluginContext` for unit testing:
+
+```typescript
+import { createMockContext } from "@spoosh/test-utils";
+
+const context = createMockContext({
+  operationType: "read",
+  path: "users/1",
+  method: "GET",
+  queryKey: "test-query-key",
+  tags: ["users", "users/1"],
+  instanceId: "test-instance-1",
+  pluginOptions: { customOption: "value" },
+  stateManager: createStateManager(),
+});
+```
+
+### createStateManager
+
+Creates a real `StateManager` instance for testing:
+
+```typescript
+import { createStateManager } from "@spoosh/test-utils";
+
+const stateManager = createStateManager();
+
+stateManager.setCache("key", {
+  state: { data: { id: 1 }, error: undefined, timestamp: Date.now() },
+  tags: ["users"],
+});
+
+const cached = stateManager.getCache("key");
+```
+
+## Testing Best Practices
+
+### 1. Test Both Config and Per-Request Options
+
+```typescript
+describe("configuration", () => {
+  it("should use default config", async () => {
+    const plugin = myPlugin({ timeout: 5000 });
+    // Test default behavior
+  });
+
+  it("should override with per-request options", async () => {
+    const plugin = myPlugin({ timeout: 5000 });
+    const context = createMockContext({
+      pluginOptions: { timeout: 10000 },
+    });
+    // Test override behavior
+  });
+});
+```
+
+### 2. Test Edge Cases
+
+```typescript
+describe("edge cases", () => {
+  it("should handle undefined pluginOptions", async () => {
+    const plugin = myPlugin();
+    const context = createMockContext({ pluginOptions: undefined });
+    // ...
+  });
+
+  it("should handle missing instanceId", async () => {
+    const plugin = myPlugin();
+    const context = createMockContext({ instanceId: undefined });
+    // ...
+  });
+});
+```
+
+### 3. Use Fake Timers for Time-Based Logic
+
+```typescript
+describe("polling", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("should poll at specified interval", () => {
+    const plugin = pollingPlugin();
+    const context = createMockContext({
+      pluginOptions: { pollingInterval: 5000 },
+    });
+
+    plugin.lifecycle!.onMount!(context);
+
+    vi.advanceTimersByTime(5000);
+
+    expect(context.eventEmitter.emit).toHaveBeenCalledWith("refetch", {
+      queryKey: context.queryKey,
+      reason: "polling",
+    });
+  });
+});
+```
+
+### 4. Test Cleanup Thoroughly
+
+```typescript
+describe("cleanup", () => {
+  it("should remove all listeners on unmount", () => {
+    const plugin = refetchPlugin();
+    const context = createMockContext({
+      instanceId: "test-1",
+    });
+
+    plugin.lifecycle!.onMount!(context);
+    plugin.lifecycle!.onUnmount!(context);
+
+    // Verify all listeners removed
+  });
+});
+```
