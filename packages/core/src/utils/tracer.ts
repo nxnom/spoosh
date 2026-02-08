@@ -16,7 +16,10 @@ import type {
  * t.skip("No query params", { color: "muted" });
  * ```
  */
-export function createTracer(plugin: string, trace: Trace | undefined): PluginTracer {
+export function createTracer(
+  plugin: string,
+  trace: Trace | undefined
+): PluginTracer {
   const step = (stage: TraceStage, reason: string, options?: TraceOptions) => {
     trace?.step(() => ({
       plugin,

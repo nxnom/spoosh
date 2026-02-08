@@ -613,5 +613,25 @@ export function getThemeCSS(theme: DevToolTheme): string {
       max-height: 150px;
       overflow-y: auto;
     }
+
+    .spoosh-syn-key {
+      color: ${theme.colors.primary};
+    }
+
+    .spoosh-syn-str {
+      color: ${theme.colors.success};
+    }
+
+    .spoosh-syn-num {
+      color: ${theme.colors.warning};
+    }
+
+    .spoosh-syn-bool {
+      color: ${theme.colors.error};
+    }
+
+    .spoosh-syn-null {
+      color: var(--spoosh-text-muted);
+    }
   `;
 }

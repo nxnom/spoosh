@@ -496,14 +496,32 @@ export class DevToolPanel {
   }
 
   private formatJson(data: unknown): string {
-    if (data === undefined) return "undefined";
-    if (data === null) return "null";
+    if (data === undefined)
+      return '<span class="spoosh-syn-null">undefined</span>';
+    if (data === null) return '<span class="spoosh-syn-null">null</span>';
 
     try {
-      return this.escapeHtml(JSON.stringify(data, null, 2));
+      const json = JSON.stringify(data, null, 2);
+      return this.highlightJson(json);
     } catch {
-      return String(data);
+      return this.escapeHtml(String(data));
     }
+  }
+
+  private highlightJson(json: string): string {
+    return json.replace(
+      /("(?:\\.|[^"\\])*")\s*:|("(?:\\.|[^"\\])*")|(\b\d+\.?\d*\b)|(\btrue\b|\bfalse\b)|(\bnull\b)/g,
+      (match, key, str, num, bool, nil) => {
+        if (key)
+          return `<span class="spoosh-syn-key">${this.escapeHtml(key)}</span>:`;
+        if (str)
+          return `<span class="spoosh-syn-str">${this.escapeHtml(str)}</span>`;
+        if (num) return `<span class="spoosh-syn-num">${num}</span>`;
+        if (bool) return `<span class="spoosh-syn-bool">${bool}</span>`;
+        if (nil) return `<span class="spoosh-syn-null">${nil}</span>`;
+        return match;
+      }
+    );
   }
 
   private escapeHtml(str: string): string {
