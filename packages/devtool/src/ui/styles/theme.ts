@@ -250,6 +250,15 @@ export function getThemeCSS(theme: DevToolTheme): string {
 
     .spoosh-trace-status.success { background: var(--spoosh-success); }
     .spoosh-trace-status.error { background: var(--spoosh-error); }
+    .spoosh-trace-status.pending {
+      background: var(--spoosh-primary);
+      animation: spoosh-pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes spoosh-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
 
     .spoosh-trace-info {
       flex: 1;
@@ -350,6 +359,11 @@ export function getThemeCSS(theme: DevToolTheme): string {
       color: var(--spoosh-text-muted);
     }
 
+    .spoosh-badge.pending {
+      background: rgba(88, 166, 255, 0.15);
+      color: var(--spoosh-primary);
+    }
+
     .spoosh-tabs {
       display: flex;
       border-bottom: 1px solid var(--spoosh-border);
@@ -387,6 +401,26 @@ export function getThemeCSS(theme: DevToolTheme): string {
       color: var(--spoosh-text-muted);
       text-align: center;
       padding: 40px;
+    }
+
+    .spoosh-pending-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .spoosh-spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--spoosh-border);
+      border-top-color: var(--spoosh-primary);
+      border-radius: 50%;
+      animation: spoosh-spin 0.8s linear infinite;
+    }
+
+    @keyframes spoosh-spin {
+      to { transform: rotate(360deg); }
     }
 
     .spoosh-data-section {

@@ -60,10 +60,10 @@ export class DevToolPanel {
       if (newCount !== this.traceCount) {
         this.traceCount = newCount;
         this.updateBadge();
+      }
 
-        if (this.isOpen) {
-          this.render();
-        }
+      if (this.isOpen) {
+        this.render();
       }
     });
 
@@ -165,8 +165,9 @@ export class DevToolPanel {
 
   private renderTraceRow(trace: OperationTrace): string {
     const isSelected = trace.id === this.selectedTraceId;
+    const isPending = trace.duration === undefined;
     const hasError = !!trace.response?.error;
-    const statusClass = hasError ? "error" : "success";
+    const statusClass = isPending ? "pending" : hasError ? "error" : "success";
     const duration = trace.duration?.toFixed(0) ?? "...";
 
     return `
@@ -193,7 +194,10 @@ export class DevToolPanel {
   }
 
   private renderDetailPanel(trace: OperationTrace): string {
+    const isPending = trace.duration === undefined;
     const hasError = !!trace.response?.error;
+    const statusClass = isPending ? "pending" : hasError ? "error" : "success";
+    const statusLabel = isPending ? "Pending" : hasError ? "Error" : "Success";
 
     return `
       <div class="spoosh-detail-panel">
@@ -203,14 +207,14 @@ export class DevToolPanel {
             <span class="spoosh-detail-path">${trace.path}</span>
           </div>
           <div class="spoosh-detail-meta">
-            <span class="spoosh-badge ${hasError ? "error" : "success"}">${hasError ? "Error" : "Success"}</span>
+            <span class="spoosh-badge ${statusClass}">${statusLabel}</span>
             <span class="spoosh-badge neutral">${trace.duration?.toFixed(0) ?? "..."}ms</span>
           </div>
         </div>
 
         <div class="spoosh-tabs">
           <button class="spoosh-tab ${this.activeTab === "data" ? "active" : ""}" data-tab="data">
-            ${hasError ? "Error" : "Data"}
+            ${isPending ? "Fetching" : hasError ? "Error" : "Data"}
           </button>
           <button class="spoosh-tab ${this.activeTab === "request" ? "active" : ""}" data-tab="request">
             Request
@@ -241,6 +245,17 @@ export class DevToolPanel {
   }
 
   private renderDataTab(trace: OperationTrace): string {
+    const isPending = trace.duration === undefined;
+
+    if (isPending) {
+      return `
+        <div class="spoosh-empty-tab spoosh-pending-tab">
+          <div class="spoosh-spinner"></div>
+          <div>Fetching...</div>
+        </div>
+      `;
+    }
+
     const response = trace.response;
 
     if (!response) {

@@ -9,6 +9,30 @@ import { DevToolStore } from "./store";
 import { DevToolPanel } from "./ui/panel";
 import type { DevToolConfig, DevToolInstanceApi, DevToolTheme } from "./types";
 
+function resolvePathWithParams(
+  path: string,
+  params: Record<string, string | number> | undefined
+): string {
+  if (!params) return path;
+
+  return path
+    .split("/")
+    .map((segment) => {
+      if (segment.startsWith(":")) {
+        const paramName = segment.slice(1);
+        const value = params[paramName];
+
+        return value !== undefined ? String(value) : segment;
+      }
+
+      return segment;
+    })
+    .join("/");
+}
+
+let globalStore: DevToolStore | null = null;
+let globalPanel: DevToolPanel | null = null;
+
 export function devtool(
   config: DevToolConfig = {}
 ): SpooshPlugin<{ instanceApi: DevToolInstanceApi }> {
@@ -26,8 +50,11 @@ export function devtool(
     };
   }
 
-  const store = new DevToolStore({ maxHistory });
-  let panel: DevToolPanel | null = null;
+  if (!globalStore) {
+    globalStore = new DevToolStore({ maxHistory });
+  }
+
+  const store = globalStore;
 
   return {
     name: "spoosh:devtool",
@@ -35,10 +62,15 @@ export function devtool(
     priority: -100,
 
     middleware: async (context, next) => {
+      const resolvedPath = resolvePathWithParams(
+        context.path,
+        context.request.params as Record<string, string | number> | undefined
+      );
+
       const trace = store.startTrace({
         operationType: context.operationType,
         method: context.method,
-        path: context.path,
+        path: resolvedPath,
         queryKey: context.queryKey,
         tags: context.tags,
       });
@@ -106,15 +138,15 @@ export function devtool(
     },
 
     instanceApi(ctx) {
-      if (!panel) {
-        panel = new DevToolPanel({
+      if (!globalPanel) {
+        globalPanel = new DevToolPanel({
           store,
           theme,
           position,
           stateManager: ctx.stateManager,
           eventEmitter: ctx.eventEmitter,
         });
-        panel.mount();
+        globalPanel.mount();
       }
 
       ctx.eventEmitter.on("invalidate", (tags: string[]) => {
@@ -135,12 +167,12 @@ export function devtool(
       return {
         getHistory: () => store.getTraces(),
         clearHistory: () => store.clear(),
-        setEnabled: (value: boolean) => panel?.setVisible(value),
+        setEnabled: (value: boolean) => globalPanel?.setVisible(value),
         setTheme: (newTheme: "light" | "dark" | DevToolTheme) =>
-          panel?.setTheme(newTheme),
-        open: () => panel?.open(),
-        close: () => panel?.close(),
-        toggle: () => panel?.toggle(),
+          globalPanel?.setTheme(newTheme),
+        open: () => globalPanel?.open(),
+        close: () => globalPanel?.close(),
+        toggle: () => globalPanel?.toggle(),
       };
     },
   };

@@ -29,6 +29,8 @@ export class DevToolStore implements DevToolStoreInterface {
   }
 
   startTrace(context: TraceContext): OperationTrace {
+    const notifyFn = () => this.notify();
+
     const trace: OperationTrace = {
       id: crypto.randomUUID(),
       operationType: context.operationType,
@@ -50,10 +52,13 @@ export class DevToolStore implements DevToolStoreInterface {
           diff: event.meta?.diff,
           meta: event.meta,
         });
+        notifyFn();
       },
     };
 
     this.activeTraces.set(context.queryKey, trace);
+    this.notify();
+
     return trace;
   }
 
@@ -79,17 +84,28 @@ export class DevToolStore implements DevToolStoreInterface {
   }
 
   getTrace(traceId: string): OperationTrace | undefined {
-    return this.traces.toArray().find((t) => t.id === traceId);
+    const completed = this.traces.toArray().find((t) => t.id === traceId);
+
+    if (completed) return completed;
+
+    for (const trace of this.activeTraces.values()) {
+      if (trace.id === traceId) return trace;
+    }
+
+    return undefined;
   }
 
   getTraces(): OperationTrace[] {
-    return this.traces.toArray();
+    const completed = this.traces.toArray();
+    const active = Array.from(this.activeTraces.values());
+
+    return [...completed, ...active];
   }
 
   getFilteredTraces(): OperationTrace[] {
-    return this.traces
-      .toArray()
-      .filter((trace) => this.filters.operationTypes.has(trace.operationType));
+    return this.getTraces().filter((trace) =>
+      this.filters.operationTypes.has(trace.operationType)
+    );
   }
 
   getFilters(): DevToolFilters {
@@ -142,6 +158,7 @@ export class DevToolStore implements DevToolStoreInterface {
 
   clear(): void {
     this.traces.clear();
+    this.activeTraces.clear();
     this.invalidations = [];
     this.notify();
   }
