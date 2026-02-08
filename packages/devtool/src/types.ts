@@ -6,6 +6,7 @@ import type {
   TraceEvent,
   TraceStage,
   TraceColor,
+  PluginContext,
 } from "@spoosh/core";
 
 export interface DevToolConfig {
@@ -81,13 +82,9 @@ export interface PluginStepEvent {
   diff?: { before: unknown; after: unknown };
 }
 
-export interface OperationTrace {
+export interface OperationTrace extends PluginContext {
   id: string;
-  operationType: OperationType;
-  method: string;
   path: string;
-  queryKey: string;
-  tags: string[];
   startTime: number;
   endTime?: number;
   duration?: number;
@@ -129,7 +126,7 @@ export interface DevToolPanelOptions {
 }
 
 export interface DevToolStoreInterface {
-  startTrace(context: TraceContext): OperationTrace;
+  startTrace(context: PluginContext, resolvedPath: string): OperationTrace;
   endTrace(traceId: string, response?: SpooshResponse<unknown, unknown>): void;
   discardTrace(traceId: string): void;
   getCurrentTrace(queryKey: string): OperationTrace | undefined;
@@ -148,17 +145,9 @@ export interface DevToolStoreInterface {
   recordInvalidation(event: InvalidationEvent): void;
   recordLifecycle(
     phase: "onMount" | "onUpdate" | "onUnmount",
-    context: TraceContext,
-    prevContext?: TraceContext
+    context: PluginContext,
+    prevContext?: PluginContext
   ): void;
   subscribe(callback: () => void): () => void;
   clear(): void;
-}
-
-export interface TraceContext {
-  operationType: OperationType;
-  method: string;
-  path: string;
-  queryKey: string;
-  tags: string[];
 }

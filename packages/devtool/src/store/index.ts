@@ -1,11 +1,10 @@
-import type { SpooshResponse, TraceEvent } from "@spoosh/core";
+import type { SpooshResponse, TraceEvent, PluginContext } from "@spoosh/core";
 
 import type {
   OperationTrace,
   InvalidationEvent,
   DevToolFilters,
   DevToolStoreInterface,
-  TraceContext,
 } from "../types";
 import { createRingBuffer } from "./history";
 
@@ -42,16 +41,13 @@ export class DevToolStore implements DevToolStoreInterface {
     );
   }
 
-  startTrace(context: TraceContext): OperationTrace {
+  startTrace(context: PluginContext, resolvedPath: string): OperationTrace {
     const notifyFn = () => this.notify();
 
     const trace: OperationTrace = {
+      ...context,
       id: crypto.randomUUID(),
-      operationType: context.operationType,
-      method: context.method,
-      path: context.path,
-      queryKey: context.queryKey,
-      tags: context.tags,
+      path: resolvedPath,
       startTime: performance.now(),
       steps: [],
       response: undefined,
@@ -76,10 +72,7 @@ export class DevToolStore implements DevToolStoreInterface {
     return trace;
   }
 
-  endTrace(
-    traceId: string,
-    response?: SpooshResponse<unknown, unknown>
-  ): void {
+  endTrace(traceId: string, response?: SpooshResponse<unknown, unknown>): void {
     const trace = this.activeTraces.get(traceId);
 
     if (!trace) return;
@@ -144,8 +137,8 @@ export class DevToolStore implements DevToolStoreInterface {
 
   recordLifecycle(
     phase: "onMount" | "onUpdate" | "onUnmount",
-    context: TraceContext,
-    prevContext?: TraceContext
+    context: PluginContext,
+    prevContext?: PluginContext
   ): void {
     const trace = this.getCurrentTrace(context.queryKey);
 

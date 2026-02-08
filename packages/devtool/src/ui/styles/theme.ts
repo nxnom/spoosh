@@ -286,6 +286,16 @@ export function getThemeCSS(theme: DevToolTheme): string {
       white-space: nowrap;
     }
 
+    .spoosh-trace-query {
+      color: var(--spoosh-primary);
+      font-size: 11px;
+      opacity: 0.8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 120px;
+    }
+
     .spoosh-trace-time {
       color: var(--spoosh-text-muted);
       font-size: 11px;

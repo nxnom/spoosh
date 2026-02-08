@@ -75,16 +75,14 @@ export function devtool(
         context.request.params as Record<string, string | number> | undefined
       );
 
-      const trace = store.startTrace({
-        operationType: context.operationType,
-        method: context.method,
-        path: resolvedPath,
-        queryKey: context.queryKey,
-        tags: context.tags,
-      });
+      const trace = store.startTrace(context, resolvedPath);
 
       const createPluginTracer = (plugin: string): PluginTracer => {
-        const step = (stage: TraceStage, msg: string, options?: TraceOptions) => {
+        const step = (
+          stage: TraceStage,
+          msg: string,
+          options?: TraceOptions
+        ) => {
           trace.addStep(
             {
               plugin,
@@ -104,7 +102,8 @@ export function devtool(
         };
       };
 
-      (context as unknown as { tracer: PluginContext["tracer"] }).tracer = createPluginTracer;
+      (context as unknown as { tracer: PluginContext["tracer"] }).tracer =
+        createPluginTracer;
 
       const response = await next();
 
@@ -117,10 +116,7 @@ export function devtool(
       if (isDebounced) {
         store.discardTrace(trace.id);
       } else {
-        store.endTrace(
-          trace.id,
-          response as SpooshResponse<unknown, unknown>
-        );
+        store.endTrace(trace.id, response as SpooshResponse<unknown, unknown>);
       }
 
       return response;
@@ -128,43 +124,15 @@ export function devtool(
 
     lifecycle: {
       onMount(context) {
-        store.recordLifecycle("onMount", {
-          operationType: context.operationType,
-          method: context.method,
-          path: context.path,
-          queryKey: context.queryKey,
-          tags: context.tags,
-        });
+        store.recordLifecycle("onMount", context);
       },
 
       onUpdate(context, prevContext) {
-        store.recordLifecycle(
-          "onUpdate",
-          {
-            operationType: context.operationType,
-            method: context.method,
-            path: context.path,
-            queryKey: context.queryKey,
-            tags: context.tags,
-          },
-          {
-            operationType: prevContext.operationType,
-            method: prevContext.method,
-            path: prevContext.path,
-            queryKey: prevContext.queryKey,
-            tags: prevContext.tags,
-          }
-        );
+        store.recordLifecycle("onUpdate", context, prevContext);
       },
 
       onUnmount(context) {
-        store.recordLifecycle("onUnmount", {
-          operationType: context.operationType,
-          method: context.method,
-          path: context.path,
-          queryKey: context.queryKey,
-          tags: context.tags,
-        });
+        store.recordLifecycle("onUnmount", context);
       },
     },
 

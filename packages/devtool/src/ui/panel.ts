@@ -170,17 +170,30 @@ export class DevToolPanel {
     const hasError = !!trace.response?.error;
     const statusClass = isPending ? "pending" : hasError ? "error" : "success";
     const duration = trace.duration?.toFixed(0) ?? "...";
+    const queryParams = this.formatQueryParams(
+      trace.request.query as Record<string, unknown> | undefined
+    );
 
     return `
       <div class="spoosh-trace ${isSelected ? "selected" : ""}" data-trace-id="${trace.id}">
         <div class="spoosh-trace-status ${statusClass}"></div>
         <div class="spoosh-trace-info">
           <span class="spoosh-trace-method method-${trace.method}">${trace.method}</span>
-          <span class="spoosh-trace-path">${trace.path}</span>
+          <span class="spoosh-trace-path">${trace.path}${queryParams ? `<span class="spoosh-trace-query">?${this.escapeHtml(queryParams)}</span>` : ""}</span>
         </div>
         <span class="spoosh-trace-time">${duration}ms</span>
       </div>
     `;
+  }
+
+  private formatQueryParams(query?: Record<string, unknown>): string | null {
+    if (!query) return null;
+
+    const entries = Object.entries(query);
+
+    if (entries.length === 0) return null;
+
+    return entries.map(([k, v]) => `${k}=${v ?? ""}`).join("&");
   }
 
   private renderEmptyDetail(): string {
@@ -281,31 +294,57 @@ export class DevToolPanel {
   }
 
   private renderRequestTab(trace: OperationTrace): string {
-    return `
-      <div class="spoosh-data-section">
-        <div class="spoosh-data-label">Query Key</div>
-        <pre class="spoosh-json">${this.escapeHtml(trace.queryKey)}</pre>
-      </div>
+    const { query, body, params, headers } = trace.request;
 
+    return `
       <div class="spoosh-data-section">
         <div class="spoosh-data-label">Tags</div>
         <pre class="spoosh-json">${this.formatJson(trace.tags)}</pre>
       </div>
 
-      <div class="spoosh-data-section">
-        <div class="spoosh-data-label">Operation Type</div>
-        <pre class="spoosh-json">${trace.operationType}</pre>
-      </div>
+      ${
+        params && Object.keys(params).length > 0
+          ? `
+        <div class="spoosh-data-section">
+          <div class="spoosh-data-label">Params</div>
+          <pre class="spoosh-json">${this.formatJson(params)}</pre>
+        </div>
+      `
+          : ""
+      }
 
-      <div class="spoosh-data-section">
-        <div class="spoosh-data-label">Timing</div>
-        <pre class="spoosh-json">${this.formatJson({
-          started: new Date(trace.startTime).toISOString(),
-          duration: trace.duration
-            ? `${trace.duration.toFixed(2)}ms`
-            : "pending",
-        })}</pre>
-      </div>
+      ${
+        query && Object.keys(query).length > 0
+          ? `
+        <div class="spoosh-data-section">
+          <div class="spoosh-data-label">Query</div>
+          <pre class="spoosh-json">${this.formatJson(query)}</pre>
+        </div>
+      `
+          : ""
+      }
+
+      ${
+        body !== undefined
+          ? `
+        <div class="spoosh-data-section">
+          <div class="spoosh-data-label">Body</div>
+          <pre class="spoosh-json">${this.formatJson(body)}</pre>
+        </div>
+      `
+          : ""
+      }
+
+      ${
+        headers && Object.keys(headers).length > 0
+          ? `
+        <div class="spoosh-data-section">
+          <div class="spoosh-data-label">Headers</div>
+          <pre class="spoosh-json">${this.formatJson(headers)}</pre>
+        </div>
+      `
+          : ""
+      }
     `;
   }
 
@@ -382,7 +421,9 @@ export class DevToolPanel {
       ? `${traceId}:${step.plugin}:${step.timestamp}`
       : `${traceId}:${pluginName}:passed`;
     const isExpanded = this.expandedSteps.has(stepKey);
-    const hasDiff = !!step?.diff;
+    const hasDiff =
+      !!step?.diff &&
+      JSON.stringify(step.diff.before) !== JSON.stringify(step.diff.after);
 
     const colorMap: Record<string, string> = {
       success: "var(--spoosh-success)",
