@@ -7,7 +7,7 @@
     "injects",
     "guides",
     "plugins",
-    "plugin-development",
-    "type-adapters"
+    "type-adapters",
+    "plugin-development"
   ]
 }
