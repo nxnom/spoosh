@@ -1,0 +1,610 @@
+---
+title: Meta Storage
+description: Storing user-facing data for hook results
+---
+
+`setMeta` allows plugins to store custom data that users can access via the `meta` property on hook results. This is for **user-facing data only**, not internal bookkeeping.
+
+## What is Meta?
+
+Meta is additional data that plugins provide to users alongside the main response. Users access it through the `meta` property:
+
+```typescript
+const { data, meta } = useRead((api) => api("users").GET());
+
+// Plugins can store data here
+console.log(meta.transformedData);
+console.log(meta.summary);
+```
+
+<Callout type="info">
+**Meta vs Response Data**
+
+- **Response data** (`data`) - The actual API response
+- **Meta** (`meta`) - Additional plugin-provided data for users
+
+Meta is cleared when the query refetches, just like the response data.
+
+</Callout>
+
+## When to Use setMeta
+
+### ✅ Good Use Cases
+
+**Transformed/Computed Data**
+
+```typescript
+afterResponse(context, response) {
+  if (response.data) {
+    const summary = {
+      total: response.data.length,
+      categories: groupByCategory(response.data),
+      hasMore: response.data.length >= 100,
+    };
+
+    context.stateManager.setMeta(context.queryKey, {
+      summary,
+    });
+  }
+}
+```
+
+**Usage:**
+
+```typescript
+const { data, meta } = useRead((api) => api("products").GET());
+
+console.log(data); // Original products array
+console.log(meta.summary); // { total: 50, categories: {...}, hasMore: false }
+```
+
+**Processed Results**
+
+```typescript
+afterResponse(context, response) {
+  if (response.data) {
+    const processed = expensiveComputation(response.data);
+
+    context.stateManager.setMeta(context.queryKey, {
+      processedData: processed,
+    });
+  }
+}
+```
+
+**Usage:**
+
+```typescript
+const { data, meta } = useRead((api) => api("items").GET());
+
+// Use original data for display
+<List items={data} />
+
+// Use processed data for calculations
+const result = calculate(meta.processedData);
+```
+
+**Validation Results**
+
+```typescript
+afterResponse(context, response) {
+  if (response.data) {
+    const validation = validateData(response.data);
+
+    context.stateManager.setMeta(context.queryKey, {
+      isValid: validation.isValid,
+      errors: validation.errors,
+      warnings: validation.warnings,
+    });
+  }
+}
+```
+
+**Usage:**
+
+```typescript
+const { data, meta } = useRead((api) => api("form").GET());
+
+if (!meta.isValid) {
+  console.error("Validation errors:", meta.errors);
+}
+```
+
+**Pagination Metadata**
+
+```typescript
+afterResponse(context, response) {
+  const linkHeader = response.headers?.get?.("Link");
+
+  if (linkHeader) {
+    const pagination = parseLinkHeader(linkHeader);
+
+    context.stateManager.setMeta(context.queryKey, {
+      hasNextPage: !!pagination.next,
+      hasPrevPage: !!pagination.prev,
+      nextUrl: pagination.next,
+      prevUrl: pagination.prev,
+    });
+  }
+}
+```
+
+**Usage:**
+
+```typescript
+const { data, meta } = useRead((api) => api("posts").GET());
+
+<div>
+  <Posts items={data} />
+  {meta.hasNextPage && <button>Load More</button>}
+</div>
+```
+
+### ❌ Bad Use Cases
+
+**Don't use for internal tracking**
+
+```typescript
+// ❌ Wrong - Users don't need this
+afterResponse(context, response) {
+  context.stateManager.setMeta(context.queryKey, {
+    lastFetchedAt: Date.now(),      // Internal
+    requestDuration: 123,            // Internal
+    fromCache: false,                // Internal
+  });
+}
+```
+
+**Don't use for plugin-to-plugin communication**
+
+```typescript
+// ❌ Wrong - Use exports or context.temp
+afterResponse(context, response) {
+  context.stateManager.setMeta(context.queryKey, {
+    shouldRetry: true,  // Other plugins need this, not users
+  });
+}
+
+// ✅ Right - Use exports
+exports(context) {
+  return {
+    enableRetry() {
+      context.temp.set("retry:enabled", true);
+    },
+  };
+}
+```
+
+**Don't use for response modification**
+
+```typescript
+// ❌ Wrong - Just return modified response
+afterResponse(context, response) {
+  context.stateManager.setMeta(context.queryKey, {
+    data: { ...response.data, extra: "field" },
+  });
+}
+
+// ✅ Right - Return modified response
+afterResponse(context, response) {
+  if (response.data) {
+    return {
+      ...response,
+      data: { ...response.data, extra: "field" },
+    };
+  }
+}
+```
+
+## Real-World Example: Transform Plugin
+
+The official transform plugin uses `setMeta` to store transformed data:
+
+```typescript
+function transformPlugin(): SpooshPlugin {
+  return {
+    name: "spoosh:transform",
+    operations: ["read", "write"],
+
+    afterResponse: async (context, response) => {
+      const pluginOptions = context.pluginOptions as TransformOptions;
+      const transformer = pluginOptions?.transform;
+
+      if (!transformer || response.data === undefined) {
+        return;
+      }
+
+      const transformedData = await transformer(response.data);
+
+      context.stateManager.setMeta(context.queryKey, {
+        transformedData,
+      });
+    },
+  };
+}
+```
+
+**Usage:**
+
+```typescript
+const { data, meta } = useRead((api) => api("posts").GET(), {
+  transform: (posts) => ({
+    total: posts.length,
+    titles: posts.map((p) => p.title),
+  }),
+});
+
+console.log(data); // Original posts array
+console.log(meta.transformedData); // { total: 10, titles: [...] }
+```
+
+## TypeScript Support
+
+To make meta type-safe, you need to:
+
+1. **Define your meta interface**
+2. **Pass it as a generic to `SpooshPlugin`**
+3. **Export the types** so users can import them
+
+### Step 1: Define Types
+
+```typescript
+// types.ts
+export interface SummaryMeta {
+  summary: {
+    total: number;
+    categories: Record<string, number>;
+  };
+}
+
+// Define result type that includes meta
+export interface SummaryReadResult {
+  meta: SummaryMeta;
+}
+```
+
+### Step 2: Use Types in Plugin
+
+```typescript
+// plugin.ts
+import type { SpooshPlugin } from "@spoosh/core";
+import type { SummaryReadResult } from "./types";
+
+export function summaryPlugin(): SpooshPlugin<{
+  readResult: SummaryReadResult;
+}> {
+  return {
+    name: "my-app:summary",
+    operations: ["read"],
+
+    afterResponse(context, response) {
+      if (response.data) {
+        context.stateManager.setMeta(context.queryKey, {
+          summary: {
+            total: response.data.length,
+            categories: groupByCategory(response.data),
+          },
+        });
+      }
+    },
+  };
+}
+```
+
+### Step 3: TypeScript Knows the Types
+
+```typescript
+const spoosh = new Spoosh("/api").use([summaryPlugin()]);
+const { useRead } = create(spoosh);
+
+const { data, meta } = useRead((api) => api("items").GET());
+
+// TypeScript knows meta.summary exists!
+console.log(meta.summary.total); // ✅ Type-safe
+console.log(meta.summary.categories); // ✅ Type-safe
+```
+
+### Real Example: Transform Plugin
+
+The official transform plugin shows this pattern:
+
+```typescript
+// types.ts
+export interface TransformWriteResult {
+  meta: {
+    transformedData?: unknown;
+  };
+}
+
+// plugin.ts
+export function transformPlugin(): SpooshPlugin<{
+  readOptions: TransformReadOptions;
+  writeOptions: TransformWriteOptions;
+  readResult: TransformReadResult;
+  writeResult: TransformWriteResult; // ← Meta types here
+}> {
+  return {
+    name: "spoosh:transform",
+    operations: ["read", "write"],
+
+    afterResponse: async (context, response) => {
+      // Implementation...
+      context.stateManager.setMeta(context.queryKey, {
+        transformedData,
+      });
+    },
+  };
+}
+```
+
+### Complete Plugin Type Structure
+
+```typescript
+export function myPlugin(): SpooshPlugin<{
+  // Per-request options users can pass
+  readOptions: MyReadOptions;
+  writeOptions: MyWriteOptions;
+  infiniteReadOptions: MyInfiniteReadOptions;
+
+  // What gets added to hook results
+  readResult: MyReadResult; // Includes meta
+  writeResult: MyWriteResult; // Includes meta
+  infiniteReadResult: MyInfiniteReadResult;
+
+  // What gets added to create() return
+  instanceApi: MyInstanceApi;
+}> {
+  // Plugin implementation
+}
+```
+
+## Common Patterns
+
+### Pattern: Store Both Original and Processed
+
+```typescript
+afterResponse(context, response) {
+  if (response.data) {
+    const normalized = normalizeData(response.data);
+    const indexed = createIndex(normalized);
+
+    context.stateManager.setMeta(context.queryKey, {
+      normalized,  // For rendering
+      indexed,     // For lookups
+    });
+  }
+}
+```
+
+**Usage:**
+
+```typescript
+const { data, meta } = useRead((api) => api("users").GET());
+
+// Original data for raw access
+const rawUsers = data;
+
+// Normalized data for rendering
+<UserList users={meta.normalized} />
+
+// Indexed data for fast lookups
+const user = meta.indexed[userId];
+```
+
+### Pattern: Incremental Computation
+
+```typescript
+afterResponse(context, response) {
+  if (response.data) {
+    const existing = context.stateManager.getMeta(context.queryKey);
+    const previousCount = existing?.totalProcessed ?? 0;
+
+    const newlyProcessed = processNewItems(response.data);
+
+    context.stateManager.setMeta(context.queryKey, {
+      totalProcessed: previousCount + newlyProcessed.length,
+      lastProcessedAt: Date.now(),
+    });
+  }
+}
+```
+
+### Pattern: Enrichment
+
+```typescript
+afterResponse(context, response) {
+  if (response.data) {
+    const enriched = {
+      sentiment: analyzeSentiment(response.data),
+      readingTime: calculateReadingTime(response.data),
+      complexity: calculateComplexity(response.data),
+    };
+
+    context.stateManager.setMeta(context.queryKey, {
+      analysis: enriched,
+    });
+  }
+}
+```
+
+**Usage:**
+
+```typescript
+const { data, meta } = useRead((api) => api("article/:id").GET({ params: { id } }));
+
+<Article content={data} />
+<Sidebar>
+  <p>Reading time: {meta.analysis.readingTime} min</p>
+  <p>Sentiment: {meta.analysis.sentiment}</p>
+</Sidebar>
+```
+
+## Accessing Meta
+
+### In React
+
+```typescript
+const { data, meta } = useRead((api) => api("users").GET());
+
+console.log(meta.transformedData);
+console.log(meta.summary);
+```
+
+### In Angular
+
+```typescript
+users = injectRead(() => this.api("users").GET());
+
+// Access in template
+{
+  {
+    users.meta()?.transformedData;
+  }
+}
+{
+  {
+    users.meta()?.summary;
+  }
+}
+
+// Access in component
+const meta = this.users.meta();
+console.log(meta?.transformedData);
+```
+
+## Best Practices
+
+### 1. Only Store User-Facing Data
+
+```typescript
+// ✅ Good - Users need this
+context.stateManager.setMeta(context.queryKey, {
+  formattedData: formatForDisplay(response.data),
+});
+
+// ❌ Bad - Internal tracking
+context.stateManager.setMeta(context.queryKey, {
+  _internalFlag: true,
+  _lastFetch: Date.now(),
+});
+```
+
+### 2. Keep Meta Small
+
+```typescript
+// ✅ Good - Minimal metadata
+context.stateManager.setMeta(context.queryKey, {
+  count: response.data.length,
+  hasMore: response.data.length >= 100,
+});
+
+// ❌ Bad - Duplicating large data
+context.stateManager.setMeta(context.queryKey, {
+  entireDataset: response.data, // Already in response.data!
+  duplicatedData: [...response.data],
+});
+```
+
+### 3. Make It Optional
+
+```typescript
+// ✅ Good - Meta can be undefined
+const { data, meta } = useRead((api) => api("users").GET());
+
+if (meta?.summary) {
+  console.log(meta.summary);
+}
+
+// ❌ Bad - Assuming meta exists
+const count = meta.summary.total; // Might crash!
+```
+
+### 4. Document What You Store
+
+```typescript
+/**
+ * Stores summary metadata for product lists
+ *
+ * @meta summary.total - Total number of products
+ * @meta summary.categories - Products grouped by category
+ * @meta summary.hasMore - Whether more products are available
+ */
+function summaryPlugin(): SpooshPlugin {
+  // ...
+}
+```
+
+## setMeta vs Returning Modified Response
+
+| Approach                     | Use When                                     |
+| ---------------------------- | -------------------------------------------- |
+| **Return modified response** | Modifying the main response data             |
+| **setMeta**                  | Adding supplementary data alongside response |
+
+**Return modified response:**
+
+```typescript
+afterResponse(context, response) {
+  if (response.data) {
+    return {
+      ...response,
+      data: {
+        ...response.data,
+        _timestamp: Date.now(),
+      },
+    };
+  }
+}
+```
+
+**setMeta:**
+
+```typescript
+afterResponse(context, response) {
+  if (response.data) {
+    context.stateManager.setMeta(context.queryKey, {
+      timestamp: Date.now(),
+    });
+  }
+}
+```
+
+**Use setMeta when:**
+
+- Data is supplementary, not part of the response
+- Users might not always need it
+- It's computed/derived data
+- You want to keep response data clean
+
+**Return modified response when:**
+
+- Modifying existing fields
+- Adding fields to the response object
+- Normalizing response structure
+
+## Summary
+
+**Use `setMeta` for:**
+
+- ✅ Transformed/computed data users access
+- ✅ Validation results
+- ✅ Pagination metadata
+- ✅ Analysis/enrichment data
+- ✅ Supplementary information
+
+**Don't use `setMeta` for:**
+
+- ❌ Internal tracking
+- ❌ Plugin-to-plugin communication (use `exports` or `context.temp`)
+- ❌ Response modification (return modified response instead)
+
+**Key points:**
+
+- Meta is user-facing data only
+- Users access via `meta` property on hooks
+- Cleared on refetch (like response data)
+- Keep it small and optional
+
+For more on afterResponse, see [After Response](/docs/react/plugin-development/advanced/after-response).
+
+For plugin-to-plugin communication, see [Plugin Communication](/docs/react/plugin-development/advanced/architecture#plugin-communication).
