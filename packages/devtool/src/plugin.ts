@@ -182,14 +182,16 @@ export function devtool(
       });
 
       return {
-        getHistory: () => store.getTraces(),
-        clearHistory: () => store.clear(),
-        setEnabled: (value: boolean) => globalPanel?.setVisible(value),
-        setTheme: (newTheme: "light" | "dark" | DevToolTheme) =>
-          globalPanel?.setTheme(newTheme),
-        open: () => globalPanel?.open(),
-        close: () => globalPanel?.close(),
-        toggle: () => globalPanel?.toggle(),
+        devtool: {
+          getHistory: () => store.getTraces(),
+          clearHistory: () => store.clear(),
+          setEnabled: (value: boolean) => globalPanel?.setVisible(value),
+          setTheme: (newTheme: "light" | "dark" | DevToolTheme) =>
+            globalPanel?.setTheme(newTheme),
+          open: () => globalPanel?.open(),
+          close: () => globalPanel?.close(),
+          toggle: () => globalPanel?.toggle(),
+        },
       };
     },
   };

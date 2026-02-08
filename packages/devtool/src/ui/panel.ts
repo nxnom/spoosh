@@ -33,6 +33,8 @@ interface DevToolPanelOptions {
 type DetailTab = "data" | "request" | "plugins";
 
 export class DevToolPanel {
+  private shadowHost: HTMLDivElement | null = null;
+  private shadowRoot: ShadowRoot | null = null;
   private fab: HTMLButtonElement | null = null;
   private sidebar: HTMLDivElement | null = null;
   private resizeHandle: HTMLDivElement | null = null;
@@ -69,19 +71,25 @@ export class DevToolPanel {
   mount(): void {
     if (typeof document === "undefined") return;
 
-    injectStyles(getThemeCSS(this.theme));
+    this.shadowHost = document.createElement("div");
+    this.shadowHost.id = "spoosh-devtool-host";
+    document.body.appendChild(this.shadowHost);
+
+    this.shadowRoot = this.shadowHost.attachShadow({ mode: "closed" });
+
+    injectStyles(getThemeCSS(this.theme), this.shadowRoot);
 
     this.fab = document.createElement("button");
     this.fab.id = "spoosh-devtool-fab";
     this.fab.className = this.position;
     this.fab.innerHTML = "⚡";
     this.fab.onclick = () => this.toggle();
-    document.body.appendChild(this.fab);
+    this.shadowRoot.appendChild(this.fab);
 
     this.sidebar = document.createElement("div");
     this.sidebar.id = "spoosh-devtool-sidebar";
     this.sidebar.style.width = `${this.sidebarWidth}px`;
-    document.body.appendChild(this.sidebar);
+    this.shadowRoot.appendChild(this.sidebar);
 
     this.unsubscribe = this.store.subscribe(() => {
       const newCount = this.store.getTraces().length;
@@ -857,7 +865,10 @@ export class DevToolPanel {
 
   setTheme(theme: "light" | "dark" | DevToolTheme): void {
     this.theme = resolveTheme(theme);
-    injectStyles(getThemeCSS(this.theme));
+
+    if (this.shadowRoot) {
+      injectStyles(getThemeCSS(this.theme), this.shadowRoot);
+    }
   }
 
   unmount(): void {
@@ -869,8 +880,9 @@ export class DevToolPanel {
     document.removeEventListener("mousemove", this.boundHandleMouseMove);
     document.removeEventListener("mouseup", this.boundHandleMouseUp);
 
-    this.fab?.remove();
-    this.sidebar?.remove();
+    this.shadowHost?.remove();
+    this.shadowHost = null;
+    this.shadowRoot = null;
     this.fab = null;
     this.sidebar = null;
     this.resizeHandle = null;

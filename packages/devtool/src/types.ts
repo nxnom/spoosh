@@ -87,7 +87,7 @@ export interface DevToolFilters {
   showOnlyWithChanges: boolean;
 }
 
-export interface DevToolInstanceApi {
+export interface DevToolApi {
   getHistory(): OperationTrace[];
   clearHistory(): void;
   setEnabled(value: boolean): void;
@@ -95,6 +95,10 @@ export interface DevToolInstanceApi {
   open(): void;
   close(): void;
   toggle(): void;
+}
+
+export interface DevToolInstanceApi {
+  devtool: DevToolApi;
 }
 
 export interface DevToolPanelOptions {

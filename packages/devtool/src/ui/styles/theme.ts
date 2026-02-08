@@ -44,7 +44,7 @@ export function resolveTheme(
 
 export function getThemeCSS(theme: DevToolTheme): string {
   return `
-    :root {
+    :host {
       --spoosh-bg: ${theme.colors.background};
       --spoosh-surface: ${theme.colors.surface};
       --spoosh-text: ${theme.colors.text};
