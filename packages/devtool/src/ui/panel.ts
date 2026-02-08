@@ -573,11 +573,49 @@ export class DevToolPanel {
     if (data === null) return '<span class="spoosh-syn-null">null</span>';
 
     try {
-      const json = JSON.stringify(data, null, 2);
+      const json = JSON.stringify(data, this.jsonReplacer, 2);
       return this.highlightJson(json);
     } catch {
       return this.escapeHtml(String(data));
     }
+  }
+
+  private jsonReplacer = (_key: string, value: unknown): unknown => {
+    if (value instanceof File) {
+      return `[File: ${value.name} (${this.formatBytes(value.size)}, ${value.type || "unknown type"})]`;
+    }
+
+    if (value instanceof Blob) {
+      return `[Blob: ${this.formatBytes(value.size)}, ${value.type || "unknown type"}]`;
+    }
+
+    if (value instanceof FormData) {
+      const entries: Record<string, string> = {};
+      value.forEach((v, k) => {
+        if (v instanceof File) {
+          entries[k] = `[File: ${v.name}]`;
+        } else {
+          entries[k] = String(v);
+        }
+      });
+      return { "[FormData]": entries };
+    }
+
+    if (value instanceof ArrayBuffer) {
+      return `[ArrayBuffer: ${this.formatBytes(value.byteLength)}]`;
+    }
+
+    if (typeof value === "function") {
+      return `[Function: ${value.name || "anonymous"}]`;
+    }
+
+    return value;
+  };
+
+  private formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   private highlightJson(json: string): string {
