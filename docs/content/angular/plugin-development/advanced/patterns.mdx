@@ -1,0 +1,319 @@
+---
+title: Middleware Patterns
+description: Advanced middleware patterns for intercepting and transforming requests
+---
+
+Middleware is the most powerful plugin feature. It wraps the request/response flow, giving you full control to intercept, modify, retry, or short-circuit requests.
+
+## The Onion Model
+
+Middleware creates an "onion" where each layer wraps the next:
+
+```
+┌─────────────────────────────────────┐
+│ Plugin A: Start                     │
+│  ┌───────────────────────────────┐  │
+│  │ Plugin B: Start               │  │
+│  │  ┌─────────────────────────┐  │  │
+│  │  │ Plugin C: Start         │  │  │
+│  │  │  ┌───────────────────┐  │  │  │
+│  │  │  │  ACTUAL FETCH     │  │  │  │
+│  │  │  └───────────────────┘  │  │  │
+│  │  │ Plugin C: End           │  │  │
+│  │  └─────────────────────────┘  │  │
+│  │ Plugin B: End                 │  │
+│  └───────────────────────────────┘  │
+│ Plugin A: End                       │
+└─────────────────────────────────────┘
+```
+
+## Pattern: Early Return
+
+Return a response without calling `next()` to skip the actual fetch.
+
+### When to Use
+
+- **Cache** - Return cached data if available and fresh
+- **Throttle** - Block rapid repeated requests
+- **Validation** - Reject invalid requests before sending
+
+### Example: Cache Plugin
+
+```typescript
+middleware: async (context, next) => {
+  if (!context.forceRefetch) {
+    const cached = context.stateManager.getCache(context.queryKey);
+
+    if (cached?.state.data && !cached.stale) {
+      const pluginOptions = context.pluginOptions as
+        | CacheReadOptions
+        | undefined;
+      const staleTime = pluginOptions?.staleTime ?? defaultStaleTime;
+      const isTimeStale = Date.now() - cached.state.timestamp > staleTime;
+
+      if (!isTimeStale) {
+        return { data: cached.state.data, status: 200 };
+      }
+    }
+  }
+
+  return await next();
+};
+```
+
+**How it works:**
+
+1. Check if forceRefetch is enabled
+2. Get cached entry from stateManager
+3. Check if cached data exists and is fresh
+4. If fresh, return cached data **without calling next()**
+5. Otherwise, call next() to fetch
+
+## Pattern: Wrapping (Transform)
+
+Wrap `next()` to measure, log, or modify the result.
+
+### When to Use
+
+- **Timing** - Measure request duration
+- **Logging** - Log requests and responses
+- **Analytics** - Track API usage
+- **Error tracking** - Report errors to monitoring service
+
+### Example: Request Timer
+
+```typescript
+middleware: async (context, next) => {
+  const start = Date.now();
+  const response = await next();
+  const duration = Date.now() - start;
+
+  console.log(`${context.method} /${context.path} - ${duration}ms`);
+
+  return response;
+};
+```
+
+### Transform Responses
+
+```typescript
+middleware: async (context, next) => {
+  const response = await next();
+
+  if (!response.error && response.data) {
+    return {
+      ...response,
+      data: {
+        ...response.data,
+        timestamp: Date.now(),
+      },
+    };
+  }
+
+  return response;
+};
+```
+
+## Pattern: Retry Loop
+
+Call `next()` multiple times to retry on failure.
+
+### When to Use
+
+- **Network errors** - Retry transient failures
+- **Rate limiting** - Retry after delay
+- **Server errors** - Retry 500/503 responses
+
+### Example: Custom Retry Logic
+
+```typescript
+middleware: async (context, next) => {
+  const maxRetries = 3;
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    const response = await next();
+
+    if (!response.error || response.status === 404) {
+      return response;
+    }
+
+    attempt++;
+
+    if (attempt < maxRetries) {
+      const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    } else {
+      return response;
+    }
+  }
+
+  return next();
+};
+```
+
+**How it works:**
+
+1. Try the request
+2. If success or client error (404), return immediately
+3. If server error, wait with exponential backoff
+4. Retry up to maxRetries times
+
+## Pattern: Pass-Through (Context Modification)
+
+Modify the request context, then pass through to `next()`.
+
+### When to Use
+
+- **Headers** - Add authentication, content-type, custom headers
+- **Query params** - Transform or encode query parameters
+- **Request options** - Set timeout, retries, signal
+
+### Example: Authentication Plugin
+
+```typescript
+function authPlugin(getToken: () => string): SpooshPlugin {
+  return {
+    name: "my-app:auth",
+    operations: ["read", "write", "infiniteRead"],
+
+    middleware: async (context, next) => {
+      const token = getToken();
+
+      context.request.headers = {
+        ...context.request.headers,
+        Authorization: `Bearer ${token}`,
+      };
+
+      return next();
+    },
+  };
+}
+```
+
+### Example: Query String Encoding
+
+```typescript
+middleware: async (context, next) => {
+  const query = context.request.query;
+
+  if (query && Object.keys(query).length > 0) {
+    const encoded = encodeQueryParams(query);
+
+    context.request.query = encoded;
+  }
+
+  return next();
+};
+```
+
+## afterResponse vs middleware
+
+`middleware` controls whether and how a request runs.
+
+`afterResponse` observes or transforms after a response exists.
+
+**Key difference:** `afterResponse` always runs, even if middleware returns early from cache.
+
+| Feature                 | middleware                                 | afterResponse                        |
+| ----------------------- | ------------------------------------------ | ------------------------------------ |
+| **Can prevent request** | ✅ Yes (return early without calling next) | ❌ No (response already exists)      |
+| **Always runs**         | ❌ No (skipped if earlier plugin returns)  | ✅ Yes (runs even if cache returned) |
+| **Can modify response** | ✅ Yes                                     | ✅ Yes                               |
+| **Best for**            | Cache, retry                               | Logging, analytics, adding metadata  |
+
+**Use `afterResponse` for logging, analytics, and cache bookkeeping.**
+
+For full details and patterns, see [After Response](/docs/angular/plugin-development/advanced/after-response).
+
+## Combining Patterns
+
+You can combine multiple patterns in one plugin:
+
+```typescript
+function analyticsPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:analytics",
+    operations: ["read", "write", "infiniteRead"],
+
+    middleware: async (context, next) => {
+      context.request.headers["X-Request-ID"] = generateId();
+
+      const start = Date.now();
+      const response = await next();
+      const duration = Date.now() - start;
+
+      context.temp.set("analytics:duration", duration);
+
+      return response;
+    },
+
+    afterResponse(context, response) {
+      const duration = context.temp.get("analytics:duration") as number;
+
+      trackEvent("api_request", {
+        path: context.path,
+        method: context.method,
+        status: response.status,
+        duration,
+        success: !response.error,
+      });
+    },
+  };
+}
+```
+
+## Best Practices
+
+### Check for Errors in Response
+
+```typescript
+middleware: async (context, next) => {
+  const response = await next();
+
+  if (response.error) {
+    console.error("Request failed:", response.error);
+  }
+
+  return response;
+};
+```
+
+### Use Type Guards
+
+```typescript
+middleware: async (context, next) => {
+  const pluginOptions = context.pluginOptions as MyPluginOptions | undefined;
+
+  if (pluginOptions?.enabled === false) {
+    return next();
+  }
+
+  // ... plugin logic
+};
+```
+
+### Preserve Existing Context
+
+```typescript
+middleware: async (context, next) => {
+  context.request = {
+    ...context.request,
+    headers: {
+      ...context.request.headers,
+      "X-Custom": "value",
+    },
+  };
+
+  return next();
+};
+```
+
+### Namespace Temp Data
+
+```typescript
+middleware: async (context, next) => {
+  context.temp.set("my-plugin:data", value);
+  return next();
+};
+```
