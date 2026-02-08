@@ -45,6 +45,7 @@ export class DevToolPanel {
   private position: string;
   private showFloatingIcon: boolean;
   private isOpen = false;
+  private showSettings = false;
   private selectedTraceId: string | null = null;
   private activeTab: DetailTab = "data";
   private expandedSteps = new Set<string>();
@@ -70,6 +71,33 @@ export class DevToolPanel {
     this.showFloatingIcon = options.showFloatingIcon;
     this.boundHandleMouseMove = this.handleMouseMove.bind(this);
     this.boundHandleMouseUp = this.handleMouseUp.bind(this);
+    this.loadSettings();
+  }
+
+  private loadSettings(): void {
+    try {
+      const saved = localStorage.getItem("spoosh-devtool-settings");
+
+      if (saved) {
+        const settings = JSON.parse(saved);
+        this.showPassedPlugins = settings.showPassedPlugins ?? false;
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }
+
+  private saveSettings(): void {
+    try {
+      localStorage.setItem(
+        "spoosh-devtool-settings",
+        JSON.stringify({
+          showPassedPlugins: this.showPassedPlugins,
+        })
+      );
+    } catch {
+      // Ignore localStorage errors
+    }
   }
 
   mount(): void {
@@ -195,6 +223,12 @@ export class DevToolPanel {
           <span>Spoosh</span>
         </div>
         <div class="spoosh-actions">
+          <button class="spoosh-icon-btn ${this.showSettings ? "active" : ""}" data-action="settings" title="Settings">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
           <button class="spoosh-icon-btn" data-action="clear" title="Clear">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
@@ -313,6 +347,10 @@ export class DevToolPanel {
   }
 
   private renderEmptyDetail(): string {
+    if (this.showSettings) {
+      return this.renderSettings();
+    }
+
     return `
       <div class="spoosh-detail-panel">
         <div class="spoosh-detail-empty">
@@ -323,7 +361,31 @@ export class DevToolPanel {
     `;
   }
 
+  private renderSettings(): string {
+    return `
+      <div class="spoosh-detail-panel">
+        <div class="spoosh-settings-header">
+          <span class="spoosh-settings-title">Settings</span>
+        </div>
+        <div class="spoosh-settings-content">
+          <div class="spoosh-settings-section">
+            <div class="spoosh-settings-section-title">Display</div>
+            <label class="spoosh-settings-toggle">
+              <input type="checkbox" data-setting="showPassedPlugins" ${this.showPassedPlugins ? "checked" : ""} />
+              <span class="spoosh-toggle-slider"></span>
+              <span class="spoosh-settings-label">Show passed plugins in timeline</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   private renderDetailPanel(trace: OperationTrace): string {
+    if (this.showSettings) {
+      return this.renderSettings();
+    }
+
     const isPending = trace.duration === undefined;
     const hasError = !!trace.response?.error;
     const statusClass = isPending ? "pending" : hasError ? "error" : "success";
@@ -714,6 +776,9 @@ export class DevToolPanel {
 
       if (action === "close") {
         this.close();
+      } else if (action === "settings") {
+        this.showSettings = !this.showSettings;
+        this.render();
       } else if (action === "clear") {
         this.store.clear();
         this.selectedTraceId = null;
@@ -759,6 +824,17 @@ export class DevToolPanel {
         }
 
         this.store.setFilter("operationTypes", newTypes);
+        this.render();
+      }
+    };
+
+    this.sidebar.onchange = (e) => {
+      const target = e.target as HTMLInputElement;
+      const setting = target.getAttribute("data-setting");
+
+      if (setting === "showPassedPlugins") {
+        this.showPassedPlugins = target.checked;
+        this.saveSettings();
         this.render();
       }
     };

@@ -1016,5 +1016,94 @@ export function getThemeCSS(theme: DevToolTheme): string {
       width: 12px;
       user-select: none;
     }
+
+    .spoosh-icon-btn.active {
+      background: var(--spoosh-primary);
+      color: white;
+    }
+
+    .spoosh-icon-btn.active:hover {
+      background: var(--spoosh-primary);
+      color: white;
+    }
+
+    .spoosh-settings-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--spoosh-border);
+      background: var(--spoosh-surface);
+    }
+
+    .spoosh-settings-title {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .spoosh-settings-content {
+      padding: 16px;
+    }
+
+    .spoosh-settings-section {
+      margin-bottom: 20px;
+    }
+
+    .spoosh-settings-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .spoosh-settings-section-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--spoosh-text-muted);
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .spoosh-settings-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      padding: 8px 0;
+    }
+
+    .spoosh-settings-toggle input {
+      display: none;
+    }
+
+    .spoosh-toggle-slider {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      background: var(--spoosh-border);
+      border-radius: 10px;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    .spoosh-toggle-slider::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .spoosh-settings-toggle input:checked + .spoosh-toggle-slider {
+      background: var(--spoosh-primary);
+    }
+
+    .spoosh-settings-toggle input:checked + .spoosh-toggle-slider::after {
+      transform: translateX(16px);
+    }
+
+    .spoosh-settings-label {
+      font-size: 12px;
+      color: var(--spoosh-text);
+    }
   `;
 }
