@@ -174,9 +174,12 @@ async function executeCoreFetch<TData, TError>(
       };
     }
 
+    const error =
+      result.data !== undefined && result.data !== "" ? result.data : {};
+
     return {
       status: result.status,
-      error: result.data as TError,
+      error: error as TError,
       headers: result.headers,
       data: undefined,
       ...inputFields,
