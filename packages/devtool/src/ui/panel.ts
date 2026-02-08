@@ -371,25 +371,31 @@ export class DevToolPanel {
       return `<div class="spoosh-empty-tab">No plugin events recorded</div>`;
     }
 
-    const stepsByPlugin = new Map<string, PluginStepEvent>();
+    const stepsByPlugin = new Map<string, PluginStepEvent[]>();
 
     for (const step of trace.steps) {
-      stepsByPlugin.set(step.plugin, step);
+      const existing = stepsByPlugin.get(step.plugin) || [];
+      existing.push(step);
+      stepsByPlugin.set(step.plugin, existing);
     }
 
     const allPlugins =
       knownPlugins.length > 0 ? knownPlugins : trace.steps.map((s) => s.plugin);
 
+    const uniquePlugins = [...new Set(allPlugins)];
+
     const isPassedPlugin = (name: string): boolean => {
-      const step = stepsByPlugin.get(name);
-      return !step || step.stage === "skip";
+      const steps = stepsByPlugin.get(name);
+      return !steps || steps.every((s) => s.stage === "skip");
     };
 
-    const activePlugins = allPlugins.filter((name) => !isPassedPlugin(name));
-    const passedPlugins = allPlugins.filter((name) => isPassedPlugin(name));
+    const activePlugins = uniquePlugins.filter((name) => !isPassedPlugin(name));
+    const passedPlugins = uniquePlugins.filter((name) => isPassedPlugin(name));
     const passedCount = passedPlugins.length;
 
-    const pluginsToShow = this.showPassedPlugins ? allPlugins : activePlugins;
+    const pluginsToShow = this.showPassedPlugins
+      ? uniquePlugins
+      : activePlugins;
 
     if (pluginsToShow.length === 0 && !this.showPassedPlugins) {
       return `
@@ -417,29 +423,44 @@ export class DevToolPanel {
       <div class="spoosh-plugins-list">
         ${pluginsToShow
           .map((pluginName) => {
-            const step = stepsByPlugin.get(pluginName);
+            const steps = stepsByPlugin.get(pluginName) || [];
             const isPassed = isPassedPlugin(pluginName);
-            return this.renderPluginStep(trace.id, pluginName, step, isPassed);
+            return this.renderPluginSteps(
+              trace.id,
+              pluginName,
+              steps,
+              isPassed
+            );
           })
           .join("")}
       </div>
     `;
   }
 
-  private renderPluginStep(
+  private renderPluginSteps(
     traceId: string,
     pluginName: string,
-    step: PluginStepEvent | undefined,
+    steps: PluginStepEvent[],
     isPassed: boolean
   ): string {
-    const hasNoStep = !step;
-    const stepKey = step
-      ? `${traceId}:${step.plugin}:${step.timestamp}`
-      : `${traceId}:${pluginName}:passed`;
+    const displayName = pluginName.replace("spoosh:", "");
+
+    if (steps.length === 0) {
+      return `
+        <div class="spoosh-plugin-item passed">
+          <div class="spoosh-plugin-header">
+            <div class="spoosh-plugin-status" style="background: var(--spoosh-border)"></div>
+            <div class="spoosh-plugin-info">
+              <span class="spoosh-plugin-name">${displayName}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const lastStep = steps[steps.length - 1]!;
+    const stepKey = `${traceId}:${pluginName}`;
     const isExpanded = this.expandedSteps.has(stepKey);
-    const hasDiff =
-      !!step?.diff &&
-      JSON.stringify(step.diff.before) !== JSON.stringify(step.diff.after);
 
     const colorMap: Record<string, string> = {
       success: "var(--spoosh-success)",
@@ -455,39 +476,88 @@ export class DevToolPanel {
       skip: "var(--spoosh-text-muted)",
     };
 
-    const dotColor = hasNoStep
-      ? "var(--spoosh-border)"
-      : step?.color
-        ? colorMap[step.color]
-        : stageColors[step?.stage || "log"] || "var(--spoosh-text-muted)";
+    const dotColor = lastStep.color
+      ? colorMap[lastStep.color]
+      : stageColors[lastStep.stage] || "var(--spoosh-text-muted)";
 
-    const displayName = pluginName.replace("spoosh:", "");
-
-    if (hasNoStep) {
-      return `
-        <div class="spoosh-plugin-item passed">
-          <div class="spoosh-plugin-header">
-            <div class="spoosh-plugin-status" style="background: ${dotColor}"></div>
-            <div class="spoosh-plugin-info">
-              <span class="spoosh-plugin-name">${displayName}</span>
-            </div>
-          </div>
-        </div>
-      `;
-    }
+    const hasMultipleSteps = steps.length > 1;
+    const singleStepDiff =
+      steps.length === 1 &&
+      lastStep.diff &&
+      JSON.stringify(lastStep.diff.before) !==
+        JSON.stringify(lastStep.diff.after)
+        ? lastStep.diff
+        : null;
+    const hasDiff = steps.some(
+      (s) =>
+        s.diff && JSON.stringify(s.diff.before) !== JSON.stringify(s.diff.after)
+    );
+    const canExpand = hasMultipleSteps || hasDiff;
 
     return `
       <div class="spoosh-plugin-item ${isPassed ? "passed" : ""} ${isExpanded ? "expanded" : ""}" data-step-key="${stepKey}">
-        <div class="spoosh-plugin-header" ${hasDiff ? 'data-action="toggle-step"' : ""}>
+        <div class="spoosh-plugin-header" ${canExpand ? 'data-action="toggle-step"' : ""}>
           <div class="spoosh-plugin-status" style="background: ${dotColor}"></div>
           <div class="spoosh-plugin-info">
             <span class="spoosh-plugin-name">${displayName}</span>
-            <span class="spoosh-plugin-stage">${step.stage}</span>
+            <span class="spoosh-plugin-stage">${lastStep.stage}</span>
+            ${hasMultipleSteps ? `<span class="spoosh-plugin-count">${steps.length}</span>` : ""}
           </div>
-          ${step.reason ? `<span class="spoosh-plugin-reason">${escapeHtml(step.reason)}</span>` : ""}
-          ${hasDiff ? `<span class="spoosh-plugin-expand">${isExpanded ? "▼" : "▶"}</span>` : ""}
+          ${lastStep.reason ? `<span class="spoosh-plugin-reason">${escapeHtml(lastStep.reason)}</span>` : ""}
+          ${canExpand ? `<span class="spoosh-plugin-expand">${isExpanded ? "▼" : "▶"}</span>` : ""}
         </div>
-        ${isExpanded && step.diff ? this.renderPluginDiff(stepKey, step.diff) : ""}
+        ${isExpanded && singleStepDiff ? this.renderPluginDiff(stepKey, singleStepDiff) : ""}
+        ${isExpanded && hasMultipleSteps ? this.renderPluginStepDetails(traceId, steps) : ""}
+      </div>
+    `;
+  }
+
+  private renderPluginStepDetails(
+    traceId: string,
+    steps: PluginStepEvent[]
+  ): string {
+    const colorMap: Record<string, string> = {
+      success: "var(--spoosh-success)",
+      warning: "var(--spoosh-warning)",
+      error: "var(--spoosh-error)",
+      info: "var(--spoosh-primary)",
+      muted: "var(--spoosh-text-muted)",
+    };
+
+    const stageColors: Record<string, string> = {
+      return: "var(--spoosh-success)",
+      log: "var(--spoosh-primary)",
+      skip: "var(--spoosh-text-muted)",
+    };
+
+    return `
+      <div class="spoosh-plugin-details">
+        ${steps
+          .map((step, index) => {
+            const stepKey = `${traceId}:${step.plugin}:${step.timestamp}`;
+            const hasDiff =
+              step.diff &&
+              JSON.stringify(step.diff.before) !==
+                JSON.stringify(step.diff.after);
+            const isDiffExpanded = this.expandedSteps.has(stepKey);
+            const dotColor = step.color
+              ? colorMap[step.color]
+              : stageColors[step.stage] || "var(--spoosh-text-muted)";
+
+            return `
+              <div class="spoosh-step-detail" data-step-key="${stepKey}">
+                <div class="spoosh-step-detail-header" ${hasDiff ? 'data-action="toggle-step"' : ""}>
+                  <span class="spoosh-step-index">${index + 1}</span>
+                  <span class="spoosh-step-dot" style="background: ${dotColor}"></span>
+                  <span class="spoosh-step-stage">${step.stage}</span>
+                  ${step.reason ? `<span class="spoosh-step-reason">${escapeHtml(step.reason)}</span>` : ""}
+                  ${hasDiff ? `<span class="spoosh-plugin-expand">${isDiffExpanded ? "▼" : "▶"}</span>` : ""}
+                </div>
+                ${isDiffExpanded && step.diff ? this.renderPluginDiff(stepKey, step.diff) : ""}
+              </div>
+            `;
+          })
+          .join("")}
       </div>
     `;
   }
@@ -532,7 +602,10 @@ export class DevToolPanel {
   }
 
   private getActivePluginCount(trace: OperationTrace): number {
-    return trace.steps.filter((step) => step.stage !== "skip").length;
+    const activePlugins = new Set(
+      trace.steps.filter((step) => step.stage !== "skip").map((step) => step.plugin)
+    );
+    return activePlugins.size;
   }
 
   private attachEvents(): void {

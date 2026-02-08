@@ -593,6 +593,68 @@ export function getThemeCSS(theme: DevToolTheme): string {
       font-size: 10px;
     }
 
+    .spoosh-plugin-count {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: var(--spoosh-primary);
+      color: white;
+      font-weight: 600;
+    }
+
+    .spoosh-plugin-details {
+      border-top: 1px solid var(--spoosh-border);
+      background: var(--spoosh-bg);
+    }
+
+    .spoosh-step-detail {
+      border-bottom: 1px solid var(--spoosh-border);
+    }
+
+    .spoosh-step-detail:last-child {
+      border-bottom: none;
+    }
+
+    .spoosh-step-detail-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .spoosh-step-detail-header:hover {
+      background: var(--spoosh-surface);
+    }
+
+    .spoosh-step-index {
+      font-size: 10px;
+      color: var(--spoosh-text-muted);
+      min-width: 16px;
+    }
+
+    .spoosh-step-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .spoosh-step-stage {
+      font-size: 11px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: var(--spoosh-border);
+      color: var(--spoosh-text-muted);
+    }
+
+    .spoosh-step-reason {
+      flex: 1;
+      color: var(--spoosh-text-muted);
+      font-size: 11px;
+    }
+
     .spoosh-plugin-diff {
       padding: 12px;
       border-top: 1px solid var(--spoosh-border);
