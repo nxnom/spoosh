@@ -120,7 +120,10 @@ export function initialDataPlugin(): SpooshPlugin<{
 
       initialDataAppliedFor.add(context.instanceId);
 
-      t?.log("Applied initial data", { color: "success" });
+      t?.log("Applied initial data", {
+        color: "success",
+        diff: { before: undefined, after: pluginOptions.initialData },
+      });
 
       context.stateManager.setCache(context.queryKey, {
         state: {
@@ -136,7 +139,7 @@ export function initialDataPlugin(): SpooshPlugin<{
       });
 
       if (pluginOptions.refetchOnInitialData === false) {
-        t?.return("Skip refetch", { color: "info" });
+        t?.return("Skip refetch", { color: "muted" });
         return { data: pluginOptions.initialData, status: 200 };
       }
 

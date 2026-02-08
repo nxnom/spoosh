@@ -55,7 +55,7 @@ export class DevToolPanel {
   private showPassedPlugins = false;
   private sidebarWidth = 700;
   private listPanelWidth = 280;
-  private requestsPanelHeight = 0.6;
+  private requestsPanelHeight = 0.8;
   private isResizing = false;
   private isResizingDivider = false;
   private isResizingHorizontal = false;
@@ -566,19 +566,16 @@ export class DevToolPanel {
 
   private renderPluginsTab(trace: OperationTrace): string {
     const knownPlugins = this.store.getKnownPlugins(trace.operationType);
-    const sortedSteps = [...trace.steps].sort(
-      (a, b) => a.timestamp - b.timestamp
-    );
+    const steps = trace.steps;
 
-    const fetchStep = sortedSteps.find((s) => s.plugin === "fetch");
-    const fetchTimestamp = fetchStep?.timestamp ?? Infinity;
+    const fetchIndex = steps.findIndex((s) => s.plugin === "fetch");
+    const fetchStep = fetchIndex >= 0 ? steps[fetchIndex] : undefined;
 
-    const beforeFetchSteps = sortedSteps.filter(
-      (s) => s.plugin !== "fetch" && s.timestamp < fetchTimestamp
-    );
-    const afterFetchSteps = sortedSteps.filter(
-      (s) => s.plugin !== "fetch" && s.timestamp >= fetchTimestamp
-    );
+    const beforeFetchSteps =
+      fetchIndex >= 0
+        ? steps.slice(0, fetchIndex)
+        : steps.filter((s) => s.plugin !== "fetch");
+    const afterFetchSteps = fetchIndex >= 0 ? steps.slice(fetchIndex + 1) : [];
 
     const beforeFetchByPlugin = new Map<string, PluginStepEvent[]>();
 
@@ -595,7 +592,7 @@ export class DevToolPanel {
       (p) => !pluginsWithBeforeEvents.has(p)
     );
 
-    if (sortedSteps.length === 0 && knownPlugins.length === 0) {
+    if (steps.length === 0 && knownPlugins.length === 0) {
       return `<div class="spoosh-empty-tab">No plugin events recorded</div>`;
     }
 
