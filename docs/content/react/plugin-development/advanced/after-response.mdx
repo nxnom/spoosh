@@ -1,0 +1,443 @@
+---
+title: After Response
+description: Side effects and transformations that always run
+---
+
+`afterResponse` is a plugin hook that runs after a response exists. Unlike middleware, it **always runs** — even if middleware returned early from cache.
+
+## Core Contract
+
+<Callout type="info">
+**Execution Guarantees**
+
+- ✅ Runs after a response exists
+- ✅ Runs even if middleware returned early (e.g., from cache)
+- ❌ Cannot prevent a request
+- ❌ Cannot retry
+- ✅ Can observe or transform the response
+
+</Callout>
+
+**Best for:** Side effects that must always happen (logging, analytics, metrics)
+
+**Not for:** Control flow, retries, or request prevention
+
+## When to Use afterResponse
+
+### ✅ Good Use Cases
+
+**Logging & Analytics**
+
+```typescript
+afterResponse(context, response) {
+  analytics.track("api_request", {
+    path: context.path,
+    method: context.method,
+    status: response.status,
+    duration: Date.now() - context.requestTimestamp,
+    success: !response.error,
+  });
+}
+```
+
+**Error Reporting**
+
+```typescript
+afterResponse(context, response) {
+  if (response.error) {
+    errorTracker.captureError(response.error, {
+      path: context.path,
+      method: context.method,
+      tags: context.tags,
+    });
+  }
+}
+```
+
+**Response Transformation**
+
+```typescript
+afterResponse(context, response) {
+  if (response.data) {
+    // Transform and store in meta for user access
+    const processed = processData(response.data);
+
+    context.stateManager.setMeta(context.queryKey, {
+      processedData: processed,
+    });
+  }
+}
+```
+
+For more on storing user-facing data, see [Meta Storage](/docs/react/plugin-development/advanced/meta-storage).
+
+**Debug Tracing**
+
+```typescript
+afterResponse(context, response) {
+  if (import.meta.env.DEV) {
+    console.log("[Spoosh]", {
+      operation: context.operationType,
+      path: context.path,
+      status: response.status,
+      cached: response.status === 200 && !context.forceRefetch,
+    });
+  }
+}
+```
+
+**Metrics & Monitoring**
+
+```typescript
+afterResponse(context, response) {
+  metrics.increment("api.requests", {
+    path: context.path,
+    status: response.status,
+    error: response.error ? "true" : "false",
+  });
+}
+```
+
+### ❌ Bad Use Cases
+
+**Don't use for auth headers** (use `middleware`)
+
+```typescript
+// ❌ Wrong - Response already happened
+afterResponse(context, response) {
+  context.request.headers.Authorization = `Bearer ${token}`;
+}
+
+// ✅ Right - Use middleware
+middleware: async (context, next) => {
+  context.request.headers.Authorization = `Bearer ${token}`;
+  return next();
+}
+```
+
+**Don't use for caching decisions** (use `middleware`)
+
+```typescript
+// ❌ Wrong - Can't prevent request
+afterResponse(context, response) {
+  const cached = context.stateManager.getCache(context.queryKey);
+  if (cached) return cached; // Too late!
+}
+
+// ✅ Right - Use middleware
+middleware: async (context, next) => {
+  const cached = context.stateManager.getCache(context.queryKey);
+  if (cached?.state.data) {
+    return { data: cached.state.data, status: 200 };
+  }
+  return next();
+}
+```
+
+**Don't use for retries** (use `middleware`)
+
+```typescript
+// ❌ Wrong - Can't retry after response exists
+afterResponse(context, response) {
+  if (response.error) {
+    return retry(); // Not possible!
+  }
+}
+
+// ✅ Right - Use middleware
+middleware: async (context, next) => {
+  for (let i = 0; i < 3; i++) {
+    const response = await next();
+    if (!response.error) return response;
+  }
+}
+```
+
+## Example: Wrong vs Right
+
+### ❌ Wrong: Logging in Middleware
+
+```typescript
+function loggingPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:logging",
+    operations: ["read", "write"],
+
+    middleware: async (context, next) => {
+      const response = await next();
+
+      // This won't run if cache returns early!
+      console.log("Response:", response.status);
+
+      return response;
+    },
+  };
+}
+```
+
+**Problem:** If the cache plugin returns early, this logging never happens.
+
+### ✅ Right: Logging in afterResponse
+
+```typescript
+function loggingPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:logging",
+    operations: ["read", "write"],
+
+    afterResponse(context, response) {
+      // This ALWAYS runs, even if cache returned early
+      console.log("Response:", response.status);
+    },
+  };
+}
+```
+
+**Why it's better:** Guaranteed to run for every response, regardless of cache.
+
+## Transforming Responses
+
+You can return a modified response from `afterResponse`:
+
+```typescript
+function timestampPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:timestamp",
+    operations: ["read"],
+
+    afterResponse(context, response) {
+      if (response.data) {
+        return {
+          ...response,
+          data: {
+            ...response.data,
+            _fetchedAt: Date.now(),
+            _fromCache: !context.forceRefetch,
+          },
+        };
+      }
+    },
+  };
+}
+```
+
+**Note:** Returning `void` means "don't modify the response" (common for pure side effects).
+
+## Real-World Example: Debug Plugin
+
+The official debug plugin uses `afterResponse` to log all requests:
+
+```typescript
+function debugPlugin(): SpooshPlugin {
+  return {
+    name: "spoosh:debug",
+    operations: ["read", "write", "infiniteRead"],
+
+    afterResponse(context, response) {
+      const duration = Date.now() - context.requestTimestamp;
+
+      console.group(`[Spoosh] ${context.method} /${context.path}`);
+      console.log("Operation:", context.operationType);
+      console.log("Status:", response.status);
+      console.log("Duration:", `${duration}ms`);
+      console.log("Query Key:", context.queryKey);
+      console.log("Tags:", context.tags);
+
+      if (response.error) {
+        console.error("Error:", response.error);
+      } else {
+        console.log("Data:", response.data);
+      }
+
+      console.groupEnd();
+    },
+  };
+}
+```
+
+This works perfectly because:
+
+- It always runs (guaranteed logging)
+- It's read-only (just observing)
+- It has no side effects on behavior
+
+## Combining middleware and afterResponse
+
+You can use both in the same plugin:
+
+```typescript
+function analyticsPlugin(): SpooshPlugin {
+  return {
+    name: "my-app:analytics",
+    operations: ["read", "write"],
+
+    middleware: async (context, next) => {
+      // Add request ID before request
+      const requestId = generateId();
+      context.request.headers["X-Request-ID"] = requestId;
+
+      const start = Date.now();
+      const response = await next();
+      const duration = Date.now() - start;
+
+      // Store timing in temp
+      context.temp.set("analytics:duration", duration);
+      context.temp.set("analytics:requestId", requestId);
+
+      return response;
+    },
+
+    afterResponse(context, response) {
+      // Always send analytics, even if middleware was skipped
+      const duration = context.temp.get("analytics:duration") as number;
+      const requestId = context.temp.get("analytics:requestId") as string;
+
+      analytics.track({
+        path: context.path,
+        method: context.method,
+        status: response.status,
+        duration,
+        requestId,
+        success: !response.error,
+      });
+    },
+  };
+}
+```
+
+**Pattern:**
+
+- `middleware` - Add headers, measure timing
+- `afterResponse` - Send analytics (guaranteed to run)
+
+## Common Patterns
+
+### Pattern: Conditional Side Effects
+
+```typescript
+afterResponse(context, response) {
+  if (response.error) {
+    errorReporter.captureError(response.error);
+  } else {
+    successMetrics.increment("api.success");
+  }
+}
+```
+
+### Pattern: User-Facing Metadata
+
+```typescript
+afterResponse(context, response) {
+  // Store processed data for user access via meta property
+  if (response.data) {
+    context.stateManager.setMeta(context.queryKey, {
+      summary: generateSummary(response.data),
+      itemCount: response.data.length,
+    });
+  }
+}
+```
+
+### Pattern: Response Enrichment
+
+```typescript
+afterResponse(context, response) {
+  if (response.data) {
+    return {
+      ...response,
+      data: {
+        ...response.data,
+        _metadata: {
+          queryKey: context.queryKey,
+          tags: context.tags,
+          timestamp: Date.now(),
+        },
+      },
+    };
+  }
+}
+```
+
+## Best Practices
+
+### 1. Keep It Read-Only
+
+```typescript
+// ✅ Good - Pure observation
+afterResponse(context, response) {
+  logger.info("Request completed", { status: response.status });
+}
+
+// ❌ Bad - Mutating objects
+afterResponse(context, response) {
+  response.data.modified = true; // Don't do this
+}
+```
+
+### 2. Don't Rely on Execution Order
+
+```typescript
+// ❌ Bad - Assumes middleware ran
+afterResponse(context, response) {
+  const requestId = context.request.headers["X-Request-ID"];
+  // requestId might not exist if cache returned early!
+}
+
+// ✅ Good - Handle missing data
+afterResponse(context, response) {
+  const requestId = context.temp.get("requestId") ?? "unknown";
+}
+```
+
+### 3. Handle Both Success and Error
+
+```typescript
+// ✅ Good - Handles both cases
+afterResponse(context, response) {
+  if (response.error) {
+    errorLogger.log(response.error);
+  } else {
+    successLogger.log(response.data);
+  }
+}
+```
+
+### 4. Use for Framework Integrations
+
+```typescript
+// ✅ Good - Devtools integration
+afterResponse(context, response) {
+  if (window.__SPOOSH_DEVTOOLS__) {
+    window.__SPOOSH_DEVTOOLS__.recordRequest({
+      path: context.path,
+      method: context.method,
+      response,
+      timestamp: Date.now(),
+    });
+  }
+}
+```
+
+## Summary
+
+**Use `afterResponse` when:**
+
+- You need guaranteed execution
+- You're doing side effects (logging, analytics)
+- You're observing responses
+- You're storing user-facing data in meta
+- You're building devtools
+
+**Don't use `afterResponse` when:**
+
+- You need to prevent requests → use `middleware`
+- You need to retry → use `middleware`
+- You need to modify the request → use `middleware`
+- You need early returns → use `middleware`
+
+**Rule of thumb:**
+
+- If you need **control flow** → use `middleware`
+- If you need **guarantees** → use `afterResponse`
+
+For more on middleware patterns, see [Middleware Patterns](/docs/react/plugin-development/advanced/patterns).
