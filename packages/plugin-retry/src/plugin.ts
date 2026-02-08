@@ -1,4 +1,4 @@
-import { isNetworkError, isAbortError } from "@spoosh/core";
+import { isNetworkError, isAbortError, clone } from "@spoosh/core";
 import type { SpooshPlugin, SpooshResponse } from "@spoosh/core";
 
 import type {
@@ -9,7 +9,6 @@ import type {
   RetryReadResult,
   RetryWriteResult,
 } from "./types";
-import { clone } from "./cloneObject";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

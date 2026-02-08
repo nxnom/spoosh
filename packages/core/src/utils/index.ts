@@ -26,3 +26,4 @@ export {
   type TagOptions,
 } from "./path-utils";
 export { isNetworkError, isAbortError } from "./errors";
+export { clone } from "./clone";
