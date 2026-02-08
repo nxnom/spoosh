@@ -1,4 +1,6 @@
 import type { EventEmitter, SpooshPlugin } from "@spoosh/core";
+import { emitTraceEvent } from "@spoosh/core";
+
 import type {
   RefetchPluginConfig,
   RefetchReadOptions,
@@ -7,6 +9,8 @@ import type {
   RefetchReadResult,
   RefetchWriteResult,
 } from "./types";
+
+const PLUGIN_NAME = "spoosh:refetch";
 
 type CleanupFn = () => void;
 
@@ -63,6 +67,11 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
 
     const visibilityHandler = () => {
       if (document.visibilityState === "visible") {
+        emitTraceEvent(eventEmitter, PLUGIN_NAME, "Triggered on visibility", {
+          queryKey,
+          color: "success",
+        });
+
         eventEmitter.emit("refetch", {
           queryKey,
           reason: "focus",
@@ -71,6 +80,11 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
     };
 
     const focusHandler = () => {
+      emitTraceEvent(eventEmitter, PLUGIN_NAME, "Triggered on focus", {
+        queryKey,
+        color: "success",
+      });
+
       eventEmitter.emit("refetch", {
         queryKey,
         reason: "focus",
@@ -79,6 +93,11 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
 
     document.addEventListener("visibilitychange", visibilityHandler);
     window.addEventListener("focus", focusHandler);
+
+    emitTraceEvent(eventEmitter, PLUGIN_NAME, "Focus listener setup", {
+      queryKey,
+      color: "info",
+    });
 
     const entry = listenersByHook.get(instanceId) ?? { queryKey };
     entry.queryKey = queryKey;
@@ -97,6 +116,11 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
     if (!isBrowser) return;
 
     const handler = () => {
+      emitTraceEvent(eventEmitter, PLUGIN_NAME, "Triggered on reconnect", {
+        queryKey,
+        color: "success",
+      });
+
       eventEmitter.emit("refetch", {
         queryKey,
         reason: "reconnect",
@@ -104,6 +128,11 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
     };
 
     window.addEventListener("online", handler);
+
+    emitTraceEvent(eventEmitter, PLUGIN_NAME, "Reconnect listener setup", {
+      queryKey,
+      color: "info",
+    });
 
     const entry = listenersByHook.get(instanceId) ?? { queryKey };
     entry.queryKey = queryKey;
@@ -150,7 +179,7 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
   };
 
   return {
-    name: "spoosh:refetch",
+    name: PLUGIN_NAME,
     operations: ["read", "infiniteRead"],
 
     lifecycle: {

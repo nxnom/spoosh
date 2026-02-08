@@ -7,6 +7,7 @@ import type {
   TraceStage,
   TraceColor,
   PluginContext,
+  StandaloneEvent,
 } from "@spoosh/core";
 
 export interface DevToolConfig {
@@ -127,6 +128,8 @@ export interface DevToolStoreInterface {
     context: PluginContext,
     prevContext?: PluginContext
   ): void;
+  addEvent(event: StandaloneEvent): void;
+  getEvents(): StandaloneEvent[];
   subscribe(callback: () => void): () => void;
   clear(): void;
 }

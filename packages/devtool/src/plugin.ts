@@ -99,6 +99,15 @@ export function devtool(
           return: (msg, options) => step("return", msg, options),
           log: (msg, options) => step("log", msg, options),
           skip: (msg, options) => step("skip", msg, options),
+          event: (msg, options) =>
+            store.addEvent({
+              plugin,
+              message: msg,
+              color: options?.color,
+              queryKey: options?.queryKey,
+              meta: options?.meta,
+              timestamp: Date.now(),
+            }),
         };
       };
 
@@ -166,6 +175,10 @@ export function devtool(
           totalListeners: listenerCounts.reduce((sum, k) => sum + k.count, 0),
           timestamp: Date.now(),
         });
+      });
+
+      ctx.eventEmitter.on("devtool:event", (event) => {
+        store.addEvent(event);
       });
 
       return {

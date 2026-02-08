@@ -1,4 +1,4 @@
-import type { RefetchEvent } from "../plugins/types";
+import type { RefetchEvent, StandaloneEvent } from "../plugins/types";
 
 type EventCallback<T = unknown> = (payload: T) => void;
 
@@ -19,6 +19,7 @@ export interface BuiltInEvents {
   refetch: RefetchEvent;
   invalidate: string[];
   refetchAll: void;
+  "devtool:event": StandaloneEvent;
 }
 
 /**

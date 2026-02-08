@@ -1,4 +1,9 @@
-import type { OperationType, StateManager, EventEmitter } from "@spoosh/core";
+import type {
+  OperationType,
+  StateManager,
+  EventEmitter,
+  StandaloneEvent,
+} from "@spoosh/core";
 
 import type {
   DevToolStoreInterface,
@@ -44,11 +49,14 @@ export class DevToolPanel {
   private showPassedPlugins = false;
   private sidebarWidth = 700;
   private listPanelWidth = 280;
+  private requestsPanelHeight = 0.6;
   private isResizing = false;
   private isResizingDivider = false;
+  private isResizingHorizontal = false;
   private boundHandleMouseMove: (e: MouseEvent) => void;
   private boundHandleMouseUp: () => void;
   private dividerHandle: HTMLDivElement | null = null;
+  private horizontalDivider: HTMLDivElement | null = null;
 
   constructor(options: DevToolPanelOptions) {
     this.store = options.store;
@@ -114,27 +122,52 @@ export class DevToolPanel {
     if (!this.sidebar) return;
 
     const traces = this.store.getFilteredTraces();
+    const events = this.store.getEvents();
     const filters = this.store.getFilters();
     const selectedTrace = this.selectedTraceId
       ? traces.find((t) => t.id === this.selectedTraceId)
       : null;
+
+    const detailContent = selectedTrace
+      ? this.renderDetailPanel(selectedTrace)
+      : this.renderEmptyDetail();
 
     this.sidebar.innerHTML = `
       <div class="spoosh-resize-handle"></div>
       <div class="spoosh-panel">
         <div class="spoosh-list-panel" style="width: ${this.listPanelWidth}px; min-width: ${this.listPanelWidth}px;">
           ${this.renderHeader(filters)}
-          ${this.renderTraceList(traces)}
+          <div class="spoosh-list-content">
+            <div class="spoosh-requests-section" style="flex: ${this.requestsPanelHeight};">
+              <div class="spoosh-section-header">
+                <span class="spoosh-section-title">Requests</span>
+                <span class="spoosh-section-count">${traces.length}</span>
+              </div>
+              ${this.renderTraceList(traces)}
+            </div>
+            <div class="spoosh-horizontal-divider"></div>
+            <div class="spoosh-events-section" style="flex: ${1 - this.requestsPanelHeight};">
+              <div class="spoosh-section-header">
+                <span class="spoosh-section-title">Events</span>
+                <span class="spoosh-section-count">${events.length}</span>
+              </div>
+              ${this.renderEventList(events)}
+            </div>
+          </div>
         </div>
         <div class="spoosh-divider-handle"></div>
-        ${selectedTrace ? this.renderDetailPanel(selectedTrace) : this.renderEmptyDetail()}
+        ${detailContent}
       </div>
     `;
 
     this.resizeHandle = this.sidebar.querySelector(".spoosh-resize-handle");
     this.dividerHandle = this.sidebar.querySelector(".spoosh-divider-handle");
+    this.horizontalDivider = this.sidebar.querySelector(
+      ".spoosh-horizontal-divider"
+    );
     this.setupResizeHandler();
     this.setupDividerHandler();
+    this.setupHorizontalDividerHandler();
     this.attachEvents();
   }
 
@@ -188,6 +221,59 @@ export class DevToolPanel {
           .join("")}
       </div>
     `;
+  }
+
+  private renderEventList(events: StandaloneEvent[]): string {
+    if (events.length === 0) {
+      return `<div class="spoosh-empty">No events yet</div>`;
+    }
+
+    return `
+      <div class="spoosh-events">
+        ${[...events]
+          .reverse()
+          .map((event) => this.renderEventRow(event))
+          .join("")}
+      </div>
+    `;
+  }
+
+  private renderEventRow(event: StandaloneEvent): string {
+    const pluginName = event.plugin.replace("spoosh:", "");
+    const time = new Date(event.timestamp).toLocaleTimeString();
+
+    const colorMap: Record<string, string> = {
+      success: "var(--spoosh-success)",
+      warning: "var(--spoosh-warning)",
+      error: "var(--spoosh-error)",
+      info: "var(--spoosh-primary)",
+      muted: "var(--spoosh-text-muted)",
+    };
+
+    const dotColor = event.color
+      ? colorMap[event.color]
+      : "var(--spoosh-primary)";
+
+    return `
+      <div class="spoosh-event">
+        <div class="spoosh-event-dot" style="background: ${dotColor}"></div>
+        <div class="spoosh-event-info">
+          <span class="spoosh-event-plugin">${pluginName}</span>
+          <span class="spoosh-event-message">${escapeHtml(event.message)}</span>
+          ${event.queryKey ? `<span class="spoosh-event-query">${this.formatQueryKey(event.queryKey)}</span>` : ""}
+        </div>
+        <span class="spoosh-event-time">${time}</span>
+      </div>
+    `;
+  }
+
+  private formatQueryKey(queryKey: string): string {
+    try {
+      const parsed = JSON.parse(queryKey);
+      return parsed.path || queryKey.slice(0, 30);
+    } catch {
+      return queryKey.slice(0, 30);
+    }
   }
 
   private renderTraceRow(trace: OperationTrace): string {
@@ -639,6 +725,19 @@ export class DevToolPanel {
     });
   }
 
+  private setupHorizontalDividerHandler(): void {
+    if (!this.horizontalDivider) return;
+
+    this.horizontalDivider.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      this.isResizingHorizontal = true;
+      document.body.style.cursor = "row-resize";
+      document.body.style.userSelect = "none";
+      document.addEventListener("mousemove", this.boundHandleMouseMove);
+      document.addEventListener("mouseup", this.boundHandleMouseUp);
+    });
+  }
+
   private handleMouseMove(e: MouseEvent): void {
     if (this.isResizing && this.sidebar) {
       const newWidth = window.innerWidth - e.clientX;
@@ -669,11 +768,43 @@ export class DevToolPanel {
         listPanel.style.minWidth = `${this.listPanelWidth}px`;
       }
     }
+
+    if (this.isResizingHorizontal && this.sidebar) {
+      const listContent = this.sidebar.querySelector(
+        ".spoosh-list-content"
+      ) as HTMLElement;
+
+      if (listContent) {
+        const rect = listContent.getBoundingClientRect();
+        const relativeY = e.clientY - rect.top;
+        const ratio = relativeY / rect.height;
+        const minRatio = 0.2;
+        const maxRatio = 0.8;
+
+        this.requestsPanelHeight = Math.min(
+          Math.max(ratio, minRatio),
+          maxRatio
+        );
+
+        const requestsSection = this.sidebar.querySelector(
+          ".spoosh-requests-section"
+        ) as HTMLElement;
+        const eventsSection = this.sidebar.querySelector(
+          ".spoosh-events-section"
+        ) as HTMLElement;
+
+        if (requestsSection && eventsSection) {
+          requestsSection.style.flex = String(this.requestsPanelHeight);
+          eventsSection.style.flex = String(1 - this.requestsPanelHeight);
+        }
+      }
+    }
   }
 
   private handleMouseUp(): void {
     this.isResizing = false;
     this.isResizingDivider = false;
+    this.isResizingHorizontal = false;
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
     document.removeEventListener("mousemove", this.boundHandleMouseMove);

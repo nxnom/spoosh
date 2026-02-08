@@ -1,4 +1,4 @@
-import type { SpooshPlugin } from "@spoosh/core";
+import type { SpooshPlugin, PluginTracer } from "@spoosh/core";
 
 import type {
   DebounceReadOptions,
@@ -7,6 +7,8 @@ import type {
   DebounceWriteOptions,
   DebounceWriteResult,
 } from "./types";
+
+const PLUGIN_NAME = "spoosh:debounce";
 
 type RequestOptionsSnapshot = {
   query?: Record<string, unknown>;
@@ -67,9 +69,10 @@ export function debouncePlugin(): SpooshPlugin<{
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
   const latestQueryKeys = new Map<string, string>();
   const prevRequests = new Map<string, RequestOptionsSnapshot>();
+  const tracers = new Map<string, PluginTracer>();
 
   return {
-    name: "spoosh:debounce",
+    name: PLUGIN_NAME,
     operations: ["read", "infiniteRead"],
 
     lifecycle: {
@@ -90,12 +93,15 @@ export function debouncePlugin(): SpooshPlugin<{
     },
 
     middleware: async (context, next) => {
+      const t = context.tracer?.(PLUGIN_NAME);
+
       const pluginOptions = context.pluginOptions as
         | DebounceReadOptions
         | undefined;
       const debounceOption = pluginOptions?.debounce;
 
       if (debounceOption === undefined || context.forceRefetch) {
+        t?.skip("No debounce configured");
         return next();
       }
 
@@ -128,6 +134,7 @@ export function debouncePlugin(): SpooshPlugin<{
       prevRequests.set(stableKey, currentRequest);
 
       if (!debounceMs || debounceMs <= 0) {
+        t?.skip("Debounce resolved to 0");
         return next();
       }
 
@@ -137,9 +144,11 @@ export function debouncePlugin(): SpooshPlugin<{
         const cached = context.stateManager.getCache(queryKey);
 
         if (cached?.state?.data !== undefined) {
+          t?.return("Already debouncing, returning cached", { color: "muted" });
           return { data: cached.state.data, status: 200 };
         }
 
+        t?.return("Already debouncing", { color: "muted" });
         return { data: undefined, status: 0 };
       }
 
@@ -147,9 +156,26 @@ export function debouncePlugin(): SpooshPlugin<{
 
       if (existingTimer) {
         clearTimeout(existingTimer);
+
+        const prevTracer = tracers.get(stableKey);
+
+        prevTracer?.event("Request cancelled (new input)", {
+          queryKey: existingQueryKey,
+          color: "warning",
+        });
       }
 
       latestQueryKeys.set(stableKey, queryKey);
+
+      if (t) {
+        tracers.set(stableKey, t);
+      }
+
+      t?.event(`Request debounced (${debounceMs}ms)`, {
+        queryKey,
+        color: "info",
+        meta: { delay: debounceMs },
+      });
 
       const cached = context.stateManager.getCache(queryKey);
 
@@ -158,6 +184,13 @@ export function debouncePlugin(): SpooshPlugin<{
         const latestKey = latestQueryKeys.get(stableKey);
 
         if (latestKey) {
+          const storedTracer = tracers.get(stableKey);
+
+          storedTracer?.event("Debounce complete, triggering request", {
+            queryKey: latestKey,
+            color: "success",
+          });
+
           context.eventEmitter.emit("refetch", {
             queryKey: latestKey,
             reason: "invalidate",
@@ -168,9 +201,11 @@ export function debouncePlugin(): SpooshPlugin<{
       timers.set(stableKey, timer);
 
       if (cached?.state?.data !== undefined) {
+        t?.return("Debounced, returning cached", { color: "info" });
         return { data: cached.state.data, status: 200 };
       }
 
+      t?.return("Debounced, no cached data", { color: "info" });
       return { data: undefined, status: 0 };
     },
   };

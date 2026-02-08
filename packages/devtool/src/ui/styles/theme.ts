@@ -112,11 +112,29 @@ export function getThemeCSS(theme: DevToolTheme): string {
       border-left: 1px solid var(--spoosh-border);
       z-index: 999999;
       font-family: var(--spoosh-font);
-      font-size: 13px;
+      font-size: 12px;
       color: var(--spoosh-text);
       transform: translateX(100%);
       transition: transform 0.25s ease;
       box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+    }
+
+    #spoosh-devtool-sidebar ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    #spoosh-devtool-sidebar ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #spoosh-devtool-sidebar ::-webkit-scrollbar-thumb {
+      background: var(--spoosh-border);
+      border-radius: 3px;
+    }
+
+    #spoosh-devtool-sidebar ::-webkit-scrollbar-thumb:hover {
+      background: var(--spoosh-text-muted);
     }
 
     #spoosh-devtool-sidebar.open {
@@ -175,25 +193,25 @@ export function getThemeCSS(theme: DevToolTheme): string {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 14px;
+      padding: 8px 10px;
       border-bottom: 1px solid var(--spoosh-border);
     }
 
     .spoosh-title {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 12px;
     }
 
     .spoosh-logo {
-      font-size: 16px;
+      font-size: 14px;
     }
 
     .spoosh-actions {
       display: flex;
-      gap: 4px;
+      gap: 2px;
     }
 
     .spoosh-icon-btn {
@@ -201,8 +219,8 @@ export function getThemeCSS(theme: DevToolTheme): string {
       border: none;
       color: var(--spoosh-text-muted);
       cursor: pointer;
-      padding: 6px;
-      border-radius: 6px;
+      padding: 4px;
+      border-radius: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -216,19 +234,19 @@ export function getThemeCSS(theme: DevToolTheme): string {
 
     .spoosh-filters {
       display: flex;
-      gap: 6px;
-      padding: 10px 14px;
+      gap: 4px;
+      padding: 6px 10px;
       border-bottom: 1px solid var(--spoosh-border);
     }
 
     .spoosh-filter {
-      padding: 5px 12px;
+      padding: 3px 8px;
       border: 1px solid var(--spoosh-border);
-      border-radius: 6px;
+      border-radius: 4px;
       background: transparent;
       color: var(--spoosh-text-muted);
       cursor: pointer;
-      font-size: 12px;
+      font-size: 11px;
       font-family: inherit;
       transition: all 0.15s;
     }
@@ -243,6 +261,59 @@ export function getThemeCSS(theme: DevToolTheme): string {
       color: white;
     }
 
+    .spoosh-list-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .spoosh-requests-section,
+    .spoosh-events-section {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 60px;
+    }
+
+    .spoosh-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 10px;
+      background: var(--spoosh-bg);
+      border-bottom: 1px solid var(--spoosh-border);
+      flex-shrink: 0;
+    }
+
+    .spoosh-section-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--spoosh-text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .spoosh-section-count {
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 8px;
+      background: var(--spoosh-border);
+      color: var(--spoosh-text-muted);
+    }
+
+    .spoosh-horizontal-divider {
+      height: 3px;
+      cursor: row-resize;
+      background: var(--spoosh-border);
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .spoosh-horizontal-divider:hover {
+      background: var(--spoosh-primary);
+    }
+
     .spoosh-traces {
       flex: 1;
       overflow-y: auto;
@@ -251,8 +322,8 @@ export function getThemeCSS(theme: DevToolTheme): string {
     .spoosh-trace {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
+      gap: 6px;
+      padding: 6px 10px;
       cursor: pointer;
       border-bottom: 1px solid var(--spoosh-border);
       transition: background 0.15s;
@@ -264,13 +335,13 @@ export function getThemeCSS(theme: DevToolTheme): string {
 
     .spoosh-trace.selected {
       background: var(--spoosh-bg);
-      border-left: 3px solid var(--spoosh-primary);
-      padding-left: 11px;
+      border-left: 2px solid var(--spoosh-primary);
+      padding-left: 8px;
     }
 
     .spoosh-trace-status {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       flex-shrink: 0;
     }
@@ -292,12 +363,12 @@ export function getThemeCSS(theme: DevToolTheme): string {
       min-width: 0;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .spoosh-trace-method {
       font-weight: 600;
-      font-size: 11px;
+      font-size: 10px;
     }
 
     .method-GET { color: var(--spoosh-success); }
@@ -307,7 +378,7 @@ export function getThemeCSS(theme: DevToolTheme): string {
 
     .spoosh-trace-path {
       color: var(--spoosh-text-muted);
-      font-size: 12px;
+      font-size: 11px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -315,25 +386,85 @@ export function getThemeCSS(theme: DevToolTheme): string {
 
     .spoosh-trace-query {
       color: var(--spoosh-primary);
-      font-size: 11px;
+      font-size: 10px;
       opacity: 0.8;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      max-width: 120px;
+      max-width: 100px;
     }
 
     .spoosh-trace-time {
       color: var(--spoosh-text-muted);
-      font-size: 11px;
+      font-size: 10px;
       flex-shrink: 0;
     }
 
+    /* Events list */
+    .spoosh-events {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .spoosh-event {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 5px 10px;
+      border-bottom: 1px solid var(--spoosh-border);
+    }
+
+    .spoosh-event-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+
+    .spoosh-event-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .spoosh-event-plugin {
+      font-weight: 600;
+      font-size: 10px;
+      color: var(--spoosh-text);
+    }
+
+    .spoosh-event-message {
+      font-size: 10px;
+      color: var(--spoosh-text-muted);
+    }
+
+    .spoosh-event-query {
+      font-size: 9px;
+      color: var(--spoosh-text-muted);
+      opacity: 0.7;
+    }
+
+    .spoosh-event-time {
+      color: var(--spoosh-text-muted);
+      font-size: 9px;
+      flex-shrink: 0;
+    }
+
+    .spoosh-detail-empty-hint {
+      color: var(--spoosh-text-muted);
+      font-size: 12px;
+      margin-top: 4px;
+      opacity: 0.7;
+    }
+
     .spoosh-empty {
-      padding: 40px 20px;
+      padding: 20px 14px;
       text-align: center;
       color: var(--spoosh-text-muted);
-      font-size: 13px;
+      font-size: 11px;
     }
 
     .spoosh-detail-empty {
@@ -342,17 +473,17 @@ export function getThemeCSS(theme: DevToolTheme): string {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 8px;
       color: var(--spoosh-text-muted);
     }
 
     .spoosh-detail-empty-icon {
-      font-size: 40px;
+      font-size: 32px;
       opacity: 0.5;
     }
 
     .spoosh-detail-header {
-      padding: 16px;
+      padding: 10px 12px;
       border-bottom: 1px solid var(--spoosh-border);
       background: var(--spoosh-surface);
     }
@@ -360,24 +491,24 @@ export function getThemeCSS(theme: DevToolTheme): string {
     .spoosh-detail-title {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 8px;
+      margin-bottom: 6px;
     }
 
     .spoosh-detail-path {
-      font-size: 14px;
+      font-size: 12px;
       word-break: break-all;
     }
 
     .spoosh-detail-meta {
       display: flex;
-      gap: 8px;
+      gap: 6px;
     }
 
     .spoosh-badge {
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
       font-weight: 500;
     }
 
@@ -408,13 +539,13 @@ export function getThemeCSS(theme: DevToolTheme): string {
     }
 
     .spoosh-tab {
-      padding: 10px 16px;
+      padding: 6px 12px;
       background: transparent;
       border: none;
       border-bottom: 2px solid transparent;
       color: var(--spoosh-text-muted);
       cursor: pointer;
-      font-size: 13px;
+      font-size: 11px;
       font-family: inherit;
       transition: color 0.15s, border-color 0.15s;
     }
@@ -431,25 +562,26 @@ export function getThemeCSS(theme: DevToolTheme): string {
     .spoosh-tab-content {
       flex: 1;
       overflow-y: auto;
-      padding: 16px;
+      padding: 10px 12px;
     }
 
     .spoosh-empty-tab {
       color: var(--spoosh-text-muted);
       text-align: center;
-      padding: 40px;
+      padding: 20px;
+      font-size: 11px;
     }
 
     .spoosh-pending-tab {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
     }
 
     .spoosh-spinner {
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       border: 2px solid var(--spoosh-border);
       border-top-color: var(--spoosh-primary);
       border-radius: 50%;
@@ -461,7 +593,7 @@ export function getThemeCSS(theme: DevToolTheme): string {
     }
 
     .spoosh-data-section {
-      margin-bottom: 16px;
+      margin-bottom: 10px;
     }
 
     .spoosh-data-section:last-child {
@@ -469,22 +601,22 @@ export function getThemeCSS(theme: DevToolTheme): string {
     }
 
     .spoosh-data-label {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
       text-transform: uppercase;
       color: var(--spoosh-text-muted);
-      margin-bottom: 8px;
+      margin-bottom: 4px;
       letter-spacing: 0.5px;
     }
 
     .spoosh-json {
       background: var(--spoosh-surface);
       border: 1px solid var(--spoosh-border);
-      border-radius: 8px;
-      padding: 12px;
+      border-radius: 4px;
+      padding: 8px;
       margin: 0;
-      font-size: 12px;
-      line-height: 1.5;
+      font-size: 11px;
+      line-height: 1.4;
       overflow-x: auto;
       white-space: pre-wrap;
       word-break: break-word;
@@ -498,16 +630,16 @@ export function getThemeCSS(theme: DevToolTheme): string {
     .spoosh-plugins-header {
       display: flex;
       justify-content: flex-end;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .spoosh-toggle-passed {
       background: transparent;
       border: 1px solid var(--spoosh-border);
       color: var(--spoosh-text-muted);
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
       cursor: pointer;
       font-family: inherit;
       transition: all 0.15s;
@@ -521,7 +653,7 @@ export function getThemeCSS(theme: DevToolTheme): string {
     .spoosh-plugins-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 4px;
     }
 
     .spoosh-timeline {
@@ -540,32 +672,33 @@ export function getThemeCSS(theme: DevToolTheme): string {
     .spoosh-timeline-step-header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 0;
+      gap: 6px;
+      padding: 6px 0;
       cursor: pointer;
     }
 
     .spoosh-timeline-step-header:hover {
       background: var(--spoosh-surface);
-      margin: 0 -16px;
-      padding: 10px 16px;
+      margin: 0 -12px;
+      padding: 6px 12px;
     }
 
     .spoosh-timeline-dot {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       flex-shrink: 0;
     }
 
     .spoosh-timeline-plugin {
       font-weight: 500;
+      font-size: 11px;
     }
 
     .spoosh-timeline-stage {
-      font-size: 11px;
-      padding: 2px 6px;
-      border-radius: 4px;
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 3px;
       background: var(--spoosh-border);
       color: var(--spoosh-text-muted);
     }
@@ -573,15 +706,15 @@ export function getThemeCSS(theme: DevToolTheme): string {
     .spoosh-timeline-reason {
       flex: 1;
       color: var(--spoosh-text-muted);
-      font-size: 12px;
+      font-size: 10px;
       text-align: right;
     }
 
     .spoosh-timeline-fetch {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 12px 0;
+      gap: 8px;
+      padding: 8px 0;
     }
 
     .spoosh-fetch-line {
@@ -592,12 +725,12 @@ export function getThemeCSS(theme: DevToolTheme): string {
     }
 
     .spoosh-fetch-label {
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 600;
       color: var(--spoosh-warning);
-      padding: 4px 12px;
+      padding: 2px 8px;
       border: 1px solid var(--spoosh-warning);
-      border-radius: 12px;
+      border-radius: 10px;
       background: rgba(210, 153, 34, 0.1);
     }
 
@@ -733,13 +866,13 @@ export function getThemeCSS(theme: DevToolTheme): string {
     }
 
     .spoosh-plugin-diff {
-      padding: 12px;
+      padding: 8px;
       border-top: 1px solid var(--spoosh-border);
       background: var(--spoosh-bg);
     }
 
     .spoosh-diff-block {
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .spoosh-diff-block:last-child {
@@ -747,11 +880,11 @@ export function getThemeCSS(theme: DevToolTheme): string {
     }
 
     .spoosh-diff-label {
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 600;
-      margin-bottom: 6px;
-      padding: 2px 6px;
-      border-radius: 3px;
+      margin-bottom: 4px;
+      padding: 1px 4px;
+      border-radius: 2px;
       display: inline-block;
     }
 
@@ -768,15 +901,15 @@ export function getThemeCSS(theme: DevToolTheme): string {
     .spoosh-diff-json {
       background: var(--spoosh-surface);
       border: 1px solid var(--spoosh-border);
-      border-radius: 6px;
-      padding: 10px;
+      border-radius: 4px;
+      padding: 6px;
       margin: 0;
-      font-size: 11px;
-      line-height: 1.4;
+      font-size: 10px;
+      line-height: 1.3;
       overflow-x: auto;
       white-space: pre-wrap;
       word-break: break-word;
-      max-height: 150px;
+      max-height: 120px;
       overflow-y: auto;
     }
 
@@ -803,16 +936,16 @@ export function getThemeCSS(theme: DevToolTheme): string {
     .spoosh-diff-header {
       display: flex;
       justify-content: flex-end;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
     .spoosh-diff-toggle {
       background: transparent;
       border: 1px solid var(--spoosh-border);
       color: var(--spoosh-text-muted);
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 9px;
       cursor: pointer;
       font-family: inherit;
       transition: all 0.15s;
@@ -826,11 +959,11 @@ export function getThemeCSS(theme: DevToolTheme): string {
     .spoosh-diff-lines {
       background: var(--spoosh-surface);
       border: 1px solid var(--spoosh-border);
-      border-radius: 6px;
-      padding: 8px 0;
+      border-radius: 4px;
+      padding: 4px 0;
       margin: 0;
-      font-size: 11px;
-      line-height: 1.5;
+      font-size: 10px;
+      line-height: 1.4;
       white-space: pre-wrap;
       word-break: break-word;
     }
@@ -838,23 +971,23 @@ export function getThemeCSS(theme: DevToolTheme): string {
     .spoosh-diff-line-added {
       background: rgba(63, 185, 80, 0.15);
       color: ${theme.colors.success};
-      padding: 0 10px;
+      padding: 0 6px;
     }
 
     .spoosh-diff-line-removed {
       background: rgba(248, 81, 73, 0.15);
       color: ${theme.colors.error};
-      padding: 0 10px;
+      padding: 0 6px;
     }
 
     .spoosh-diff-line-unchanged {
       color: var(--spoosh-text-muted);
-      padding: 0 10px;
+      padding: 0 6px;
     }
 
     .spoosh-diff-prefix {
       display: inline-block;
-      width: 16px;
+      width: 12px;
       user-select: none;
     }
   `;

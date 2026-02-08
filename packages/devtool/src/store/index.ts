@@ -1,4 +1,9 @@
-import type { SpooshResponse, TraceEvent, PluginContext } from "@spoosh/core";
+import type {
+  SpooshResponse,
+  TraceEvent,
+  PluginContext,
+  StandaloneEvent,
+} from "@spoosh/core";
 
 import type {
   OperationTrace,
@@ -19,6 +24,7 @@ interface RegisteredPlugin {
 
 export class DevToolStore implements DevToolStoreInterface {
   private traces = createRingBuffer<OperationTrace>(50);
+  private events = createRingBuffer<StandaloneEvent>(100);
   private activeTraces = new Map<string, OperationTrace>();
   private invalidations: InvalidationEvent[] = [];
   private subscribers = new Set<() => void>();
@@ -31,6 +37,7 @@ export class DevToolStore implements DevToolStoreInterface {
 
   constructor(config: DevToolStoreConfig) {
     this.traces = createRingBuffer<OperationTrace>(config.maxHistory);
+    this.events = createRingBuffer<StandaloneEvent>(config.maxHistory * 2);
   }
 
   setRegisteredPlugins(
@@ -135,6 +142,15 @@ export class DevToolStore implements DevToolStoreInterface {
     this.notify();
   }
 
+  addEvent(event: StandaloneEvent): void {
+    this.events.push(event);
+    this.notify();
+  }
+
+  getEvents(): StandaloneEvent[] {
+    return this.events.toArray();
+  }
+
   recordLifecycle(
     phase: "onMount" | "onUpdate" | "onUnmount",
     context: PluginContext,
@@ -188,6 +204,7 @@ export class DevToolStore implements DevToolStoreInterface {
 
   clear(): void {
     this.traces.clear();
+    this.events.clear();
     this.activeTraces.clear();
     this.invalidations = [];
     this.notify();

@@ -2,7 +2,11 @@ import type {
   SpooshPlugin,
   InstanceApiContext,
   StateManager,
+  EventEmitter,
 } from "@spoosh/core";
+import { emitTraceEvent } from "@spoosh/core";
+
+const PLUGIN_NAME = "spoosh:gc";
 
 export type GcPluginOptions = {
   /**
@@ -33,6 +37,7 @@ export type GcPluginExports = {
 
 function runGarbageCollection(
   stateManager: StateManager,
+  eventEmitter: EventEmitter,
   options: GcPluginOptions
 ): number {
   const { maxAge, maxEntries } = options;
@@ -79,6 +84,18 @@ function runGarbageCollection(
     }
   }
 
+  if (removedCount > 0) {
+    emitTraceEvent(
+      eventEmitter,
+      PLUGIN_NAME,
+      `Cleaned ${removedCount} cache entries`,
+      {
+        color: "success",
+        meta: { removed: removedCount, total: entries.length },
+      }
+    );
+  }
+
   return removedCount;
 }
 
@@ -116,15 +133,29 @@ export function gcPlugin(
   const { interval = 60000 } = options;
 
   return {
-    name: "spoosh:gc",
+    name: PLUGIN_NAME,
     operations: [],
 
     instanceApi(context: InstanceApiContext) {
-      const { stateManager } = context;
+      const { stateManager, eventEmitter } = context;
 
       const runGc = () => {
-        return runGarbageCollection(stateManager, options);
+        return runGarbageCollection(stateManager, eventEmitter, options);
       };
+
+      emitTraceEvent(
+        eventEmitter,
+        PLUGIN_NAME,
+        `GC scheduled every ${interval}ms`,
+        {
+          color: "info",
+          meta: {
+            interval,
+            maxAge: options.maxAge,
+            maxEntries: options.maxEntries,
+          },
+        }
+      );
 
       setInterval(() => {
         runGc();
