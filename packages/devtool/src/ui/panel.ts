@@ -13,6 +13,7 @@ import {
   renderBottomBar,
   renderCacheList,
   renderCacheDetail,
+  renderSettings,
 } from "./render";
 import { createRenderScheduler } from "./render-scheduler";
 import { createResizeController } from "./resize-controller";
@@ -130,8 +131,8 @@ export class DevToolPanel {
 
     const state = this.viewModel.getState();
 
-    if (state.activeView === "internal") {
-      this.partialUpdateInternal();
+    if (state.activeView === "cache") {
+      this.partialUpdateCache();
       return;
     }
 
@@ -282,7 +283,7 @@ export class DevToolPanel {
     }
   }
 
-  private partialUpdateInternal(): void {
+  private partialUpdateCache(): void {
     if (!this.sidebar) return;
 
     const state = this.viewModel.getState();
@@ -356,7 +357,7 @@ export class DevToolPanel {
     const mainContent =
       state.activeView === "requests"
         ? this.renderRequestsView()
-        : this.renderInternalView();
+        : this.renderCacheView();
 
     this.sidebar.innerHTML = `
       <div class="spoosh-resize-handle"></div>
@@ -429,21 +430,27 @@ export class DevToolPanel {
     `;
   }
 
-  private renderInternalView(): string {
+  private renderCacheView(): string {
     const state = this.viewModel.getState();
     const cacheEntries = this.store.getCacheEntries(state.searchQuery);
     const selectedEntry = state.selectedCacheKey
       ? cacheEntries.find((e) => e.queryKey === state.selectedCacheKey)
       : null;
 
-    const cacheDetail = renderCacheDetail({
-      entry: selectedEntry ?? null,
-      activeTab: state.internalTab,
-    });
+    const detailPanel = state.showSettings
+      ? renderSettings({
+          showPassedPlugins: state.showPassedPlugins,
+          theme: state.theme,
+          position: state.position,
+        })
+      : renderCacheDetail({
+          entry: selectedEntry ?? null,
+          activeTab: state.internalTab,
+        });
 
     return `
       <div class="spoosh-list-panel" style="width: ${state.listPanelWidth}px; min-width: ${state.listPanelWidth}px;">
-        ${renderHeader({ filters: this.store.getFilters(), showSettings: state.showSettings, searchQuery: state.searchQuery, hideFilters: true })}
+        ${renderHeader({ filters: this.store.getFilters(), showSettings: state.showSettings, searchQuery: state.searchQuery, hideFilters: true, hideClear: true })}
         <div class="spoosh-list-content">
           <div class="spoosh-cache-section">
             <div class="spoosh-section-header">
@@ -468,7 +475,7 @@ export class DevToolPanel {
         </div>
       </div>
       <div class="spoosh-divider-handle"></div>
-      ${cacheDetail}
+      ${detailPanel}
     `;
   }
 

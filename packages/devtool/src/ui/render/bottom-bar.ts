@@ -11,7 +11,7 @@ export function renderBottomBar(ctx: BottomBarContext): string {
     <div class="spoosh-bottom-bar">
       <select class="spoosh-view-select" data-setting="view">
         <option value="requests" ${activeView === "requests" ? "selected" : ""}>Requests</option>
-        <option value="internal" ${activeView === "internal" ? "selected" : ""}>Internal</option>
+        <option value="cache" ${activeView === "cache" ? "selected" : ""}>Cache</option>
       </select>
     </div>
   `;

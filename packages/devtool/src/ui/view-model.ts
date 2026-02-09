@@ -9,7 +9,7 @@ export type PositionMode =
   | "bottom-left"
   | "top-right"
   | "top-left";
-export type PanelView = "requests" | "internal";
+export type PanelView = "requests" | "cache";
 export type InternalTab = "data" | "meta" | "raw";
 
 export interface ViewModelState {
