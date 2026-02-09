@@ -60,6 +60,15 @@ export class DevToolStore implements DevToolStoreInterface {
 
     return entries
       .filter((e) => {
+        try {
+          const parsed = JSON.parse(e.key) as { method?: string };
+          if (parsed.method && parsed.method !== "GET") {
+            return false;
+          }
+        } catch {
+          // Ignore parsing errors
+        }
+
         if (!query) return true;
 
         return e.key.toLowerCase().includes(query);
