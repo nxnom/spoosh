@@ -14,7 +14,8 @@ export type ActionIntent =
   | { type: "toggle-group"; groupKey: string }
   | { type: "toggle-diff-view"; diffKey: string }
   | { type: "toggle-passed" }
-  | { type: "change-setting"; setting: string; value: boolean };
+  | { type: "change-setting"; setting: string; value: boolean }
+  | { type: "dismiss-settings" };
 
 export interface ActionRouter {
   parseIntent(event: MouseEvent | Event): ActionIntent | null;
@@ -91,6 +92,17 @@ export function createActionRouter(
       return { type: "toggle-filter", filter: filter as OperationType };
     }
 
+    const isInListPanel = target.closest(".spoosh-list-panel");
+    const isOnSectionHeader = target.closest(".spoosh-section-header");
+
+    if (
+      isInListPanel &&
+      isOnSectionHeader &&
+      viewModel.getState().showSettings
+    ) {
+      return { type: "dismiss-settings" };
+    }
+
     if (setting) {
       const checkbox = target as HTMLInputElement;
       return { type: "change-setting", setting, value: checkbox.checked };
@@ -146,6 +158,12 @@ export function createActionRouter(
           if (intent.value !== viewModel.getState().showPassedPlugins) {
             viewModel.togglePassedPlugins();
           }
+        }
+        break;
+
+      case "dismiss-settings":
+        if (viewModel.getState().showSettings) {
+          viewModel.toggleSettings();
         }
         break;
     }

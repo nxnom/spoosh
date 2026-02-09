@@ -148,7 +148,7 @@ export function createViewModel(): ViewModel {
 
   function selectTrace(traceId: string | null): void {
     mutableExpandedSteps.clear();
-    state = { ...state, selectedTraceId: traceId };
+    state = { ...state, selectedTraceId: traceId, showSettings: false };
     notify();
   }
 

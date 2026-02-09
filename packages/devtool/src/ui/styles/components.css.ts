@@ -94,26 +94,28 @@ export const componentsCSS = `
   /* ===== Filters ===== */
   .spoosh-filters {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     padding: 6px 10px;
     border-bottom: 1px solid var(--spoosh-border);
   }
 
   .spoosh-filter {
-    padding: 3px 8px;
-    border: 1px solid var(--spoosh-border);
-    border-radius: 4px;
-    background: transparent;
+    padding: 2px 8px;
+    border: none;
+    border-radius: 10px;
+    background: var(--spoosh-border);
     color: var(--spoosh-text-muted);
     cursor: pointer;
-    font-size: 11px;
+    font-size: 10px;
     font-family: inherit;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
   }
 
   .spoosh-filter.active {
-    background: var(--spoosh-primary);
-    border-color: var(--spoosh-primary);
-    color: white;
+    background: rgba(88, 166, 255, 0.2);
+    color: var(--spoosh-primary);
   }
 
   /* ===== Section Header ===== */

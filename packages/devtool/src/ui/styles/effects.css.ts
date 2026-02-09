@@ -60,7 +60,13 @@ export const effectsCSS = `
   }
 
   .spoosh-filter:hover {
-    border-color: var(--spoosh-text-muted);
+    background: var(--spoosh-text-muted);
+    color: var(--spoosh-bg);
+  }
+
+  .spoosh-filter.active:hover {
+    background: rgba(88, 166, 255, 0.3);
+    color: var(--spoosh-primary);
   }
 
   /* ===== Tab Transitions ===== */
