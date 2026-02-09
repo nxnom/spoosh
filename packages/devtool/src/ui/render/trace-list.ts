@@ -6,6 +6,20 @@ export interface TraceRowContext {
   isSelected: boolean;
 }
 
+function getResponsePreview(trace: OperationTrace): string {
+  if (trace.duration === undefined) return "pending...";
+  if (trace.response?.error) return "error";
+
+  const data = trace.response?.data;
+  if (data === undefined) return "no data";
+  if (data === null) return "null";
+  if (Array.isArray(data)) return `Array(${data.length})`;
+  if (typeof data === "object") return "Object";
+  if (typeof data === "string")
+    return data.length > 20 ? `"${data.slice(0, 20)}..."` : `"${data}"`;
+  return String(data);
+}
+
 export function renderTraceRow(ctx: TraceRowContext): string {
   const { trace, isSelected } = ctx;
   const isPending = trace.duration === undefined;
@@ -15,15 +29,21 @@ export function renderTraceRow(ctx: TraceRowContext): string {
   const queryParams = formatQueryParams(
     trace.request.query as Record<string, unknown> | undefined
   );
+  const preview = getResponsePreview(trace);
 
   return `
     <div class="spoosh-trace ${isSelected ? "selected" : ""}" data-trace-id="${trace.id}">
       <div class="spoosh-trace-status ${statusClass}"></div>
       <div class="spoosh-trace-info">
-        <span class="spoosh-trace-method method-${trace.method}">${trace.method}</span>
-        <span class="spoosh-trace-path">${trace.path}${queryParams ? `<span class="spoosh-trace-query">?${escapeHtml(queryParams)}</span>` : ""}</span>
+        <div class="spoosh-trace-key-row">
+          <span class="spoosh-trace-method method-${trace.method}">${trace.method}</span>
+          <span class="spoosh-trace-path">${trace.path}${queryParams ? `<span class="spoosh-trace-query">?${escapeHtml(queryParams)}</span>` : ""}</span>
+        </div>
+        <div class="spoosh-trace-preview">${escapeHtml(preview)}</div>
       </div>
-      <span class="spoosh-trace-time">${duration}ms</span>
+      <div class="spoosh-trace-meta">
+        <span class="spoosh-trace-time">${duration}ms</span>
+      </div>
     </div>
   `;
 }

@@ -35,6 +35,16 @@ function parseQueryKey(queryKey: string): ParsedQueryKey {
   }
 }
 
+function getDataPreview(data: unknown): string {
+  if (data === undefined) return "empty";
+  if (data === null) return "null";
+  if (Array.isArray(data)) return `Array(${data.length})`;
+  if (typeof data === "object") return `Object`;
+  if (typeof data === "string")
+    return data.length > 20 ? `"${data.slice(0, 20)}..."` : `"${data}"`;
+  return String(data);
+}
+
 export function renderCacheRow(
   entry: CacheEntryDisplay,
   isSelected: boolean
@@ -52,15 +62,22 @@ export function renderCacheRow(
         ? "success"
         : "empty";
 
+  const dataPreview = hasError
+    ? "error"
+    : getDataPreview(entry.entry.state.data);
+
   return `
     <div class="spoosh-cache-entry ${isSelected ? "selected" : ""}" data-cache-key="${escapeHtml(entry.queryKey)}">
       <div class="spoosh-cache-status ${statusClass}"></div>
       <div class="spoosh-cache-info">
-        <span class="spoosh-cache-method method-${method}">${method}</span>
-        <span class="spoosh-cache-path">${escapeHtml(path)}${queryParams ? `<span class="spoosh-cache-query">?${escapeHtml(queryParams)}</span>` : ""}</span>
+        <div class="spoosh-cache-key-row">
+          <span class="spoosh-cache-method method-${method}">${method}</span>
+          <span class="spoosh-cache-path">${escapeHtml(path)}${queryParams ? `<span class="spoosh-cache-query">?${escapeHtml(queryParams)}</span>` : ""}</span>
+        </div>
+        <div class="spoosh-cache-preview">${escapeHtml(dataPreview)}</div>
       </div>
       <div class="spoosh-cache-meta">
-        ${entry.subscriberCount > 0 ? `<span class="spoosh-cache-subscribers">${entry.subscriberCount}</span>` : ""}
+        ${entry.subscriberCount > 0 ? `<span class="spoosh-cache-subscribers" title="Active subscribers">${entry.subscriberCount}</span>` : ""}
         ${isStale ? `<span class="spoosh-cache-stale-badge">stale</span>` : ""}
       </div>
     </div>

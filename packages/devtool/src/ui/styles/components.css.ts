@@ -180,35 +180,51 @@ export const componentsCSS = `
   }
 
   /* ===== Trace List ===== */
+  .spoosh-requests-section .spoosh-section-header {
+    background: linear-gradient(90deg, rgba(136, 87, 255, 0.08) 0%, transparent 100%);
+    border-left: 2px solid #8857ff;
+  }
+
   .spoosh-trace {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
     cursor: pointer;
     border-bottom: 1px solid var(--spoosh-border);
   }
 
+  .spoosh-trace:hover {
+    background: rgba(136, 87, 255, 0.05);
+  }
+
   .spoosh-trace.selected {
-    background: var(--spoosh-bg);
-    border-left: 2px solid var(--spoosh-primary);
+    background: rgba(136, 87, 255, 0.08);
+    border-left: 2px solid #8857ff;
     padding-left: 8px;
   }
 
   .spoosh-trace-status {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
     flex-shrink: 0;
+    margin-top: 2px;
   }
 
   .spoosh-trace-status.success { background: var(--spoosh-success); }
   .spoosh-trace-status.error { background: var(--spoosh-error); }
-  .spoosh-trace-status.pending { background: var(--spoosh-primary); }
+  .spoosh-trace-status.pending { background: #8857ff; }
 
   .spoosh-trace-info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .spoosh-trace-key-row {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -221,12 +237,12 @@ export const componentsCSS = `
 
   /* Method colors - semantic naming */
   .method-GET { color: var(--spoosh-success); }
-  .method-POST { color: var(--spoosh-primary); }
+  .method-POST { color: #8857ff; }
   .method-PUT, .method-PATCH { color: var(--spoosh-warning); }
   .method-DELETE { color: var(--spoosh-error); }
 
   .spoosh-trace-path {
-    color: var(--spoosh-text-muted);
+    color: var(--spoosh-text);
     font-size: 11px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -234,19 +250,33 @@ export const componentsCSS = `
   }
 
   .spoosh-trace-query {
-    color: var(--spoosh-primary);
+    color: #8857ff;
     font-size: 10px;
-    opacity: 0.8;
+  }
+
+  .spoosh-trace-preview {
+    font-size: 10px;
+    color: var(--spoosh-text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 100px;
+  }
+
+  .spoosh-trace-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
   }
 
   .spoosh-trace-time {
-    color: var(--spoosh-text-muted);
-    font-size: 10px;
-    flex-shrink: 0;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    background: rgba(136, 87, 255, 0.15);
+    color: #8857ff;
+    font-weight: 500;
   }
 
   /* ===== Events List ===== */
@@ -907,6 +937,11 @@ export const componentsCSS = `
     overflow: hidden;
   }
 
+  .spoosh-cache-section .spoosh-section-header {
+    background: linear-gradient(90deg, rgba(20, 184, 166, 0.1) 0%, transparent 100%);
+    border-left: 2px solid #14b8a6;
+  }
+
   .spoosh-cache-entries {
     flex: 1;
     overflow-y: auto;
@@ -915,37 +950,50 @@ export const componentsCSS = `
   .spoosh-cache-entry {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
+    gap: 10px;
+    padding: 10px 12px;
     cursor: pointer;
     border-bottom: 1px solid var(--spoosh-border);
+    background: var(--spoosh-surface);
+    margin: 4px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--spoosh-border);
   }
 
   .spoosh-cache-entry:hover {
-    background: var(--spoosh-bg);
+    border-color: #14b8a6;
+    background: rgba(20, 184, 166, 0.05);
   }
 
   .spoosh-cache-entry.selected {
-    background: var(--spoosh-bg);
-    border-left: 2px solid var(--spoosh-primary);
-    padding-left: 8px;
+    border-color: #14b8a6;
+    background: rgba(20, 184, 166, 0.08);
+    box-shadow: 0 0 0 1px rgba(20, 184, 166, 0.3);
   }
 
   .spoosh-cache-status {
-    width: 6px;
-    height: 6px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
+    border: 2px solid var(--spoosh-surface);
+    box-shadow: 0 0 0 2px currentColor;
   }
 
-  .spoosh-cache-status.success { background: var(--spoosh-success); }
-  .spoosh-cache-status.error { background: var(--spoosh-error); }
-  .spoosh-cache-status.stale { background: var(--spoosh-warning); }
-  .spoosh-cache-status.empty { background: var(--spoosh-border); }
+  .spoosh-cache-status.success { color: var(--spoosh-success); background: var(--spoosh-success); }
+  .spoosh-cache-status.error { color: var(--spoosh-error); background: var(--spoosh-error); }
+  .spoosh-cache-status.stale { color: var(--spoosh-warning); background: var(--spoosh-warning); }
+  .spoosh-cache-status.empty { color: var(--spoosh-border); background: var(--spoosh-border); }
 
   .spoosh-cache-info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .spoosh-cache-key-row {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -953,42 +1001,58 @@ export const componentsCSS = `
 
   .spoosh-cache-method {
     font-weight: 600;
-    font-size: 10px;
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: rgba(20, 184, 166, 0.15);
+    color: #14b8a6;
   }
 
   .spoosh-cache-path {
-    color: var(--spoosh-text-muted);
+    color: var(--spoosh-text);
     font-size: 11px;
+    font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .spoosh-cache-query {
-    color: var(--spoosh-primary);
+    color: #14b8a6;
     font-size: 10px;
-    opacity: 0.8;
+    font-weight: 400;
+  }
+
+  .spoosh-cache-preview {
+    font-size: 10px;
+    color: var(--spoosh-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--spoosh-font);
+    padding-left: 1px;
   }
 
   .spoosh-cache-meta {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-end;
     gap: 4px;
     flex-shrink: 0;
   }
 
   .spoosh-cache-subscribers {
     font-size: 9px;
-    padding: 1px 5px;
-    border-radius: 8px;
-    background: var(--spoosh-primary);
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: #14b8a6;
     color: white;
     font-weight: 600;
   }
 
   .spoosh-cache-stale-badge {
     font-size: 9px;
-    padding: 1px 4px;
+    padding: 2px 5px;
     border-radius: 3px;
     background: rgba(210, 153, 34, 0.15);
     color: var(--spoosh-warning);
@@ -1034,27 +1098,26 @@ export const componentsCSS = `
   .spoosh-cache-actions {
     display: flex;
     gap: 8px;
-    padding: 12px;
+    padding: 10px 12px;
     border-top: 1px solid var(--spoosh-border);
     background: var(--spoosh-surface);
   }
 
   .spoosh-cache-action-btn {
-    padding: 6px 12px;
+    padding: 5px 10px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 10px;
     font-family: inherit;
     font-weight: 500;
     cursor: pointer;
     background: var(--spoosh-surface);
-    border: 1px solid var(--spoosh-border);
-    color: var(--spoosh-text);
+    border: 1px solid #14b8a6;
+    color: #14b8a6;
     transition: all 0.15s;
   }
 
   .spoosh-cache-action-btn:hover {
-    background: var(--spoosh-bg);
-    border-color: var(--spoosh-text-muted);
+    background: rgba(20, 184, 166, 0.1);
   }
 
   .spoosh-cache-action-btn.danger {
@@ -1067,7 +1130,7 @@ export const componentsCSS = `
   }
 
   .spoosh-cache-clear-all {
-    padding: 8px 10px;
+    padding: 6px 10px;
     border-top: 1px solid var(--spoosh-border);
     background: var(--spoosh-surface);
   }
