@@ -138,7 +138,7 @@ export interface DevToolStoreInterface {
   clear(): void;
 }
 
-export type DetailTab = "data" | "request" | "plugins";
+export type DetailTab = "data" | "request" | "meta" | "plugins";
 
 export type TimelineScope = "request" | "operation" | "global";
 

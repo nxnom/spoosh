@@ -8,6 +8,8 @@ import {
   renderEventRow,
   renderPluginsTab,
   renderDataTab,
+  renderMetaTab,
+  getMetaCount,
 } from "./render";
 import { createRenderScheduler } from "./render-scheduler";
 import { createResizeController } from "./resize-controller";
@@ -215,6 +217,13 @@ export class DevToolPanel {
         pluginsTabBtn.textContent = `Plugins ${pluginCount > 0 ? `(${pluginCount})` : ""}`;
       }
 
+      const metaTabBtn = this.sidebar.querySelector('[data-tab="meta"]');
+
+      if (metaTabBtn) {
+        const metaCount = getMetaCount(selectedTrace);
+        metaTabBtn.textContent = `Meta${metaCount > 0 ? ` (${metaCount})` : ""}`;
+      }
+
       if (tabContent) {
         if (state.activeTab === "plugins") {
           tabContent.innerHTML = renderPluginsTab({
@@ -233,6 +242,13 @@ export class DevToolPanel {
 
           if (currentlyShowingSpinner && !isPending) {
             tabContent.innerHTML = renderDataTab(selectedTrace);
+          }
+        } else if (state.activeTab === "meta") {
+          const currentlyShowingSpinner =
+            tabContent.querySelector(".spoosh-spinner");
+
+          if (currentlyShowingSpinner && !isPending) {
+            tabContent.innerHTML = renderMetaTab(selectedTrace);
           }
         }
 

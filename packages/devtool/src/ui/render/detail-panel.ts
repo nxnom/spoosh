@@ -2,7 +2,13 @@ import type { OperationTrace } from "../../types";
 import type { DetailTab, PositionMode, ThemeMode } from "../view-model";
 import { escapeHtml, formatTime } from "../utils";
 import { renderSettings } from "./settings";
-import { renderDataTab, renderRequestTab, renderPluginsTab } from "./tabs";
+import {
+  renderDataTab,
+  renderRequestTab,
+  renderMetaTab,
+  renderPluginsTab,
+  getMetaCount,
+} from "./tabs";
 
 export interface DetailPanelContext {
   trace: OperationTrace | null;
@@ -44,6 +50,8 @@ function renderTabContent(ctx: DetailPanelContext): string {
       return renderDataTab(trace);
     case "request":
       return renderRequestTab(trace);
+    case "meta":
+      return renderMetaTab(trace);
     case "plugins":
       return renderPluginsTab({
         trace,
@@ -109,6 +117,9 @@ export function renderDetailPanel(ctx: DetailPanelContext): string {
         </button>
         <button class="spoosh-tab ${activeTab === "request" ? "active" : ""}" data-tab="request">
           Request
+        </button>
+        <button class="spoosh-tab ${activeTab === "meta" ? "active" : ""}" data-tab="meta">
+          Meta${getMetaCount(trace) > 0 ? ` (${getMetaCount(trace)})` : ""}
         </button>
         <button class="spoosh-tab ${activeTab === "plugins" ? "active" : ""}" data-tab="plugins">
           Plugins ${pluginCount > 0 ? `(${pluginCount})` : ""}

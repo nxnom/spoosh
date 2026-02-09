@@ -2,7 +2,7 @@ import type { OperationType } from "@spoosh/core";
 
 import type { DevToolFilters, DevToolStoreInterface } from "../types";
 
-export type DetailTab = "data" | "request" | "plugins";
+export type DetailTab = "data" | "request" | "meta" | "plugins";
 export type ThemeMode = "light" | "dark";
 export type PositionMode =
   | "bottom-right"
