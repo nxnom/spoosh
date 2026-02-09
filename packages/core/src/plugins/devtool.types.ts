@@ -130,8 +130,9 @@ export type EventOptions = {
 };
 
 /**
- * Scoped tracer API for plugins.
+ * Request-bound tracer API for plugins.
  * Created via `context.tracer?.(pluginName)`.
+ * Automatically bound to the request's queryKey for accurate devtool tracing.
  *
  * @example
  * ```ts
@@ -139,10 +140,9 @@ export type EventOptions = {
  * t?.return("Cache hit", { color: "success" });
  * t?.log("Transformed", { color: "info", diff: { before, after } });
  * t?.skip("Nothing to do", { color: "muted" });
- * t?.event("Scheduled poll in 5000ms", { queryKey, meta: { interval: 5000 } });
  * ```
  */
-export interface PluginTracer {
+export interface RequestTracer {
   /** Returned early without calling next() */
   return(msg: string, options?: TraceOptions): void;
 
@@ -151,7 +151,24 @@ export interface PluginTracer {
 
   /** Nothing to do, passed through */
   skip(msg: string, options?: TraceOptions): void;
-
-  /** Standalone event not tied to a request (polling, debounce, gc, etc.) */
-  event(msg: string, options?: EventOptions): void;
 }
+
+/**
+ * Event tracer API for standalone events not tied to a request lifecycle.
+ * Created via `context.eventTracer?.(pluginName)`.
+ * Use for async callbacks like polling, debounce completion, gc, etc.
+ *
+ * @example
+ * ```ts
+ * const et = context.eventTracer?.("my-plugin");
+ * et?.emit("Poll triggered", { queryKey, color: "success" });
+ * et?.emit("GC cleaned 5 entries", { color: "info", meta: { count: 5 } });
+ * ```
+ */
+export interface EventTracer {
+  /** Emit a standalone event not tied to a request */
+  emit(msg: string, options?: EventOptions): void;
+}
+
+/** @deprecated Use RequestTracer instead */
+export type PluginTracer = RequestTracer;

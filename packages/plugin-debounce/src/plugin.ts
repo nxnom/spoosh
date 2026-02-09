@@ -1,4 +1,4 @@
-import type { SpooshPlugin, PluginTracer } from "@spoosh/core";
+import type { SpooshPlugin, EventTracer } from "@spoosh/core";
 
 import type {
   DebounceReadOptions,
@@ -69,7 +69,7 @@ export function debouncePlugin(): SpooshPlugin<{
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
   const latestQueryKeys = new Map<string, string>();
   const prevRequests = new Map<string, RequestOptionsSnapshot>();
-  const tracers = new Map<string, PluginTracer>();
+  const eventTracers = new Map<string, EventTracer>();
 
   return {
     name: PLUGIN_NAME,
@@ -94,6 +94,7 @@ export function debouncePlugin(): SpooshPlugin<{
 
     middleware: async (context, next) => {
       const t = context.tracer?.(PLUGIN_NAME);
+      const et = context.eventTracer?.(PLUGIN_NAME);
 
       const pluginOptions = context.pluginOptions as
         | DebounceReadOptions
@@ -157,9 +158,9 @@ export function debouncePlugin(): SpooshPlugin<{
       if (existingTimer) {
         clearTimeout(existingTimer);
 
-        const prevTracer = tracers.get(stableKey);
+        const prevEventTracer = eventTracers.get(stableKey);
 
-        prevTracer?.event("Request cancelled (new input)", {
+        prevEventTracer?.emit("Request cancelled (new input)", {
           queryKey: existingQueryKey,
           color: "warning",
         });
@@ -167,11 +168,11 @@ export function debouncePlugin(): SpooshPlugin<{
 
       latestQueryKeys.set(stableKey, queryKey);
 
-      if (t) {
-        tracers.set(stableKey, t);
+      if (et) {
+        eventTracers.set(stableKey, et);
       }
 
-      t?.event(`Request debounced (${debounceMs}ms)`, {
+      et?.emit(`Request debounced (${debounceMs}ms)`, {
         queryKey,
         color: "info",
         meta: { delay: debounceMs },
@@ -184,9 +185,9 @@ export function debouncePlugin(): SpooshPlugin<{
         const latestKey = latestQueryKeys.get(stableKey);
 
         if (latestKey) {
-          const storedTracer = tracers.get(stableKey);
+          const storedEventTracer = eventTracers.get(stableKey);
 
-          storedTracer?.event("Debounce complete, triggering request", {
+          storedEventTracer?.emit("Debounce complete, triggering request", {
             queryKey: latestKey,
             color: "success",
           });

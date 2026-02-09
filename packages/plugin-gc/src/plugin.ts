@@ -2,9 +2,8 @@ import type {
   SpooshPlugin,
   InstanceApiContext,
   StateManager,
-  EventEmitter,
+  EventTracer,
 } from "@spoosh/core";
-import { emitTraceEvent } from "@spoosh/core";
 
 const PLUGIN_NAME = "spoosh:gc";
 
@@ -37,7 +36,7 @@ export type GcPluginExports = {
 
 function runGarbageCollection(
   stateManager: StateManager,
-  eventEmitter: EventEmitter,
+  eventTracer: EventTracer | undefined,
   options: GcPluginOptions
 ): number {
   const { maxAge, maxEntries } = options;
@@ -85,15 +84,10 @@ function runGarbageCollection(
   }
 
   if (removedCount > 0) {
-    emitTraceEvent(
-      eventEmitter,
-      PLUGIN_NAME,
-      `Cleaned ${removedCount} cache entries`,
-      {
-        color: "success",
-        meta: { removed: removedCount, total: entries.length },
-      }
-    );
+    eventTracer?.emit(`Cleaned ${removedCount} cache entries`, {
+      color: "success",
+      meta: { removed: removedCount, total: entries.length },
+    });
   }
 
   return removedCount;
@@ -137,33 +131,27 @@ export function gcPlugin(
     operations: [],
 
     instanceApi(context: InstanceApiContext) {
-      const { stateManager, eventEmitter } = context;
+      const { stateManager } = context;
+      const et = context.eventTracer?.(PLUGIN_NAME);
 
       const runGc = () => {
-        return runGarbageCollection(stateManager, eventEmitter, options);
+        return runGarbageCollection(stateManager, et, options);
       };
 
-      emitTraceEvent(
-        eventEmitter,
-        PLUGIN_NAME,
-        `GC scheduled every ${interval}ms`,
-        {
-          color: "info",
-          meta: {
-            interval,
-            maxAge: options.maxAge,
-            maxEntries: options.maxEntries,
-          },
-        }
-      );
+      et?.emit(`GC scheduled every ${interval}ms`, {
+        color: "info",
+        meta: {
+          interval,
+          maxAge: options.maxAge,
+          maxEntries: options.maxEntries,
+        },
+      });
 
       setInterval(() => {
         runGc();
       }, interval);
 
-      return {
-        runGc,
-      };
+      return { runGc };
     },
   };
 }

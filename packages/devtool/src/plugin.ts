@@ -1,7 +1,8 @@
 import type {
   SpooshPlugin,
   SpooshResponse,
-  PluginTracer,
+  RequestTracer,
+  EventTracer,
   PluginContext,
   TraceOptions,
   TraceStage,
@@ -59,10 +60,28 @@ export function devtool(
 
   const store = globalStore;
 
+  const createEventTracer = (plugin: string): EventTracer => ({
+    emit: (msg, options) =>
+      store.addEvent({
+        plugin,
+        message: msg,
+        color: options?.color,
+        queryKey: options?.queryKey,
+        meta: options?.meta,
+        timestamp: Date.now(),
+      }),
+  });
+
   return {
     name: "spoosh:devtool",
     operations: ["read", "write", "infiniteRead"],
     priority: -100,
+
+    contextEnhancer(context) {
+      (
+        context as unknown as { eventTracer: PluginContext["eventTracer"] }
+      ).eventTracer = createEventTracer;
+    },
 
     middleware: async (context, next) => {
       const existingTrace = store.getCurrentTrace(context.queryKey);
@@ -78,7 +97,7 @@ export function devtool(
 
       const trace = store.startTrace(context, resolvedPath);
 
-      const createPluginTracer = (plugin: string): PluginTracer => {
+      const createRequestTracer = (plugin: string): RequestTracer => {
         const step = (
           stage: TraceStage,
           msg: string,
@@ -100,20 +119,11 @@ export function devtool(
           return: (msg, options) => step("return", msg, options),
           log: (msg, options) => step("log", msg, options),
           skip: (msg, options) => step("skip", msg, options),
-          event: (msg, options) =>
-            store.addEvent({
-              plugin,
-              message: msg,
-              color: options?.color,
-              queryKey: options?.queryKey,
-              meta: options?.meta,
-              timestamp: Date.now(),
-            }),
         };
       };
 
       (context as unknown as { tracer: PluginContext["tracer"] }).tracer =
-        createPluginTracer;
+        createRequestTracer;
 
       const response = await next();
 
@@ -147,6 +157,10 @@ export function devtool(
     },
 
     instanceApi(ctx) {
+      (
+        ctx as unknown as { eventTracer: typeof createEventTracer }
+      ).eventTracer = createEventTracer;
+
       const plugins = ctx.pluginExecutor
         .getPlugins()
         .map((p) => ({ name: p.name, operations: [...p.operations] }));

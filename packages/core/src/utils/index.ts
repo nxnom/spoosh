@@ -27,4 +27,4 @@ export {
 } from "./path-utils";
 export { isNetworkError, isAbortError } from "./errors";
 export { clone } from "./clone";
-export { createTracer, emitTraceEvent } from "./tracer";
+export { createTracer } from "./tracer";

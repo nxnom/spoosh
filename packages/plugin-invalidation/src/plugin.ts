@@ -3,7 +3,6 @@ import type {
   PluginContext,
   InstanceApiContext,
 } from "@spoosh/core";
-import { emitTraceEvent } from "@spoosh/core";
 
 import type {
   InvalidationPluginConfig,
@@ -173,25 +172,19 @@ export function invalidationPlugin(
 
     instanceApi(context: InstanceApiContext) {
       const { stateManager, eventEmitter } = context;
+      const et = context.eventTracer?.(PLUGIN_NAME);
 
       const invalidate = (input: string | string[]): void => {
         const tags = Array.isArray(input) ? input : [input];
 
         if (tags.includes("*")) {
-          emitTraceEvent(eventEmitter, PLUGIN_NAME, "Refetch all (manual)", {
-            color: "warning",
-          });
+          et?.emit("Refetch all (manual)", { color: "warning" });
           eventEmitter.emit("refetchAll", undefined);
           return;
         }
 
         if (tags.length > 0) {
-          emitTraceEvent(
-            eventEmitter,
-            PLUGIN_NAME,
-            `Invalidated: ${tags.join(", ")}`,
-            { color: "info" }
-          );
+          et?.emit(`Invalidated: ${tags.join(", ")}`, { color: "info" });
           stateManager.markStale(tags);
           eventEmitter.emit("invalidate", tags);
         }

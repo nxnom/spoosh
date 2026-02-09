@@ -1,5 +1,4 @@
-import type { EventEmitter, SpooshPlugin } from "@spoosh/core";
-import { emitTraceEvent } from "@spoosh/core";
+import type { EventEmitter, SpooshPlugin, EventTracer } from "@spoosh/core";
 
 import type {
   RefetchPluginConfig,
@@ -61,13 +60,14 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
   const setupFocusListener = (
     instanceId: string,
     queryKey: string,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    eventTracer?: EventTracer
   ) => {
     if (!isBrowser) return;
 
     const visibilityHandler = () => {
       if (document.visibilityState === "visible") {
-        emitTraceEvent(eventEmitter, PLUGIN_NAME, "Triggered on visibility", {
+        eventTracer?.emit("Triggered on visibility", {
           queryKey,
           color: "success",
         });
@@ -80,7 +80,7 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
     };
 
     const focusHandler = () => {
-      emitTraceEvent(eventEmitter, PLUGIN_NAME, "Triggered on focus", {
+      eventTracer?.emit("Triggered on focus", {
         queryKey,
         color: "success",
       });
@@ -94,7 +94,7 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
     document.addEventListener("visibilitychange", visibilityHandler);
     window.addEventListener("focus", focusHandler);
 
-    emitTraceEvent(eventEmitter, PLUGIN_NAME, "Focus listener setup", {
+    eventTracer?.emit("Focus listener setup", {
       queryKey,
       color: "info",
     });
@@ -111,12 +111,13 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
   const setupReconnectListener = (
     instanceId: string,
     queryKey: string,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    eventTracer?: EventTracer
   ) => {
     if (!isBrowser) return;
 
     const handler = () => {
-      emitTraceEvent(eventEmitter, PLUGIN_NAME, "Triggered on reconnect", {
+      eventTracer?.emit("Triggered on reconnect", {
         queryKey,
         color: "success",
       });
@@ -129,7 +130,7 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
 
     window.addEventListener("online", handler);
 
-    emitTraceEvent(eventEmitter, PLUGIN_NAME, "Reconnect listener setup", {
+    eventTracer?.emit("Reconnect listener setup", {
       queryKey,
       color: "info",
     });
@@ -185,6 +186,7 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
     lifecycle: {
       onMount(context) {
         const { queryKey, eventEmitter, instanceId } = context;
+        const et = context.eventTracer?.(PLUGIN_NAME);
 
         if (!instanceId) return;
 
@@ -198,16 +200,17 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
           pluginOptions?.refetchOnReconnect ?? refetchOnReconnect;
 
         if (shouldRefetchOnFocus) {
-          setupFocusListener(instanceId, queryKey, eventEmitter);
+          setupFocusListener(instanceId, queryKey, eventEmitter, et);
         }
 
         if (shouldRefetchOnReconnect) {
-          setupReconnectListener(instanceId, queryKey, eventEmitter);
+          setupReconnectListener(instanceId, queryKey, eventEmitter, et);
         }
       },
 
       onUpdate(context) {
         const { queryKey, eventEmitter, instanceId } = context;
+        const et = context.eventTracer?.(PLUGIN_NAME);
 
         if (!instanceId) return;
 
@@ -228,13 +231,13 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
         }
 
         if (shouldRefetchOnFocus && !hasFocusListener(instanceId)) {
-          setupFocusListener(instanceId, queryKey, eventEmitter);
+          setupFocusListener(instanceId, queryKey, eventEmitter, et);
         } else if (!shouldRefetchOnFocus && hasFocusListener(instanceId)) {
           removeFocusListener(instanceId);
         }
 
         if (shouldRefetchOnReconnect && !hasReconnectListener(instanceId)) {
-          setupReconnectListener(instanceId, queryKey, eventEmitter);
+          setupReconnectListener(instanceId, queryKey, eventEmitter, et);
         } else if (
           !shouldRefetchOnReconnect &&
           hasReconnectListener(instanceId)

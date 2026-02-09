@@ -53,6 +53,7 @@ export function throttlePlugin(): SpooshPlugin<{
 
     middleware: async (context, next) => {
       const t = context.tracer?.(PLUGIN_NAME);
+      const et = context.eventTracer?.(PLUGIN_NAME);
 
       const pluginOptions = context.pluginOptions as
         | ThrottleReadOptions
@@ -73,7 +74,7 @@ export function throttlePlugin(): SpooshPlugin<{
       if (elapsed < throttleMs) {
         const remaining = throttleMs - elapsed;
 
-        t?.event(`Request blocked (${remaining}ms remaining)`, {
+        et?.emit(`Request blocked (${remaining}ms remaining)`, {
           queryKey,
           color: "warning",
           meta: { throttle: throttleMs, elapsed, remaining },

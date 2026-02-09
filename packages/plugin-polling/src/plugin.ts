@@ -2,7 +2,7 @@ import type {
   SpooshPlugin,
   PluginContext,
   SpooshResponse,
-  PluginTracer,
+  EventTracer,
 } from "@spoosh/core";
 
 import type {
@@ -52,7 +52,7 @@ export function pollingPlugin(): SpooshPlugin<{
   writeResult: PollingWriteResult;
 }> {
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>();
-  const tracers = new Map<string, PluginTracer>();
+  const eventTracers = new Map<string, EventTracer>();
 
   const clearPolling = (queryKey: string, reason?: string) => {
     const timeout = timeouts.get(queryKey);
@@ -61,13 +61,13 @@ export function pollingPlugin(): SpooshPlugin<{
       clearTimeout(timeout);
       timeouts.delete(queryKey);
 
-      const t = tracers.get(queryKey);
+      const et = eventTracers.get(queryKey);
 
-      if (t && reason) {
-        t.event(reason, { queryKey });
+      if (et && reason) {
+        et.emit(reason, { queryKey });
       }
 
-      tracers.delete(queryKey);
+      eventTracers.delete(queryKey);
     }
   };
 
@@ -76,7 +76,7 @@ export function pollingPlugin(): SpooshPlugin<{
     response?: SpooshResponse<unknown, unknown>
   ) => {
     const { queryKey, eventEmitter } = context;
-    const t = context.tracer?.(PLUGIN_NAME);
+    const et = context.eventTracer?.(PLUGIN_NAME);
 
     const pluginOptions = context.pluginOptions as
       | PollingReadOptions
@@ -93,17 +93,17 @@ export function pollingPlugin(): SpooshPlugin<{
         : pollingInterval;
 
     if (resolvedInterval === false || resolvedInterval <= 0) {
-      t?.event("Polling disabled", { queryKey, color: "muted" });
+      et?.emit("Polling disabled", { queryKey, color: "muted" });
       return;
     }
 
     clearPolling(queryKey);
 
-    if (t) {
-      tracers.set(queryKey, t);
+    if (et) {
+      eventTracers.set(queryKey, et);
     }
 
-    t?.event(`Scheduled next poll in ${resolvedInterval}ms`, {
+    et?.emit(`Scheduled next poll in ${resolvedInterval}ms`, {
       queryKey,
       color: "info",
       meta: { interval: resolvedInterval },
@@ -112,9 +112,9 @@ export function pollingPlugin(): SpooshPlugin<{
     const timeout = setTimeout(() => {
       timeouts.delete(queryKey);
 
-      const storedTracer = tracers.get(queryKey);
+      const storedTracer = eventTracers.get(queryKey);
 
-      storedTracer?.event("Poll triggered", { queryKey, color: "success" });
+      storedTracer?.emit("Poll triggered", { queryKey, color: "success" });
 
       eventEmitter.emit("refetch", {
         queryKey,

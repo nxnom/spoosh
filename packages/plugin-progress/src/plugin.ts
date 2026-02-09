@@ -59,6 +59,8 @@ export function progressPlugin(): SpooshPlugin<{
               }
             }
 
+            t?.log(`Progress: ${event.loaded}/${total}`, { color: "info" });
+
             context.stateManager.setMeta(context.queryKey, {
               progress: {
                 loaded: event.loaded,

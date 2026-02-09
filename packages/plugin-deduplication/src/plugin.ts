@@ -1,5 +1,4 @@
 import type { SpooshPlugin, SpooshResponse } from "@spoosh/core";
-import { emitTraceEvent } from "@spoosh/core";
 
 import type {
   DeduplicationConfig,
@@ -58,6 +57,8 @@ export function deduplicationPlugin(
     operations: ["read", "infiniteRead", "write"],
 
     middleware: async (context, next) => {
+      const et = context.eventTracer?.(PLUGIN_NAME);
+
       const defaultMode =
         context.operationType === "write"
           ? resolvedConfig.write
@@ -75,12 +76,10 @@ export function deduplicationPlugin(
         );
 
         if (existingPromise) {
-          emitTraceEvent(
-            context.eventEmitter,
-            PLUGIN_NAME,
-            "Deduplicated (in-flight)",
-            { color: "success", queryKey: context.queryKey }
-          );
+          et?.emit("Deduplicated (in-flight)", {
+            color: "success",
+            queryKey: context.queryKey,
+          });
 
           return existingPromise as Promise<
             SpooshResponse<unknown, unknown>

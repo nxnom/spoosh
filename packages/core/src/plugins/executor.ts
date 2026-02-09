@@ -196,6 +196,10 @@ export function createPluginExecutor(
       const ctx = input as PluginContext;
       ctx.plugins = createPluginAccessor(ctx);
 
+      for (const plugin of plugins) {
+        plugin.contextEnhancer?.(ctx);
+      }
+
       return ctx;
     },
   };

@@ -9,7 +9,6 @@ import {
   resolvePath,
   resolveTags,
   createInitialState,
-  emitTraceEvent,
 } from "@spoosh/core";
 import type {
   PrefetchPluginConfig,
@@ -204,20 +203,13 @@ export function prefetchPlugin(
         };
 
         const existingPromise = stateManager.getPendingPromise(queryKey);
+        const et = pluginContext.eventTracer?.(PLUGIN_NAME);
 
         if (existingPromise) {
-          emitTraceEvent(eventEmitter, PLUGIN_NAME, "Deduplicated", {
-            queryKey,
-            color: "muted",
-          });
-
           return existingPromise as Promise<SpooshResponse<TData, TError>>;
         }
 
-        emitTraceEvent(eventEmitter, PLUGIN_NAME, "Prefetching", {
-          queryKey,
-          color: "info",
-        });
+        et?.emit("Prefetching", { queryKey, color: "info" });
 
         const fetchPromise = pluginExecutor.executeMiddleware(
           "read",

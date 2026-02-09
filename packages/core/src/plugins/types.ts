@@ -3,7 +3,7 @@ import type { AnyRequestOptions } from "../types/request.types";
 import type { SpooshResponse } from "../types/response.types";
 import type { EventEmitter } from "../events/emitter";
 import type { StateManager } from "../state/manager";
-import type { PluginTracer } from "./devtool.types";
+import type { RequestTracer, EventTracer } from "./devtool.types";
 
 export * from "./devtool.types";
 
@@ -40,7 +40,24 @@ export type PluginRequestOptions = Omit<
   headers: Record<string, string>;
 };
 
-export type PluginContext = {
+/**
+ * Registry for extending PluginContext with custom properties.
+ * Third-party plugins can extend this interface via declaration merging.
+ *
+ * @example
+ * ```ts
+ * // In your plugin's types file:
+ * declare module '@spoosh/core' {
+ *   interface PluginContextExtensions {
+ *     myCustomProperty?: MyCustomType;
+ *   }
+ * }
+ * ```
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface PluginContextExtensions {}
+
+export type PluginContextBase = {
   readonly operationType: OperationType;
   readonly path: string;
   readonly method: HttpMethod;
@@ -73,22 +90,45 @@ export type PluginContext = {
   forceRefetch?: boolean;
 
   /**
-   * Creates a scoped tracer for devtools debugging.
+   * Creates a request-bound tracer for devtools debugging.
+   * Automatically bound to this request's queryKey.
    * Only available when devtools plugin is active.
    *
    * @example
    * ```ts
    * const t = ctx.tracer?.("my-plugin");
-   * t?.skip("Cache hit", "success");
-   * t?.before("Processing", "info");
-   * t?.after("Done", "success", { before: old, after: new });
+   * t?.return("Cache hit", { color: "success" });
+   * t?.log("Processing", { color: "info" });
+   * t?.skip("Nothing to do", { color: "muted" });
    * ```
    */
-  tracer?: (plugin: string) => PluginTracer;
+  tracer?: (plugin: string) => RequestTracer;
+
+  /**
+   * Creates an event tracer for standalone events not tied to a request lifecycle.
+   * Use for async callbacks like polling, debounce completion, gc, etc.
+   * Only available when devtools plugin is active.
+   *
+   * @example
+   * ```ts
+   * const et = ctx.eventTracer?.("my-plugin");
+   * et?.emit("Poll triggered", { queryKey, color: "success" });
+   * ```
+   */
+  eventTracer?: (plugin: string) => EventTracer;
 };
 
+/**
+ * Plugin context with extensions from third-party plugins.
+ * Plugins can extend this via PluginContextExtensions declaration merging.
+ */
+export type PluginContext = PluginContextBase & PluginContextExtensions;
+
 /** Input type for creating PluginContext (without injected properties) */
-export type PluginContextInput = Omit<PluginContext, "plugins" | "tracer">;
+export type PluginContextInput = Omit<
+  PluginContext,
+  "plugins" | "tracer" | "eventTracer"
+>;
 
 /**
  * Middleware function that wraps the fetch flow.
@@ -242,6 +282,21 @@ export interface SpooshPlugin<T extends PluginTypeConfig = PluginTypeConfig> {
 
   /** Expose functions/variables for other plugins to access via `context.plugins.get(name)` */
   exports?: (context: PluginContext) => object;
+
+  /**
+   * Enhance the plugin context during creation.
+   * Called for every context creation, allowing plugins to inject properties.
+   * Use this for adding tracers, debuggers, or other context-wide utilities.
+   *
+   * @example
+   * ```ts
+   * contextEnhancer(context) {
+   *   context.tracer = (plugin) => createTracer(plugin);
+   *   context.eventTracer = (plugin) => createEventTracer(plugin);
+   * }
+   * ```
+   */
+  contextEnhancer?: (context: PluginContext) => void;
 
   /**
    * Expose functions/properties on the framework adapter return value (e.g., create).
@@ -499,12 +554,42 @@ export type InstancePluginExecutor = {
 };
 
 /**
+ * Registry for extending InstanceApiContext with custom properties.
+ * Third-party plugins can extend this interface via declaration merging.
+ *
+ * @example
+ * ```ts
+ * // In your plugin's types file:
+ * declare module '@spoosh/core' {
+ *   interface InstanceApiContextExtensions {
+ *     myCustomProperty?: MyCustomType;
+ *   }
+ * }
+ * ```
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface InstanceApiContextExtensions {}
+
+/**
  * Context provided to plugin's instanceApi function.
  * Used for creating framework-agnostic APIs exposed on the Spoosh instance.
  */
-export type InstanceApiContext<TApi = unknown> = {
+export type InstanceApiContextBase<TApi = unknown> = {
   api: TApi;
   stateManager: StateManager;
   eventEmitter: EventEmitter;
   pluginExecutor: InstancePluginExecutor;
+
+  /**
+   * Creates an event tracer for standalone events.
+   * Only available when devtools plugin is active.
+   */
+  eventTracer?: (plugin: string) => EventTracer;
 };
+
+/**
+ * Instance API context with extensions from third-party plugins.
+ * Plugins can extend this via InstanceApiContextExtensions declaration merging.
+ */
+export type InstanceApiContext<TApi = unknown> = InstanceApiContextBase<TApi> &
+  InstanceApiContextExtensions;
