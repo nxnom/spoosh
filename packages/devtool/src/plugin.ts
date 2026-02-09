@@ -171,8 +171,6 @@ export function devtool(
           store,
           theme,
           position,
-          stateManager: ctx.stateManager,
-          eventEmitter: ctx.eventEmitter,
           showFloatingIcon,
         });
         globalPanel.mount();

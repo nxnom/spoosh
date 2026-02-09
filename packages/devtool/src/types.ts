@@ -141,3 +141,23 @@ export interface DevToolStoreInterface {
   subscribe(callback: () => void): () => void;
   clear(): void;
 }
+
+export type DetailTab = "data" | "request" | "plugins";
+
+export type TimelineScope = "request" | "operation" | "global";
+
+export interface RenderContext {
+  traces: OperationTrace[];
+  events: StandaloneEvent[];
+  filters: DevToolFilters;
+  knownPlugins: string[];
+  selectedTraceId: string | null;
+  activeTab: DetailTab;
+  showSettings: boolean;
+  showPassedPlugins: boolean;
+  expandedSteps: ReadonlySet<string>;
+  expandedGroups: ReadonlySet<string>;
+  fullDiffViews: ReadonlySet<string>;
+  listPanelWidth: number;
+  requestsPanelHeight: number;
+}
