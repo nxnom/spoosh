@@ -46,9 +46,10 @@ export class DevToolPanel {
     this.position = options.position;
     this.showFloatingIcon = options.showFloatingIcon;
 
-    this.actionRouter = createActionRouter(this.viewModel, this.store, () =>
-      this.renderImmediate()
-    );
+    this.actionRouter = createActionRouter(this.viewModel, this.store, {
+      onRender: () => this.renderImmediate(),
+      onClose: () => this.close(),
+    });
   }
 
   mount(): void {

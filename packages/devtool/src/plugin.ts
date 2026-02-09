@@ -3,7 +3,6 @@ import type {
   SpooshResponse,
   RequestTracer,
   EventTracer,
-  PluginContext,
   TraceOptions,
   TraceStage,
 } from "@spoosh/core";
@@ -11,6 +10,7 @@ import type {
 import { DevToolStore } from "./store";
 import { DevToolPanel } from "./ui/panel";
 import type { DevToolConfig, DevToolInstanceApi, DevToolTheme } from "./types";
+import { DedupeMode } from "@spoosh/plugin-deduplication";
 
 function resolvePathWithParams(
   path: string,
@@ -78,16 +78,24 @@ export function devtool(
     priority: -100,
 
     contextEnhancer(context) {
-      (
-        context as unknown as { eventTracer: PluginContext["eventTracer"] }
-      ).eventTracer = createEventTracer;
+      context.eventTracer = createEventTracer;
     },
 
     middleware: async (context, next) => {
-      const existingTrace = store.getCurrentTrace(context.queryKey);
+      const hasPendingPromise = context.stateManager.getPendingPromise(
+        context.queryKey
+      );
 
-      if (existingTrace) {
-        return next();
+      if (hasPendingPromise) {
+        const dedupePlugin = context.plugins?.get("spoosh:deduplication");
+        const willBeDeduplicated = dedupePlugin?.isDedupeEnabled(
+          context.operationType,
+          context.pluginOptions as { dedupe?: DedupeMode } | undefined
+        );
+
+        if (willBeDeduplicated) {
+          return next();
+        }
       }
 
       const resolvedPath = resolvePathWithParams(
@@ -122,8 +130,7 @@ export function devtool(
         };
       };
 
-      (context as unknown as { tracer: PluginContext["tracer"] }).tracer =
-        createRequestTracer;
+      context.tracer = createRequestTracer;
 
       const response = await next();
 
@@ -157,9 +164,7 @@ export function devtool(
     },
 
     instanceApi(ctx) {
-      (
-        ctx as unknown as { eventTracer: typeof createEventTracer }
-      ).eventTracer = createEventTracer;
+      ctx.eventTracer = createEventTracer;
 
       const plugins = ctx.pluginExecutor
         .getPlugins()

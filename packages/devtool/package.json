@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@spoosh/core": "workspace:*",
+    "@spoosh/plugin-deduplication": "workspace:*",
     "@spoosh/test-utils": "workspace:*"
   }
 }

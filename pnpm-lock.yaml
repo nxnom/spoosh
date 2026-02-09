@@ -140,6 +140,9 @@ importers:
       '@spoosh/core':
         specifier: workspace:*
         version: link:../core
+      '@spoosh/plugin-deduplication':
+        specifier: workspace:*
+        version: link:../plugin-deduplication
       '@spoosh/test-utils':
         specifier: workspace:*
         version: link:../test-utils

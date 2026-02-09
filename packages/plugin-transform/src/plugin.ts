@@ -60,6 +60,7 @@ export function transformPlugin(): SpooshPlugin<{
       const pluginOptions = context.pluginOptions as
         | TransformOptions
         | undefined;
+
       const responseTransformer = (pluginOptions as TransformReadOptions)
         ?.transform;
 

@@ -98,7 +98,7 @@ export function createPluginExecutor(
         continue;
       }
 
-      await handler(context as PluginContext);
+      await handler(context);
     }
   };
 
@@ -118,7 +118,7 @@ export function createPluginExecutor(
         continue;
       }
 
-      await handler(context as PluginContext, previousContext as PluginContext);
+      await handler(context, previousContext);
     }
   };
 
@@ -157,14 +157,7 @@ export function createPluginExecutor(
         type NextFn = () => Promise<SpooshResponse<any, any>>;
 
         const chain: NextFn = middlewares.reduceRight<NextFn>(
-          (next, middleware) => {
-            return () =>
-              middleware(
-                context as PluginContext,
-                next as () => Promise<SpooshResponse<unknown, unknown>>
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ) as Promise<SpooshResponse<any, any>>;
-          },
+          (next, middleware) => () => middleware(context, next),
           tracedCoreFetch
         );
 
@@ -173,14 +166,10 @@ export function createPluginExecutor(
 
       for (const plugin of applicablePlugins) {
         if (plugin.afterResponse) {
-          const newResponse = await plugin.afterResponse(
-            context as PluginContext,
-            response as SpooshResponse<unknown, unknown>
-          );
+          const newResponse = await plugin.afterResponse(context, response);
 
           if (newResponse) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            response = newResponse as SpooshResponse<any, any>;
+            response = newResponse;
           }
         }
       }

@@ -129,7 +129,7 @@ export function createViewModel(): ViewModel {
   }
 
   function close(): void {
-    state = { ...state, isOpen: false };
+    state = { ...state, isOpen: false, showSettings: false };
     notify();
   }
 

@@ -1,9 +1,4 @@
-import type {
-  SpooshPlugin,
-  InstanceApiContext,
-  StateManager,
-  EventTracer,
-} from "@spoosh/core";
+import type { SpooshPlugin, StateManager, EventTracer } from "@spoosh/core";
 
 const PLUGIN_NAME = "spoosh:gc";
 
@@ -130,7 +125,7 @@ export function gcPlugin(
     name: PLUGIN_NAME,
     operations: [],
 
-    instanceApi(context: InstanceApiContext) {
+    instanceApi(context) {
       const { stateManager } = context;
       const et = context.eventTracer?.(PLUGIN_NAME);
 

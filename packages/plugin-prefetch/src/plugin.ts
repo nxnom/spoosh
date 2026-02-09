@@ -1,6 +1,5 @@
 import type {
   SpooshPlugin,
-  InstanceApiContext,
   OperationState,
   SpooshResponse,
 } from "@spoosh/core";
@@ -77,7 +76,7 @@ export function prefetchPlugin(
     name: PLUGIN_NAME,
     operations: [],
 
-    instanceApi(context: InstanceApiContext) {
+    instanceApi(context) {
       const { api, stateManager, eventEmitter, pluginExecutor } = context;
 
       const prefetch = async <TData = unknown, TError = unknown>(

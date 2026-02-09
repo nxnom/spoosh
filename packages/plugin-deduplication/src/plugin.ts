@@ -92,6 +92,18 @@ export function deduplicationPlugin(
 
     exports: () => ({
       getConfig: () => resolvedConfig,
+      isDedupeEnabled: (
+        operationType: string,
+        pluginOptions?: { dedupe?: DedupeMode }
+      ): boolean => {
+        const defaultMode =
+          operationType === "write"
+            ? resolvedConfig.write
+            : resolvedConfig.read;
+        const dedupeMode = pluginOptions?.dedupe ?? defaultMode;
+
+        return dedupeMode === "in-flight";
+      },
     }),
   };
 }

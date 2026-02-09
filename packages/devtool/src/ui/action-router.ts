@@ -17,6 +17,11 @@ export type ActionIntent =
   | { type: "change-setting"; setting: string; value: boolean }
   | { type: "dismiss-settings" };
 
+export interface ActionRouterCallbacks {
+  onRender: () => void;
+  onClose: () => void;
+}
+
 export interface ActionRouter {
   parseIntent(event: MouseEvent | Event): ActionIntent | null;
   dispatch(intent: ActionIntent): void;
@@ -25,8 +30,9 @@ export interface ActionRouter {
 export function createActionRouter(
   viewModel: ViewModel,
   store: DevToolStoreInterface,
-  onRender: () => void
+  callbacks: ActionRouterCallbacks
 ): ActionRouter {
+  const { onRender, onClose } = callbacks;
   function parseIntent(event: MouseEvent | Event): ActionIntent | null {
     const target = event.target as HTMLElement;
 
@@ -114,7 +120,7 @@ export function createActionRouter(
   function dispatch(intent: ActionIntent): void {
     switch (intent.type) {
       case "close":
-        viewModel.close();
+        onClose();
         return;
 
       case "settings":
