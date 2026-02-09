@@ -30,7 +30,7 @@ export class DevToolStore implements DevToolStoreInterface {
   private subscribers = new Set<() => void>();
   private registeredPlugins: RegisteredPlugin[] = [];
   private filters: DevToolFilters = {
-    operationTypes: new Set(["read", "write", "infiniteRead"]),
+    operationTypes: new Set(),
     showSkipped: true,
     showOnlyWithChanges: false,
   };
@@ -129,6 +129,10 @@ export class DevToolStore implements DevToolStoreInterface {
   }
 
   getFilteredTraces(): OperationTrace[] {
+    if (this.filters.operationTypes.size === 0) {
+      return this.getTraces();
+    }
+
     return this.getTraces().filter((trace) =>
       this.filters.operationTypes.has(trace.operationType)
     );
