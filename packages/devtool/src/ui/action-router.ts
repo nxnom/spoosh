@@ -1,7 +1,7 @@
 import type { OperationType } from "@spoosh/core";
 
 import type { DevToolStoreInterface } from "../types";
-import type { DetailTab, ViewModel } from "./view-model";
+import type { DetailTab, ThemeMode, ViewModel } from "./view-model";
 
 export type ActionIntent =
   | { type: "close" }
@@ -17,12 +17,14 @@ export type ActionIntent =
   | { type: "change-setting"; setting: string; value: boolean }
   | { type: "dismiss-settings" }
   | { type: "copy-query-key"; queryKey: string }
-  | { type: "search"; query: string };
+  | { type: "search"; query: string }
+  | { type: "change-theme"; theme: ThemeMode };
 
 export interface ActionRouterCallbacks {
   onRender: () => void;
   onPartialRender: () => void;
   onClose: () => void;
+  onThemeChange: (theme: ThemeMode) => void;
 }
 
 export interface ActionRouter {
@@ -35,7 +37,7 @@ export function createActionRouter(
   store: DevToolStoreInterface,
   callbacks: ActionRouterCallbacks
 ): ActionRouter {
-  const { onRender, onPartialRender, onClose } = callbacks;
+  const { onRender, onPartialRender, onClose, onThemeChange } = callbacks;
   function parseIntent(event: MouseEvent | Event): ActionIntent | null {
     const target = event.target as HTMLElement;
 
@@ -122,6 +124,11 @@ export function createActionRouter(
       return { type: "dismiss-settings" };
     }
 
+    if (setting === "theme") {
+      const select = target as HTMLSelectElement;
+      return { type: "change-theme", theme: select.value as ThemeMode };
+    }
+
     if (setting) {
       const checkbox = target as HTMLInputElement;
       return { type: "change-setting", setting, value: checkbox.checked };
@@ -201,6 +208,11 @@ export function createActionRouter(
       case "search":
         viewModel.setSearchQuery(intent.query);
         onPartialRender();
+        return;
+
+      case "change-theme":
+        viewModel.setTheme(intent.theme);
+        onThemeChange(intent.theme);
         return;
     }
 

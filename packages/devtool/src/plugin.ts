@@ -41,7 +41,6 @@ export function devtool(
 ): SpooshPlugin<{ instanceApi: DevToolInstanceApi }> {
   const {
     enabled = true,
-    theme = "dark",
     position = "bottom-right",
     maxHistory = 50,
     showFloatingIcon = true,
@@ -174,7 +173,6 @@ export function devtool(
       if (!globalPanel) {
         globalPanel = new DevToolPanel({
           store,
-          theme,
           position,
           showFloatingIcon,
         });

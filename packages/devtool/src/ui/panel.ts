@@ -18,7 +18,6 @@ import { createViewModel } from "./view-model";
 
 interface DevToolPanelOptions {
   store: DevToolStoreInterface;
-  theme: "light" | "dark" | DevToolTheme;
   position: "bottom-right" | "bottom-left" | "top-right" | "top-left";
   showFloatingIcon: boolean;
 }
@@ -42,7 +41,7 @@ export class DevToolPanel {
 
   constructor(options: DevToolPanelOptions) {
     this.store = options.store;
-    this.theme = resolveTheme(options.theme);
+    this.theme = resolveTheme(this.viewModel.getState().theme);
     this.position = options.position;
     this.showFloatingIcon = options.showFloatingIcon;
 
@@ -51,6 +50,7 @@ export class DevToolPanel {
       onPartialRender: () =>
         this.renderScheduler.immediate(() => this.partialUpdate()),
       onClose: () => this.close(),
+      onThemeChange: (theme) => this.setTheme(theme),
     });
   }
 
@@ -282,6 +282,7 @@ export class DevToolPanel {
       knownPlugins: selectedTrace
         ? this.store.getKnownPlugins(selectedTrace.operationType)
         : [],
+      theme: state.theme,
     });
 
     this.sidebar.innerHTML = `

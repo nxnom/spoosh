@@ -3,6 +3,7 @@ import type { OperationType } from "@spoosh/core";
 import type { DevToolFilters, DevToolStoreInterface } from "../types";
 
 export type DetailTab = "data" | "request" | "plugins";
+export type ThemeMode = "light" | "dark";
 
 export interface ViewModelState {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export interface ViewModelState {
   listPanelWidth: number;
   requestsPanelHeight: number;
   searchQuery: string;
+  theme: ThemeMode;
 }
 
 type Listener = () => void;
@@ -36,6 +38,7 @@ const DEFAULT_STATE: ViewModelState = {
   listPanelWidth: 280,
   requestsPanelHeight: 0.8,
   searchQuery: "",
+  theme: "dark",
 };
 
 export interface ViewModel {
@@ -54,6 +57,7 @@ export interface ViewModel {
   toggleGroup(groupKey: string): void;
   toggleDiffView(diffKey: string): void;
   togglePassedPlugins(): void;
+  setTheme(theme: ThemeMode): void;
 
   setSidebarWidth(width: number): void;
   setListPanelWidth(width: number): void;
@@ -98,6 +102,7 @@ export function createViewModel(): ViewModel {
             settings.listPanelWidth ?? DEFAULT_STATE.listPanelWidth,
           requestsPanelHeight:
             settings.requestsPanelHeight ?? DEFAULT_STATE.requestsPanelHeight,
+          theme: settings.theme ?? DEFAULT_STATE.theme,
         };
       }
     } catch {
@@ -121,6 +126,7 @@ export function createViewModel(): ViewModel {
             sidebarWidth: state.sidebarWidth,
             listPanelWidth: state.listPanelWidth,
             requestsPanelHeight: state.requestsPanelHeight,
+            theme: state.theme,
           })
         );
       } catch {
@@ -232,6 +238,12 @@ export function createViewModel(): ViewModel {
     notify();
   }
 
+  function setTheme(theme: ThemeMode): void {
+    state = { ...state, theme };
+    saveSettings();
+    notify();
+  }
+
   function clearExpanded(): void {
     mutableExpandedSteps.clear();
     mutableExpandedGroups.clear();
@@ -279,6 +291,7 @@ export function createViewModel(): ViewModel {
     toggleGroup,
     toggleDiffView,
     togglePassedPlugins,
+    setTheme,
     setSidebarWidth,
     setListPanelWidth,
     setRequestsPanelHeight,

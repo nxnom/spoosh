@@ -14,9 +14,6 @@ export interface DevToolConfig {
   /** Enable or disable the devtool. Defaults to true. */
   enabled?: boolean;
 
-  /** Theme for the devtool panel. Defaults to 'dark'. */
-  theme?: "light" | "dark" | DevToolTheme;
-
   /** Position of the floating icon. Defaults to 'bottom-right'. */
   position?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
 

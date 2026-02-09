@@ -806,4 +806,27 @@ export const componentsCSS = `
     font-size: 12px;
     color: var(--spoosh-text);
   }
+
+  .spoosh-settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+  }
+
+  .spoosh-settings-select {
+    background: var(--spoosh-surface);
+    border: 1px solid var(--spoosh-border);
+    color: var(--spoosh-text);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .spoosh-settings-select:focus {
+    outline: none;
+    border-color: var(--spoosh-primary);
+  }
 `;
