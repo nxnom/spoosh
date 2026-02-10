@@ -402,7 +402,7 @@ export class DevToolPanel {
       <div class="spoosh-panel">
         ${mainContent}
       </div>
-      ${renderBottomBar({ activeView: state.activeView, sidebarPosition: state.sidebarPosition, theme: state.theme })}
+      ${renderBottomBar({ activeView: state.activeView, theme: state.theme })}
     `;
 
     this.setupResizeHandlers();
@@ -747,10 +747,62 @@ export class DevToolPanel {
     return activePlugins.size;
   }
 
+  private startSidebarDrag(e: MouseEvent): void {
+    e.preventDefault();
+    const startX = e.clientX;
+
+    document.body.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const threshold = 50;
+
+      if (Math.abs(dx) < threshold) return;
+
+      const newPosition: SidebarPosition = dx < 0 ? "left" : "right";
+      const currentPosition = this.viewModel.getState().sidebarPosition;
+
+      if (newPosition !== currentPosition) {
+        this.viewModel.setSidebarPosition(newPosition);
+        this.setSidebarPosition(newPosition);
+        this.renderImmediate();
+      }
+
+      cleanup();
+    };
+
+    const handleMouseUp = () => {
+      cleanup();
+    };
+
+    const cleanup = () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  }
+
   private attachEvents(): void {
     if (!this.sidebar) return;
 
     this.sidebar.onmousedown = (e) => {
+      const target = e.target as HTMLElement;
+
+      if (target.classList.contains("spoosh-header")) {
+        this.startSidebarDrag(e);
+        return;
+      }
+
+      if (target.closest(".spoosh-detail-title")) {
+        this.startSidebarDrag(e);
+        return;
+      }
+
       const intent = this.actionRouter.parseIntent(e);
 
       if (intent?.type === "select-tab") {

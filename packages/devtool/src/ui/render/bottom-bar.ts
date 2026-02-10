@@ -1,10 +1,17 @@
-import type { PanelView, SidebarPosition, ThemeMode } from "../view-model";
+import type { PanelView, ThemeMode } from "../view-model";
 
 export interface BottomBarContext {
   activeView: PanelView;
-  sidebarPosition: SidebarPosition;
   theme: ThemeMode;
 }
+
+const VIEWS: PanelView[] = ["requests", "cache", "import"];
+
+const VIEW_LABELS: Record<PanelView, string> = {
+  requests: "Requests",
+  cache: "Cache",
+  import: "Import",
+};
 
 const sunIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
   <circle cx="12" cy="12" r="5"/>
@@ -16,10 +23,12 @@ const moonIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" st
 </svg>`;
 
 export function renderBottomBar(ctx: BottomBarContext): string {
-  const { activeView, sidebarPosition, theme } = ctx;
+  const { activeView, theme } = ctx;
 
-  const leftArrowActive = sidebarPosition === "left" ? "active" : "";
-  const rightArrowActive = sidebarPosition === "right" ? "active" : "";
+  const currentIndex = Math.max(0, VIEWS.indexOf(activeView));
+  const prevView = VIEWS[(currentIndex - 1 + VIEWS.length) % VIEWS.length]!;
+  const nextView = VIEWS[(currentIndex + 1) % VIEWS.length]!;
+
   const themeIcon = theme === "dark" ? sunIcon : moonIcon;
   const themeTitle =
     theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
@@ -27,28 +36,26 @@ export function renderBottomBar(ctx: BottomBarContext): string {
 
   return `
     <div class="spoosh-bottom-bar">
-      <div class="spoosh-sidebar-position-btns">
-        <button class="spoosh-sidebar-pos-btn ${leftArrowActive}" data-sidebar-position="left" title="Move sidebar to left">
+      <div class="spoosh-view-nav">
+        <button class="spoosh-view-nav-btn" data-view="${prevView}" title="${VIEW_LABELS[prevView]}">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
         </button>
-        <button class="spoosh-sidebar-pos-btn ${rightArrowActive}" data-sidebar-position="right" title="Move sidebar to right">
+        <select class="spoosh-view-select" data-setting="view">
+          <option value="requests" ${activeView === "requests" ? "selected" : ""}>${VIEW_LABELS.requests}</option>
+          <option value="cache" ${activeView === "cache" ? "selected" : ""}>${VIEW_LABELS.cache}</option>
+          <option value="import" ${activeView === "import" ? "selected" : ""}>${VIEW_LABELS.import}</option>
+        </select>
+        <button class="spoosh-view-nav-btn" data-view="${nextView}" title="${VIEW_LABELS[nextView]}">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>
         </button>
       </div>
-      <div class="spoosh-bottom-bar-right">
-        <select class="spoosh-view-select" data-setting="view">
-          <option value="requests" ${activeView === "requests" ? "selected" : ""}>Requests</option>
-          <option value="cache" ${activeView === "cache" ? "selected" : ""}>Cache</option>
-          <option value="import" ${activeView === "import" ? "selected" : ""}>Import</option>
-        </select>
-        <button class="spoosh-theme-toggle" data-theme="${nextTheme}" title="${themeTitle}">
-          ${themeIcon}
-        </button>
-      </div>
+      <button class="spoosh-theme-toggle" data-theme="${nextTheme}" title="${themeTitle}">
+        ${themeIcon}
+      </button>
     </div>
   `;
 }

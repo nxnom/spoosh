@@ -60,6 +60,7 @@ export const componentsCSS = `
     justify-content: space-between;
     padding: 8px 10px;
     border-bottom: 1px solid var(--spoosh-border);
+    cursor: grab;
   }
 
   .spoosh-title {
@@ -108,7 +109,7 @@ export const componentsCSS = `
 
   /* ===== Tooltips ===== */
   .spoosh-icon-btn::after,
-  .spoosh-sidebar-pos-btn::after,
+  .spoosh-view-nav-btn::after,
   .spoosh-theme-toggle::after {
     content: attr(title);
     position: absolute;
@@ -129,7 +130,7 @@ export const componentsCSS = `
   }
 
   .spoosh-icon-btn:hover::after,
-  .spoosh-sidebar-pos-btn:hover::after,
+  .spoosh-view-nav-btn:hover::after,
   .spoosh-theme-toggle:hover::after {
     opacity: 1;
     visibility: visible;
@@ -141,7 +142,7 @@ export const componentsCSS = `
   }
 
   /* Bottom bar buttons - tooltip above */
-  .spoosh-sidebar-pos-btn::after,
+  .spoosh-view-nav-btn::after,
   .spoosh-theme-toggle::after {
     bottom: calc(100% + 6px);
   }
@@ -407,6 +408,7 @@ export const componentsCSS = `
     align-items: center;
     gap: 8px;
     margin-bottom: 6px;
+    cursor: grab;
   }
 
   .spoosh-detail-path {
@@ -1014,12 +1016,13 @@ export const componentsCSS = `
     flex-shrink: 0;
   }
 
-  .spoosh-sidebar-position-btns {
+  .spoosh-view-nav {
     display: flex;
+    align-items: center;
     gap: 2px;
   }
 
-  .spoosh-sidebar-pos-btn {
+  .spoosh-view-nav-btn {
     position: relative;
     background: transparent;
     border: 1px solid var(--spoosh-border);
@@ -1033,27 +1036,15 @@ export const componentsCSS = `
     transition: all 0.15s;
   }
 
-  .spoosh-sidebar-pos-btn:hover {
+  .spoosh-view-nav-btn:hover {
     background: var(--spoosh-border);
     color: var(--spoosh-text);
   }
 
-  .spoosh-sidebar-pos-btn.active {
-    background: var(--spoosh-primary);
-    border-color: var(--spoosh-primary);
-    color: white;
-  }
-
-  .spoosh-bottom-bar-right {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
   .spoosh-view-select {
-    background: var(--spoosh-bg);
+    background: transparent;
     border: 1px solid var(--spoosh-border);
-    color: var(--spoosh-text);
+    color: var(--spoosh-text-muted);
     padding: 2px 6px;
     border-radius: 3px;
     font-size: 10px;
@@ -1063,7 +1054,6 @@ export const componentsCSS = `
 
   .spoosh-view-select:focus {
     outline: none;
-    border-color: var(--spoosh-primary);
   }
 
   .spoosh-theme-toggle {
