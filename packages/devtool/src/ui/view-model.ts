@@ -9,7 +9,7 @@ export type PositionMode =
   | "bottom-left"
   | "top-right"
   | "top-left";
-export type PanelView = "requests" | "cache" | "import";
+export type PanelView = "requests" | "state" | "import";
 export type InternalTab = "data" | "meta" | "raw";
 export type SidebarPosition = "left" | "right" | "bottom";
 
@@ -31,7 +31,7 @@ export interface ViewModelState {
   position: PositionMode;
   sidebarPosition: SidebarPosition;
   activeView: PanelView;
-  selectedCacheKey: string | null;
+  selectedStateKey: string | null;
   internalTab: InternalTab;
   maxHistory: number;
   selectedImportedTraceId: string | null;
@@ -61,7 +61,7 @@ const DEFAULT_STATE: ViewModelState = {
   position: "bottom-right",
   sidebarPosition: "right",
   activeView: "requests",
-  selectedCacheKey: null,
+  selectedStateKey: null,
   internalTab: "data",
   maxHistory: 50,
   selectedImportedTraceId: null,
@@ -102,7 +102,7 @@ export interface ViewModel {
   getFilters(store: DevToolStoreInterface): DevToolFilters;
 
   setActiveView(view: PanelView): void;
-  selectCacheEntry(key: string | null): void;
+  selectStateEntry(key: string | null): void;
   setInternalTab(tab: InternalTab): void;
   setMaxHistory(value: number): void;
   getMaxHistory(): number;
@@ -352,8 +352,8 @@ export function createViewModel(): ViewModel {
     notify();
   }
 
-  function selectCacheEntry(key: string | null): void {
-    state = { ...state, selectedCacheKey: key };
+  function selectStateEntry(key: string | null): void {
+    state = { ...state, selectedStateKey: key };
     notify();
   }
 
@@ -414,7 +414,7 @@ export function createViewModel(): ViewModel {
     toggleFilter,
     getFilters,
     setActiveView,
-    selectCacheEntry,
+    selectStateEntry,
     setInternalTab,
     setMaxHistory,
     getMaxHistory,

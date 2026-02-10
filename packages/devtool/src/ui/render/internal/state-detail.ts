@@ -6,7 +6,7 @@ import {
   formatTime,
   formatQueryParams,
 } from "../../utils";
-import { renderCacheTabs } from "./cache-tabs";
+import { renderStateTabs } from "./state-tabs";
 
 const copyIcon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
@@ -33,7 +33,7 @@ function renderDataSection(
   `;
 }
 
-export interface CacheDetailContext {
+export interface StateDetailContext {
   entry: CacheEntryDisplay | null;
   activeTab: InternalTab;
 }
@@ -74,7 +74,7 @@ function renderDataTab(entry: CacheEntryDisplay): string {
   }
 
   if (state.data === undefined) {
-    return `<div class="spoosh-empty">No data cached</div>`;
+    return `<div class="spoosh-empty">No data in state</div>`;
   }
 
   return `
@@ -84,33 +84,33 @@ function renderDataTab(entry: CacheEntryDisplay): string {
 }
 
 function renderMetaTab(entry: CacheEntryDisplay): string {
-  const { entry: cacheEntry } = entry;
-  const metaEntries = Array.from(cacheEntry.meta.entries());
+  const { entry: stateEntry } = entry;
+  const metaEntries = Array.from(stateEntry.meta.entries());
 
   const info = [
     {
       label: "Tags",
-      value: cacheEntry.tags.length > 0 ? cacheEntry.tags.join(", ") : "(none)",
+      value: stateEntry.tags.length > 0 ? stateEntry.tags.join(", ") : "(none)",
     },
-    { label: "Self Tag", value: cacheEntry.selfTag ?? "(none)" },
-    { label: "Stale", value: cacheEntry.stale ? "Yes" : "No" },
+    { label: "Self Tag", value: stateEntry.selfTag ?? "(none)" },
+    { label: "Stale", value: stateEntry.stale ? "Yes" : "No" },
     { label: "Subscribers", value: String(entry.subscriberCount) },
     {
       label: "Timestamp",
-      value: cacheEntry.state.timestamp
-        ? formatTime(cacheEntry.state.timestamp)
+      value: stateEntry.state.timestamp
+        ? formatTime(stateEntry.state.timestamp)
         : "(none)",
     },
   ];
 
   return `
-    <div class="spoosh-cache-info-list">
+    <div class="spoosh-state-info-list">
       ${info
         .map(
           (item) => `
-        <div class="spoosh-cache-info-row">
-          <span class="spoosh-cache-info-label">${item.label}</span>
-          <span class="spoosh-cache-info-value">${escapeHtml(item.value)}</span>
+        <div class="spoosh-state-info-row">
+          <span class="spoosh-state-info-label">${item.label}</span>
+          <span class="spoosh-state-info-value">${escapeHtml(item.value)}</span>
         </div>
       `
         )
@@ -132,7 +132,7 @@ function renderRawTab(entry: CacheEntryDisplay): string {
     subscriberCount: entry.subscriberCount,
   };
 
-  return renderDataSection("Raw Cache Entry", raw);
+  return renderDataSection("Raw State Entry", raw);
 }
 
 function renderTabContent(
@@ -149,7 +149,7 @@ function renderTabContent(
   }
 }
 
-export function renderCacheDetail(ctx: CacheDetailContext): string {
+export function renderStateDetail(ctx: StateDetailContext): string {
   const { entry, activeTab } = ctx;
 
   if (!entry) {
@@ -163,7 +163,7 @@ export function renderCacheDetail(ctx: CacheDetailContext): string {
               <line x1="9" y1="21" x2="9" y2="9"/>
             </svg>
           </div>
-          <div class="spoosh-detail-empty-text">Select a cache entry to inspect</div>
+          <div class="spoosh-detail-empty-text">Select a state entry to inspect</div>
         </div>
       </div>
     `;
@@ -189,17 +189,17 @@ export function renderCacheDetail(ctx: CacheDetailContext): string {
         </div>
       </div>
 
-      ${renderCacheTabs({ activeTab })}
+      ${renderStateTabs({ activeTab })}
 
       <div class="spoosh-tab-content">
         ${renderTabContent(entry, activeTab)}
       </div>
 
-      <div class="spoosh-cache-actions">
-        <button class="spoosh-cache-action-btn" data-action="invalidate-cache" data-cache-key="${escapeHtml(entry.queryKey)}">
+      <div class="spoosh-state-actions">
+        <button class="spoosh-state-action-btn" data-action="invalidate-state" data-state-key="${escapeHtml(entry.queryKey)}">
           Invalidate
         </button>
-        <button class="spoosh-cache-action-btn danger" data-action="delete-cache" data-cache-key="${escapeHtml(entry.queryKey)}">
+        <button class="spoosh-state-action-btn danger" data-action="delete-state" data-state-key="${escapeHtml(entry.queryKey)}">
           Delete
         </button>
       </div>

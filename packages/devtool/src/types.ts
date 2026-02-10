@@ -161,7 +161,7 @@ export interface DevToolStoreInterface {
 
 export type DetailTab = "data" | "request" | "meta" | "plugins";
 
-export type PanelView = "requests" | "cache" | "import";
+export type PanelView = "requests" | "state" | "import";
 
 export type InternalTab = "data" | "meta" | "raw";
 

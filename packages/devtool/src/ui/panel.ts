@@ -15,8 +15,8 @@ import {
   renderMetaTab,
   getMetaCount,
   renderBottomBar,
-  renderCacheList,
-  renderCacheDetail,
+  renderStateList,
+  renderStateDetail,
   renderSettings,
   renderImportList,
   renderImportDetail,
@@ -74,18 +74,18 @@ export class DevToolPanel {
       onPositionChange: (position) => this.setPosition(position),
       onSidebarPositionChange: (position) => this.setSidebarPosition(position),
       onMaxHistoryChange: (value) => this.store.setMaxHistory(value),
-      onInvalidateCache: (key) => {
+      onInvalidateState: (key) => {
         this.store.invalidateCacheEntry(key);
         this.renderImmediate();
       },
-      onDeleteCache: (key) => {
+      onDeleteState: (key) => {
         this.store.deleteCacheEntry(key);
-        this.viewModel.selectCacheEntry(null);
+        this.viewModel.selectStateEntry(null);
         this.renderImmediate();
       },
-      onClearAllCache: () => {
+      onClearAllState: () => {
         this.store.clearAllCache();
-        this.viewModel.selectCacheEntry(null);
+        this.viewModel.selectStateEntry(null);
         this.renderImmediate();
       },
       onImportFile: () => this.triggerFileImport(),
@@ -189,8 +189,8 @@ export class DevToolPanel {
 
     const state = this.viewModel.getState();
 
-    if (state.activeView === "cache") {
-      this.partialUpdateCache();
+    if (state.activeView === "state") {
+      this.partialUpdateState();
       return;
     }
 
@@ -346,43 +346,43 @@ export class DevToolPanel {
     }
   }
 
-  private partialUpdateCache(): void {
+  private partialUpdateState(): void {
     if (!this.sidebar) return;
 
     const state = this.viewModel.getState();
-    const cacheEntries = this.store.getCacheEntries(state.searchQuery);
+    const stateEntries = this.store.getCacheEntries(state.searchQuery);
 
-    const cacheSection = this.sidebar.querySelector(".spoosh-cache-section");
+    const stateSection = this.sidebar.querySelector(".spoosh-state-section");
 
-    if (cacheSection) {
-      const countEl = cacheSection.querySelector(".spoosh-section-count");
+    if (stateSection) {
+      const countEl = stateSection.querySelector(".spoosh-section-count");
 
       if (countEl) {
-        countEl.textContent = String(cacheEntries.length);
+        countEl.textContent = String(stateEntries.length);
       }
 
-      const existingList = cacheSection.querySelector(
-        ".spoosh-cache-entries, .spoosh-empty"
+      const existingList = stateSection.querySelector(
+        ".spoosh-state-entries, .spoosh-empty"
       );
 
       if (existingList) {
-        existingList.outerHTML = renderCacheList({
-          entries: cacheEntries,
-          selectedKey: state.selectedCacheKey,
+        existingList.outerHTML = renderStateList({
+          entries: stateEntries,
+          selectedKey: state.selectedStateKey,
           searchQuery: state.searchQuery,
         });
       }
     }
 
-    const selectedEntry = state.selectedCacheKey
-      ? cacheEntries.find((e) => e.queryKey === state.selectedCacheKey)
+    const selectedEntry = state.selectedStateKey
+      ? stateEntries.find((e) => e.queryKey === state.selectedStateKey)
       : null;
 
     if (selectedEntry) {
       const detailPanel = this.sidebar.querySelector(".spoosh-detail-panel");
 
       if (detailPanel) {
-        detailPanel.outerHTML = renderCacheDetail({
+        detailPanel.outerHTML = renderStateDetail({
           entry: selectedEntry,
           activeTab: state.internalTab,
         });
@@ -421,15 +421,15 @@ export class DevToolPanel {
     const savedScrollTop = tabContent?.scrollTop ?? 0;
 
     const listScrollable = this.sidebar.querySelector(
-      ".spoosh-traces, .spoosh-cache-entries"
+      ".spoosh-traces, .spoosh-state-entries"
     );
     const savedListScrollTop = listScrollable?.scrollTop ?? 0;
 
     const mainContent =
       state.activeView === "requests"
         ? this.renderRequestsView()
-        : state.activeView === "cache"
-          ? this.renderCacheView()
+        : state.activeView === "state"
+          ? this.renderStateView()
           : this.renderImportView();
 
     this.sidebar.innerHTML = `
@@ -453,7 +453,7 @@ export class DevToolPanel {
 
     if (savedListScrollTop > 0) {
       const newListScrollable = this.sidebar.querySelector(
-        ".spoosh-traces, .spoosh-cache-entries"
+        ".spoosh-traces, .spoosh-state-entries"
       );
 
       if (newListScrollable) {
@@ -517,11 +517,11 @@ export class DevToolPanel {
     `;
   }
 
-  private renderCacheView(): string {
+  private renderStateView(): string {
     const state = this.viewModel.getState();
-    const cacheEntries = this.store.getCacheEntries(state.searchQuery);
-    const selectedEntry = state.selectedCacheKey
-      ? cacheEntries.find((e) => e.queryKey === state.selectedCacheKey)
+    const stateEntries = this.store.getCacheEntries(state.searchQuery);
+    const selectedEntry = state.selectedStateKey
+      ? stateEntries.find((e) => e.queryKey === state.selectedStateKey)
       : null;
 
     const detailPanel = state.showSettings
@@ -533,7 +533,7 @@ export class DevToolPanel {
           maxHistory: state.maxHistory,
           autoSelectIncoming: state.autoSelectIncoming,
         })
-      : renderCacheDetail({
+      : renderStateDetail({
           entry: selectedEntry ?? null,
           activeTab: state.internalTab,
         });
@@ -542,22 +542,22 @@ export class DevToolPanel {
       <div class="spoosh-list-panel" style="width: ${state.listPanelWidth}px; min-width: ${state.listPanelWidth}px;">
         ${renderHeader({ filters: this.store.getFilters(), showSettings: state.showSettings, searchQuery: state.searchQuery, hideFilters: true, hideClear: true })}
         <div class="spoosh-list-content">
-          <div class="spoosh-cache-section">
+          <div class="spoosh-state-section">
             <div class="spoosh-section-header">
-              <span class="spoosh-section-title">Cache Entries</span>
-              <span class="spoosh-section-count">${cacheEntries.length}</span>
+              <span class="spoosh-section-title">State Entries</span>
+              <span class="spoosh-section-count">${stateEntries.length}</span>
             </div>
-            ${renderCacheList({
-              entries: cacheEntries,
-              selectedKey: state.selectedCacheKey,
+            ${renderStateList({
+              entries: stateEntries,
+              selectedKey: state.selectedStateKey,
               searchQuery: state.searchQuery,
             })}
           </div>
           ${
-            cacheEntries.length > 0
-              ? `<div class="spoosh-cache-clear-all">
-                  <button class="spoosh-cache-action-btn danger" data-action="clear-all-cache">
-                    Clear All Cache
+            stateEntries.length > 0
+              ? `<div class="spoosh-state-clear-all">
+                  <button class="spoosh-state-action-btn danger" data-action="clear-all-state">
+                    Clear All State
                   </button>
                 </div>`
               : ""
@@ -619,11 +619,11 @@ export class DevToolPanel {
           </div>
           ${
             hasSession
-              ? `<div class="spoosh-cache-clear-all">
+              ? `<div class="spoosh-state-clear-all">
                   <button class="spoosh-import-btn" data-action="import-file">
                     Import New File
                   </button>
-                  <button class="spoosh-cache-action-btn danger" data-action="clear-imports">
+                  <button class="spoosh-state-action-btn danger" data-action="clear-imports">
                     Clear
                   </button>
                 </div>`
@@ -746,12 +746,12 @@ export class DevToolPanel {
       }
     }
 
-    if (state.activeView === "cache" && !state.selectedCacheKey) {
+    if (state.activeView === "state" && !state.selectedStateKey) {
       const entries = this.store.getCacheEntries(state.searchQuery);
       const firstEntry = entries[0];
 
       if (firstEntry) {
-        this.viewModel.selectCacheEntry(firstEntry.queryKey);
+        this.viewModel.selectStateEntry(firstEntry.queryKey);
         return true;
       }
     }

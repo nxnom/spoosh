@@ -1,7 +1,7 @@
 import type { CacheEntryDisplay } from "../../../types";
 import { escapeHtml, formatQueryParams } from "../../utils";
 
-export interface CacheListContext {
+export interface StateListContext {
   entries: CacheEntryDisplay[];
   selectedKey: string | null;
   searchQuery: string;
@@ -45,7 +45,7 @@ function getDataPreview(data: unknown): string {
   return String(data);
 }
 
-export function renderCacheRow(
+export function renderStateRow(
   entry: CacheEntryDisplay,
   isSelected: boolean
 ): string {
@@ -67,34 +67,34 @@ export function renderCacheRow(
     : getDataPreview(entry.entry.state.data);
 
   return `
-    <div class="spoosh-cache-entry ${isSelected ? "selected" : ""}" data-cache-key="${escapeHtml(entry.queryKey)}">
-      <div class="spoosh-cache-status ${statusClass}"></div>
-      <div class="spoosh-cache-info">
-        <div class="spoosh-cache-key-row">
-          <span class="spoosh-cache-method method-${method}">${method}</span>
-          <span class="spoosh-cache-path">${escapeHtml(path)}${queryParams ? `<span class="spoosh-cache-query">?${escapeHtml(queryParams)}</span>` : ""}</span>
+    <div class="spoosh-state-entry ${isSelected ? "selected" : ""}" data-state-key="${escapeHtml(entry.queryKey)}">
+      <div class="spoosh-state-status ${statusClass}"></div>
+      <div class="spoosh-state-info">
+        <div class="spoosh-state-key-row">
+          <span class="spoosh-state-method method-${method}">${method}</span>
+          <span class="spoosh-state-path">${escapeHtml(path)}${queryParams ? `<span class="spoosh-state-query">?${escapeHtml(queryParams)}</span>` : ""}</span>
         </div>
-        <div class="spoosh-cache-preview">${escapeHtml(dataPreview)}</div>
+        <div class="spoosh-state-preview">${escapeHtml(dataPreview)}</div>
       </div>
-      <div class="spoosh-cache-meta">
-        ${entry.subscriberCount > 0 ? `<span class="spoosh-cache-subscribers" title="Active subscribers">${entry.subscriberCount}</span>` : ""}
-        ${isStale ? `<span class="spoosh-cache-stale-badge">stale</span>` : ""}
+      <div class="spoosh-state-meta">
+        ${entry.subscriberCount > 0 ? `<span class="spoosh-state-subscribers" title="Active subscribers">${entry.subscriberCount}</span>` : ""}
+        ${isStale ? `<span class="spoosh-state-stale-badge">stale</span>` : ""}
       </div>
     </div>
   `;
 }
 
-export function renderCacheList(ctx: CacheListContext): string {
+export function renderStateList(ctx: StateListContext): string {
   const { entries, selectedKey } = ctx;
 
   if (entries.length === 0) {
-    return `<div class="spoosh-empty">No cache entries</div>`;
+    return `<div class="spoosh-empty">No state entries</div>`;
   }
 
   return `
-    <div class="spoosh-cache-entries">
+    <div class="spoosh-state-entries">
       ${entries
-        .map((entry) => renderCacheRow(entry, entry.queryKey === selectedKey))
+        .map((entry) => renderStateRow(entry, entry.queryKey === selectedKey))
         .join("")}
     </div>
   `;

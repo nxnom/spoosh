@@ -5,11 +5,11 @@ export interface BottomBarContext {
   theme: ThemeMode;
 }
 
-const VIEWS: PanelView[] = ["requests", "cache", "import"];
+const VIEWS: PanelView[] = ["requests", "state", "import"];
 
 const VIEW_LABELS: Record<PanelView, string> = {
   requests: "Requests",
-  cache: "Cache",
+  state: "State",
   import: "Import",
 };
 
@@ -44,7 +44,7 @@ export function renderBottomBar(ctx: BottomBarContext): string {
         </button>
         <select class="spoosh-view-select" data-setting="view">
           <option value="requests" ${activeView === "requests" ? "selected" : ""}>${VIEW_LABELS.requests}</option>
-          <option value="cache" ${activeView === "cache" ? "selected" : ""}>${VIEW_LABELS.cache}</option>
+          <option value="state" ${activeView === "state" ? "selected" : ""}>${VIEW_LABELS.state}</option>
           <option value="import" ${activeView === "import" ? "selected" : ""}>${VIEW_LABELS.import}</option>
         </select>
         <button class="spoosh-view-nav-btn" data-view="${nextView}" title="${VIEW_LABELS[nextView]}">

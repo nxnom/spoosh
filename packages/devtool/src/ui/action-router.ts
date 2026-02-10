@@ -32,11 +32,11 @@ export type ActionIntent =
   | { type: "change-sidebar-position"; position: SidebarPosition }
   | { type: "change-max-history"; value: number }
   | { type: "switch-view"; view: PanelView }
-  | { type: "select-cache-entry"; key: string }
+  | { type: "select-state-entry"; key: string }
   | { type: "select-internal-tab"; tab: InternalTab }
-  | { type: "invalidate-cache"; key: string }
-  | { type: "delete-cache"; key: string }
-  | { type: "clear-all-cache" }
+  | { type: "invalidate-state"; key: string }
+  | { type: "delete-state"; key: string }
+  | { type: "clear-all-state" }
   | { type: "import-file" }
   | { type: "select-imported-trace"; traceId: string }
   | { type: "clear-imports" }
@@ -51,9 +51,9 @@ export interface ActionRouterCallbacks {
   onPositionChange: (position: PositionMode) => void;
   onSidebarPositionChange: (position: SidebarPosition) => void;
   onMaxHistoryChange: (value: number) => void;
-  onInvalidateCache?: (key: string) => void;
-  onDeleteCache?: (key: string) => void;
-  onClearAllCache?: () => void;
+  onInvalidateState?: (key: string) => void;
+  onDeleteState?: (key: string) => void;
+  onClearAllState?: () => void;
   onImportFile?: () => void;
   onClearImports?: () => void;
 }
@@ -77,9 +77,9 @@ export function createActionRouter(
     onPositionChange,
     onSidebarPositionChange,
     onMaxHistoryChange,
-    onInvalidateCache,
-    onDeleteCache,
-    onClearAllCache,
+    onInvalidateState,
+    onDeleteState,
+    onClearAllState,
     onImportFile,
     onClearImports,
   } = callbacks;
@@ -165,20 +165,20 @@ export function createActionRouter(
       return { type: "switch-view", view: panelView as PanelView };
     }
 
-    const cacheKey = target
-      .closest("[data-cache-key]")
-      ?.getAttribute("data-cache-key");
+    const stateKey = target
+      .closest("[data-state-key]")
+      ?.getAttribute("data-state-key");
 
-    if (action === "invalidate-cache" && cacheKey) {
-      return { type: "invalidate-cache", key: cacheKey };
+    if (action === "invalidate-state" && stateKey) {
+      return { type: "invalidate-state", key: stateKey };
     }
 
-    if (action === "delete-cache" && cacheKey) {
-      return { type: "delete-cache", key: cacheKey };
+    if (action === "delete-state" && stateKey) {
+      return { type: "delete-state", key: stateKey };
     }
 
-    if (action === "clear-all-cache") {
-      return { type: "clear-all-cache" };
+    if (action === "clear-all-state") {
+      return { type: "clear-all-state" };
     }
 
     if (action === "import-file") {
@@ -197,8 +197,8 @@ export function createActionRouter(
       return { type: "select-imported-trace", traceId: importedTraceId };
     }
 
-    if (cacheKey && !action) {
-      return { type: "select-cache-entry", key: cacheKey };
+    if (stateKey && !action) {
+      return { type: "select-state-entry", key: stateKey };
     }
 
     const internalTab = target
@@ -411,24 +411,24 @@ export function createActionRouter(
         viewModel.setActiveView(intent.view);
         break;
 
-      case "select-cache-entry":
-        viewModel.selectCacheEntry(intent.key);
+      case "select-state-entry":
+        viewModel.selectStateEntry(intent.key);
         break;
 
       case "select-internal-tab":
         viewModel.setInternalTab(intent.tab);
         break;
 
-      case "invalidate-cache":
-        onInvalidateCache?.(intent.key);
+      case "invalidate-state":
+        onInvalidateState?.(intent.key);
         break;
 
-      case "delete-cache":
-        onDeleteCache?.(intent.key);
+      case "delete-state":
+        onDeleteState?.(intent.key);
         break;
 
-      case "clear-all-cache":
-        onClearAllCache?.();
+      case "clear-all-state":
+        onClearAllState?.();
         break;
 
       case "import-file":

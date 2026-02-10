@@ -1,10 +1,10 @@
 import type { InternalTab } from "../../view-model";
 
-export interface CacheTabsContext {
+export interface StateTabsContext {
   activeTab: InternalTab;
 }
 
-export function renderCacheTabs(ctx: CacheTabsContext): string {
+export function renderStateTabs(ctx: StateTabsContext): string {
   const { activeTab } = ctx;
 
   return `
