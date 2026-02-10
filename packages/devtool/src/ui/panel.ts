@@ -94,7 +94,7 @@ export class DevToolPanel {
       this.fab.id = "spoosh-devtool-fab";
       this.fab.className = this.viewModel.getState().position;
       this.fab.innerHTML = getLogo(20, 18);
-      this.fab.onclick = () => this.toggle();
+      this.setupFabDrag();
       this.shadowRoot.appendChild(this.fab);
     }
 
@@ -590,6 +590,109 @@ export class DevToolPanel {
     } else {
       this.open();
     }
+  }
+
+  private setupFabDrag(): void {
+    if (!this.fab) return;
+
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let hasMoved = false;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      if (!this.fab) return;
+
+      isDragging = true;
+      hasMoved = false;
+      startX = e.clientX;
+      startY = e.clientY;
+
+      this.fab.style.transition = "none";
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !this.fab) return;
+
+      const dx = Math.abs(e.clientX - startX);
+      const dy = Math.abs(e.clientY - startY);
+
+      if (dx > 5 || dy > 5) {
+        hasMoved = true;
+      }
+
+      if (hasMoved) {
+        this.fab.style.top = `${e.clientY - 20}px`;
+        this.fab.style.left = `${e.clientX - 20}px`;
+        this.fab.style.bottom = "auto";
+        this.fab.style.right = "auto";
+      }
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      if (!this.fab) return;
+
+      isDragging = false;
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+
+      if (!hasMoved) {
+        this.fab.style.transition = "";
+        this.fab.style.top = "";
+        this.fab.style.left = "";
+        this.fab.style.bottom = "";
+        this.fab.style.right = "";
+        this.toggle();
+        return;
+      }
+
+      const x = e.clientX;
+      const y = e.clientY;
+      const midX = window.innerWidth / 2;
+      const midY = window.innerHeight / 2;
+
+      let newPosition: PositionMode;
+      let targetTop: string;
+      let targetLeft: string;
+
+      if (x < midX && y < midY) {
+        newPosition = "top-left";
+        targetTop = "20px";
+        targetLeft = "20px";
+      } else if (x >= midX && y < midY) {
+        newPosition = "top-right";
+        targetTop = "20px";
+        targetLeft = `${window.innerWidth - 60}px`;
+      } else if (x < midX && y >= midY) {
+        newPosition = "bottom-left";
+        targetTop = `${window.innerHeight - 60}px`;
+        targetLeft = "20px";
+      } else {
+        newPosition = "bottom-right";
+        targetTop = `${window.innerHeight - 60}px`;
+        targetLeft = `${window.innerWidth - 60}px`;
+      }
+
+      this.fab.style.transition = "top 0.2s ease, left 0.2s ease";
+      this.fab.style.top = targetTop;
+      this.fab.style.left = targetLeft;
+
+      setTimeout(() => {
+        if (!this.fab) return;
+
+        this.fab.style.transition = "";
+        this.fab.style.top = "";
+        this.fab.style.left = "";
+        this.fab.style.bottom = "";
+        this.fab.style.right = "";
+        this.viewModel.setPosition(newPosition);
+        this.setPosition(newPosition);
+      }, 200);
+    };
+
+    this.fab.addEventListener("mousedown", handleMouseDown);
   }
 
   setVisible(visible: boolean): void {

@@ -24,6 +24,14 @@ export function getFabCSS(theme: DevToolTheme): string {
     #spoosh-devtool-fab.top-right { top: 20px; right: 20px; }
     #spoosh-devtool-fab.top-left { top: 20px; left: 20px; }
 
+    #spoosh-devtool-fab {
+      transition: top 0.2s ease, left 0.2s ease, bottom 0.2s ease, right 0.2s ease;
+    }
+
+    #spoosh-devtool-fab:active {
+      cursor: grabbing;
+    }
+
     #spoosh-devtool-fab .badge {
       position: absolute;
       top: -6px;
