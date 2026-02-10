@@ -1,5 +1,9 @@
 # @spoosh/plugin-throttle
 
+## 0.2.0
+
+- Add devtool tracing support
+
 ## 0.1.11
 
 - Set `priority` to `100` to ensure throttle plugin runs after other plugins

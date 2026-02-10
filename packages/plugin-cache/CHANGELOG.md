@@ -1,5 +1,9 @@
 # @spoosh/plugin-cache
 
+## 0.4.0
+
+- Add devtool tracing support
+
 ## 0.3.5
 
 - Set `priority` to `-10` to ensure cache plugin runs before other plugins

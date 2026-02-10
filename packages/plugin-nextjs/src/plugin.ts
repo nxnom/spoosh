@@ -81,17 +81,14 @@ export function nextjsPlugin(config: NextjsPluginConfig = {}): SpooshPlugin<{
       const revalidatePaths = pluginOptions?.revalidatePaths ?? [];
 
       if (context.tags.length > 0 || revalidatePaths.length > 0) {
-        const parts: string[] = [];
+        t?.log(`Revalidated`, {
+          color: "info",
+          info: [
+            { label: "tags", value: context.tags },
+            { label: "paths", value: revalidatePaths },
+          ],
+        });
 
-        if (context.tags.length > 0) {
-          parts.push(`tags: ${context.tags.join(", ")}`);
-        }
-
-        if (revalidatePaths.length > 0) {
-          parts.push(`paths: ${revalidatePaths.join(", ")}`);
-        }
-
-        t?.log(`Revalidated ${parts.join("; ")}`, { color: "success" });
         await serverRevalidator(context.tags, revalidatePaths);
       } else {
         t?.skip("Nothing to revalidate", { color: "muted" });

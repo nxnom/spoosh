@@ -1,5 +1,9 @@
 # @spoosh/plugin-invalidation
 
+## 0.6.0
+
+- Add devtool tracing support
+
 ## 0.5.7
 
 - Updated dependencies

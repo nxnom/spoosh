@@ -1,5 +1,9 @@
 # @spoosh/react
 
+## 0.9.0
+
+- Add devtool tracing support
+
 ## 0.8.0
 
 - Rename awkward `createReactSpoosh` to `create` for simpler import

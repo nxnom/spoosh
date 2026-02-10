@@ -1,5 +1,9 @@
 # @spoosh/plugin-prefetch
 
+## 0.4.0
+
+- Add devtool tracing support
+
 ## 0.3.5
 
 - Updated dependencies

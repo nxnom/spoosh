@@ -1,5 +1,9 @@
 # @spoosh/plugin-qs
 
+## 0.3.0
+
+- Add devtool tracing support
+
 ## 0.2.5
 
 - Updated dependencies

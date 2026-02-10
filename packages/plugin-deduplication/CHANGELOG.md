@@ -1,5 +1,9 @@
 # @spoosh/plugin-deduplication
 
+## 0.2.0
+
+- Add devtool tracing support
+
 ## 0.1.9
 
 - Updated dependencies

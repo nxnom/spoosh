@@ -1,5 +1,9 @@
 # @spoosh/plugin-retry
 
+## 0.3.0
+
+- Add devtool tracing support
+
 ## 0.2.0
 
 - Handle retry logic in the plugin instead of core for better separation of concerns

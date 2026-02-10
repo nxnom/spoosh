@@ -1,5 +1,9 @@
 # @spoosh/plugin-polling
 
+## 0.3.0
+
+- Add devtool tracing support
+
 ## 0.2.4
 
 - Updated dependencies

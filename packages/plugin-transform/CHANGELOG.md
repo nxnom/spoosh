@@ -1,5 +1,9 @@
 # @spoosh/plugin-transform
 
+## 0.6.0
+
+- Add devtool tracing support
+
 ## 0.5.3
 
 - Updated dependencies

@@ -1,5 +1,9 @@
 # @spoosh/test-utils
 
+## 0.2.0
+
+- Add devtool tracing support
+
 ## 0.1.8
 
 - Updated dependencies

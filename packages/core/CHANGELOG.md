@@ -1,5 +1,9 @@
 # @spoosh/core
 
+## 0.13.0
+
+- Add devtool tracing support for plugins
+
 ## 0.12.1
 
 - Add `priority` option in plugin interface to control execution order of plugins.

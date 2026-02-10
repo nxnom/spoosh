@@ -1,5 +1,9 @@
 # @spoosh/plugin-optimistic
 
+## 0.5.0
+
+- Add devtool tracing support
+
 ## 0.4.4
 
 - Updated dependencies

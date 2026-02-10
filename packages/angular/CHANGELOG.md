@@ -1,5 +1,9 @@
 # @spoosh/angular
 
+## 0.8.0
+
+- Add devtool tracing support
+
 ## 0.7.0
 
 - Rename awkward `createAngularSpoosh` to `create` for simpler import
