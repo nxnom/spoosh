@@ -41,6 +41,7 @@ export class DevToolPanel {
   private showFloatingIcon: boolean;
   private unsubscribe: (() => void) | null = null;
   private traceCount = 0;
+  private lastSeenCount = 0;
 
   private viewModel = createViewModel();
   private renderScheduler = createRenderScheduler();
@@ -111,6 +112,11 @@ export class DevToolPanel {
 
       if (newCount !== this.traceCount) {
         this.traceCount = newCount;
+
+        if (this.viewModel.getState().isOpen) {
+          this.lastSeenCount = newCount;
+        }
+
         this.updateBadge();
       }
 
@@ -332,14 +338,15 @@ export class DevToolPanel {
 
     const badge = this.fab.querySelector(".badge");
     const state = this.viewModel.getState();
+    const newCount = this.traceCount - this.lastSeenCount;
 
-    if (this.traceCount > 0 && !state.isOpen) {
+    if (newCount > 0 && !state.isOpen) {
       if (badge) {
-        badge.textContent = String(Math.min(this.traceCount, 99));
+        badge.textContent = String(Math.min(newCount, 99));
       } else {
         const newBadge = document.createElement("span");
         newBadge.className = "badge";
-        newBadge.textContent = String(Math.min(this.traceCount, 99));
+        newBadge.textContent = String(Math.min(newCount, 99));
         this.fab.appendChild(newBadge);
       }
     } else {
@@ -564,6 +571,7 @@ export class DevToolPanel {
   open(): void {
     this.viewModel.open();
     this.sidebar?.classList.add("open");
+    this.lastSeenCount = this.traceCount;
     this.updateBadge();
     this.render();
   }
