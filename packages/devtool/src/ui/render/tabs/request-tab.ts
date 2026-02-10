@@ -44,8 +44,29 @@ function renderBody(body: unknown): string {
   return renderDataSection("Body", body, "json");
 }
 
-export function renderRequestTab(trace: OperationTrace): string {
-  const { query, body, params, headers } = trace.request;
+function redactHeaders(
+  headers: Record<string, string>,
+  sensitiveHeaders: Set<string>
+): Record<string, string> {
+  const redacted: Record<string, string> = {};
+
+  for (const [name, value] of Object.entries(headers)) {
+    redacted[name] = sensitiveHeaders.has(name.toLowerCase())
+      ? "••••••"
+      : value;
+  }
+
+  return redacted;
+}
+
+export function renderRequestTab(
+  trace: OperationTrace,
+  sensitiveHeaders: Set<string>
+): string {
+  const { query, body, params } = trace.request;
+  const headers =
+    trace.finalHeaders ??
+    (trace.request.headers as Record<string, string> | undefined);
   const isReadOperation = trace.method === "GET";
 
   const hasTags = isReadOperation && trace.tags.length > 0;
@@ -58,11 +79,15 @@ export function renderRequestTab(trace: OperationTrace): string {
     return `<div class="spoosh-empty-tab">No request data</div>`;
   }
 
+  const redactedHeaders = hasHeaders
+    ? redactHeaders(headers, sensitiveHeaders)
+    : undefined;
+
   return `
+    ${redactedHeaders ? renderDataSection("Headers", redactedHeaders) : ""}
     ${hasTags ? renderDataSection("Tags", trace.tags) : ""}
     ${hasParams ? renderDataSection("Params", params) : ""}
     ${hasQuery ? renderDataSection("Query", query) : ""}
     ${hasBody ? renderBody(body) : ""}
-    ${hasHeaders ? renderDataSection("Headers", headers) : ""}
   `;
 }

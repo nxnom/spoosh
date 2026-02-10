@@ -17,6 +17,9 @@ export interface DevToolConfig {
 
   /** Show floating icon. If false, use devtools.toggle() manually. Defaults to true. */
   showFloatingIcon?: boolean;
+
+  /** Header names to redact in devtool UI and exports. Case-insensitive. Defaults to common auth headers. */
+  sensitiveHeaders?: string[];
 }
 
 export interface DevToolTheme {
@@ -47,7 +50,8 @@ export interface DiffLine {
  * Derived from TraceEvent emitted by plugins.
  */
 export interface TraceInfo {
-  label: string;
+  label?: string;
+
   value: unknown;
 }
 
@@ -73,6 +77,7 @@ export interface OperationTrace extends PluginContext {
   steps: PluginStepEvent[];
   response?: SpooshResponse<unknown, unknown>;
   meta?: Record<string, unknown>;
+  finalHeaders?: Record<string, string>;
 
   addStep(event: TraceEvent, timestamp: number): void;
 }
@@ -115,6 +120,8 @@ export interface DevToolStoreInterface {
   endTrace(traceId: string, response?: SpooshResponse<unknown, unknown>): void;
   discardTrace(traceId: string): void;
   setTraceMeta(traceId: string, meta: Record<string, unknown>): void;
+  setTraceHeaders(traceId: string, headers: Record<string, string>): void;
+  setSensitiveHeaders(headers: Set<string>): void;
   getCurrentTrace(queryKey: string): OperationTrace | undefined;
   getTrace(traceId: string): OperationTrace | undefined;
   getTraces(): OperationTrace[];
@@ -172,6 +179,7 @@ export interface ExportedTrace {
   operationType: string;
   method: string;
   path: string;
+  tags: string[];
   timestamp: number;
   duration?: number;
   request: unknown;
@@ -185,7 +193,7 @@ export interface ExportedTrace {
     reason?: string;
     color?: string;
     diff?: { before: unknown; after: unknown; label?: string };
-    info?: Array<{ label: string; value: unknown }>;
+    info?: Array<{ label?: string; value: unknown }>;
   }>;
 }
 

@@ -157,6 +157,10 @@ async function executeCoreFetch<TData, TError>(
     requestOptions?.transport ?? defaultTransport
   );
 
+  if (requestOptions && headers) {
+    requestOptions.headers = headers;
+  }
+
   try {
     const result = await resolvedTransport(
       url,

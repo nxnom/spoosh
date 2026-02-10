@@ -34,6 +34,14 @@ function resolvePathWithParams(
     .join("/");
 }
 
+const DEFAULT_SENSITIVE_HEADERS = [
+  "authorization",
+  "proxy-authorization",
+  "cookie",
+  "set-cookie",
+  "x-api-key",
+];
+
 let globalStore: DevToolStore | null = null;
 let globalPanel: DevToolPanel | null = null;
 
@@ -48,6 +56,12 @@ export function devtool(
       operations: ["read", "write", "infiniteRead"],
     };
   }
+
+  const sensitiveSet = new Set(
+    (config.sensitiveHeaders ?? DEFAULT_SENSITIVE_HEADERS).map((h) =>
+      h.toLowerCase()
+    )
+  );
 
   if (!globalStore) {
     globalStore = new DevToolStore();
@@ -163,11 +177,13 @@ export function devtool(
       store.setRegisteredPlugins(plugins);
       store.setStateManager(ctx.stateManager);
       store.setEventEmitter(ctx.eventEmitter);
+      store.setSensitiveHeaders(sensitiveSet);
 
       if (!globalPanel) {
         globalPanel = new DevToolPanel({
           store,
           showFloatingIcon,
+          sensitiveHeaders: sensitiveSet,
         });
         globalPanel.mount();
       }
@@ -202,6 +218,14 @@ export function devtool(
             | undefined;
 
           if (!traceId) return;
+
+          const headers = context.request.headers as
+            | Record<string, string>
+            | undefined;
+
+          if (headers && Object.keys(headers).length > 0) {
+            store.setTraceHeaders(traceId, { ...headers });
+          }
 
           const cacheEntry = context.stateManager.getCache(context.queryKey);
 

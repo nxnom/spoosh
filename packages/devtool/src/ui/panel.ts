@@ -35,6 +35,7 @@ import {
 interface DevToolPanelOptions {
   store: DevToolStoreInterface;
   showFloatingIcon: boolean;
+  sensitiveHeaders: Set<string>;
 }
 
 export class DevToolPanel {
@@ -45,6 +46,7 @@ export class DevToolPanel {
   private store: DevToolStoreInterface;
   private theme: DevToolTheme;
   private showFloatingIcon: boolean;
+  private sensitiveHeaders: Set<string>;
   private unsubscribe: (() => void) | null = null;
   private traceCount = 0;
   private lastSeenCount = 0;
@@ -60,6 +62,7 @@ export class DevToolPanel {
     this.store = options.store;
     this.theme = resolveTheme(this.viewModel.getState().theme);
     this.showFloatingIcon = options.showFloatingIcon;
+    this.sensitiveHeaders = options.sensitiveHeaders;
 
     this.actionRouter = createActionRouter(this.viewModel, this.store, {
       onRender: () => this.renderImmediate(),
@@ -485,6 +488,7 @@ export class DevToolPanel {
       sidebarPosition: state.sidebarPosition,
       maxHistory: state.maxHistory,
       autoSelectIncoming: state.autoSelectIncoming,
+      sensitiveHeaders: this.sensitiveHeaders,
     });
 
     return `

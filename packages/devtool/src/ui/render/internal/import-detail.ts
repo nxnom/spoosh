@@ -70,12 +70,9 @@ function renderImportDataTab(trace: ExportedTrace): string {
 
 function renderImportRequestTab(trace: ExportedTrace): string {
   const request = trace.request as Record<string, unknown> | undefined;
-
-  if (!request) {
-    return `<div class="spoosh-empty-tab">No request data</div>`;
-  }
-
-  const { query, body, params, headers } = request;
+  const { query, body, params, headers } = (request ?? {}) as Record<string, unknown>;
+  const isReadOperation = trace.method === "GET";
+  const hasTags = isReadOperation && trace.tags.length > 0;
   const hasParams =
     params &&
     typeof params === "object" &&
@@ -90,15 +87,16 @@ function renderImportRequestTab(trace: ExportedTrace): string {
     typeof headers === "object" &&
     Object.keys(headers as object).length > 0;
 
-  if (!hasParams && !hasQuery && !hasBody && !hasHeaders) {
+  if (!hasTags && !hasParams && !hasQuery && !hasBody && !hasHeaders) {
     return `<div class="spoosh-empty-tab">No request data</div>`;
   }
 
   return `
+    ${hasHeaders ? renderCodeSection("Headers", headers) : ""}
+    ${hasTags ? renderCodeSection("Tags", trace.tags) : ""}
     ${hasParams ? renderCodeSection("Params", params) : ""}
     ${hasQuery ? renderCodeSection("Query", query) : ""}
     ${hasBody ? renderCodeSection("Body", body) : ""}
-    ${hasHeaders ? renderCodeSection("Headers", headers) : ""}
   `;
 }
 

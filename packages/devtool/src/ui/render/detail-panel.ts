@@ -29,6 +29,7 @@ export interface DetailPanelContext {
   sidebarPosition: SidebarPosition;
   maxHistory: number;
   autoSelectIncoming: boolean;
+  sensitiveHeaders: Set<string>;
 }
 
 function getActivePluginCount(trace: OperationTrace): number {
@@ -57,7 +58,7 @@ function renderTabContent(ctx: DetailPanelContext): string {
     case "data":
       return renderDataTab(trace);
     case "request":
-      return renderRequestTab(trace);
+      return renderRequestTab(trace, ctx.sensitiveHeaders);
     case "meta":
       return renderMetaTab(trace);
     case "plugins":

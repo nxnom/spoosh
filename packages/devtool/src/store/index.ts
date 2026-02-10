@@ -45,6 +45,7 @@ export class DevToolStore implements DevToolStoreInterface {
   private stateManager: StateManager | undefined;
   private eventEmitter: EventEmitter | undefined;
   private importedSession: ImportedSession | null = null;
+  private sensitiveHeaders = new Set<string>();
 
   constructor(config: DevToolStoreConfig = {}) {
     this.stateManager = config.stateManager;
@@ -226,6 +227,19 @@ export class DevToolStore implements DevToolStoreInterface {
     }
   }
 
+  setTraceHeaders(traceId: string, headers: Record<string, string>): void {
+    const trace = this.getTrace(traceId);
+
+    if (trace) {
+      trace.finalHeaders = headers;
+      this.notify();
+    }
+  }
+
+  setSensitiveHeaders(headers: Set<string>): void {
+    this.sensitiveHeaders = headers;
+  }
+
   getCurrentTrace(queryKey: string): OperationTrace | undefined {
     for (const trace of this.activeTraces.values()) {
       if (trace.queryKey === queryKey) {
@@ -258,28 +272,48 @@ export class DevToolStore implements DevToolStoreInterface {
   exportTraces(): ExportedTrace[] {
     const traces = this.getTraces();
 
-    return traces.map((trace) => ({
-      id: trace.id,
-      queryKey: trace.queryKey,
-      operationType: trace.operationType,
-      method: trace.method,
-      path: trace.path,
-      timestamp: trace.timestamp,
-      duration: trace.duration,
-      request: trace.request,
-      response: trace.response,
-      meta: trace.meta,
-      steps: trace.steps.map((step) => ({
-        plugin: step.plugin,
-        stage: step.stage,
-        timestamp: step.timestamp,
-        duration: step.duration,
-        reason: step.reason,
-        color: step.color,
-        diff: step.diff,
-        info: step.info,
-      })),
-    }));
+    return traces.map((trace) => {
+      const request = { ...trace.request } as Record<string, unknown>;
+      const rawHeaders =
+        trace.finalHeaders ??
+        (request.headers as Record<string, string> | undefined);
+
+      if (rawHeaders && Object.keys(rawHeaders).length > 0) {
+        const redacted: Record<string, string> = {};
+
+        for (const [name, value] of Object.entries(rawHeaders)) {
+          redacted[name] = this.sensitiveHeaders.has(name.toLowerCase())
+            ? "••••••"
+            : value;
+        }
+
+        request.headers = redacted;
+      }
+
+      return {
+        id: trace.id,
+        queryKey: trace.queryKey,
+        operationType: trace.operationType,
+        method: trace.method,
+        path: trace.path,
+        tags: trace.tags,
+        timestamp: trace.timestamp,
+        duration: trace.duration,
+        request,
+        response: trace.response,
+        meta: trace.meta,
+        steps: trace.steps.map((step) => ({
+          plugin: step.plugin,
+          stage: step.stage,
+          timestamp: step.timestamp,
+          duration: step.duration,
+          reason: step.reason,
+          color: step.color,
+          diff: step.diff,
+          info: step.info,
+        })),
+      };
+    });
   }
 
   getFilteredTraces(searchQuery?: string): OperationTrace[] {
