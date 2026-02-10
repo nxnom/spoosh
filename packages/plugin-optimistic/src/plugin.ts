@@ -1,4 +1,9 @@
-import type { SpooshPlugin, PluginContext, StateManager } from "@spoosh/core";
+import type {
+  SpooshPlugin,
+  PluginContext,
+  StateManager,
+  RequestTracer,
+} from "@spoosh/core";
 import { generateTags } from "@spoosh/core";
 import "@spoosh/plugin-invalidation";
 import type {
@@ -123,7 +128,8 @@ function resolveOptimisticTargets(context: PluginContext): OptimisticTarget[] {
 
 function applyOptimisticUpdate(
   stateManager: StateManager,
-  target: OptimisticTarget
+  target: OptimisticTarget,
+  t?: RequestTracer
 ): OptimisticSnapshot[] {
   if (!target.updater) return [];
 
@@ -169,6 +175,11 @@ function applyOptimisticUpdate(
     });
 
     stateManager.setMeta(key, { isOptimistic: true });
+
+    t?.log("Marked as optimistic", {
+      color: "info",
+      info: [{ value: { isOptimistic: true } }],
+    });
   }
 
   return snapshots;
@@ -176,7 +187,8 @@ function applyOptimisticUpdate(
 
 function confirmOptimistic(
   stateManager: StateManager,
-  snapshots: OptimisticSnapshot[]
+  snapshots: OptimisticSnapshot[],
+  t?: RequestTracer
 ): void {
   for (const { key } of snapshots) {
     const entry = stateManager.getCache(key);
@@ -187,13 +199,19 @@ function confirmOptimistic(
       });
 
       stateManager.setMeta(key, { isOptimistic: false });
+
+      t?.log("Optimistic confirmed", {
+        color: "success",
+        info: [{ value: { isOptimistic: false } }],
+      });
     }
   }
 }
 
 function rollbackOptimistic(
   stateManager: StateManager,
-  snapshots: OptimisticSnapshot[]
+  snapshots: OptimisticSnapshot[],
+  t?: RequestTracer
 ): void {
   for (const { key, previousData } of snapshots) {
     const entry = stateManager.getCache(key);
@@ -208,6 +226,11 @@ function rollbackOptimistic(
       });
 
       stateManager.setMeta(key, { isOptimistic: false });
+
+      t?.log("Optimistic rolled back", {
+        color: "warning",
+        info: [{ value: { isOptimistic: false } }],
+      });
     }
   }
 }
@@ -329,7 +352,7 @@ export function optimisticPlugin(): SpooshPlugin<{
       const allSnapshots: OptimisticSnapshot[] = [];
 
       for (const target of immediateTargets) {
-        const snapshots = applyOptimisticUpdate(stateManager, target);
+        const snapshots = applyOptimisticUpdate(stateManager, target, t);
         allSnapshots.push(...snapshots);
       }
 
@@ -347,7 +370,8 @@ export function optimisticPlugin(): SpooshPlugin<{
         );
 
         if (shouldRollback && allSnapshots.length > 0) {
-          rollbackOptimistic(stateManager, allSnapshots);
+          rollbackOptimistic(stateManager, allSnapshots, t);
+
           t?.log(`Rolled back ${allSnapshots.length} update(s)`, {
             color: "warning",
             diff: buildSnapshotDiff(allSnapshots, "rollback"),
@@ -361,7 +385,7 @@ export function optimisticPlugin(): SpooshPlugin<{
         }
       } else {
         if (allSnapshots.length > 0) {
-          confirmOptimistic(stateManager, allSnapshots);
+          confirmOptimistic(stateManager, allSnapshots, t);
         }
 
         const onSuccessTargets = targets.filter(
