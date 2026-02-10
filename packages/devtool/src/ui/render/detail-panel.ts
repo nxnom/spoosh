@@ -27,6 +27,7 @@ export interface DetailPanelContext {
   theme: ThemeMode;
   position: PositionMode;
   sidebarPosition: SidebarPosition;
+  maxHistory: number;
 }
 
 function getActivePluginCount(trace: OperationTrace): number {
@@ -81,6 +82,7 @@ export function renderDetailPanel(ctx: DetailPanelContext): string {
     theme,
     position,
     sidebarPosition,
+    maxHistory,
   } = ctx;
 
   if (showSettings) {
@@ -89,6 +91,7 @@ export function renderDetailPanel(ctx: DetailPanelContext): string {
       theme,
       position,
       sidebarPosition,
+      maxHistory,
     });
   }
 
@@ -150,7 +153,8 @@ export function renderEmptyDetail(
   showPassedPlugins: boolean,
   theme: ThemeMode,
   position: PositionMode,
-  sidebarPosition: SidebarPosition
+  sidebarPosition: SidebarPosition,
+  maxHistory: number
 ): string {
   if (showSettings) {
     return renderSettings({
@@ -158,6 +162,7 @@ export function renderEmptyDetail(
       theme,
       position,
       sidebarPosition,
+      maxHistory,
     });
   }
 

@@ -29,6 +29,7 @@ export type ActionIntent =
   | { type: "change-theme"; theme: ThemeMode }
   | { type: "change-position"; position: PositionMode }
   | { type: "change-sidebar-position"; position: SidebarPosition }
+  | { type: "change-max-history"; value: number }
   | { type: "switch-view"; view: PanelView }
   | { type: "select-cache-entry"; key: string }
   | { type: "select-internal-tab"; tab: InternalTab }
@@ -43,6 +44,7 @@ export interface ActionRouterCallbacks {
   onThemeChange: (theme: ThemeMode) => void;
   onPositionChange: (position: PositionMode) => void;
   onSidebarPositionChange: (position: SidebarPosition) => void;
+  onMaxHistoryChange: (value: number) => void;
   onInvalidateCache?: (key: string) => void;
   onDeleteCache?: (key: string) => void;
   onClearAllCache?: () => void;
@@ -65,6 +67,7 @@ export function createActionRouter(
     onThemeChange,
     onPositionChange,
     onSidebarPositionChange,
+    onMaxHistoryChange,
     onInvalidateCache,
     onDeleteCache,
     onClearAllCache,
@@ -213,6 +216,14 @@ export function createActionRouter(
       };
     }
 
+    if (setting === "maxHistory" && isChangeEvent) {
+      const select = target as HTMLSelectElement;
+      return {
+        type: "change-max-history",
+        value: parseInt(select.value, 10),
+      };
+    }
+
     const sidebarAction = target
       .closest("[data-sidebar-position]")
       ?.getAttribute("data-sidebar-position");
@@ -334,6 +345,11 @@ export function createActionRouter(
       case "change-sidebar-position":
         viewModel.setSidebarPosition(intent.position);
         onSidebarPositionChange(intent.position);
+        break;
+
+      case "change-max-history":
+        viewModel.setMaxHistory(intent.value);
+        onMaxHistoryChange(intent.value);
         break;
 
       case "switch-view":

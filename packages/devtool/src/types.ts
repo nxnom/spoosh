@@ -150,6 +150,7 @@ export interface DevToolStoreInterface {
   invalidateCacheEntry(key: string): void;
   deleteCacheEntry(key: string): void;
   clearAllCache(): void;
+  setMaxHistory(value: number): void;
 }
 
 export type DetailTab = "data" | "request" | "meta" | "plugins";

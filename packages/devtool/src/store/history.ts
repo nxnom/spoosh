@@ -2,6 +2,7 @@ export interface RingBuffer<T> {
   push(item: T): void;
   toArray(): T[];
   clear(): void;
+  resize(newMaxSize: number): void;
   get length(): number;
 }
 
@@ -33,6 +34,21 @@ export function createRingBuffer<T>(maxSize: number): RingBuffer<T> {
       buffer.length = 0;
       start = 0;
       count = 0;
+    },
+
+    resize(newMaxSize: number) {
+      const items = this.toArray();
+      buffer.length = 0;
+      start = 0;
+      count = 0;
+      maxSize = newMaxSize;
+
+      const startIndex = Math.max(0, items.length - newMaxSize);
+      const itemsToKeep = items.slice(startIndex);
+
+      for (const item of itemsToKeep) {
+        this.push(item);
+      }
     },
 
     get length() {

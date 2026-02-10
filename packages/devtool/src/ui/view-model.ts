@@ -32,6 +32,7 @@ export interface ViewModelState {
   activeView: PanelView;
   selectedCacheKey: string | null;
   internalTab: InternalTab;
+  maxHistory: number;
 }
 
 type Listener = () => void;
@@ -57,6 +58,7 @@ const DEFAULT_STATE: ViewModelState = {
   activeView: "requests",
   selectedCacheKey: null,
   internalTab: "data",
+  maxHistory: 50,
 };
 
 export interface ViewModel {
@@ -93,6 +95,8 @@ export interface ViewModel {
   setActiveView(view: PanelView): void;
   selectCacheEntry(key: string | null): void;
   setInternalTab(tab: InternalTab): void;
+  setMaxHistory(value: number): void;
+  getMaxHistory(): number;
 }
 
 export function createViewModel(): ViewModel {
@@ -130,6 +134,7 @@ export function createViewModel(): ViewModel {
           position: settings.position ?? DEFAULT_STATE.position,
           sidebarPosition:
             settings.sidebarPosition ?? DEFAULT_STATE.sidebarPosition,
+          maxHistory: settings.maxHistory ?? DEFAULT_STATE.maxHistory,
         };
       }
     } catch {
@@ -156,6 +161,7 @@ export function createViewModel(): ViewModel {
             theme: state.theme,
             position: state.position,
             sidebarPosition: state.sidebarPosition,
+            maxHistory: state.maxHistory,
           })
         );
       } catch {
@@ -334,6 +340,16 @@ export function createViewModel(): ViewModel {
     notify();
   }
 
+  function setMaxHistory(value: number): void {
+    state = { ...state, maxHistory: value };
+    saveSettings();
+    notify();
+  }
+
+  function getMaxHistory(): number {
+    return state.maxHistory;
+  }
+
   return {
     getState,
     subscribe,
@@ -361,5 +377,7 @@ export function createViewModel(): ViewModel {
     setActiveView,
     selectCacheEntry,
     setInternalTab,
+    setMaxHistory,
+    getMaxHistory,
   };
 }

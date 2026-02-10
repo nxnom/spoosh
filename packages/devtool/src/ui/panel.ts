@@ -61,6 +61,7 @@ export class DevToolPanel {
       onThemeChange: (theme) => this.setTheme(theme),
       onPositionChange: (position) => this.setPosition(position),
       onSidebarPositionChange: (position) => this.setSidebarPosition(position),
+      onMaxHistoryChange: (value) => this.store.setMaxHistory(value),
       onInvalidateCache: (key) => {
         this.store.invalidateCacheEntry(key);
         this.renderImmediate();
@@ -107,6 +108,9 @@ export class DevToolPanel {
 
     this.resizeController.updateSidebarDOM(this.sidebar);
     this.shadowRoot.appendChild(this.sidebar);
+
+    const savedMaxHistory = this.viewModel.getMaxHistory();
+    this.store.setMaxHistory(savedMaxHistory);
 
     this.unsubscribe = this.store.subscribe(() => {
       const newCount = this.store.getTraces().length;
@@ -411,6 +415,7 @@ export class DevToolPanel {
       theme: state.theme,
       position: state.position,
       sidebarPosition: state.sidebarPosition,
+      maxHistory: state.maxHistory,
     });
 
     return `
@@ -452,6 +457,7 @@ export class DevToolPanel {
           theme: state.theme,
           position: state.position,
           sidebarPosition: state.sidebarPosition,
+          maxHistory: state.maxHistory,
         })
       : renderCacheDetail({
           entry: selectedEntry ?? null,

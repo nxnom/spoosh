@@ -122,6 +122,12 @@ export class DevToolStore implements DevToolStoreInterface {
     this.notify();
   }
 
+  setMaxHistory(value: number): void {
+    this.traces.resize(value);
+    this.events.resize(value * 2);
+    this.notify();
+  }
+
   setRegisteredPlugins(
     plugins: Array<{ name: string; operations: string[] }>
   ): void {

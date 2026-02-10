@@ -5,10 +5,11 @@ export interface SettingsRenderContext {
   theme: ThemeMode;
   position: PositionMode;
   sidebarPosition: SidebarPosition;
+  maxHistory: number;
 }
 
 export function renderSettings(ctx: SettingsRenderContext): string {
-  const { showPassedPlugins, theme, position, sidebarPosition } = ctx;
+  const { showPassedPlugins, theme, position, sidebarPosition, maxHistory } = ctx;
 
   return `
     <div class="spoosh-detail-panel">
@@ -49,6 +50,18 @@ export function renderSettings(ctx: SettingsRenderContext): string {
             <span class="spoosh-toggle-slider"></span>
             <span class="spoosh-settings-label">Show passed plugins in timeline</span>
           </label>
+        </div>
+        <div class="spoosh-settings-section">
+          <div class="spoosh-settings-section-title">History</div>
+          <div class="spoosh-settings-row">
+            <span class="spoosh-settings-label">Max requests to keep</span>
+            <select class="spoosh-settings-select" data-setting="maxHistory">
+              <option value="25" ${maxHistory === 25 ? "selected" : ""}>25</option>
+              <option value="50" ${maxHistory === 50 ? "selected" : ""}>50</option>
+              <option value="100" ${maxHistory === 100 ? "selected" : ""}>100</option>
+              <option value="200" ${maxHistory === 200 ? "selected" : ""}>200</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
