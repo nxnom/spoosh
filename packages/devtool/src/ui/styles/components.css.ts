@@ -457,6 +457,39 @@ export const componentsCSS = `
     background: rgba(248, 81, 73, 0.05);
   }
 
+  /* ===== Code Block with Copy ===== */
+  .spoosh-code-block {
+    position: relative;
+  }
+
+  .spoosh-code-copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: var(--spoosh-surface);
+    border: 1px solid var(--spoosh-border);
+    border-radius: 4px;
+    padding: 4px 6px;
+    cursor: pointer;
+    color: var(--spoosh-text-muted);
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s, color 0.15s;
+    z-index: 1;
+  }
+
+  .spoosh-code-block:hover .spoosh-code-copy-btn {
+    opacity: 1;
+  }
+
+  .spoosh-code-copy-btn:hover {
+    background: var(--spoosh-border);
+    color: var(--spoosh-text);
+  }
+
+  .spoosh-code-copy-btn svg {
+    display: block;
+  }
+
   /* ===== Body Type Badge ===== */
   .spoosh-body-type {
     font-weight: 500;

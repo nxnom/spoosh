@@ -23,7 +23,7 @@ export type ActionIntent =
   | { type: "toggle-passed" }
   | { type: "change-setting"; setting: string; value: boolean }
   | { type: "dismiss-settings" }
-  | { type: "copy-query-key"; queryKey: string }
+  | { type: "copy"; content: string }
   | { type: "search"; query: string }
   | { type: "change-theme"; theme: ThemeMode }
   | { type: "change-position"; position: PositionMode }
@@ -97,13 +97,13 @@ export function createActionRouter(
       return { type: "clear" };
     }
 
-    if (action === "copy-query-key") {
-      const queryKey = target
-        .closest("[data-query-key]")
-        ?.getAttribute("data-query-key");
+    if (action === "copy") {
+      const content = target
+        .closest("[data-copy-content]")
+        ?.getAttribute("data-copy-content");
 
-      if (queryKey) {
-        return { type: "copy-query-key", queryKey };
+      if (content) {
+        return { type: "copy", content };
       }
     }
 
@@ -278,8 +278,8 @@ export function createActionRouter(
         }
         break;
 
-      case "copy-query-key":
-        navigator.clipboard.writeText(intent.queryKey);
+      case "copy":
+        navigator.clipboard.writeText(intent.content);
         return;
 
       case "search":

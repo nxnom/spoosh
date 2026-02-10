@@ -8,6 +8,31 @@ import {
 } from "../../utils";
 import { renderCacheTabs } from "./cache-tabs";
 
+const copyIcon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+</svg>`;
+
+function renderDataSection(
+  label: string,
+  data: unknown,
+  isError = false
+): string {
+  const jsonStr = JSON.stringify(data, null, 2);
+
+  return `
+    <div class="spoosh-tab-section">
+      <div class="spoosh-data-label">${label}</div>
+      <div class="spoosh-code-block">
+        <button class="spoosh-code-copy-btn" data-action="copy" data-copy-content="${escapeHtml(jsonStr)}" title="Copy">
+          ${copyIcon}
+        </button>
+        <pre class="spoosh-json${isError ? " error" : ""}">${formatJson(data)}</pre>
+      </div>
+    </div>
+  `;
+}
+
 export interface CacheDetailContext {
   entry: CacheEntryDisplay | null;
   activeTab: InternalTab;
@@ -45,12 +70,7 @@ function renderDataTab(entry: CacheEntryDisplay): string {
   const { state } = entry.entry;
 
   if (state.error) {
-    return `
-      <div class="spoosh-tab-section">
-        <div class="spoosh-data-label">Error</div>
-        <pre class="spoosh-json error">${formatJson(state.error)}</pre>
-      </div>
-    `;
+    return renderDataSection("Error", state.error, true);
   }
 
   if (state.data === undefined) {
@@ -58,20 +78,8 @@ function renderDataTab(entry: CacheEntryDisplay): string {
   }
 
   return `
-    <div class="spoosh-tab-section">
-      <div class="spoosh-data-label">Cached Data</div>
-      <pre class="spoosh-json">${formatJson(state.data)}</pre>
-    </div>
-    ${
-      entry.entry.previousData !== undefined
-        ? `
-      <div class="spoosh-tab-section">
-        <div class="spoosh-data-label">Previous Data</div>
-        <pre class="spoosh-json">${formatJson(entry.entry.previousData)}</pre>
-      </div>
-    `
-        : ""
-    }
+    ${renderDataSection("Cached Data", state.data)}
+    ${entry.entry.previousData !== undefined ? renderDataSection("Previous Data", entry.entry.previousData) : ""}
   `;
 }
 
@@ -108,16 +116,7 @@ function renderMetaTab(entry: CacheEntryDisplay): string {
         )
         .join("")}
     </div>
-    ${
-      metaEntries.length > 0
-        ? `
-      <div class="spoosh-tab-section">
-        <div class="spoosh-data-label">Plugin Metadata</div>
-        <pre class="spoosh-json">${formatJson(Object.fromEntries(metaEntries))}</pre>
-      </div>
-    `
-        : ""
-    }
+    ${metaEntries.length > 0 ? renderDataSection("Plugin Metadata", Object.fromEntries(metaEntries)) : ""}
   `;
 }
 
@@ -133,11 +132,7 @@ function renderRawTab(entry: CacheEntryDisplay): string {
     subscriberCount: entry.subscriberCount,
   };
 
-  return `
-    <div class="spoosh-tab-section">
-      <pre class="spoosh-json">${formatJson(raw)}</pre>
-    </div>
-  `;
+  return renderDataSection("Raw Cache Entry", raw);
 }
 
 function renderTabContent(

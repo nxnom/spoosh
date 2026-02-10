@@ -1,5 +1,30 @@
 import type { OperationTrace } from "../../../types";
-import { formatJson } from "../../utils";
+import { escapeHtml, formatJson } from "../../utils";
+
+const copyIcon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+</svg>`;
+
+function renderDataSection(
+  label: string,
+  data: unknown,
+  badge?: string
+): string {
+  const jsonStr = JSON.stringify(data, null, 2);
+
+  return `
+    <div class="spoosh-data-section">
+      <div class="spoosh-data-label">${label}${badge ? ` <span class="spoosh-body-type ${badge}">${badge}</span>` : ""}</div>
+      <div class="spoosh-code-block">
+        <button class="spoosh-code-copy-btn" data-action="copy" data-copy-content="${escapeHtml(jsonStr)}" title="Copy">
+          ${copyIcon}
+        </button>
+        <pre class="spoosh-json">${formatJson(data)}</pre>
+      </div>
+    </div>
+  `;
+}
 
 function renderBody(body: unknown): string {
   const spooshBody = body as {
@@ -13,22 +38,10 @@ function renderBody(body: unknown): string {
     spooshBody.kind &&
     spooshBody.value !== undefined
   ) {
-    const { kind, value } = spooshBody;
-
-    return `
-      <div class="spoosh-data-section">
-        <div class="spoosh-data-label">Body <span class="spoosh-body-type ${kind}">${kind}</span></div>
-        <pre class="spoosh-json">${formatJson(value)}</pre>
-      </div>
-    `;
+    return renderDataSection("Body", spooshBody.value, spooshBody.kind);
   }
 
-  return `
-    <div class="spoosh-data-section">
-      <div class="spoosh-data-label">Body <span class="spoosh-body-type json">json</span></div>
-      <pre class="spoosh-json">${formatJson(body)}</pre>
-    </div>
-  `;
+  return renderDataSection("Body", body, "json");
 }
 
 export function renderRequestTab(trace: OperationTrace): string {
@@ -46,50 +59,10 @@ export function renderRequestTab(trace: OperationTrace): string {
   }
 
   return `
-    ${
-      hasTags
-        ? `
-      <div class="spoosh-data-section">
-        <div class="spoosh-data-label">Tags</div>
-        <pre class="spoosh-json">${formatJson(trace.tags)}</pre>
-      </div>
-    `
-        : ""
-    }
-
-    ${
-      hasParams
-        ? `
-      <div class="spoosh-data-section">
-        <div class="spoosh-data-label">Params</div>
-        <pre class="spoosh-json">${formatJson(params)}</pre>
-      </div>
-    `
-        : ""
-    }
-
-    ${
-      hasQuery
-        ? `
-      <div class="spoosh-data-section">
-        <div class="spoosh-data-label">Query</div>
-        <pre class="spoosh-json">${formatJson(query)}</pre>
-      </div>
-    `
-        : ""
-    }
-
+    ${hasTags ? renderDataSection("Tags", trace.tags) : ""}
+    ${hasParams ? renderDataSection("Params", params) : ""}
+    ${hasQuery ? renderDataSection("Query", query) : ""}
     ${hasBody ? renderBody(body) : ""}
-
-    ${
-      hasHeaders
-        ? `
-      <div class="spoosh-data-section">
-        <div class="spoosh-data-label">Headers</div>
-        <pre class="spoosh-json">${formatJson(headers)}</pre>
-      </div>
-    `
-        : ""
-    }
+    ${hasHeaders ? renderDataSection("Headers", headers) : ""}
   `;
 }
