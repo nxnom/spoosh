@@ -1,0 +1,465 @@
+---
+title: Lazy Loading
+description: Control when data fetches with injectRead's enabled and trigger options
+---
+
+This guide covers lazy loading patterns with `injectRead` — controlling when and how data fetches happen using `enabled: false` and the `trigger()` function.
+
+<Callout type="info">
+**Prefer conditional fetching over manual `trigger()`**
+
+In most cases, use `enabled` with a reactive condition (e.g., `enabled: () => !!this.userId()`) to let Angular's reactivity handle fetching automatically. Reserve `enabled: false` with manual `trigger()` for fire-and-forget actions like downloads or exports where you don't need the data to drive UI state.
+
+</Callout>
+
+## Loading States
+
+When using lazy loading, understanding the difference between `loading` and `fetching` is important:
+
+| State      | Initial Fetch | Subsequent Fetch | `enabled: false` (no fetch yet) |
+| ---------- | ------------- | ---------------- | ------------------------------- |
+| `loading`  | `true`        | `false`          | `false`                         |
+| `fetching` | `true`        | `true`           | `false`                         |
+
+- **`loading`**: True only during the initial fetch when there's no existing data
+- **`fetching`**: True during any fetch, including refetches and trigger calls
+
+## Basic Lazy Loading
+
+Use `enabled: false` to prevent automatic fetching on mount. Call `trigger()` when you need the data:
+
+```typescript
+@Component({
+  selector: "app-download-button",
+  template: `
+    <button (click)="handleDownload()" [disabled]="fetching()">
+      {{ fetching() ? "Preparing..." : "Download Report" }}
+    </button>
+  `,
+})
+export class DownloadButtonComponent {
+  private report = injectRead((api) => api("exports/report").GET(), {
+    enabled: false,
+  });
+
+  fetching = this.report.fetching;
+
+  async handleDownload() {
+    const { data } = await this.report.trigger();
+
+    if (data) {
+      window.open(data.downloadUrl);
+    }
+  }
+}
+```
+
+## Dynamic Parameters
+
+Pass different parameters to `trigger()` for on-demand fetching with varying inputs:
+
+```typescript
+@Component({
+  selector: "app-user-actions",
+  template: `
+    <button (click)="exportUser('user-1')" [disabled]="fetching()">
+      Export User 1
+    </button>
+    <button (click)="exportUser('user-2')" [disabled]="fetching()">
+      Export User 2
+    </button>
+  `,
+})
+export class UserActionsComponent {
+  private exporter = injectRead(
+    (api) => api("users/:id/export").GET({ params: { id: "" } }), // placeholder
+    { enabled: false }
+  );
+
+  fetching = this.exporter.fetching;
+
+  async exportUser(userId: string) {
+    const { data } = await this.exporter.trigger({ params: { id: userId } });
+
+    if (data) {
+      this.downloadFile(data.url, data.filename);
+    }
+  }
+
+  private downloadFile(url: string, filename: string) {
+    // Implementation
+  }
+}
+```
+
+> Avoid overusing dynamic parameters with `trigger`. Most cases are better handled by changing the inject's input parameters with `enabled` controlling when the fetch happens.
+
+## Conditional Loading
+
+Use `enabled` with a signal to automatically fetch when certain criteria are met:
+
+```typescript
+@Component({
+  selector: "app-user-profile",
+  template: `
+    @if (!userId()) {
+      <div>Select a user to view profile</div>
+    } @else if (loading()) {
+      <div>Loading profile...</div>
+    } @else if (error()) {
+      <div>Error loading profile</div>
+    } @else {
+      <div>
+        <h2>{{ data()?.name }}</h2>
+        <p>{{ data()?.email }}</p>
+      </div>
+    }
+  `,
+})
+export class UserProfileComponent {
+  userId = input<string | null>(null);
+
+  private profile = injectRead(
+    (api) => api("users/:id").GET({ params: { id: this.userId() ?? "" } }),
+    { enabled: () => !!this.userId() }
+  );
+
+  data = this.profile.data;
+  loading = this.profile.loading;
+  error = this.profile.error;
+}
+```
+
+## Modal/Dialog Pattern
+
+Load data only when a modal opens to avoid unnecessary requests:
+
+```typescript
+@Component({
+  selector: "app-user-details-modal",
+  template: `
+    @if (isOpen()) {
+      <dialog open>
+        <header>
+          <h2>User Details</h2>
+          <button (click)="close.emit()">×</button>
+        </header>
+
+        <div>
+          @if (loading()) {
+            <p>Loading...</p>
+          } @else if (error()) {
+            <p>Error: {{ error()?.message }}</p>
+          } @else if (data()) {
+            <dl>
+              <dt>Name</dt>
+              <dd>{{ data()?.name }}</dd>
+              <dt>Email</dt>
+              <dd>{{ data()?.email }}</dd>
+              <dt>Created</dt>
+              <dd>{{ data()?.createdAt | date }}</dd>
+            </dl>
+          }
+        </div>
+      </dialog>
+    }
+  `,
+})
+export class UserDetailsModalComponent {
+  userId = input.required<string>();
+  isOpen = input(false);
+  close = output();
+
+  private details = injectRead(
+    (api) => api("users/:id/details").GET({ params: { id: this.userId() } }),
+    { enabled: this.isOpen }
+  );
+
+  data = this.details.data;
+  loading = this.details.loading;
+  error = this.details.error;
+}
+
+@Component({
+  selector: "app-user-list",
+  template: `
+    <ul>
+      @for (user of users(); track user.id) {
+        <li>
+          {{ user.name }}
+          <button (click)="selectedUserId.set(user.id)">View Details</button>
+        </li>
+      }
+    </ul>
+
+    @if (selectedUserId()) {
+      <app-user-details-modal
+        [userId]="selectedUserId()!"
+        [isOpen]="!!selectedUserId()"
+        (close)="selectedUserId.set(null)"
+      />
+    }
+  `,
+})
+export class UserListComponent {
+  selectedUserId = signal<string | null>(null);
+
+  private userList = injectRead((api) => api("users").GET());
+
+  users = this.userList.data;
+}
+```
+
+## Tab-Based Loading
+
+Fetch data only when a specific tab becomes active:
+
+```typescript
+type TabId = "overview" | "analytics" | "settings";
+
+@Component({
+  selector: "app-dashboard",
+  template: `
+    <nav>
+      @for (tab of tabs; track tab.id) {
+        <button
+          (click)="activeTab.set(tab.id)"
+          [attr.aria-selected]="activeTab() === tab.id"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </nav>
+
+    <div>
+      @switch (activeTab()) {
+        @case ("overview") {
+          @if (overviewLoading()) {
+            <p>Loading...</p>
+          } @else {
+            <app-overview-panel [data]="overview()" />
+          }
+        }
+        @case ("analytics") {
+          @if (analyticsLoading()) {
+            <p>Loading...</p>
+          } @else {
+            <app-analytics-panel [data]="analytics()" />
+          }
+        }
+        @case ("settings") {
+          @if (settingsLoading()) {
+            <p>Loading...</p>
+          } @else {
+            <app-settings-panel [data]="settings()" />
+          }
+        }
+      }
+    </div>
+  `,
+})
+export class DashboardComponent {
+  activeTab = signal<TabId>("overview");
+
+  tabs: { id: TabId; label: string }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "analytics", label: "Analytics" },
+    { id: "settings", label: "Settings" },
+  ];
+
+  private overviewQuery = injectRead((api) => api("dashboard/overview").GET(), {
+    enabled: () => this.activeTab() === "overview",
+  });
+
+  private analyticsQuery = injectRead(
+    (api) => api("dashboard/analytics").GET(),
+    { enabled: () => this.activeTab() === "analytics" }
+  );
+
+  private settingsQuery = injectRead((api) => api("dashboard/settings").GET(), {
+    enabled: () => this.activeTab() === "settings",
+  });
+
+  overview = this.overviewQuery.data;
+  overviewLoading = this.overviewQuery.loading;
+
+  analytics = this.analyticsQuery.data;
+  analyticsLoading = this.analyticsQuery.loading;
+
+  settings = this.settingsQuery.data;
+  settingsLoading = this.settingsQuery.loading;
+}
+```
+
+## Scroll/Intersection Loading
+
+Use IntersectionObserver to fetch data when an element becomes visible:
+
+```typescript
+@Component({
+  selector: "app-lazy-section",
+  template: `
+    <div #sectionRef>
+      @if (!isVisible()) {
+        <div class="placeholder"></div>
+      } @else if (loading()) {
+        <p>Loading section...</p>
+      } @else if (data()) {
+        <app-section-content [data]="data()!" />
+      }
+    </div>
+  `,
+})
+export class LazySectionComponent implements AfterViewInit, OnDestroy {
+  sectionId = input.required<string>();
+
+  @ViewChild("sectionRef") sectionRef!: ElementRef<HTMLDivElement>;
+
+  isVisible = signal(false);
+
+  private observer?: IntersectionObserver;
+
+  private section = injectRead(
+    (api) => api("sections/:id").GET({ params: { id: this.sectionId() } }),
+    { enabled: this.isVisible }
+  );
+
+  data = this.section.data;
+  loading = this.section.loading;
+
+  ngAfterViewInit() {
+    this.observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          this.isVisible.set(true);
+          this.observer?.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    this.observer.observe(this.sectionRef.nativeElement);
+  }
+
+  ngOnDestroy() {
+    this.observer?.disconnect();
+  }
+}
+```
+
+## Search/Filter Loading
+
+Trigger fetches based on form submission rather than input changes:
+
+```typescript
+@Component({
+  selector: "app-product-search",
+  template: `
+    <form (ngSubmit)="handleSubmit()">
+      <input
+        [(ngModel)]="query"
+        name="query"
+        placeholder="Search products..."
+      />
+      <select [(ngModel)]="category" name="category">
+        <option value="">All Categories</option>
+        <option value="electronics">Electronics</option>
+        <option value="clothing">Clothing</option>
+      </select>
+      <button type="submit">Search</button>
+    </form>
+
+    @if (loading()) {
+      <p>Searching...</p>
+    } @else if (error()) {
+      <p>Error: {{ error()?.message }}</p>
+    } @else if (data()) {
+      <ul>
+        @for (product of data(); track product.id) {
+          <li>{{ product.name }}</li>
+        }
+      </ul>
+    }
+  `,
+})
+export class ProductSearchComponent {
+  query = "";
+  category = "";
+  searchParams = signal<{ query: string; category: string } | null>(null);
+
+  private search = injectRead(
+    (api) =>
+      api("products/search").GET({
+        query: this.searchParams() ?? { query: "", category: "" },
+      }),
+    { enabled: () => !!this.searchParams() }
+  );
+
+  data = this.search.data;
+  loading = this.search.loading;
+  error = this.search.error;
+
+  handleSubmit() {
+    this.searchParams.set({
+      query: this.query,
+      category: this.category,
+    });
+  }
+}
+```
+
+## Form Submission Dependent
+
+Fetch data after a mutation completes successfully:
+
+```typescript
+@Component({
+  selector: "app-order-confirmation",
+  template: `
+    @if (orderId() && loadingDetails()) {
+      <p>Loading order confirmation...</p>
+    } @else if (orderDetails()) {
+      <div>
+        <h2>Order Confirmed!</h2>
+        <p>Order #{{ orderDetails()?.id }}</p>
+        <p>Total: \${{ orderDetails()?.total }}</p>
+      </div>
+    } @else {
+      <app-order-form
+        (submit)="handleSubmit($event)"
+        [disabled]="submitting()"
+      />
+    }
+  `,
+})
+export class OrderConfirmationComponent {
+  orderId = signal<string | null>(null);
+
+  private orderSubmitter = injectWrite((api) => api("orders").POST);
+
+  private orderDetailsQuery = injectRead(
+    (api) => api("orders/:id").GET({ params: { id: this.orderId() ?? "" } }),
+    { enabled: () => !!this.orderId() }
+  );
+
+  submitting = this.orderSubmitter.loading;
+  orderDetails = this.orderDetailsQuery.data;
+  loadingDetails = this.orderDetailsQuery.loading;
+
+  async handleSubmit(formData: OrderFormData) {
+    const { data } = await this.orderSubmitter.trigger({ body: formData });
+
+    if (data) {
+      this.orderId.set(data.id);
+    }
+  }
+}
+```
+
+## Best Practices
+
+- **Prefer `enabled` over manual `trigger()`**: Let Angular's signal reactivity handle fetching by using `enabled` with signals
+- **Use `fetching` for UI state**: Show loading indicators based on `fetching()`, not `loading()`, for lazy-loaded data
+- **Avoid placeholder params**: When using `enabled: false`, you still need valid params structure — use empty strings or defaults
+- **Clean up observers**: When using IntersectionObserver, always disconnect in `ngOnDestroy`
+- **Consider caching**: Lazy-loaded data still benefits from caching — subsequent opens/views use cached data

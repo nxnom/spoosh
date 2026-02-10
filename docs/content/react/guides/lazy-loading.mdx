@@ -1,0 +1,392 @@
+---
+title: Lazy Loading
+description: Control when data fetches with useRead's enabled and trigger options
+---
+
+This guide covers lazy loading patterns with `useRead` — controlling when and how data fetches happen using `enabled: false` and the `trigger()` function.
+
+<Callout type="info">
+**Prefer conditional fetching over manual `trigger()`**
+
+In most cases, use `enabled` with a condition (e.g., `enabled: !!userId`) to let React's reactivity handle fetching automatically. Reserve `enabled: false` with manual `trigger()` for fire-and-forget actions like downloads or exports where you don't need the data to drive UI state.
+
+</Callout>
+
+## Loading States
+
+When using lazy loading, understanding the difference between `loading` and `fetching` is important:
+
+| State      | Initial Fetch | Subsequent Fetch | `enabled: false` (no fetch yet) |
+| ---------- | ------------- | ---------------- | ------------------------------- |
+| `loading`  | `true`        | `false`          | `false`                         |
+| `fetching` | `true`        | `true`           | `false`                         |
+
+- **`loading`**: True only during the initial fetch when there's no existing data
+- **`fetching`**: True during any fetch, including refetches and trigger calls
+
+## Basic Lazy Loading
+
+Use `enabled: false` to prevent automatic fetching on mount. Call `trigger()` when you need the data:
+
+```typescript
+function DownloadButton() {
+  const { data, fetching, trigger } = useRead(
+    (api) => api("exports/report").GET(),
+    { enabled: false }
+  );
+
+  const handleDownload = async () => {
+    const { data } = await trigger();
+
+    if (data) {
+      window.open(data.downloadUrl);
+    }
+  };
+
+  return (
+    <button onClick={handleDownload} disabled={fetching}>
+      {fetching ? "Preparing..." : "Download Report"}
+    </button>
+  );
+}
+```
+
+## Dynamic Parameters
+
+Pass different parameters to `trigger()` for on-demand fetching with varying inputs:
+
+```typescript
+function UserActions() {
+  const { fetching, trigger } = useRead(
+    (api) => api("users/:id/export").GET({ params: { id: "" } }), // placeholder
+    { enabled: false }
+  );
+
+  const exportUser = async (userId: string) => {
+    const { data } = await trigger({ params: { id: userId } });
+
+    if (data) {
+      downloadFile(data.url, data.filename);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={() => exportUser("user-1")} disabled={fetching}>
+        Export User 1
+      </button>
+      <button onClick={() => exportUser("user-2")} disabled={fetching}>
+        Export User 2
+      </button>
+    </div>
+  );
+}
+```
+
+> Avoid overusing dynamic parameters with `trigger`. Most cases are better handled by changing the hook's input parameters with `enabled` controlling when the fetch happens.
+
+## Conditional Loading
+
+Use `enabled` with a condition to automatically fetch when certain criteria are met:
+
+```typescript
+interface UserProfileProps {
+  userId: string | null;
+}
+
+function UserProfile({ userId }: UserProfileProps) {
+  const { data, loading, error } = useRead(
+    (api) => api("users/:id").GET({ params: { id: userId ?? "" } }),
+    { enabled: !!userId }
+  );
+
+  if (!userId) return <div>Select a user to view profile</div>;
+  if (loading) return <div>Loading profile...</div>;
+  if (error) return <div>Error loading profile</div>;
+
+  return (
+    <div>
+      <h2>{data?.name}</h2>
+      <p>{data?.email}</p>
+    </div>
+  );
+}
+```
+
+## Modal/Dialog Pattern
+
+Load data only when a modal opens to avoid unnecessary requests:
+
+```typescript
+function UserDetailsModal({ userId, isOpen, onClose }: UserDetailsModalProps) {
+  const { data, loading, error } = useRead(
+    (api) => api("users/:id/details").GET({ params: { id: userId } }),
+    { enabled: isOpen }
+  );
+
+  if (!isOpen) return null;
+
+  return (
+    <dialog open>
+      <header>
+        <h2>User Details</h2>
+        <button onClick={onClose}>×</button>
+      </header>
+
+      <div>
+        {loading && <p>Loading...</p>}
+        {error && <p>Error: {error.message}</p>}
+        {data && (
+          <dl>
+            <dt>Name</dt>
+            <dd>{data.name}</dd>
+            <dt>Email</dt>
+            <dd>{data.email}</dd>
+            <dt>Created</dt>
+            <dd>{new Date(data.createdAt).toLocaleDateString()}</dd>
+          </dl>
+        )}
+      </div>
+    </dialog>
+  );
+}
+
+function UserList() {
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const { data: users } = useRead((api) => api("users").GET());
+
+  return (
+    <div>
+      <ul>
+        {users?.map((user) => (
+          <li key={user.id}>
+            {user.name}
+            <button onClick={() => setSelectedUserId(user.id)}>
+              View Details
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {selectedUserId && (
+        <UserDetailsModal
+          userId={selectedUserId}
+          isOpen={!!selectedUserId}
+          onClose={() => setSelectedUserId(null)}
+        />
+      )}
+    </div>
+  );
+}
+```
+
+## Tab-Based Loading
+
+Fetch data only when a specific tab becomes active:
+
+```typescript
+type TabId = "overview" | "analytics" | "settings";
+
+function Dashboard() {
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
+
+  const { data: overview, loading: overviewLoading } = useRead(
+    (api) => api("dashboard/overview").GET(),
+    { enabled: activeTab === "overview" }
+  );
+
+  const { data: analytics, loading: analyticsLoading } = useRead(
+    (api) => api("dashboard/analytics").GET(),
+    { enabled: activeTab === "analytics" }
+  );
+
+  const { data: settings, loading: settingsLoading } = useRead(
+    (api) => api("dashboard/settings").GET(),
+    { enabled: activeTab === "settings" }
+  );
+
+  const tabs: { id: TabId; label: string }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "analytics", label: "Analytics" },
+    { id: "settings", label: "Settings" },
+  ];
+
+  return (
+    <div>
+      <nav>
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            aria-selected={activeTab === tab.id}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      <div>
+        {activeTab === "overview" && (
+          overviewLoading ? <p>Loading...</p> : <OverviewPanel data={overview} />
+        )}
+        {activeTab === "analytics" && (
+          analyticsLoading ? <p>Loading...</p> : <AnalyticsPanel data={analytics} />
+        )}
+        {activeTab === "settings" && (
+          settingsLoading ? <p>Loading...</p> : <SettingsPanel data={settings} />
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+## Scroll/Intersection Loading
+
+Use IntersectionObserver to fetch data when an element becomes visible:
+
+```typescript
+function LazySection({ sectionId }: { sectionId: string }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const { data, loading } = useRead(
+    (api) => api("sections/:id").GET({ params: { id: sectionId } }),
+    { enabled: isVisible }
+  );
+
+  return (
+    <div ref={sectionRef}>
+      {!isVisible && <div className="placeholder" />}
+      {isVisible && loading && <p>Loading section...</p>}
+      {data && <SectionContent data={data} />}
+    </div>
+  );
+}
+```
+
+## Search/Filter Loading
+
+Trigger fetches based on form submission rather than input changes:
+
+```typescript
+function ProductSearch() {
+  const [searchParams, setSearchParams] = useState<{
+    query: string;
+    category: string;
+  } | null>(null);
+
+  const { data, loading, error } = useRead(
+    (api) =>
+      api("products/search").GET({
+        query: searchParams ?? { query: "", category: "" },
+      }),
+    { enabled: !!searchParams }
+  );
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    setSearchParams({
+      query: formData.get("query") as string,
+      category: formData.get("category") as string,
+    });
+  };
+
+  return (
+    <div>
+      <form onSubmit={handleSubmit}>
+        <input name="query" placeholder="Search products..." />
+        <select name="category">
+          <option value="">All Categories</option>
+          <option value="electronics">Electronics</option>
+          <option value="clothing">Clothing</option>
+        </select>
+        <button type="submit">Search</button>
+      </form>
+
+      {loading && <p>Searching...</p>}
+      {error && <p>Error: {error.message}</p>}
+      {data && (
+        <ul>
+          {data.map((product) => (
+            <li key={product.id}>{product.name}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+```
+
+## Form Submission Dependent
+
+Fetch data after a mutation completes successfully:
+
+```typescript
+function OrderConfirmation() {
+  const [orderId, setOrderId] = useState<string | null>(null);
+
+  const { trigger: submitOrder, loading: submitting } = useWrite(
+    (api) => api("orders").POST
+  );
+
+  const { data: orderDetails, loading: loadingDetails } = useRead(
+    (api) => api("orders/:id").GET({ params: { id: orderId ?? "" } }),
+    { enabled: !!orderId }
+  );
+
+  const handleSubmit = async (formData: OrderFormData) => {
+    const { data } = await submitOrder({ body: formData });
+
+    if (data) {
+      setOrderId(data.id);
+    }
+  };
+
+  if (orderId && loadingDetails) {
+    return <p>Loading order confirmation...</p>;
+  }
+
+  if (orderDetails) {
+    return (
+      <div>
+        <h2>Order Confirmed!</h2>
+        <p>Order #{orderDetails.id}</p>
+        <p>Total: ${orderDetails.total}</p>
+      </div>
+    );
+  }
+
+  return (
+    <OrderForm onSubmit={handleSubmit} disabled={submitting} />
+  );
+}
+```
+
+## Best Practices
+
+- **Prefer `enabled` over manual `trigger()`**: Let React's reactivity handle fetching by using `enabled` with conditions
+- **Use `fetching` for UI state**: Show loading indicators based on `fetching`, not `loading`, for lazy-loaded data
+- **Avoid placeholder params**: When using `enabled: false`, you still need valid params structure — use empty strings or defaults
+- **Clean up observers**: When using IntersectionObserver, always disconnect in the cleanup function
+- **Consider caching**: Lazy-loaded data still benefits from caching — subsequent opens/views use cached data

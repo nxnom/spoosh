@@ -5,6 +5,7 @@
     "tags-and-invalidation",
     "infinite-queries",
     "authentication",
-    "error-handling"
+    "error-handling",
+    "lazy-loading"
   ]
 }
