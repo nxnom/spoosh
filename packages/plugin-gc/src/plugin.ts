@@ -135,6 +135,10 @@ export function gcPlugin(
         return runGarbageCollection(stateManager, et, options);
       };
 
+      if (typeof window === "undefined") {
+        return;
+      }
+
       et?.emit(`GC scheduled every ${interval}ms`, {
         color: "info",
         meta: {

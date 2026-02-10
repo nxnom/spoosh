@@ -346,6 +346,14 @@ describe("gcPlugin", () => {
   });
 
   describe("interval control", () => {
+    beforeEach(() => {
+      vi.stubGlobal("window", {});
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
     it("should run gc at specified interval", () => {
       const { setupContext, stateManager } = createMockContext();
 
