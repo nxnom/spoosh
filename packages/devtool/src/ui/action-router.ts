@@ -36,7 +36,11 @@ export type ActionIntent =
   | { type: "select-internal-tab"; tab: InternalTab }
   | { type: "invalidate-cache"; key: string }
   | { type: "delete-cache"; key: string }
-  | { type: "clear-all-cache" };
+  | { type: "clear-all-cache" }
+  | { type: "import-file" }
+  | { type: "select-imported-trace"; traceId: string }
+  | { type: "clear-imports" }
+  | { type: "import-search"; query: string };
 
 export interface ActionRouterCallbacks {
   onRender: () => void;
@@ -50,6 +54,8 @@ export interface ActionRouterCallbacks {
   onInvalidateCache?: (key: string) => void;
   onDeleteCache?: (key: string) => void;
   onClearAllCache?: () => void;
+  onImportFile?: () => void;
+  onClearImports?: () => void;
 }
 
 export interface ActionRouter {
@@ -74,6 +80,8 @@ export function createActionRouter(
     onInvalidateCache,
     onDeleteCache,
     onClearAllCache,
+    onImportFile,
+    onClearImports,
   } = callbacks;
 
   function parseIntent(event: MouseEvent | Event): ActionIntent | null {
@@ -163,6 +171,22 @@ export function createActionRouter(
 
     if (action === "clear-all-cache") {
       return { type: "clear-all-cache" };
+    }
+
+    if (action === "import-file") {
+      return { type: "import-file" };
+    }
+
+    if (action === "clear-imports") {
+      return { type: "clear-imports" };
+    }
+
+    const importedTraceId = target
+      .closest("[data-imported-trace-id]")
+      ?.getAttribute("data-imported-trace-id");
+
+    if (importedTraceId) {
+      return { type: "select-imported-trace", traceId: importedTraceId };
     }
 
     if (cacheKey && !action) {
@@ -268,6 +292,11 @@ export function createActionRouter(
       event.type === "input"
     ) {
       const input = target as HTMLInputElement;
+
+      if (viewModel.getState().activeView === "import") {
+        return { type: "import-search", query: input.value };
+      }
+
       return { type: "search", query: input.value };
     }
 
@@ -386,6 +415,23 @@ export function createActionRouter(
       case "clear-all-cache":
         onClearAllCache?.();
         break;
+
+      case "import-file":
+        onImportFile?.();
+        return;
+
+      case "select-imported-trace":
+        viewModel.selectImportedTrace(intent.traceId);
+        break;
+
+      case "clear-imports":
+        onClearImports?.();
+        break;
+
+      case "import-search":
+        viewModel.setImportedSearchQuery(intent.query);
+        onPartialRender();
+        return;
     }
 
     onRender();

@@ -1094,6 +1094,14 @@ export const componentsCSS = `
     overflow: hidden;
   }
 
+  .spoosh-import-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .spoosh-cache-section .spoosh-section-header {
     background: linear-gradient(90deg, rgba(20, 184, 166, 0.1) 0%, transparent 100%);
     border-left: 2px solid #14b8a6;
@@ -1316,5 +1324,56 @@ export const componentsCSS = `
   .spoosh-detail-empty-text {
     color: var(--spoosh-text-muted);
     font-size: 12px;
+  }
+
+  /* ===== Import Empty State ===== */
+  .spoosh-import-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px 20px;
+    text-align: center;
+    gap: 8px;
+  }
+
+  .spoosh-import-empty-icon {
+    color: var(--spoosh-text-muted);
+    opacity: 0.5;
+    margin-bottom: 4px;
+  }
+
+  .spoosh-import-empty-text {
+    color: var(--spoosh-text);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .spoosh-import-empty-hint {
+    color: var(--spoosh-text-muted);
+    font-size: 11px;
+    margin-bottom: 8px;
+  }
+
+  .spoosh-import-btn {
+    padding: 6px 16px;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--spoosh-text);
+    background: var(--spoosh-primary);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .spoosh-import-btn:hover {
+    opacity: 0.85;
+  }
+
+  .spoosh-cache-clear-all .spoosh-import-btn {
+    width: 100%;
+    margin-bottom: 4px;
   }
 `;

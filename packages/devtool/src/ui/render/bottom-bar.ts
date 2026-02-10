@@ -43,6 +43,7 @@ export function renderBottomBar(ctx: BottomBarContext): string {
         <select class="spoosh-view-select" data-setting="view">
           <option value="requests" ${activeView === "requests" ? "selected" : ""}>Requests</option>
           <option value="cache" ${activeView === "cache" ? "selected" : ""}>Cache</option>
+          <option value="import" ${activeView === "import" ? "selected" : ""}>Import</option>
         </select>
         <button class="spoosh-theme-toggle" data-theme="${nextTheme}" title="${themeTitle}">
           ${themeIcon}

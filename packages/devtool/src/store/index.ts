@@ -13,6 +13,8 @@ import type {
   InvalidationEvent,
   DevToolFilters,
   DevToolStoreInterface,
+  ExportedTrace,
+  ImportedSession,
 } from "../types";
 import { createRingBuffer } from "./history";
 
@@ -41,6 +43,7 @@ export class DevToolStore implements DevToolStoreInterface {
 
   private stateManager: StateManager | undefined;
   private eventEmitter: EventEmitter | undefined;
+  private importedSession: ImportedSession | null = null;
 
   constructor(config: DevToolStoreConfig) {
     this.traces = createRingBuffer<OperationTrace>(config.maxHistory);
@@ -353,6 +356,45 @@ export class DevToolStore implements DevToolStoreInterface {
     this.events.clear();
     this.activeTraces.clear();
     this.invalidations = [];
+    this.notify();
+  }
+
+  importTraces(data: ExportedTrace[], filename: string): void {
+    this.importedSession = {
+      filename,
+      importedAt: Date.now(),
+      traces: data,
+    };
+    this.notify();
+  }
+
+  getImportedSession(): ImportedSession | null {
+    return this.importedSession;
+  }
+
+  getFilteredImportedTraces(searchQuery?: string): ExportedTrace[] {
+    if (!this.importedSession) {
+      return [];
+    }
+
+    let traces = this.importedSession.traces;
+
+    if (searchQuery?.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+
+      traces = traces.filter(
+        (trace) =>
+          trace.path.toLowerCase().includes(query) ||
+          trace.method.toLowerCase().includes(query) ||
+          trace.queryKey.toLowerCase().includes(query)
+      );
+    }
+
+    return traces;
+  }
+
+  clearImportedTraces(): void {
+    this.importedSession = null;
     this.notify();
   }
 }

@@ -1,4 +1,8 @@
-import type { DevToolStoreInterface, DevToolTheme } from "../types";
+import type {
+  DevToolStoreInterface,
+  DevToolTheme,
+  ExportedTrace,
+} from "../types";
 import { createActionRouter } from "./action-router";
 import {
   renderHeader,
@@ -14,6 +18,8 @@ import {
   renderCacheList,
   renderCacheDetail,
   renderSettings,
+  renderImportList,
+  renderImportDetail,
 } from "./render";
 import { createRenderScheduler } from "./render-scheduler";
 import { createResizeController } from "./resize-controller";
@@ -75,6 +81,13 @@ export class DevToolPanel {
       onClearAllCache: () => {
         this.store.clearAllCache();
         this.viewModel.selectCacheEntry(null);
+        this.renderImmediate();
+      },
+      onImportFile: () => this.triggerFileImport(),
+      onClearImports: () => {
+        this.store.clearImportedTraces();
+        this.viewModel.selectImportedTrace(null);
+        this.viewModel.setImportedSearchQuery("");
         this.renderImmediate();
       },
     });
@@ -145,6 +158,11 @@ export class DevToolPanel {
 
     if (state.activeView === "cache") {
       this.partialUpdateCache();
+      return;
+    }
+
+    if (state.activeView === "import") {
+      this.partialUpdateImport();
       return;
     }
 
@@ -367,10 +385,17 @@ export class DevToolPanel {
     const tabContent = this.sidebar.querySelector(".spoosh-tab-content");
     const savedScrollTop = tabContent?.scrollTop ?? 0;
 
+    const listScrollable = this.sidebar.querySelector(
+      ".spoosh-traces, .spoosh-cache-entries"
+    );
+    const savedListScrollTop = listScrollable?.scrollTop ?? 0;
+
     const mainContent =
       state.activeView === "requests"
         ? this.renderRequestsView()
-        : this.renderCacheView();
+        : state.activeView === "cache"
+          ? this.renderCacheView()
+          : this.renderImportView();
 
     this.sidebar.innerHTML = `
       <div class="spoosh-resize-handle"></div>
@@ -388,6 +413,16 @@ export class DevToolPanel {
 
       if (newTabContent) {
         newTabContent.scrollTop = savedScrollTop;
+      }
+    }
+
+    if (savedListScrollTop > 0) {
+      const newListScrollable = this.sidebar.querySelector(
+        ".spoosh-traces, .spoosh-cache-entries"
+      );
+
+      if (newListScrollable) {
+        newListScrollable.scrollTop = savedListScrollTop;
       }
     }
   }
@@ -494,6 +529,167 @@ export class DevToolPanel {
       <div class="spoosh-divider-handle"></div>
       ${detailPanel}
     `;
+  }
+
+  private renderImportView(): string {
+    const state = this.viewModel.getState();
+    const session = this.store.getImportedSession();
+    const traces = this.store.getFilteredImportedTraces(
+      state.importedSearchQuery
+    );
+    const selectedTrace = state.selectedImportedTraceId
+      ? traces.find((t) => t.id === state.selectedImportedTraceId)
+      : null;
+
+    const detailPanel = state.showSettings
+      ? renderSettings({
+          showPassedPlugins: state.showPassedPlugins,
+          theme: state.theme,
+          position: state.position,
+          sidebarPosition: state.sidebarPosition,
+          maxHistory: state.maxHistory,
+        })
+      : renderImportDetail({ trace: selectedTrace ?? null });
+
+    const hasSession = session !== null;
+
+    return `
+      <div class="spoosh-list-panel" style="width: ${state.listPanelWidth}px; min-width: ${state.listPanelWidth}px;">
+        ${renderHeader({ filters: this.store.getFilters(), showSettings: state.showSettings, searchQuery: state.importedSearchQuery, hideFilters: true, hideClear: true })}
+        <div class="spoosh-list-content">
+          <div class="spoosh-import-section">
+            ${
+              hasSession
+                ? `<div class="spoosh-section-header">
+                    <span class="spoosh-section-title">${this.escapeHtml(session.filename)}</span>
+                    <span class="spoosh-section-count">${traces.length}</span>
+                  </div>`
+                : ""
+            }
+            ${renderImportList({
+              traces,
+              selectedTraceId: state.selectedImportedTraceId,
+              filename: session?.filename ?? null,
+            })}
+          </div>
+          ${
+            hasSession
+              ? `<div class="spoosh-cache-clear-all">
+                  <button class="spoosh-import-btn" data-action="import-file">
+                    Import New File
+                  </button>
+                  <button class="spoosh-cache-action-btn danger" data-action="clear-imports">
+                    Clear
+                  </button>
+                </div>`
+              : ""
+          }
+        </div>
+      </div>
+      <div class="spoosh-divider-handle"></div>
+      ${detailPanel}
+    `;
+  }
+
+  private partialUpdateImport(): void {
+    if (!this.sidebar) return;
+
+    const state = this.viewModel.getState();
+    const traces = this.store.getFilteredImportedTraces(
+      state.importedSearchQuery
+    );
+
+    const importSection = this.sidebar.querySelector(".spoosh-import-section");
+
+    if (importSection) {
+      const countEl = importSection.querySelector(".spoosh-section-count");
+
+      if (countEl) {
+        countEl.textContent = String(traces.length);
+      }
+
+      const existingList = importSection.querySelector(
+        ".spoosh-traces, .spoosh-empty, .spoosh-import-empty"
+      );
+
+      if (existingList) {
+        existingList.outerHTML = renderImportList({
+          traces,
+          selectedTraceId: state.selectedImportedTraceId,
+          filename: this.store.getImportedSession()?.filename ?? null,
+        });
+      }
+    }
+
+    const selectedTrace = state.selectedImportedTraceId
+      ? traces.find((t) => t.id === state.selectedImportedTraceId)
+      : null;
+
+    if (selectedTrace) {
+      const detailPanel = this.sidebar.querySelector(".spoosh-detail-panel");
+
+      if (detailPanel) {
+        detailPanel.outerHTML = renderImportDetail({
+          trace: selectedTrace,
+        });
+      }
+    }
+  }
+
+  private triggerFileImport(): void {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+
+    input.onchange = () => {
+      const file = input.files?.[0];
+
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result as string);
+          const traces = this.validateImportData(data);
+
+          if (traces) {
+            this.store.importTraces(traces, file.name);
+            this.viewModel.selectImportedTrace(null);
+            this.viewModel.setImportedSearchQuery("");
+            this.renderImmediate();
+          }
+        } catch {
+          // Invalid JSON file
+        }
+      };
+
+      reader.readAsText(file);
+    };
+
+    input.click();
+  }
+
+  private validateImportData(data: unknown): ExportedTrace[] | null {
+    if (!Array.isArray(data)) return null;
+
+    return data.filter(
+      (item): item is ExportedTrace =>
+        typeof item === "object" &&
+        item !== null &&
+        typeof item.id === "string" &&
+        typeof item.path === "string" &&
+        typeof item.operationType === "string" &&
+        typeof item.method === "string"
+    );
+  }
+
+  private escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
   }
 
   private setupResizeHandlers(): void {

@@ -149,11 +149,15 @@ export interface DevToolStoreInterface {
   deleteCacheEntry(key: string): void;
   clearAllCache(): void;
   setMaxHistory(value: number): void;
+  importTraces(data: ExportedTrace[], filename: string): void;
+  getImportedSession(): ImportedSession | null;
+  getFilteredImportedTraces(searchQuery?: string): ExportedTrace[];
+  clearImportedTraces(): void;
 }
 
 export type DetailTab = "data" | "request" | "meta" | "plugins";
 
-export type PanelView = "requests" | "cache";
+export type PanelView = "requests" | "cache" | "import";
 
 export type InternalTab = "data" | "meta" | "raw";
 
@@ -163,6 +167,32 @@ export interface CacheEntryDisplay {
   queryKey: string;
   entry: CacheEntry<unknown, unknown>;
   subscriberCount: number;
+}
+
+export interface ExportedTrace {
+  id: string;
+  queryKey: string;
+  operationType: string;
+  method: string;
+  path: string;
+  timestamp: number;
+  duration?: number;
+  request: unknown;
+  response?: unknown;
+  meta?: Record<string, unknown>;
+  steps: Array<{
+    plugin: string;
+    stage: string;
+    timestamp: number;
+    duration?: number;
+    reason?: string;
+  }>;
+}
+
+export interface ImportedSession {
+  filename: string;
+  importedAt: number;
+  traces: ExportedTrace[];
 }
 
 export interface RenderContext {

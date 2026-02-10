@@ -9,7 +9,7 @@ export type PositionMode =
   | "bottom-left"
   | "top-right"
   | "top-left";
-export type PanelView = "requests" | "cache";
+export type PanelView = "requests" | "cache" | "import";
 export type InternalTab = "data" | "meta" | "raw";
 export type SidebarPosition = "left" | "right";
 
@@ -33,6 +33,8 @@ export interface ViewModelState {
   selectedCacheKey: string | null;
   internalTab: InternalTab;
   maxHistory: number;
+  selectedImportedTraceId: string | null;
+  importedSearchQuery: string;
 }
 
 type Listener = () => void;
@@ -59,6 +61,8 @@ const DEFAULT_STATE: ViewModelState = {
   selectedCacheKey: null,
   internalTab: "data",
   maxHistory: 50,
+  selectedImportedTraceId: null,
+  importedSearchQuery: "",
 };
 
 export interface ViewModel {
@@ -97,6 +101,8 @@ export interface ViewModel {
   setInternalTab(tab: InternalTab): void;
   setMaxHistory(value: number): void;
   getMaxHistory(): number;
+  selectImportedTrace(traceId: string | null): void;
+  setImportedSearchQuery(query: string): void;
 }
 
 export function createViewModel(): ViewModel {
@@ -350,6 +356,16 @@ export function createViewModel(): ViewModel {
     return state.maxHistory;
   }
 
+  function selectImportedTrace(traceId: string | null): void {
+    state = { ...state, selectedImportedTraceId: traceId };
+    notify();
+  }
+
+  function setImportedSearchQuery(query: string): void {
+    state = { ...state, importedSearchQuery: query };
+    notify();
+  }
+
   return {
     getState,
     subscribe,
@@ -379,5 +395,7 @@ export function createViewModel(): ViewModel {
     setInternalTab,
     setMaxHistory,
     getMaxHistory,
+    selectImportedTrace,
+    setImportedSearchQuery,
   };
 }
