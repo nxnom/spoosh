@@ -52,6 +52,7 @@ export class DevToolPanel {
   private lastSeenCount = 0;
 
   private fabMouseDown: ((e: MouseEvent) => void) | null = null;
+  private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
   private viewModel = createViewModel();
   private renderScheduler = createRenderScheduler();
@@ -122,6 +123,8 @@ export class DevToolPanel {
 
     this.sidebar = document.createElement("div");
     this.sidebar.id = "spoosh-devtool-sidebar";
+
+    this.setupKeyboardShortcuts();
 
     if (this.viewModel.getState().sidebarPosition === "left") {
       this.sidebar.classList.add("left");
@@ -1152,6 +1155,163 @@ export class DevToolPanel {
     }
   }
 
+  private setupKeyboardShortcuts(): void {
+    this.keydownHandler = (e: KeyboardEvent) => {
+      const state = this.viewModel.getState();
+      const isMod = e.metaKey || e.ctrlKey;
+
+      if (!state.isOpen) return;
+
+      const target = e.target as HTMLElement;
+      const isInputFocused =
+        target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+
+      if (e.key === "Escape") {
+        if (isInputFocused) {
+          target.blur();
+        } else {
+          this.close();
+        }
+
+        e.preventDefault();
+        return;
+      }
+
+      if (isMod && e.key === "k") {
+        e.preventDefault();
+        const searchInput = this.sidebar?.querySelector(
+          ".spoosh-search-input"
+        ) as HTMLInputElement | null;
+        searchInput?.focus();
+        return;
+      }
+
+      if (isMod && e.key === "e") {
+        e.preventDefault();
+        this.exportTraces();
+        return;
+      }
+
+      if (isMod && e.key === "l") {
+        e.preventDefault();
+        this.viewModel.clearAll(this.store);
+        this.renderImmediate();
+        return;
+      }
+
+      if (e.key === "1" && !isInputFocused) {
+        e.preventDefault();
+        this.viewModel.setActiveView("requests");
+        this.renderImmediate();
+        return;
+      }
+
+      if (e.key === "2" && !isInputFocused) {
+        e.preventDefault();
+        this.viewModel.setActiveView("state");
+        this.renderImmediate();
+        return;
+      }
+
+      if (e.key === "3" && !isInputFocused) {
+        e.preventDefault();
+        this.viewModel.setActiveView("import");
+        this.renderImmediate();
+        return;
+      }
+
+      if (isInputFocused) return;
+
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        e.preventDefault();
+        this.navigateTraces(e.key === "ArrowUp" ? -1 : 1);
+        return;
+      }
+    };
+
+    document.addEventListener("keydown", this.keydownHandler);
+  }
+
+  private navigateTraces(direction: -1 | 1): void {
+    const state = this.viewModel.getState();
+
+    if (state.activeView === "requests") {
+      const traces = this.store.getFilteredTraces(state.searchQuery);
+
+      if (traces.length === 0) return;
+
+      const currentIndex = state.selectedTraceId
+        ? traces.findIndex((t) => t.id === state.selectedTraceId)
+        : -1;
+
+      // Traces are rendered in reverse order, so flip direction
+      let newIndex = currentIndex - direction;
+
+      if (newIndex < 0) newIndex = 0;
+      if (newIndex >= traces.length) newIndex = traces.length - 1;
+
+      const trace = traces[newIndex];
+
+      if (trace) {
+        this.viewModel.selectTrace(trace.id);
+        this.renderImmediate();
+        this.scrollToSelected(".spoosh-trace.selected");
+      }
+    } else if (state.activeView === "state") {
+      const entries = this.store.getCacheEntries(state.searchQuery);
+
+      if (entries.length === 0) return;
+
+      const currentIndex = state.selectedStateKey
+        ? entries.findIndex((e) => e.queryKey === state.selectedStateKey)
+        : -1;
+
+      let newIndex = currentIndex + direction;
+
+      if (newIndex < 0) newIndex = 0;
+      if (newIndex >= entries.length) newIndex = entries.length - 1;
+
+      const entry = entries[newIndex];
+
+      if (entry) {
+        this.viewModel.selectStateEntry(entry.queryKey);
+        this.renderImmediate();
+        this.scrollToSelected(".spoosh-state-entry.selected");
+      }
+    } else if (state.activeView === "import") {
+      const traces = this.store.getFilteredImportedTraces(
+        state.importedSearchQuery
+      );
+
+      if (traces.length === 0) return;
+
+      const currentIndex = state.selectedImportedTraceId
+        ? traces.findIndex((t) => t.id === state.selectedImportedTraceId)
+        : -1;
+
+      // Traces are rendered in reverse order, so flip direction
+      let newIndex = currentIndex - direction;
+
+      if (newIndex < 0) newIndex = 0;
+      if (newIndex >= traces.length) newIndex = traces.length - 1;
+
+      const trace = traces[newIndex];
+
+      if (trace) {
+        this.viewModel.selectImportedTrace(trace.id);
+        this.renderImmediate();
+        this.scrollToSelected(".spoosh-trace.selected");
+      }
+    }
+  }
+
+  private scrollToSelected(selector: string): void {
+    requestAnimationFrame(() => {
+      const selected = this.sidebar?.querySelector(selector);
+      selected?.scrollIntoView({ block: "nearest" });
+    });
+  }
+
   unmount(): void {
     if (this.unsubscribe) {
       this.unsubscribe();
@@ -1164,6 +1324,11 @@ export class DevToolPanel {
     if (this.fab && this.fabMouseDown) {
       this.fab.removeEventListener("mousedown", this.fabMouseDown);
       this.fabMouseDown = null;
+    }
+
+    if (this.keydownHandler) {
+      document.removeEventListener("keydown", this.keydownHandler);
+      this.keydownHandler = null;
     }
 
     this.shadowHost?.remove();
