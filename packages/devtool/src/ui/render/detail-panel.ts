@@ -28,6 +28,7 @@ export interface DetailPanelContext {
   position: PositionMode;
   sidebarPosition: SidebarPosition;
   maxHistory: number;
+  autoSelectIncoming: boolean;
 }
 
 function getActivePluginCount(trace: OperationTrace): number {
@@ -83,6 +84,7 @@ export function renderDetailPanel(ctx: DetailPanelContext): string {
     position,
     sidebarPosition,
     maxHistory,
+    autoSelectIncoming,
   } = ctx;
 
   if (showSettings) {
@@ -92,6 +94,7 @@ export function renderDetailPanel(ctx: DetailPanelContext): string {
       position,
       sidebarPosition,
       maxHistory,
+      autoSelectIncoming,
     });
   }
 
@@ -154,7 +157,8 @@ export function renderEmptyDetail(
   theme: ThemeMode,
   position: PositionMode,
   sidebarPosition: SidebarPosition,
-  maxHistory: number
+  maxHistory: number,
+  autoSelectIncoming: boolean
 ): string {
   if (showSettings) {
     return renderSettings({
@@ -163,6 +167,7 @@ export function renderEmptyDetail(
       position,
       sidebarPosition,
       maxHistory,
+      autoSelectIncoming,
     });
   }
 

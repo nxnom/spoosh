@@ -355,6 +355,13 @@ export function createActionRouter(
             viewModel.togglePassedPlugins();
           }
         }
+
+        if (intent.setting === "autoSelectIncoming") {
+          if (intent.value !== viewModel.getState().autoSelectIncoming) {
+            viewModel.toggleAutoSelectIncoming();
+          }
+        }
+
         break;
 
       case "dismiss-settings":

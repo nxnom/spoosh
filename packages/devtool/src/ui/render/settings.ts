@@ -6,11 +6,18 @@ export interface SettingsRenderContext {
   position: PositionMode;
   sidebarPosition: SidebarPosition;
   maxHistory: number;
+  autoSelectIncoming: boolean;
 }
 
 export function renderSettings(ctx: SettingsRenderContext): string {
-  const { showPassedPlugins, theme, position, sidebarPosition, maxHistory } =
-    ctx;
+  const {
+    showPassedPlugins,
+    theme,
+    position,
+    sidebarPosition,
+    maxHistory,
+    autoSelectIncoming,
+  } = ctx;
 
   return `
     <div class="spoosh-detail-panel">
@@ -51,6 +58,12 @@ export function renderSettings(ctx: SettingsRenderContext): string {
             <input type="checkbox" data-setting="showPassedPlugins" ${showPassedPlugins ? "checked" : ""} />
             <span class="spoosh-toggle-slider"></span>
             <span class="spoosh-settings-label">Show passed plugins in timeline</span>
+          </label>
+
+          <label class="spoosh-settings-toggle">
+            <input type="checkbox" data-setting="autoSelectIncoming" ${autoSelectIncoming ? "checked" : ""} />
+            <span class="spoosh-toggle-slider"></span>
+            <span class="spoosh-settings-label">Auto-follow new requests</span>
           </label>
         </div>
         <div class="spoosh-settings-section">

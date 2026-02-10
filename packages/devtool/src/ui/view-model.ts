@@ -36,6 +36,7 @@ export interface ViewModelState {
   maxHistory: number;
   selectedImportedTraceId: string | null;
   importedSearchQuery: string;
+  autoSelectIncoming: boolean;
 }
 
 type Listener = () => void;
@@ -65,6 +66,7 @@ const DEFAULT_STATE: ViewModelState = {
   maxHistory: 50,
   selectedImportedTraceId: null,
   importedSearchQuery: "",
+  autoSelectIncoming: false,
 };
 
 export interface ViewModel {
@@ -106,6 +108,7 @@ export interface ViewModel {
   getMaxHistory(): number;
   selectImportedTrace(traceId: string | null): void;
   setImportedSearchQuery(query: string): void;
+  toggleAutoSelectIncoming(): void;
 }
 
 export function createViewModel(): ViewModel {
@@ -145,6 +148,8 @@ export function createViewModel(): ViewModel {
           sidebarPosition:
             settings.sidebarPosition ?? DEFAULT_STATE.sidebarPosition,
           maxHistory: settings.maxHistory ?? DEFAULT_STATE.maxHistory,
+          autoSelectIncoming:
+            settings.autoSelectIncoming ?? DEFAULT_STATE.autoSelectIncoming,
         };
       }
     } catch {
@@ -173,6 +178,7 @@ export function createViewModel(): ViewModel {
             position: state.position,
             sidebarPosition: state.sidebarPosition,
             maxHistory: state.maxHistory,
+            autoSelectIncoming: state.autoSelectIncoming,
           })
         );
       } catch {
@@ -376,6 +382,12 @@ export function createViewModel(): ViewModel {
     notify();
   }
 
+  function toggleAutoSelectIncoming(): void {
+    state = { ...state, autoSelectIncoming: !state.autoSelectIncoming };
+    saveSettings();
+    notify();
+  }
+
   return {
     getState,
     subscribe,
@@ -408,5 +420,6 @@ export function createViewModel(): ViewModel {
     getMaxHistory,
     selectImportedTrace,
     setImportedSearchQuery,
+    toggleAutoSelectIncoming,
   };
 }

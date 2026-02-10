@@ -132,6 +132,7 @@ export class DevToolPanel {
       const newCount = this.store.getTraces().length;
 
       if (newCount !== this.traceCount) {
+        const hadNewTrace = newCount > this.traceCount;
         this.traceCount = newCount;
 
         if (this.viewModel.getState().isOpen) {
@@ -139,6 +140,24 @@ export class DevToolPanel {
         }
 
         this.updateBadge();
+
+        if (
+          hadNewTrace &&
+          this.viewModel.getState().isOpen &&
+          this.viewModel.getState().autoSelectIncoming &&
+          this.viewModel.getState().activeView === "requests"
+        ) {
+          const traces = this.store.getFilteredTraces(
+            this.viewModel.getState().searchQuery
+          );
+          const lastTrace = traces[traces.length - 1];
+
+          if (lastTrace) {
+            this.viewModel.selectTrace(lastTrace.id);
+            this.renderScheduler.schedule(() => this.render());
+            return;
+          }
+        }
       }
 
       if (this.viewModel.getState().isOpen) {
@@ -155,6 +174,11 @@ export class DevToolPanel {
 
   private partialUpdate(): void {
     if (!this.sidebar) return;
+
+    if (this.autoSelectFirst()) {
+      this.render();
+      return;
+    }
 
     const state = this.viewModel.getState();
 
@@ -383,6 +407,8 @@ export class DevToolPanel {
   private render(): void {
     if (!this.sidebar) return;
 
+    this.autoSelectFirst();
+
     const state = this.viewModel.getState();
     const tabContent = this.sidebar.querySelector(".spoosh-tab-content");
     const savedScrollTop = tabContent?.scrollTop ?? 0;
@@ -454,6 +480,7 @@ export class DevToolPanel {
       position: state.position,
       sidebarPosition: state.sidebarPosition,
       maxHistory: state.maxHistory,
+      autoSelectIncoming: state.autoSelectIncoming,
     });
 
     return `
@@ -496,6 +523,7 @@ export class DevToolPanel {
           position: state.position,
           sidebarPosition: state.sidebarPosition,
           maxHistory: state.maxHistory,
+          autoSelectIncoming: state.autoSelectIncoming,
         })
       : renderCacheDetail({
           entry: selectedEntry ?? null,
@@ -550,6 +578,7 @@ export class DevToolPanel {
           position: state.position,
           sidebarPosition: state.sidebarPosition,
           maxHistory: state.maxHistory,
+          autoSelectIncoming: state.autoSelectIncoming,
         })
       : renderImportDetail({
           trace: selectedTrace ?? null,
@@ -694,6 +723,44 @@ export class DevToolPanel {
         typeof item.operationType === "string" &&
         typeof item.method === "string"
     );
+  }
+
+  private autoSelectFirst(): boolean {
+    const state = this.viewModel.getState();
+
+    if (state.activeView === "requests" && !state.selectedTraceId) {
+      const traces = this.store.getFilteredTraces(state.searchQuery);
+      const lastTrace = traces[traces.length - 1];
+
+      if (lastTrace) {
+        this.viewModel.selectTrace(lastTrace.id);
+        return true;
+      }
+    }
+
+    if (state.activeView === "cache" && !state.selectedCacheKey) {
+      const entries = this.store.getCacheEntries(state.searchQuery);
+      const firstEntry = entries[0];
+
+      if (firstEntry) {
+        this.viewModel.selectCacheEntry(firstEntry.queryKey);
+        return true;
+      }
+    }
+
+    if (state.activeView === "import" && !state.selectedImportedTraceId) {
+      const traces = this.store.getFilteredImportedTraces(
+        state.importedSearchQuery
+      );
+      const lastTrace = traces[traces.length - 1];
+
+      if (lastTrace) {
+        this.viewModel.selectImportedTrace(lastTrace.id);
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private escapeHtml(str: string): string {
