@@ -262,4 +262,16 @@ export const layoutCSS = `
   .spoosh-settings-section:last-child {
     margin-bottom: 0;
   }
+
+  /* ===== Drag Placeholder ===== */
+  .spoosh-drag-placeholder {
+    position: fixed;
+    top: 0;
+    height: 100vh;
+    border: 2px dashed var(--spoosh-primary);
+    background: transparent;
+    z-index: 999999;
+    border-radius: 4px;
+    pointer-events: none;
+  }
 `;

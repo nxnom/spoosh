@@ -750,33 +750,52 @@ export class DevToolPanel {
   private startSidebarDrag(e: MouseEvent): void {
     e.preventDefault();
     const startX = e.clientX;
+    const currentPosition = this.viewModel.getState().sidebarPosition;
+    let pendingPosition: SidebarPosition | null = null;
+    let placeholder: HTMLDivElement | null = null;
 
     document.body.style.cursor = "grabbing";
     document.body.style.userSelect = "none";
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const dx = moveEvent.clientX - startX;
-      const threshold = 50;
-
-      if (Math.abs(dx) < threshold) return;
-
+      const threshold = 100;
       const newPosition: SidebarPosition = dx < 0 ? "left" : "right";
-      const currentPosition = this.viewModel.getState().sidebarPosition;
+      const sidebarWidth = this.viewModel.getState().sidebarWidth;
 
-      if (newPosition !== currentPosition) {
-        this.viewModel.setSidebarPosition(newPosition);
-        this.setSidebarPosition(newPosition);
+      if (Math.abs(dx) >= threshold && newPosition !== currentPosition) {
+        if (pendingPosition !== newPosition) {
+          pendingPosition = newPosition;
+
+          if (!placeholder) {
+            placeholder = document.createElement("div");
+            placeholder.className = "spoosh-drag-placeholder";
+            this.shadowRoot?.appendChild(placeholder);
+          }
+
+          placeholder.style.width = `${sidebarWidth}px`;
+          placeholder.style.left = newPosition === "left" ? "0" : "";
+          placeholder.style.right = newPosition === "right" ? "0" : "";
+        }
+      } else {
+        pendingPosition = null;
+        placeholder?.remove();
+        placeholder = null;
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (pendingPosition && pendingPosition !== currentPosition) {
+        this.viewModel.setSidebarPosition(pendingPosition);
+        this.setSidebarPosition(pendingPosition);
         this.renderImmediate();
       }
 
       cleanup();
     };
 
-    const handleMouseUp = () => {
-      cleanup();
-    };
-
     const cleanup = () => {
+      placeholder?.remove();
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
       document.removeEventListener("mousemove", handleMouseMove);
