@@ -1,0 +1,33 @@
+{
+  "name": "@spoosh/example-react-basic",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3010",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --port 4010",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "msw:init": "msw init public --save"
+  },
+  "dependencies": {
+    "@spoosh/core": "workspace:*",
+    "@spoosh/devtool": "workspace:*",
+    "@spoosh/plugin-cache": "workspace:*",
+    "@spoosh/plugin-deduplication": "workspace:*",
+    "@spoosh/plugin-invalidation": "workspace:*",
+    "@spoosh/plugin-retry": "workspace:*",
+    "@spoosh/react": "workspace:*",
+    "msw": "^2.11.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.1.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.2.0"
+  }
+}
