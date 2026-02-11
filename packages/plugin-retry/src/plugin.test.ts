@@ -90,7 +90,10 @@ describe("retryPlugin", () => {
       for (const statusCode of retryCodes) {
         const plugin = retryPlugin({ retries: 1, retryDelay: 100 });
         const context = createMockContext();
-        const errorResponse = { error: { message: "Error" }, status: statusCode };
+        const errorResponse = {
+          error: { message: "Error" },
+          status: statusCode,
+        };
         const successResponse = { data: {}, status: 200 };
 
         const next = vi
@@ -179,7 +182,10 @@ describe("retryPlugin", () => {
       const pluginShouldRetry = vi.fn().mockReturnValue(true);
       const requestShouldRetry = vi.fn().mockReturnValue(false);
 
-      const plugin = retryPlugin({ retries: 3, shouldRetry: pluginShouldRetry });
+      const plugin = retryPlugin({
+        retries: 3,
+        shouldRetry: pluginShouldRetry,
+      });
       const context = createMockContext({
         pluginOptions: { shouldRetry: requestShouldRetry },
       });

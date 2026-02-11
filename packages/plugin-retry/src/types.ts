@@ -24,7 +24,9 @@ export interface ShouldRetryContext {
 export type ShouldRetryCallback = (context: ShouldRetryContext) => boolean;
 
 /** Status codes that are retried by default: 408, 429, 500, 502, 503, 504 */
-export const DEFAULT_RETRY_STATUS_CODES = [408, 429, 500, 502, 503, 504] as const;
+export const DEFAULT_RETRY_STATUS_CODES = [
+  408, 429, 500, 502, 503, 504,
+] as const;
 
 export interface RetryPluginConfig {
   /** Number of retry attempts. Set to `false` to disable retries. Defaults to 3. */
