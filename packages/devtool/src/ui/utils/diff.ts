@@ -52,38 +52,72 @@ function jsonToLines(obj: unknown, indent = 0): string[] {
   return [String(obj)];
 }
 
+function computeLCS(before: string[], after: string[]): number[][] {
+  const m = before.length;
+  const n = after.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () =>
+    Array<number>(n + 1).fill(0)
+  );
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const dpRow = dp[i];
+      const dpPrevRow = dp[i - 1];
+
+      if (!dpRow || !dpPrevRow) continue;
+
+      if (before[i - 1] === after[j - 1]) {
+        dpRow[j] = (dpPrevRow[j - 1] ?? 0) + 1;
+      } else {
+        dpRow[j] = Math.max(dpPrevRow[j] ?? 0, dpRow[j - 1] ?? 0);
+      }
+    }
+  }
+
+  return dp;
+}
+
 function diffLines(before: string[], after: string[]): DiffLine[] {
   const result: DiffLine[] = [];
-  const beforeSet = new Set(before);
-  const afterSet = new Set(after);
+  const dp = computeLCS(before, after);
 
-  let bi = 0;
-  let ai = 0;
+  let i = before.length;
+  let j = after.length;
+  const operations: DiffLine[] = [];
 
-  while (bi < before.length || ai < after.length) {
-    const beforeLine = before[bi];
-    const afterLine = after[ai];
+  while (i > 0 || j > 0) {
+    const beforeContent = before[i - 1];
+    const afterContent = after[j - 1];
+    const dpRow = dp[i];
+    const dpPrevRow = dp[i - 1];
 
-    if (bi >= before.length && afterLine !== undefined) {
-      result.push({ type: "added", content: afterLine });
-      ai++;
-    } else if (ai >= after.length && beforeLine !== undefined) {
-      result.push({ type: "removed", content: beforeLine });
-      bi++;
-    } else if (beforeLine === afterLine && beforeLine !== undefined) {
-      result.push({ type: "unchanged", content: beforeLine });
-      bi++;
-      ai++;
-    } else if (beforeLine !== undefined && !afterSet.has(beforeLine)) {
-      result.push({ type: "removed", content: beforeLine });
-      bi++;
-    } else if (afterLine !== undefined && !beforeSet.has(afterLine)) {
-      result.push({ type: "added", content: afterLine });
-      ai++;
-    } else if (beforeLine !== undefined) {
-      result.push({ type: "removed", content: beforeLine });
-      bi++;
+    if (
+      i > 0 &&
+      j > 0 &&
+      beforeContent === afterContent &&
+      beforeContent !== undefined
+    ) {
+      operations.push({ type: "unchanged", content: beforeContent });
+      i--;
+      j--;
+    } else if (
+      j > 0 &&
+      afterContent !== undefined &&
+      (i === 0 || (dpRow?.[j - 1] ?? 0) >= (dpPrevRow?.[j] ?? 0))
+    ) {
+      operations.push({ type: "added", content: afterContent });
+      j--;
+    } else if (i > 0 && beforeContent !== undefined) {
+      operations.push({ type: "removed", content: beforeContent });
+      i--;
+    } else {
+      break;
     }
+  }
+
+  for (let k = operations.length - 1; k >= 0; k--) {
+    const op = operations[k];
+    if (op) result.push(op);
   }
 
   return result;

@@ -1,5 +1,9 @@
 # @spoosh/devtool
 
+## 0.1.2
+
+- Use LCS algorithm to display diff for better readability
+
 ## 0.1.1
 
 - Fix new requests count in FAB disappearing after max history hit the limit
