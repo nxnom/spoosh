@@ -66,11 +66,13 @@ export class DevToolStore implements DevToolStoreInterface {
 
     const entries = this.stateManager.getAllCacheEntries();
     const query = searchQuery?.toLowerCase().trim();
+    const resolvedPathMap = this.buildResolvedPathMap();
 
     return entries
       .filter((e) => {
         try {
           const parsed = JSON.parse(e.key) as { method?: string };
+
           if (parsed.method && parsed.method !== "GET") {
             return false;
           }
@@ -86,11 +88,25 @@ export class DevToolStore implements DevToolStoreInterface {
         queryKey: e.key,
         entry: e.entry,
         subscriberCount: this.stateManager!.getSubscribersCount(e.key),
+        resolvedPath: resolvedPathMap.get(e.key),
       }))
       .sort(
         (a, b) =>
           (b.entry.state.timestamp ?? 0) - (a.entry.state.timestamp ?? 0)
       );
+  }
+
+  private buildResolvedPathMap(): Map<string, string> {
+    const pathMap = new Map<string, string>();
+    const traces = this.getTraces();
+
+    for (const trace of traces) {
+      if (!pathMap.has(trace.queryKey) || trace.timestamp > 0) {
+        pathMap.set(trace.queryKey, trace.path);
+      }
+    }
+
+    return pathMap;
   }
 
   refetchStateEntry(key: string): void {

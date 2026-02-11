@@ -171,6 +171,7 @@ export interface CacheEntryDisplay {
   queryKey: string;
   entry: CacheEntry<unknown, unknown>;
   subscriberCount: number;
+  resolvedPath?: string;
 }
 
 export interface ExportedTrace {

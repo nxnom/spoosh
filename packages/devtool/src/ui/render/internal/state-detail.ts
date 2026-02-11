@@ -44,7 +44,10 @@ interface ParsedQueryKey {
   queryParams: string | null;
 }
 
-function parseQueryKey(queryKey: string): ParsedQueryKey {
+function parseQueryKey(
+  queryKey: string,
+  resolvedPath?: string
+): ParsedQueryKey {
   try {
     const parsed = JSON.parse(queryKey) as {
       path?: string;
@@ -57,12 +60,12 @@ function parseQueryKey(queryKey: string): ParsedQueryKey {
       : null;
 
     return {
-      path: parsed.path ?? queryKey,
+      path: resolvedPath ?? parsed.path ?? queryKey,
       method: parsed.method ?? "GET",
       queryParams,
     };
   } catch {
-    return { path: queryKey, method: "GET", queryParams: null };
+    return { path: resolvedPath ?? queryKey, method: "GET", queryParams: null };
   }
 }
 
@@ -169,7 +172,10 @@ export function renderStateDetail(ctx: StateDetailContext): string {
     `;
   }
 
-  const { path, method, queryParams } = parseQueryKey(entry.queryKey);
+  const { path, method, queryParams } = parseQueryKey(
+    entry.queryKey,
+    entry.resolvedPath
+  );
   const hasError = entry.entry.state.error !== undefined;
   const isStale = entry.entry.stale === true;
   const fullPath = queryParams ? `${path}?${queryParams}` : path;
