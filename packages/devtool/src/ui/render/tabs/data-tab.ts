@@ -44,6 +44,13 @@ export function renderDataTab(trace: OperationTrace): string {
     return `<div class="spoosh-empty-tab">No response data</div>`;
   }
 
+  if (response.aborted) {
+    return renderDataSection(
+      "Aborted",
+      response.error ?? "Request was aborted"
+    );
+  }
+
   if (response.error) {
     return renderDataSection("Error", response.error, true);
   }

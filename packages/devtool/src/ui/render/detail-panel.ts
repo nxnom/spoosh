@@ -111,9 +111,22 @@ export function renderDetailPanel(ctx: DetailPanelContext): string {
   }
 
   const isPending = trace.duration === undefined;
-  const hasError = !!trace.response?.error;
-  const statusClass = isPending ? "pending" : hasError ? "error" : "success";
-  const statusLabel = isPending ? "Pending" : hasError ? "Error" : "Success";
+  const isAborted = !!trace.response?.aborted;
+  const hasError = !!trace.response?.error && !isAborted;
+  const statusClass = isPending
+    ? "pending"
+    : isAborted
+      ? "aborted"
+      : hasError
+        ? "error"
+        : "success";
+  const statusLabel = isPending
+    ? "Pending"
+    : isAborted
+      ? "Aborted"
+      : hasError
+        ? "Error"
+        : "Success";
   const pluginCount = getActivePluginCount(trace);
 
   return `
@@ -132,7 +145,7 @@ export function renderDetailPanel(ctx: DetailPanelContext): string {
 
       <div class="spoosh-tabs">
         <button class="spoosh-tab ${activeTab === "data" ? "active" : ""}" data-tab="data">
-          ${isPending ? "Fetching" : hasError ? "Error" : "Data"}
+          ${isPending ? "Fetching" : isAborted ? "Aborted" : hasError ? "Error" : "Data"}
         </button>
         <button class="spoosh-tab ${activeTab === "request" ? "active" : ""}" data-tab="request">
           Request

@@ -9,6 +9,10 @@ export interface TraceRowContext {
 function getResponsePreview(trace: OperationTrace): string {
   if (trace.duration === undefined) return "pending...";
 
+  if (trace.response?.aborted) {
+    return "aborted";
+  }
+
   if (trace.response?.error) {
     const status = trace.response.status;
     return status ? `${status}` : "error";
@@ -27,15 +31,22 @@ function getResponsePreview(trace: OperationTrace): string {
 export function renderTraceRow(ctx: TraceRowContext): string {
   const { trace, isSelected } = ctx;
   const isPending = trace.duration === undefined;
-  const hasError = !!trace.response?.error;
-  const statusClass = isPending ? "pending" : hasError ? "error" : "success";
+  const isAborted = !!trace.response?.aborted;
+  const hasError = !!trace.response?.error && !isAborted;
+  const statusClass = isPending
+    ? "pending"
+    : isAborted
+      ? "aborted"
+      : hasError
+        ? "error"
+        : "success";
   const duration = trace.duration?.toFixed(0) ?? "...";
   const queryParams = formatQueryParams(
     trace.request.query as Record<string, unknown> | undefined
   );
   const preview = getResponsePreview(trace);
 
-  const traceClass = `spoosh-trace${isSelected ? " selected" : ""}${hasError ? " error" : ""}`;
+  const traceClass = `spoosh-trace${isSelected ? " selected" : ""}${hasError ? " error" : ""}${isAborted ? " aborted" : ""}`;
 
   return `
     <div class="${traceClass}" data-trace-id="${trace.id}">

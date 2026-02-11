@@ -61,6 +61,13 @@ function renderImportDataTab(trace: ExportedTrace): string {
     return `<div class="spoosh-empty-tab">No response data</div>`;
   }
 
+  if (response.aborted) {
+    return renderCodeSection(
+      "Aborted",
+      response.error ?? "Request was aborted"
+    );
+  }
+
   if (response.error) {
     return renderCodeSection("Error", response.error, true);
   }
@@ -288,15 +295,11 @@ export function renderImportDetail(ctx: ImportDetailContext): string {
     `;
   }
 
-  const hasError =
-    trace.response !== undefined &&
-    typeof trace.response === "object" &&
-    trace.response !== null &&
-    "error" in trace.response &&
-    !!(trace.response as Record<string, unknown>).error;
-
-  const statusClass = hasError ? "error" : "success";
-  const statusLabel = hasError ? "Error" : "Success";
+  const response = trace.response as Record<string, unknown> | undefined;
+  const isAborted = !!response?.aborted;
+  const hasError = !!response?.error && !isAborted;
+  const statusClass = isAborted ? "aborted" : hasError ? "error" : "success";
+  const statusLabel = isAborted ? "Aborted" : hasError ? "Error" : "Success";
   const pluginCount = getImportPluginCount(trace);
   const metaCount = getImportMetaCount(trace);
 
@@ -317,7 +320,7 @@ export function renderImportDetail(ctx: ImportDetailContext): string {
 
       <div class="spoosh-tabs">
         <button class="spoosh-tab ${activeTab === "data" ? "active" : ""}" data-tab="data">
-          ${hasError ? "Error" : "Data"}
+          ${isAborted ? "Aborted" : hasError ? "Error" : "Data"}
         </button>
         <button class="spoosh-tab ${activeTab === "request" ? "active" : ""}" data-tab="request">
           Request

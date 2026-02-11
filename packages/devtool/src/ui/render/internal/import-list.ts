@@ -16,16 +16,13 @@ function renderImportTraceRow(
   isSelected: boolean
 ): string {
   const duration = trace.duration?.toFixed(0) ?? "...";
-  const hasError =
-    trace.response !== undefined &&
-    typeof trace.response === "object" &&
-    trace.response !== null &&
-    "error" in trace.response &&
-    !!(trace.response as Record<string, unknown>).error;
-  const statusClass = hasError ? "error" : "success";
+  const response = trace.response as Record<string, unknown> | undefined;
+  const isAborted = !!response?.aborted;
+  const hasError = !!response?.error && !isAborted;
+  const statusClass = isAborted ? "aborted" : hasError ? "error" : "success";
 
   return `
-    <div class="spoosh-trace${isSelected ? " selected" : ""}${hasError ? " error" : ""}" data-imported-trace-id="${escapeHtml(trace.id)}">
+    <div class="spoosh-trace${isSelected ? " selected" : ""}${hasError ? " error" : ""}${isAborted ? " aborted" : ""}" data-imported-trace-id="${escapeHtml(trace.id)}">
       <div class="spoosh-trace-status ${statusClass}"></div>
       <div class="spoosh-trace-info">
         <div class="spoosh-trace-key-row">

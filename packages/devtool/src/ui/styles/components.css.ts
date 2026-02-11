@@ -273,6 +273,10 @@ export const componentsCSS = `
     border-left-color: var(--spoosh-error);
   }
 
+  .spoosh-trace.aborted {
+    opacity: 0.5;
+  }
+
   .spoosh-trace-status {
     width: 8px;
     height: 8px;
@@ -284,6 +288,7 @@ export const componentsCSS = `
   .spoosh-trace-status.success { background: var(--spoosh-success); }
   .spoosh-trace-status.error { background: var(--spoosh-error); }
   .spoosh-trace-status.pending { background: #8857ff; }
+  .spoosh-trace-status.aborted { background: var(--spoosh-text-muted); }
 
   .spoosh-trace-info {
     flex: 1;
@@ -474,6 +479,11 @@ export const componentsCSS = `
   .spoosh-badge.pending {
     background: rgba(88, 166, 255, 0.15);
     color: var(--spoosh-primary);
+  }
+
+  .spoosh-badge.aborted {
+    background: var(--spoosh-border);
+    color: var(--spoosh-text-muted);
   }
 
   /* ===== Tabs ===== */
