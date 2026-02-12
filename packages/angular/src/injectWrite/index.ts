@@ -17,6 +17,7 @@ import type {
   BaseWriteResult,
   WriteApiClient,
   WriteResponseInputFields,
+  WriteTriggerInput,
 } from "./types";
 import type {
   ExtractMethodQuery,
@@ -47,20 +48,19 @@ export function createInjectWrite<
   type SuccessResponse<T> = Extract<T, { data: unknown; error?: undefined }>;
   type ErrorResponse<T> = Extract<T, { error: unknown; data?: undefined }>;
 
-  type ExtractMethodData<T> = T extends (...args: never[]) => infer R
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  type ExtractMethodData<T> = T extends (...args: any[]) => infer R
     ? SuccessResponse<Awaited<R>> extends { data: infer D }
       ? D
       : unknown
     : unknown;
 
-  type ExtractMethodError<T> = T extends (...args: never[]) => infer R
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  type ExtractMethodError<T> = T extends (...args: any[]) => infer R
     ? ErrorResponse<Awaited<R>> extends { error: infer E }
       ? E
       : unknown
     : unknown;
-  type ExtractMethodOptions<T> = T extends (...args: infer A) => unknown
-    ? A[0]
-    : never;
 
   type ExtractParamsRecord<T> =
     ExtractResponseParamNames<T> extends never
@@ -76,37 +76,43 @@ export function createInjectWrite<
     ExtractParamsRecord<TMethod>
   >;
 
-  type ResolvedWriteOptions<TMethod> = import("@spoosh/core").ResolveTypes<
+  type ResolvedWriteOptions<TWriteFn> = import("@spoosh/core").ResolveTypes<
     PluginOptions["write"],
-    WriteResolverContext<TMethod>
+    WriteResolverContext<TWriteFn>
   >;
 
-  return function injectWrite<
-    TMethod extends (
-      ...args: never[]
+  type ResolvedWriteTriggerOptions<TWriteFn> =
+    import("@spoosh/core").ResolveTypes<
+      PluginOptions["writeTrigger"],
+      WriteResolverContext<TWriteFn>
+    >;
+
+  function injectWrite<
+    TWriteFn extends (
+      api: WriteApiClient<TSchema, TDefaultError>
     ) => Promise<SpooshResponse<unknown, unknown>>,
-    TWriteOpts extends ExtractMethodOptions<TMethod> &
-      ResolvedWriteOptions<TMethod> = ExtractMethodOptions<TMethod> &
-      ResolvedWriteOptions<TMethod>,
+    TWriteOpts extends ResolvedWriteOptions<TWriteFn> =
+      ResolvedWriteOptions<TWriteFn>,
   >(
-    writeFn: (api: WriteApiClient<TSchema, TDefaultError>) => TMethod
+    writeFn: TWriteFn,
+    writeOptions?: TWriteOpts
   ): BaseWriteResult<
-    ExtractMethodData<TMethod>,
-    InferError<ExtractMethodError<TMethod>>,
-    TWriteOpts,
+    ExtractMethodData<TWriteFn>,
+    InferError<ExtractMethodError<TWriteFn>>,
+    WriteTriggerInput<TWriteFn> & ResolvedWriteTriggerOptions<TWriteFn>,
     ResolveResultTypes<PluginResults["write"], TWriteOpts>
   > &
     WriteResponseInputFields<
-      ExtractResponseQuery<TMethod>,
-      ExtractResponseBody<TMethod>,
-      ExtractResponseParamNames<TMethod>
+      ExtractResponseQuery<TWriteFn>,
+      ExtractResponseBody<TWriteFn>,
+      ExtractResponseParamNames<TWriteFn>
     > {
     const destroyRef = inject(DestroyRef);
 
-    type TData = ExtractMethodData<TMethod>;
-    type TError = InferError<ExtractMethodError<TMethod>>;
-    type TOptions = ExtractMethodOptions<TMethod> &
-      ResolvedWriteOptions<TMethod>;
+    type TData = ExtractMethodData<TWriteFn>;
+    type TError = InferError<ExtractMethodError<TWriteFn>>;
+    type TOptions = WriteTriggerInput<TWriteFn> &
+      ResolvedWriteTriggerOptions<TWriteFn>;
 
     const captureSelector = () => {
       const selectorResult: SelectorResult = {
@@ -123,14 +129,14 @@ export function createInjectWrite<
 
       (writeFn as (api: unknown) => unknown)(selectorProxy);
 
-      if (!selectorResult.selector) {
+      if (!selectorResult.call) {
         throw new Error(
-          "injectWrite requires selecting an HTTP method (POST, PUT, PATCH, DELETE). " +
-            'Example: injectWrite((api) => api("posts").POST)'
+          "injectWrite requires calling an HTTP method (POST, PUT, PATCH, DELETE). " +
+            'Example: injectWrite((api) => api("posts").POST())'
         );
       }
 
-      return selectorResult.selector;
+      return selectorResult.call;
     };
 
     const instanceId = `angular-${Math.random().toString(36).slice(2)}`;
@@ -226,7 +232,8 @@ export function createInjectWrite<
       lastTriggerOptionsSignal.set(triggerOptions);
       loadingSignal.set(true);
 
-      currentController!.setPluginOptions({ ...triggerOptions, tags });
+      const mergedOptions = { ...writeOptions, ...triggerOptions, tags };
+      currentController!.setPluginOptions(mergedOptions);
 
       try {
         const response = await currentController!.execute(triggerOptions, {
@@ -281,12 +288,12 @@ export function createInjectWrite<
     const result = {
       trigger,
       meta: metaSignal as unknown as Signal<
-        ResolveResultTypes<PluginResults["write"], TOptions>
+        ResolveResultTypes<PluginResults["write"], TWriteOpts>
       >,
       input: inputSignal as Signal<{
-        query?: ExtractResponseQuery<TMethod>;
-        body?: ExtractResponseBody<TMethod>;
-        params?: Record<ExtractResponseParamNames<TMethod>, string | number>;
+        query?: ExtractResponseQuery<TWriteFn>;
+        body?: ExtractResponseBody<TWriteFn>;
+        params?: Record<ExtractResponseParamNames<TWriteFn>, string | number>;
       }>,
       data: dataSignal as Signal<TData | undefined>,
       error: errorSignal as Signal<TError | undefined>,
@@ -298,12 +305,14 @@ export function createInjectWrite<
       TData,
       TError,
       TOptions,
-      ResolveResultTypes<PluginResults["write"], TOptions>
+      ResolveResultTypes<PluginResults["write"], TWriteOpts>
     > &
       WriteResponseInputFields<
-        ExtractResponseQuery<TMethod>,
-        ExtractResponseBody<TMethod>,
-        ExtractResponseParamNames<TMethod>
+        ExtractResponseQuery<TWriteFn>,
+        ExtractResponseBody<TWriteFn>,
+        ExtractResponseParamNames<TWriteFn>
       >;
-  };
+  }
+
+  return injectWrite;
 }

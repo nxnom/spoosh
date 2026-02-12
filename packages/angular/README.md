@@ -91,7 +91,7 @@ Trigger mutations with loading and error states.
 export class CreateUserComponent {
   title = signal("");
 
-  createUser = injectWrite((api) => api("users").POST);
+  createUser = injectWrite((api) => api("users").POST());
 
   async handleSubmit() {
     const result = await this.createUser.trigger({
@@ -105,7 +105,7 @@ export class CreateUserComponent {
 }
 
 // With path parameters
-updateUser = injectWrite((api) => api("users/:id").PUT);
+updateUser = injectWrite((api) => api("users/:id").PUT());
 
 async updateUserName(userId: number, name: string) {
   await this.updateUser.trigger({

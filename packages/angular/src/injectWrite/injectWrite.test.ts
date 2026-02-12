@@ -151,7 +151,7 @@ describe("injectWrite", () => {
     it("returns trigger, data, loading, error", () => {
       const { injectWrite } = createTestHooks();
 
-      const result = injectWrite((api: any) => api("posts").POST);
+      const result = injectWrite((api: any) => api("posts").POST());
 
       expect(result).toHaveProperty("trigger");
       expect(result).toHaveProperty("data");
@@ -163,7 +163,7 @@ describe("injectWrite", () => {
     it("initial state is not loading", () => {
       const { injectWrite } = createTestHooks();
 
-      const result = injectWrite((api: any) => api("posts").POST);
+      const result = injectWrite((api: any) => api("posts").POST());
 
       expect(result.loading()).toBe(false);
     });
@@ -171,7 +171,7 @@ describe("injectWrite", () => {
     it("initial data is undefined", () => {
       const { injectWrite } = createTestHooks();
 
-      const result = injectWrite((api: any) => api("posts").POST);
+      const result = injectWrite((api: any) => api("posts").POST());
 
       expect(result.data()).toBeUndefined();
     });
@@ -181,7 +181,7 @@ describe("injectWrite", () => {
     it("trigger executes mutation", async () => {
       const { injectWrite, calls } = createTestHooks();
 
-      const result = injectWrite((api: any) => api("posts").POST);
+      const result = injectWrite((api: any) => api("posts").POST());
 
       await result.trigger({ body: { title: "New Post" } } as any);
 
@@ -196,7 +196,7 @@ describe("injectWrite", () => {
       const { injectWrite, setMockResponse } = createTestHooks();
       setMockResponse({ data: { id: 42, name: "Created" }, status: 201 });
 
-      const result = injectWrite((api: any) => api("posts").POST);
+      const result = injectWrite((api: any) => api("posts").POST());
 
       const response = await result.trigger({
         body: { title: "New Post" },
@@ -212,7 +212,7 @@ describe("injectWrite", () => {
       const { injectWrite, setDelay } = createTestHooks();
       setDelay(50);
 
-      const result = injectWrite((api: any) => api("posts").POST);
+      const result = injectWrite((api: any) => api("posts").POST());
 
       expect(result.loading()).toBe(false);
 
@@ -231,7 +231,7 @@ describe("injectWrite", () => {
       const { injectWrite, setDelay } = createTestHooks();
       setDelay(10);
 
-      const result = injectWrite((api: any) => api("posts").POST);
+      const result = injectWrite((api: any) => api("posts").POST());
 
       await result.trigger({ body: { title: "New Post" } } as any);
 
@@ -244,14 +244,14 @@ describe("injectWrite", () => {
       const { injectWrite, setMockResponse } = createTestHooks();
       setMockResponse({ error: { message: "Server error" }, status: 500 });
 
-      const result = injectWrite((api: any) => api("posts").POST);
+      const result = injectWrite((api: any) => api("posts").POST());
 
       await result.trigger({ body: { title: "New Post" } } as any);
 
       expect(result.error()).toEqual({ message: "Server error" });
     });
 
-    it("throws when no HTTP method selected", async () => {
+    it("throws when no HTTP method called", async () => {
       const stateManager = createStateManager();
       const eventEmitter = createEventEmitter();
       const pluginExecutor = createPluginExecutor([]);
@@ -267,14 +267,14 @@ describe("injectWrite", () => {
       const result = injectWrite((api) => api("posts"));
 
       await expect(result.trigger()).rejects.toThrow(
-        'injectWrite requires selecting an HTTP method (POST, PUT, PATCH, DELETE). Example: injectWrite((api) => api("posts").POST)'
+        'injectWrite requires calling an HTTP method (POST, PUT, PATCH, DELETE). Example: injectWrite((api) => api("posts").POST())'
       );
     });
 
     it("clears error on subsequent success", async () => {
       const { injectWrite, setMockResponse } = createTestHooks();
 
-      const result = injectWrite((api: any) => api("posts").POST);
+      const result = injectWrite((api: any) => api("posts").POST());
 
       setMockResponse({ error: { message: "Server error" }, status: 500 });
 
@@ -295,7 +295,7 @@ describe("injectWrite", () => {
       const { injectWrite, setDelay } = createTestHooks();
       setDelay(100);
 
-      const result = injectWrite((api: any) => api("posts").POST);
+      const result = injectWrite((api: any) => api("posts").POST());
 
       const triggerPromise = result.trigger({
         body: { title: "New Post" },
@@ -320,7 +320,7 @@ describe("injectWrite", () => {
     it("tracks last trigger options", async () => {
       const { injectWrite } = createTestHooks();
 
-      const result = injectWrite((api: any) => api("posts").POST);
+      const result = injectWrite((api: any) => api("posts").POST());
 
       await result.trigger({
         body: { title: "Test Post" },
@@ -336,7 +336,7 @@ describe("injectWrite", () => {
     it("returns input fields from trigger options", async () => {
       const { injectWrite } = createTestHooks();
 
-      const result = injectWrite((api: any) => api("posts/:id").PUT);
+      const result = injectWrite((api: any) => api("posts/:id").PUT());
 
       await result.trigger({
         params: { id: 123 },
@@ -372,7 +372,7 @@ describe("injectWrite", () => {
         pluginExecutor,
       });
 
-      const result = injectWrite((api: any) => api("posts").POST);
+      const result = injectWrite((api: any) => api("posts").POST());
 
       await result.trigger({ body: { title: "New Post" } } as any);
 
@@ -400,7 +400,7 @@ describe("injectWrite", () => {
         pluginExecutor,
       });
 
-      const result = injectWrite((api: any) => api("posts").POST);
+      const result = injectWrite((api: any) => api("posts").POST());
 
       await result.trigger({
         body: { title: "New Post" },

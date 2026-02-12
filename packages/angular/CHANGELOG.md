@@ -1,5 +1,9 @@
 # @spoosh/angular
 
+## 0.9.0
+
+- Refactor `injectWrite` to split hook-level and trigger-level options for proper type inference
+
 ## 0.8.0
 
 - Add devtool tracing support
