@@ -1,4 +1,5 @@
 import type { SpooshPlugin, PluginContext } from "@spoosh/core";
+import { resolvePathString } from "@spoosh/core";
 
 import type {
   InvalidationPluginConfig,
@@ -20,11 +21,15 @@ function resolveModeTags(
   context: PluginContext,
   mode: InvalidationMode
 ): string[] {
+  const params = context.request.params as
+    | Record<string, string | number>
+    | undefined;
+
   switch (mode) {
     case "all":
-      return context.tags;
+      return context.tags.map((tag) => resolvePathString(tag, params));
     case "self":
-      return [context.path];
+      return [resolvePathString(context.path, params)];
     case "none":
       return [];
   }

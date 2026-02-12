@@ -1,5 +1,9 @@
 # @spoosh/plugin-nextjs
 
+## 0.3.1
+
+- Fix params not resolving correctly
+
 ## 0.3.0
 
 - Move `revalidateTag` and `revalidatePath` option to new write trigger options

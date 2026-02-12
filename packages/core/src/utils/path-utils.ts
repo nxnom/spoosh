@@ -87,3 +87,38 @@ export function resolvePath(
     return segment;
   });
 }
+
+/**
+ * Resolves dynamic path parameters in a string path.
+ * Unlike `resolvePath`, this works with string paths and doesn't throw on missing params.
+ *
+ * @param path - The path string with dynamic segments (e.g., "products/:id/comments")
+ * @param params - The params object containing values to substitute
+ * @returns The resolved path string (e.g., "products/1/comments")
+ *
+ * @example
+ * ```ts
+ * resolvePathString("products/:id/comments", { id: 1 })
+ * // => "products/1/comments"
+ * ```
+ */
+export function resolvePathString(
+  path: string,
+  params: Record<string, string | number> | undefined
+): string {
+  if (!params) return path;
+
+  return path
+    .split("/")
+    .map((segment) => {
+      if (segment.startsWith(":")) {
+        const paramName = segment.slice(1);
+        const value = params[paramName];
+
+        return value !== undefined ? String(value) : segment;
+      }
+
+      return segment;
+    })
+    .join("/");
+}

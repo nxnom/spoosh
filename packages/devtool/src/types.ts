@@ -146,6 +146,7 @@ export interface DevToolStoreInterface {
   ): void;
   addEvent(event: StandaloneEvent): void;
   getEvents(): StandaloneEvent[];
+  getResolvedPath(queryKey: string): string | undefined;
   subscribe(callback: () => void): () => void;
   clear(): void;
   setStateManager(stateManager: StateManager): void;

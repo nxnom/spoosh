@@ -511,7 +511,7 @@ export class DevToolPanel {
               <span class="spoosh-section-title">Events</span>
               <span class="spoosh-section-count">${events.length}</span>
             </div>
-            ${renderEventList(events)}
+            ${renderEventList(events, (queryKey) => this.store.getResolvedPath(queryKey))}
           </div>
         </div>
       </div>

@@ -47,6 +47,7 @@ export class DevToolStore implements DevToolStoreInterface {
   private importedSession: ImportedSession | null = null;
   private sensitiveHeaders = new Set<string>();
   private totalTraceCount = 0;
+  private resolvedPaths = new Map<string, string>();
 
   constructor(config: DevToolStoreConfig = {}) {
     this.stateManager = config.stateManager;
@@ -204,6 +205,7 @@ export class DevToolStore implements DevToolStoreInterface {
     };
 
     this.activeTraces.set(trace.id, trace);
+    this.resolvedPaths.set(context.queryKey, resolvedPath);
     this.totalTraceCount++;
     this.notify();
 
@@ -375,6 +377,10 @@ export class DevToolStore implements DevToolStoreInterface {
     return this.events.toArray();
   }
 
+  getResolvedPath(queryKey: string): string | undefined {
+    return this.resolvedPaths.get(queryKey);
+  }
+
   recordLifecycle(
     phase: "onMount" | "onUpdate" | "onUnmount",
     context: PluginContext,
@@ -431,6 +437,7 @@ export class DevToolStore implements DevToolStoreInterface {
     this.events.clear();
     this.activeTraces.clear();
     this.invalidations = [];
+    this.resolvedPaths.clear();
     this.totalTraceCount = 0;
     this.notify();
   }

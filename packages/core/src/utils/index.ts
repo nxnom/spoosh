@@ -21,6 +21,7 @@ export {
 } from "./body";
 export {
   resolvePath,
+  resolvePathString,
   resolveTags,
   type TagMode,
   type TagOptions,

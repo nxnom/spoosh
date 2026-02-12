@@ -1,4 +1,5 @@
 import type { SpooshPlugin } from "@spoosh/core";
+import { resolvePathString } from "@spoosh/core";
 
 import type {
   NextjsPluginConfig,
@@ -81,17 +82,23 @@ export function nextjsPlugin(config: NextjsPluginConfig = {}): SpooshPlugin<{
       }
 
       const revalidatePaths = pluginOptions?.revalidatePaths ?? [];
+      const params = context.request.params as
+        | Record<string, string | number>
+        | undefined;
+      const resolvedTags = context.tags.map((tag) =>
+        resolvePathString(tag, params)
+      );
 
-      if (context.tags.length > 0 || revalidatePaths.length > 0) {
+      if (resolvedTags.length > 0 || revalidatePaths.length > 0) {
         t?.log(`Revalidated`, {
           color: "info",
           info: [
-            { label: "tags", value: context.tags },
+            { label: "tags", value: resolvedTags },
             { label: "paths", value: revalidatePaths },
           ],
         });
 
-        await serverRevalidator(context.tags, revalidatePaths);
+        await serverRevalidator(resolvedTags, revalidatePaths);
       } else {
         t?.skip("Nothing to revalidate", { color: "muted" });
       }
