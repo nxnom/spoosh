@@ -3,6 +3,7 @@
 ## 0.13.2
 
 - Fix fetch transport return empty object when response is not JSON
+- Pending promise now wraps the entire middleware chain to ensure proper handling of async operations in middlewares
 
 ## 0.13.1
 

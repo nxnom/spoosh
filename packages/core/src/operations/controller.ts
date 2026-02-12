@@ -171,38 +171,31 @@ export function createOperationController<TData, TError>(
         abortController = new AbortController();
         context.request.signal = abortController.signal;
 
-        const fetchPromise = (async (): Promise<
-          SpooshResponse<TData, TError>
-        > => {
-          try {
-            const response = await fetchFn(context.request);
+        try {
+          const response = await fetchFn(context.request);
+          return response;
+        } catch (err) {
+          const errorResponse: SpooshResponse<TData, TError> = {
+            status: 0,
+            error: err as TError,
+            data: undefined,
+          };
 
-            return response;
-          } catch (err) {
-            const errorResponse: SpooshResponse<TData, TError> = {
-              status: 0,
-              error: err as TError,
-              data: undefined,
-            };
-
-            return errorResponse;
-          }
-        })();
-
-        stateManager.setPendingPromise(queryKey, fetchPromise);
-
-        fetchPromise.finally(() => {
-          stateManager.setPendingPromise(queryKey, undefined);
-        });
-
-        return fetchPromise;
+          return errorResponse;
+        }
       };
 
-      const finalResponse = await pluginExecutor.executeMiddleware(
+      const middlewarePromise = pluginExecutor.executeMiddleware(
         operationType,
         context,
         coreFetch
       );
+
+      stateManager.setPendingPromise(queryKey, middlewarePromise);
+
+      const finalResponse = await middlewarePromise;
+
+      stateManager.setPendingPromise(queryKey, undefined);
 
       if (finalResponse.data !== undefined && !finalResponse.error) {
         updateState({
