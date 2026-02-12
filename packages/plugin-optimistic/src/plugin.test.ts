@@ -2,7 +2,7 @@ import type { SpooshResponse } from "@spoosh/core";
 import { createMockContext, createStateManager } from "@spoosh/test-utils";
 
 import { optimisticPlugin } from "./plugin";
-import type { OptimisticWriteOptions, OptimisticTarget } from "./types";
+import type { OptimisticWriteTriggerOptions, OptimisticTarget } from "./types";
 
 function createOptimisticTarget(
   targetPath: string,
@@ -34,14 +34,14 @@ function createOptimisticPluginOptions(
     where?: (opts: unknown) => boolean;
     onError?: (error: unknown) => void;
   } = {}
-): OptimisticWriteOptions {
+): OptimisticWriteTriggerOptions {
   return {
     optimistic: (() =>
       createOptimisticTarget(
         path,
         updater,
         options
-      )) as unknown as OptimisticWriteOptions["optimistic"],
+      )) as unknown as OptimisticWriteTriggerOptions["optimistic"],
   };
 }
 
@@ -936,7 +936,7 @@ describe("optimisticPlugin", () => {
       setupCacheEntry(stateManager, postsKey, [{ id: 1 }, { id: 2 }], "posts");
       setupCacheEntry(stateManager, statsKey, { count: 2 }, "stats");
 
-      const pluginOptions: OptimisticWriteOptions = {
+      const pluginOptions: OptimisticWriteTriggerOptions = {
         optimistic: (() => [
           createOptimisticTarget("posts", (data) =>
             (data as Array<{ id: number }>).filter((p) => p.id !== 1)
@@ -944,7 +944,7 @@ describe("optimisticPlugin", () => {
           createOptimisticTarget("stats", (data) => ({
             count: ((data as { count: number }).count || 0) - 1,
           })),
-        ]) as unknown as OptimisticWriteOptions["optimistic"],
+        ]) as unknown as OptimisticWriteTriggerOptions["optimistic"],
       };
 
       const context = createMockContext({

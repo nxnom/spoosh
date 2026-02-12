@@ -314,7 +314,9 @@ export type OptimisticCallbackFn<TSchema = unknown, TResponse = unknown> = (
 
 export type OptimisticPluginConfig = object;
 
-export interface OptimisticWriteOptions<
+export type OptimisticWriteOptions = object;
+
+export interface OptimisticWriteTriggerOptions<
   TSchema = unknown,
   TResponse = unknown,
 > {

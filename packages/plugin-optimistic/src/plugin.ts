@@ -8,6 +8,7 @@ import { generateTags } from "@spoosh/core";
 import "@spoosh/plugin-invalidation";
 import type {
   OptimisticWriteOptions,
+  OptimisticWriteTriggerOptions,
   OptimisticReadOptions,
   OptimisticInfiniteReadOptions,
   OptimisticReadResult,
@@ -113,7 +114,7 @@ function extractOptionsFromKey(
 
 function resolveOptimisticTargets(context: PluginContext): OptimisticTarget[] {
   const pluginOptions = context.pluginOptions as
-    | OptimisticWriteOptions
+    | OptimisticWriteTriggerOptions
     | undefined;
 
   if (!pluginOptions?.optimistic) return [];
@@ -327,6 +328,7 @@ const PLUGIN_NAME = "spoosh:optimistic";
 export function optimisticPlugin(): SpooshPlugin<{
   readOptions: OptimisticReadOptions;
   writeOptions: OptimisticWriteOptions;
+  writeTriggerOptions: OptimisticWriteTriggerOptions;
   infiniteReadOptions: OptimisticInfiniteReadOptions;
   readResult: OptimisticReadResult;
   writeResult: OptimisticWriteResult;

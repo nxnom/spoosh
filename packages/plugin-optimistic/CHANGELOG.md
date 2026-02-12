@@ -1,5 +1,9 @@
 # @spoosh/plugin-optimistic
 
+## 0.6.0
+
+- Move `optimistic` option to new write trigger options
+
 ## 0.5.0
 
 - Add devtool tracing support
