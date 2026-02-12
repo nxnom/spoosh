@@ -22,24 +22,10 @@ type ExtractInfiniteReadOptions<T> =
       : object
     : object;
 
-type ExtractReadTriggerOptions<T> =
-  T extends SpooshPlugin<infer Types>
-    ? Types extends { readTriggerOptions: infer R }
-      ? R
-      : object
-    : object;
-
 type ExtractWriteTriggerOptions<T> =
   T extends SpooshPlugin<infer Types>
     ? Types extends { writeTriggerOptions: infer W }
       ? W
-      : object
-    : object;
-
-type ExtractInfiniteReadTriggerOptions<T> =
-  T extends SpooshPlugin<infer Types>
-    ? Types extends { infiniteReadTriggerOptions: infer I }
-      ? I
       : object
     : object;
 
@@ -78,12 +64,8 @@ export type MergePluginOptions<
   infiniteRead: UnionToIntersection<
     ExtractInfiniteReadOptions<TPlugins[number]>
   >;
-  readTrigger: UnionToIntersection<ExtractReadTriggerOptions<TPlugins[number]>>;
   writeTrigger: UnionToIntersection<
     ExtractWriteTriggerOptions<TPlugins[number]>
-  >;
-  infiniteReadTrigger: UnionToIntersection<
-    ExtractInfiniteReadTriggerOptions<TPlugins[number]>
   >;
 };
 
