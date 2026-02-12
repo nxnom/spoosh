@@ -134,6 +134,13 @@ export const handlers = [
       );
     }
 
+    if (content.length < 3) {
+      return HttpResponse.json(
+        { message: "Comment must be at least 3 characters" },
+        { status: 400 }
+      );
+    }
+
     const created: CommentRaw = {
       id: `c-${crypto.randomUUID()}`,
       product_id: productId,
