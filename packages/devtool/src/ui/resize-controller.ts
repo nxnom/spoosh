@@ -155,6 +155,12 @@ export function createResizeController(viewModel: ViewModel): ResizeController {
   function updateSidebarDOM(sidebar: HTMLElement): void {
     const state = viewModel.getState();
 
+    if (sidebar.classList.contains("container-mode")) {
+      const maxWidth = Math.min(state.sidebarWidth, window.innerWidth - 40);
+      sidebar.style.width = `${maxWidth}px`;
+      return;
+    }
+
     if (state.sidebarPosition === "bottom") {
       const maxHeight = Math.min(state.sidebarHeight, window.innerHeight - 40);
       sidebar.style.height = `${maxHeight}px`;

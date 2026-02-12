@@ -36,6 +36,7 @@ interface DevToolPanelOptions {
   store: DevToolStoreInterface;
   showFloatingIcon: boolean;
   sensitiveHeaders: Set<string>;
+  containerId?: string;
 }
 
 export class DevToolPanel {
@@ -53,6 +54,9 @@ export class DevToolPanel {
 
   private fabMouseDown: ((e: MouseEvent) => void) | null = null;
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+  private containerId?: string;
+  private isContainerMode = false;
+  private containerElement: HTMLElement | null = null;
 
   private viewModel = createViewModel();
   private renderScheduler = createRenderScheduler();
@@ -64,6 +68,7 @@ export class DevToolPanel {
     this.theme = resolveTheme(this.viewModel.getState().theme);
     this.showFloatingIcon = options.showFloatingIcon;
     this.sensitiveHeaders = options.sensitiveHeaders;
+    this.containerId = options.containerId;
 
     this.actionRouter = createActionRouter(this.viewModel, this.store, {
       onRender: () => this.renderImmediate(),
@@ -102,9 +107,23 @@ export class DevToolPanel {
   mount(): void {
     if (typeof document === "undefined") return;
 
+    if (this.containerId) {
+      this.containerElement = document.getElementById(this.containerId);
+
+      if (this.containerElement) {
+        this.isContainerMode = true;
+      }
+    }
+
     this.shadowHost = document.createElement("div");
     this.shadowHost.id = "spoosh-devtool-host";
-    document.body.appendChild(this.shadowHost);
+
+    if (this.isContainerMode && this.containerElement) {
+      this.shadowHost.classList.add("container-mode");
+      this.containerElement.appendChild(this.shadowHost);
+    } else {
+      document.body.appendChild(this.shadowHost);
+    }
 
     this.shadowRoot = this.shadowHost.attachShadow({ mode: "closed" });
 
@@ -124,15 +143,22 @@ export class DevToolPanel {
     this.sidebar = document.createElement("div");
     this.sidebar.id = "spoosh-devtool-sidebar";
 
+    if (this.isContainerMode) {
+      this.sidebar.classList.add("container-mode");
+    }
+
     this.setupKeyboardShortcuts();
 
-    if (this.viewModel.getState().sidebarPosition === "left") {
-      this.sidebar.classList.add("left");
-    } else if (this.viewModel.getState().sidebarPosition === "bottom") {
-      this.sidebar.classList.add("bottom");
+    if (!this.isContainerMode) {
+      if (this.viewModel.getState().sidebarPosition === "left") {
+        this.sidebar.classList.add("left");
+      } else if (this.viewModel.getState().sidebarPosition === "bottom") {
+        this.sidebar.classList.add("bottom");
+      }
     }
 
     this.resizeController.updateSidebarDOM(this.sidebar);
+
     this.shadowRoot.appendChild(this.sidebar);
 
     const savedMaxHistory = this.viewModel.getMaxHistory();
@@ -492,6 +518,7 @@ export class DevToolPanel {
       maxHistory: state.maxHistory,
       autoSelectIncoming: state.autoSelectIncoming,
       sensitiveHeaders: this.sensitiveHeaders,
+      isContainerMode: this.isContainerMode,
     });
 
     return `
@@ -535,6 +562,7 @@ export class DevToolPanel {
           sidebarPosition: state.sidebarPosition,
           maxHistory: state.maxHistory,
           autoSelectIncoming: state.autoSelectIncoming,
+          isContainerMode: this.isContainerMode,
         })
       : renderStateDetail({
           entry: selectedEntry ?? null,
@@ -590,6 +618,7 @@ export class DevToolPanel {
           sidebarPosition: state.sidebarPosition,
           maxHistory: state.maxHistory,
           autoSelectIncoming: state.autoSelectIncoming,
+          isContainerMode: this.isContainerMode,
         })
       : renderImportDetail({
           trace: selectedTrace ?? null,

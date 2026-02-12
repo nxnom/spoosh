@@ -310,4 +310,32 @@ export const layoutCSS = `
     width: 100vw;
     height: auto;
   }
+
+  /* ===== Container Mode ===== */
+  #spoosh-devtool-host.container-mode {
+    height: 100vh;
+  }
+
+  #spoosh-devtool-sidebar.container-mode {
+    position: relative;
+    width: 700px;
+    height: 100vh;
+    transform: none;
+    box-shadow: none;
+    border: none;
+    border-left: 1px solid var(--spoosh-border);
+    display: none;
+  }
+
+  #spoosh-devtool-sidebar.container-mode.open {
+    display: flex;
+  }
+
+  #spoosh-devtool-sidebar.container-mode .spoosh-resize-handle {
+    left: 0;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    cursor: ew-resize;
+  }
 `;

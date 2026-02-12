@@ -7,6 +7,7 @@ export interface SettingsRenderContext {
   sidebarPosition: SidebarPosition;
   maxHistory: number;
   autoSelectIncoming: boolean;
+  isContainerMode?: boolean;
 }
 
 export function renderSettings(ctx: SettingsRenderContext): string {
@@ -17,7 +18,20 @@ export function renderSettings(ctx: SettingsRenderContext): string {
     sidebarPosition,
     maxHistory,
     autoSelectIncoming,
+    isContainerMode,
   } = ctx;
+
+  const sidebarPositionRow = isContainerMode
+    ? ""
+    : `
+          <div class="spoosh-settings-row">
+            <span class="spoosh-settings-label">Sidebar Position</span>
+            <select class="spoosh-settings-select" data-setting="sidebarPosition">
+              <option value="right" ${sidebarPosition === "right" ? "selected" : ""}>Right</option>
+              <option value="left" ${sidebarPosition === "left" ? "selected" : ""}>Left</option>
+              <option value="bottom" ${sidebarPosition === "bottom" ? "selected" : ""}>Bottom</option>
+            </select>
+          </div>`;
 
   return `
     <div class="spoosh-detail-panel">
@@ -43,14 +57,7 @@ export function renderSettings(ctx: SettingsRenderContext): string {
               <option value="top-left" ${position === "top-left" ? "selected" : ""}>Top Left</option>
             </select>
           </div>
-          <div class="spoosh-settings-row">
-            <span class="spoosh-settings-label">Sidebar Position</span>
-            <select class="spoosh-settings-select" data-setting="sidebarPosition">
-              <option value="right" ${sidebarPosition === "right" ? "selected" : ""}>Right</option>
-              <option value="left" ${sidebarPosition === "left" ? "selected" : ""}>Left</option>
-              <option value="bottom" ${sidebarPosition === "bottom" ? "selected" : ""}>Bottom</option>
-            </select>
-          </div>
+          ${sidebarPositionRow}
         </div>
         <div class="spoosh-settings-section">
           <div class="spoosh-settings-section-title">Display</div>

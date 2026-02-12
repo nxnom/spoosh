@@ -53,7 +53,22 @@
 }
 
 body {
-  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+#root {
+  flex: 1;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#spoosh-devtool-container {
+  flex-shrink: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
 a {
@@ -76,7 +91,8 @@ img {
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
 }
 
 .site-header {
@@ -211,7 +227,8 @@ img {
 
 .page-body {
   flex: 1;
-  padding: 2rem 0 4rem;
+  padding-top: 2rem;
+  padding-bottom: 4rem;
 }
 
 .hero-section {
@@ -550,6 +567,7 @@ img {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -829,6 +847,7 @@ select:focus {
 .detail-actions .btn {
   flex: 1;
   min-width: 140px;
+  min-height: 48px;
 }
 
 .comments-section {
@@ -1424,7 +1443,7 @@ select:focus {
 
 .settings-fab {
   position: fixed;
-  right: 1.5rem;
+  left: 0.5rem;
   top: 50%;
   transform: translateY(-50%);
   z-index: 50;
@@ -1453,7 +1472,7 @@ select:focus {
 
 .settings-panel {
   position: absolute;
-  right: calc(100% + 0.75rem);
+  left: calc(100% + 0.75rem);
   top: 50%;
   transform: translateY(-50%);
   width: 220px;

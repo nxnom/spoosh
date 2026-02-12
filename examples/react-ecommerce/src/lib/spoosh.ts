@@ -34,7 +34,10 @@ const spoosh = new Spoosh<ApiSchema, ApiError>("/api").use([
   transformPlugin(),
   progressPlugin(),
   gcPlugin({ maxEntries: 120, maxAge: 120_000, interval: 30_000 }),
-  devtool({ enabled: import.meta.env.DEV }),
+  devtool({
+    enabled: import.meta.env.DEV,
+    containerId: "spoosh-devtool-container",
+  }),
 ]);
 
 export const {

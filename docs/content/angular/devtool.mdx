@@ -49,15 +49,74 @@ A floating icon appears in the corner. Click it to open the panel.
 devtool({
   enabled: true,
   showFloatingIcon: true,
+  containerId: "devtool-container",
   sensitiveHeaders: ["authorization", "cookie", "x-api-key"],
 });
 ```
 
-| Option             | Type       | Default                                         | Description                         |
-| ------------------ | ---------- | ----------------------------------------------- | ----------------------------------- |
-| `enabled`          | `boolean`  | `true`                                          | Enable or disable the devtool       |
-| `showFloatingIcon` | `boolean`  | `true`                                          | Show floating icon in corner        |
-| `sensitiveHeaders` | `string[]` | `["authorization", "cookie", "x-api-key", ...]` | Headers to redact in UI and exports |
+| Option             | Type       | Default                                         | Description                           |
+| ------------------ | ---------- | ----------------------------------------------- | ------------------------------------- |
+| `enabled`          | `boolean`  | `true`                                          | Enable or disable the devtool         |
+| `showFloatingIcon` | `boolean`  | `true`                                          | Show floating icon in corner          |
+| `containerId`      | `string`   | `undefined`                                     | DOM element ID to render panel inside |
+| `sensitiveHeaders` | `string[]` | `["authorization", "cookie", "x-api-key", ...]` | Headers to redact in UI and exports   |
+
+## Container Mode
+
+By default, the devtool renders as a floating overlay. Use `containerId` to render the panel inside a specific DOM element instead, enabling side-by-side layouts where the app and devtool panel don't overlap.
+
+### Setup
+
+1. Add a container element to your HTML:
+
+```html
+<!-- index.html -->
+<body>
+  <app-root></app-root>
+  <div id="devtool-container"></div>
+</body>
+```
+
+2. Configure the devtool with the container ID:
+
+```typescript
+devtool({
+  enabled: !environment.production,
+  containerId: "devtool-container",
+});
+```
+
+3. Add CSS for side-by-side layout:
+
+```css
+body {
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+app-root {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+#devtool-container {
+  flex-shrink: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+```
+
+### Behavior
+
+In container mode:
+
+- The floating icon still appears and toggles the panel visibility
+- The panel renders inside the specified container element
+- App and devtool have separate scroll areas
+- Sidebar position setting is hidden (panel always renders in the container)
+- Panel width is resizable by dragging the left edge
 
 ## Programmatic API
 

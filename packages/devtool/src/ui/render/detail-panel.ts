@@ -30,6 +30,7 @@ export interface DetailPanelContext {
   maxHistory: number;
   autoSelectIncoming: boolean;
   sensitiveHeaders: Set<string>;
+  isContainerMode?: boolean;
 }
 
 function getActivePluginCount(trace: OperationTrace): number {
@@ -86,6 +87,7 @@ export function renderDetailPanel(ctx: DetailPanelContext): string {
     sidebarPosition,
     maxHistory,
     autoSelectIncoming,
+    isContainerMode,
   } = ctx;
 
   if (showSettings) {
@@ -96,6 +98,7 @@ export function renderDetailPanel(ctx: DetailPanelContext): string {
       sidebarPosition,
       maxHistory,
       autoSelectIncoming,
+      isContainerMode,
     });
   }
 
@@ -172,7 +175,8 @@ export function renderEmptyDetail(
   position: PositionMode,
   sidebarPosition: SidebarPosition,
   maxHistory: number,
-  autoSelectIncoming: boolean
+  autoSelectIncoming: boolean,
+  isContainerMode?: boolean
 ): string {
   if (showSettings) {
     return renderSettings({
@@ -182,6 +186,7 @@ export function renderEmptyDetail(
       sidebarPosition,
       maxHistory,
       autoSelectIncoming,
+      isContainerMode,
     });
   }
 

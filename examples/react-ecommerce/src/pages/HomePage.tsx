@@ -2,12 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { InlineError } from "../components/InlineError";
 import { LoadingCard } from "../components/LoadingCard";
 import { ProductCard } from "../components/ProductCard";
-import { SearchIcon, SettingsIcon } from "../components/icons";
+import { SettingsIcon } from "../components/icons";
 import { prefetch, useInfiniteRead, useWrite } from "../lib/spoosh";
 import type { ProductRaw } from "../lib/schema";
 
 export function HomePage() {
-  const [search, setSearch] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [prefetchEnabled, setPrefetchEnabled] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -31,18 +30,12 @@ export function HomePage() {
   const products = useInfiniteRead(
     (api) =>
       api("products").GET({
-        query: {
-          page: 1,
-          q: search.trim() || undefined,
-        },
+        query: { page: 1 },
       }),
     {
       canFetchNext: ({ response }) => response?.next_page != null,
       nextPageRequest: ({ response }) => ({
-        query: {
-          page: response?.next_page ?? 1,
-          q: search.trim() || undefined,
-        },
+        query: { page: response?.next_page ?? 1 },
       }),
       merger: (responses) => responses.flatMap((page) => page?.items ?? []),
     }
@@ -52,17 +45,8 @@ export function HomePage() {
 
   const addErrorMessage = addToCart.error?.message;
 
-  const isEmptySearch =
-    !products.loading &&
-    !products.error &&
-    (products.data?.length ?? 0) === 0 &&
-    search.trim();
-
   const isEmptyProducts =
-    !products.loading &&
-    !products.error &&
-    (products.data?.length ?? 0) === 0 &&
-    !search.trim();
+    !products.loading && !products.error && (products.data?.length ?? 0) === 0;
 
   function handleAddToCart(product: ProductRaw) {
     void addToCart.trigger({
@@ -120,15 +104,6 @@ export function HomePage() {
           <h2>Products</h2>
           <p>Browse our collection with hover prefetch</p>
         </div>
-        <div className="search-box">
-          <SearchIcon className="search-icon" />
-          <input
-            type="text"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search products..."
-          />
-        </div>
       </div>
 
       {products.error && <InlineError message={products.error.message} />}
@@ -155,13 +130,6 @@ export function HomePage() {
               />
             ))}
       </div>
-
-      {isEmptySearch && (
-        <div className="empty-state">
-          <h3>No results found</h3>
-          <p>No products match "{search}". Try a different search term.</p>
-        </div>
-      )}
 
       {isEmptyProducts && (
         <div className="empty-state">

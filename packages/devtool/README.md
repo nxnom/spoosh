@@ -46,6 +46,7 @@ A floating icon appears in the corner. Click it to open the panel.
 devtool({
   enabled: true, // Turn off in production
   showFloatingIcon: true, // Hide icon, use toggle() instead
+  containerId: "my-devtool-container", // Render panel in a specific container
   sensitiveHeaders: [
     // Headers to redact (defaults below)
     "authorization",
@@ -54,6 +55,53 @@ devtool({
   ],
 });
 ```
+
+## Container Mode
+
+By default, the devtool renders as a floating overlay. Use `containerId` to render the panel inside a specific DOM element instead, enabling side-by-side layouts.
+
+```html
+<!-- index.html -->
+<body>
+  <div id="root"></div>
+  <div id="devtool-container"></div>
+</body>
+```
+
+```typescript
+devtool({
+  enabled: import.meta.env.DEV,
+  containerId: "devtool-container",
+});
+```
+
+```css
+/* styles.css */
+body {
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+#root {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+#devtool-container {
+  flex-shrink: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+```
+
+In container mode:
+
+- The floating icon still appears and toggles the panel
+- The panel renders inside the specified container
+- Sidebar position setting is hidden (always renders in the container)
+- Panel is resizable by dragging the left edge
 
 ## Programmatic API
 

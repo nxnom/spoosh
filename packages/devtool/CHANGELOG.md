@@ -2,6 +2,7 @@
 
 ## 0.1.3
 
+- Add `container` mode for devtool panel to be rendered inside a specific DOM element
 - Hide `infinite-tracker` helper state in devtool state view
 - Fix request query params not showing correctly in state/import view
 - Fix params not resolving correctly in event view
