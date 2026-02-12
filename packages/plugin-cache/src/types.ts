@@ -18,7 +18,9 @@ export interface CacheReadOptions {
   staleTime?: number;
 }
 
-export interface CacheWriteOptions {
+export type CacheWriteOptions = object;
+
+export interface CacheWriteTriggerOptions {
   /** Clear all cached data after mutation completes successfully. */
   clearCache?: boolean;
 }

@@ -4,6 +4,7 @@ import type {
   CachePluginConfig,
   CacheReadOptions,
   CacheWriteOptions,
+  CacheWriteTriggerOptions,
   CacheInfiniteReadOptions,
   CacheReadResult,
   CacheWriteResult,
@@ -45,6 +46,7 @@ const PLUGIN_NAME = "spoosh:cache";
 export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
   readOptions: CacheReadOptions;
   writeOptions: CacheWriteOptions;
+  writeTriggerOptions: CacheWriteTriggerOptions;
   infiniteReadOptions: CacheInfiniteReadOptions;
   readResult: CacheReadResult;
   writeResult: CacheWriteResult;
@@ -99,7 +101,7 @@ export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
     afterResponse(context, response) {
       if (!response.error) {
         const pluginOptions = context.pluginOptions as
-          | CacheWriteOptions
+          | CacheWriteTriggerOptions
           | undefined;
 
         if (pluginOptions?.clearCache) {

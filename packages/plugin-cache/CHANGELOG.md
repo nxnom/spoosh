@@ -1,5 +1,9 @@
 # @spoosh/plugin-cache
 
+## 0.5.0
+
+- Move `clearCache` option to new write trigger options
+
 ## 0.4.0
 
 - Add devtool tracing support
