@@ -1,5 +1,9 @@
 # @spoosh/plugin-invalidation
 
+## 0.7.0
+
+- Move `invalidate` option to new write trigger options
+
 ## 0.6.0
 
 - Add devtool tracing support

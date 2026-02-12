@@ -29,7 +29,9 @@ export interface InvalidationPluginConfig {
   defaultMode?: InvalidationMode;
 }
 
-export interface InvalidationWriteOptions<TSchema = unknown> {
+export type InvalidationWriteOptions = object;
+
+export interface InvalidationWriteTriggerOptions<TSchema = unknown> {
   /** Unified invalidation configuration */
   invalidate?: InvalidateOption<TSchema>;
 }

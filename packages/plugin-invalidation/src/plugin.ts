@@ -3,6 +3,7 @@ import type { SpooshPlugin, PluginContext } from "@spoosh/core";
 import type {
   InvalidationPluginConfig,
   InvalidationWriteOptions,
+  InvalidationWriteTriggerOptions,
   InvalidationReadOptions,
   InvalidationInfiniteReadOptions,
   InvalidationReadResult,
@@ -34,7 +35,7 @@ function resolveInvalidateTags(
   defaultMode: InvalidationMode
 ): string[] {
   const pluginOptions = context.pluginOptions as
-    | InvalidationWriteOptions
+    | InvalidationWriteTriggerOptions
     | undefined;
 
   const invalidateOption = pluginOptions?.invalidate;
@@ -125,6 +126,7 @@ export function invalidationPlugin(
 ): SpooshPlugin<{
   readOptions: InvalidationReadOptions;
   writeOptions: InvalidationWriteOptions;
+  writeTriggerOptions: InvalidationWriteTriggerOptions;
   infiniteReadOptions: InvalidationInfiniteReadOptions;
   readResult: InvalidationReadResult;
   writeResult: InvalidationWriteResult;

@@ -4,6 +4,7 @@ export type {
   InvalidateOption,
   InvalidationPluginConfig,
   InvalidationWriteOptions,
+  InvalidationWriteTriggerOptions,
   InvalidationReadOptions,
   InvalidationInfiniteReadOptions,
   InvalidationReadResult,
