@@ -13,7 +13,9 @@ export interface NextjsPluginConfig {
 
 export type NextjsReadOptions = object;
 
-export interface NextjsWriteOptions {
+export type NextjsWriteOptions = object;
+
+export interface NextjsWriteTriggerOptions {
   /** Additional paths to revalidate after mutation */
   revalidatePaths?: string[];
 

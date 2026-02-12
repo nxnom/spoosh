@@ -4,6 +4,7 @@ import type {
   NextjsPluginConfig,
   NextjsReadOptions,
   NextjsWriteOptions,
+  NextjsWriteTriggerOptions,
   NextjsInfiniteReadOptions,
   NextjsReadResult,
   NextjsWriteResult,
@@ -43,6 +44,7 @@ const PLUGIN_NAME = "spoosh:nextjs";
 export function nextjsPlugin(config: NextjsPluginConfig = {}): SpooshPlugin<{
   readOptions: NextjsReadOptions;
   writeOptions: NextjsWriteOptions;
+  writeTriggerOptions: NextjsWriteTriggerOptions;
   infiniteReadOptions: NextjsInfiniteReadOptions;
   readResult: NextjsReadResult;
   writeResult: NextjsWriteResult;
@@ -67,7 +69,7 @@ export function nextjsPlugin(config: NextjsPluginConfig = {}): SpooshPlugin<{
       }
 
       const pluginOptions = context.pluginOptions as
-        | NextjsWriteOptions
+        | NextjsWriteTriggerOptions
         | undefined;
 
       const shouldRevalidate =

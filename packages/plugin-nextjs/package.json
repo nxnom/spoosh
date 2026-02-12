@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-nextjs",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Next.js integration plugin for Spoosh - server revalidation after mutations",
   "license": "MIT",
   "repository": {
@@ -41,7 +41,7 @@
     "format": "prettier --write 'src/**/*.ts'"
   },
   "peerDependencies": {
-    "@spoosh/core": ">=0.13.0",
+    "@spoosh/core": ">=0.13.1",
     "next": ">=13.0.0"
   },
   "devDependencies": {

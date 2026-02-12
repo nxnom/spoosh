@@ -1,5 +1,10 @@
 # @spoosh/plugin-nextjs
 
+## 0.3.0
+
+- Move `revalidateTag` and `revalidatePath` option to new write trigger options
+
+
 ## 0.2.0
 
 - Add devtool tracing support
