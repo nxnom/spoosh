@@ -222,6 +222,9 @@ export type PluginTypeConfig = {
   readOptions?: object;
   writeOptions?: object;
   infiniteReadOptions?: object;
+  readTriggerOptions?: object;
+  writeTriggerOptions?: object;
+  infiniteReadTriggerOptions?: object;
   readResult?: object;
   writeResult?: object;
   instanceApi?: object;

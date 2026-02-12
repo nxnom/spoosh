@@ -1,5 +1,9 @@
 # @spoosh/core
 
+## 0.13.1
+
+- Add trigger options to plugin architecture to allow passing custom trigger values
+
 ## 0.13.0
 
 - Add devtool tracing support for plugins

@@ -234,3 +234,41 @@ export type WriteClient<TSchema, TDefaultError = unknown> = <
 ) => HasWriteMethod<TSchema, TPath> extends true
   ? WritePathMethods<TSchema, TPath, TDefaultError>
   : never;
+
+/**
+ * Method function type for write selectors - accepts no arguments.
+ * All input (body, query, params) is passed to trigger() instead.
+ */
+type WriteSelectorMethodFn<
+  TMethodConfig,
+  TDefaultError,
+  TUserPath extends string,
+> = () => Promise<MethodResponse<TMethodConfig, TDefaultError, TUserPath>>;
+
+/**
+ * Write selector path methods - methods accept no arguments.
+ */
+type WriteSelectorPathMethods<TSchema, TPath extends string, TDefaultError> =
+  FindMatchingKey<TSchema, TPath> extends infer TKey
+    ? TKey extends keyof TSchema
+      ? Simplify<{
+          [M in WriteMethod as M extends keyof TSchema[TKey]
+            ? M
+            : never]: M extends keyof TSchema[TKey]
+            ? WriteSelectorMethodFn<TSchema[TKey][M], TDefaultError, TPath>
+            : never;
+        }>
+      : never
+    : never;
+
+/**
+ * Write selector client - methods accept no arguments.
+ * Used by useWrite for selecting endpoints. All input goes to trigger().
+ */
+export type WriteSelectorClient<TSchema, TDefaultError = unknown> = <
+  TPath extends WritePaths<TSchema> | (string & {}),
+>(
+  path: TPath
+) => HasWriteMethod<TSchema, TPath> extends true
+  ? WriteSelectorPathMethods<TSchema, TPath, TDefaultError>
+  : never;
