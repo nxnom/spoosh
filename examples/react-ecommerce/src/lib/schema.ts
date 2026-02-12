@@ -56,7 +56,13 @@ export type CreateProductBody = {
 export type ApiSchema = SpooshSchema<{
   products: {
     GET: {
-      data: { items: ProductRaw[]; next_page: number | null };
+      data: {
+        items: ProductRaw[];
+        page: number;
+        total_pages: number;
+        next_page: number | null;
+        prev_page: number | null;
+      };
       query: ProductsQuery;
     };
     POST: { data: ProductRaw; body: CreateProductBody };

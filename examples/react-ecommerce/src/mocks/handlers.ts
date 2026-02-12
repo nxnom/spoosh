@@ -85,9 +85,17 @@ export const handlers = [
 
     const start = (page - 1) * PAGE_SIZE;
     const items = filtered.slice(start, start + PAGE_SIZE);
-    const next_page = start + PAGE_SIZE < filtered.length ? page + 1 : null;
+    const total_pages = Math.ceil(filtered.length / PAGE_SIZE);
+    const next_page = page < total_pages ? page + 1 : null;
+    const prev_page = page > 1 ? page - 1 : null;
 
-    return HttpResponse.json({ items, next_page });
+    return HttpResponse.json({
+      items,
+      page,
+      total_pages,
+      next_page,
+      prev_page,
+    });
   }),
 
   http.get("/api/products/:id", async ({ params }) => {

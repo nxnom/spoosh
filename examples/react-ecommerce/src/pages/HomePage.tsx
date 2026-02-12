@@ -3,7 +3,7 @@ import { InlineError } from "../components/InlineError";
 import { LoadingCard } from "../components/LoadingCard";
 import { ProductCard } from "../components/ProductCard";
 import { SettingsIcon } from "../components/icons";
-import { prefetch, useInfiniteRead, useWrite } from "../lib/spoosh";
+import { prefetch, useRead, useWrite } from "../lib/spoosh";
 import type { ProductRaw } from "../lib/schema";
 
 export function HomePage() {
@@ -27,26 +27,26 @@ export function HomePage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [settingsOpen]);
 
-  const products = useInfiniteRead(
+  const [page, setPage] = useState(1);
+
+  const products = useRead(
     (api) =>
       api("products").GET({
-        query: { page: 1 },
+        query: { page },
       }),
-    {
-      canFetchNext: ({ response }) => response?.next_page != null,
-      nextPageRequest: ({ response }) => ({
-        query: { page: response?.next_page ?? 1 },
-      }),
-      merger: (responses) => responses.flatMap((page) => page?.items ?? []),
-    }
+    { keepPreviousData: true }
   );
 
   const addToCart = useWrite((api) => api("cart").POST());
 
   const addErrorMessage = addToCart.error?.message;
 
+  const items = products.data?.items ?? [];
+  const totalPages = products.data?.total_pages ?? 1;
+  const hasPrev = page > 1;
+  const hasNext = page < totalPages;
   const isEmptyProducts =
-    !products.loading && !products.error && (products.data?.length ?? 0) === 0;
+    !products.loading && !products.error && items.length === 0;
 
   function handleAddToCart(product: ProductRaw) {
     void addToCart.trigger({
@@ -89,8 +89,8 @@ export function HomePage() {
       <div className="hero-section">
         <h1>Welcome to Spoosh Store</h1>
         <p>
-          A demo e-commerce showcasing infinite reads, optimistic updates,
-          retries, polling, prefetching, and data transforms.
+          A demo e-commerce showcasing pagination, optimistic updates, retries,
+          polling, prefetching, and data transforms.
         </p>
         <div className="tech-badges">
           <span className="tech-badge">Spoosh</span>
@@ -110,11 +110,11 @@ export function HomePage() {
       {addErrorMessage && <InlineError message={addErrorMessage} />}
 
       <div className="products-grid">
-        {products.loading
+        {products.loading && items.length === 0
           ? Array.from({ length: 8 }, (_, index) => (
               <LoadingCard key={`loading-${index}`} />
             ))
-          : (products.data ?? []).map((product) => (
+          : items.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
@@ -138,22 +138,29 @@ export function HomePage() {
         </div>
       )}
 
-      <div className="section-actions">
-        {products.canFetchNext ? (
+      {items.length > 0 && (
+        <div className="section-actions">
           <button
             className="btn secondary"
-            disabled={products.fetchingNext}
-            onClick={() => void products.fetchNext()}
+            disabled={!hasPrev || products.loading}
+            onClick={() => setPage((p) => p - 1)}
           >
-            {products.fetchingNext ? "Loading..." : "Load More Products"}
+            Previous
           </button>
-        ) : (
-          !products.loading &&
-          (products.data?.length ?? 0) > 0 && (
-            <span className="muted">You've reached the end of the list</span>
-          )
-        )}
-      </div>
+
+          <span className="pagination-info">
+            Page {page} of {totalPages}
+          </span>
+
+          <button
+            className="btn secondary"
+            disabled={!hasNext || products.loading}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       <div className="settings-fab" ref={settingsRef}>
         <button

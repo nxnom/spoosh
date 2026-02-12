@@ -5,6 +5,7 @@ import {
   CreditCardIcon,
   HomeIcon,
   PlusIcon,
+  SpooshLogoIcon,
 } from "../components/icons";
 
 export function RootLayout() {
@@ -21,7 +22,7 @@ export function RootLayout() {
         <div className="container">
           <div className="header-inner">
             <NavLink to="/" className="logo">
-              <span className="logo-icon">S</span>
+              <SpooshLogoIcon className="logo-icon" />
               <span>Spoosh Store</span>
             </NavLink>
 
@@ -68,8 +69,14 @@ export function RootLayout() {
         <div className="container">
           <div className="footer-inner">
             <div className="footer-brand">
-              <strong>Spoosh Store</strong> — Typesafe API toolkit with
-              composable plugins
+              <a
+                href="https://spoosh.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <strong>Spoosh Store</strong>
+              </a>{" "}
+              — Typesafe API toolkit with composable plugins
             </div>
             <div className="footer-links">
               <a
