@@ -25,4 +25,18 @@ export class Semaphore {
       this.waiting.shift()!();
     }
   }
+
+  setConcurrency(max: number): void {
+    const previousMax = this.max;
+    this.max = max;
+
+    if (max > previousMax) {
+      const slotsToRelease = Math.min(max - previousMax, this.waiting.length);
+
+      for (let i = 0; i < slotsToRelease; i++) {
+        this.current++;
+        this.waiting.shift()!();
+      }
+    }
+  }
 }

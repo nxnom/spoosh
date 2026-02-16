@@ -85,6 +85,9 @@ export interface QueueController<TData = unknown, TError = unknown> {
 
   /** Abort all and clear entire queue */
   clear: () => void;
+
+  /** Update the concurrency limit */
+  setConcurrency: (concurrency: number) => void;
 }
 
 /**

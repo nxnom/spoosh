@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useRef, useId } from "react";
+import { useSyncExternalStore, useRef, useId, useEffect } from "react";
 import {
   type SpooshResponse,
   type SpooshPlugin,
@@ -101,6 +101,12 @@ export function createUseQueue<
     }
 
     const controller = controllerRef.current;
+
+    useEffect(() => {
+      if (concurrency !== undefined) {
+        controller.setConcurrency(concurrency);
+      }
+    }, [concurrency, controller]);
 
     const queue = useSyncExternalStore(
       controller.subscribe,

@@ -267,5 +267,9 @@ export function createQueueController<TData, TError>(
       queue.length = 0;
       notify();
     },
+
+    setConcurrency: (newConcurrency: number) => {
+      semaphore.setConcurrency(newConcurrency);
+    },
   };
 }
