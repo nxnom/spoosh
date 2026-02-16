@@ -226,6 +226,9 @@ export type PluginTypeConfig = {
   readResult?: object;
   writeResult?: object;
   instanceApi?: object;
+  queueOptions?: object;
+  queueTriggerOptions?: object;
+  queueResult?: object;
 };
 
 /**

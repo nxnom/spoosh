@@ -29,6 +29,20 @@ type ExtractWriteTriggerOptions<T> =
       : object
     : object;
 
+type ExtractQueueOptions<T> =
+  T extends SpooshPlugin<infer Types>
+    ? Types extends { queueOptions: infer Q }
+      ? Q
+      : object
+    : object;
+
+type ExtractQueueTriggerOptions<T> =
+  T extends SpooshPlugin<infer Types>
+    ? Types extends { queueTriggerOptions: infer Q }
+      ? Q
+      : object
+    : object;
+
 type ExtractReadResult<T> =
   T extends SpooshPlugin<infer Types>
     ? Types extends { readResult: infer R }
@@ -40,6 +54,13 @@ type ExtractWriteResult<T> =
   T extends SpooshPlugin<infer Types>
     ? Types extends { writeResult: infer W }
       ? W
+      : object
+    : object;
+
+type ExtractQueueResult<T> =
+  T extends SpooshPlugin<infer Types>
+    ? Types extends { queueResult: infer Q }
+      ? Q
       : object
     : object;
 
@@ -67,6 +88,10 @@ export type MergePluginOptions<
   writeTrigger: UnionToIntersection<
     ExtractWriteTriggerOptions<TPlugins[number]>
   >;
+  queue: UnionToIntersection<ExtractQueueOptions<TPlugins[number]>>;
+  queueTrigger: UnionToIntersection<
+    ExtractQueueTriggerOptions<TPlugins[number]>
+  >;
 };
 
 export type MergePluginResults<
@@ -74,6 +99,7 @@ export type MergePluginResults<
 > = {
   read: UnionToIntersection<ExtractReadResult<TPlugins[number]>>;
   write: UnionToIntersection<ExtractWriteResult<TPlugins[number]>>;
+  queue: UnionToIntersection<ExtractQueueResult<TPlugins[number]>>;
 };
 
 export type MergePluginInstanceApi<
