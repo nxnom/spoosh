@@ -1,5 +1,9 @@
 # @spoosh/core
 
+## 0.13.3
+
+- Fix global `Content-Type` header override `form`, `urlencoded`, and `json` body helpers.
+
 ## 0.13.2
 
 - Fix fetch transport return empty object when response is not JSON

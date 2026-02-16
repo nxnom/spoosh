@@ -7,6 +7,7 @@ export {
   setHeaders,
   resolveHeadersToRecord,
   getContentType,
+  removeHeaderKeys,
 } from "./mergeHeaders";
 export { objectToFormData } from "./objectToFormData";
 export { objectToUrlEncoded } from "./objectToUrlEncoded";

@@ -76,3 +76,19 @@ export function getContentType(headers?: HeadersInit): string | undefined {
   const headersObj = new Headers(headers);
   return headersObj.get("content-type") ?? undefined;
 }
+
+export function removeHeaderKeys(
+  headers: HeadersInit | undefined,
+  keysToRemove: string[]
+): HeadersInit | undefined {
+  if (!headers) return undefined;
+
+  const headersObj = new Headers(headers);
+
+  for (const key of keysToRemove) {
+    headersObj.delete(key);
+  }
+
+  const entries = [...headersObj.entries()];
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}

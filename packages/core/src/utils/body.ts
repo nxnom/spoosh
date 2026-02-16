@@ -65,9 +65,13 @@ export function urlencoded<T>(value: T): SpooshBody<T> {
   }) as unknown as SpooshBody<T>;
 }
 
-export function resolveRequestBody(
-  rawBody: unknown
-): { body: BodyInit; headers?: Record<string, string> } | undefined {
+export function resolveRequestBody(rawBody: unknown):
+  | {
+      body: BodyInit;
+      headers?: Record<string, string>;
+      removeHeaders?: string[];
+    }
+  | undefined {
   if (rawBody === undefined || rawBody === null) {
     return undefined;
   }
@@ -79,6 +83,7 @@ export function resolveRequestBody(
       case "form":
         return {
           body: objectToFormData(body.value as Record<string, unknown>),
+          removeHeaders: ["Content-Type"],
         };
 
       case "json":
@@ -106,6 +111,10 @@ export function resolveRequestBody(
       body: JSON.stringify(rawBody),
       headers: { "Content-Type": "application/json" },
     };
+  }
+
+  if (rawBody instanceof FormData) {
+    return { body: rawBody, removeHeaders: ["Content-Type"] };
   }
 
   return { body: rawBody as BodyInit };

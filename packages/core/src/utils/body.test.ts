@@ -81,12 +81,13 @@ describe("resolveRequestBody()", () => {
   });
 
   describe("tagged form body", () => {
-    it("should return FormData without headers", () => {
+    it("should return FormData with removeHeaders containing Content-Type", () => {
       const result = resolveRequestBody(form({ name: "test", age: 25 }));
 
       expect(result).toBeDefined();
       expect(result!.body).toBeInstanceOf(FormData);
       expect(result!.headers).toBeUndefined();
+      expect(result!.removeHeaders).toEqual(["Content-Type"]);
     });
   });
 
@@ -140,7 +141,7 @@ describe("resolveRequestBody()", () => {
   });
 
   describe("native types passthrough", () => {
-    it("should pass through FormData as-is", () => {
+    it("should pass through FormData with removeHeaders containing Content-Type", () => {
       const fd = new FormData();
       fd.append("key", "value");
       const result = resolveRequestBody(fd);
@@ -148,6 +149,7 @@ describe("resolveRequestBody()", () => {
       expect(result).toBeDefined();
       expect(result!.body).toBe(fd);
       expect(result!.headers).toBeUndefined();
+      expect(result!.removeHeaders).toEqual(["Content-Type"]);
     });
 
     it("should pass through Blob as-is", () => {

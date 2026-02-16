@@ -2,6 +2,7 @@ import {
   buildUrl,
   generateTags,
   mergeHeaders,
+  removeHeaderKeys,
   resolveRequestBody,
   isAbortError,
 } from "./utils";
@@ -143,13 +144,15 @@ async function executeCoreFetch<TData, TError>(
     if (resolved) {
       fetchInit.body = resolved.body;
 
+      if (resolved.removeHeaders) {
+        headers = removeHeaderKeys(headers, resolved.removeHeaders);
+      }
+
       if (resolved.headers) {
         headers = await mergeHeaders(headers, resolved.headers);
-
-        if (headers) {
-          fetchInit.headers = headers;
-        }
       }
+
+      fetchInit.headers = headers;
     }
   }
 

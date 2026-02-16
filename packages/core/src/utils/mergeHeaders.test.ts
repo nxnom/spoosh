@@ -2,6 +2,7 @@ import {
   mergeHeaders,
   resolveHeadersToRecord,
   setHeaders,
+  removeHeaderKeys,
 } from "./mergeHeaders";
 
 describe("mergeHeaders", () => {
@@ -234,5 +235,71 @@ describe("setHeaders", () => {
     expect(requestOptions.headers).toEqual({
       "Content-Type": "application/json",
     });
+  });
+});
+
+describe("removeHeaderKeys", () => {
+  it("should return undefined for undefined input", () => {
+    const result = removeHeaderKeys(undefined, ["Content-Type"]);
+
+    expect(result).toBeUndefined();
+  });
+
+  it("should remove specified header keys", () => {
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: "Bearer token",
+    };
+
+    const result = removeHeaderKeys(headers, ["Content-Type"]);
+
+    expect(result).toEqual({ authorization: "Bearer token" });
+  });
+
+  it("should remove multiple header keys", () => {
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: "Bearer token",
+      "X-Custom": "value",
+    };
+
+    const result = removeHeaderKeys(headers, ["Content-Type", "X-Custom"]);
+
+    expect(result).toEqual({ authorization: "Bearer token" });
+  });
+
+  it("should return undefined when all headers are removed", () => {
+    const headers = { "Content-Type": "application/json" };
+
+    const result = removeHeaderKeys(headers, ["Content-Type"]);
+
+    expect(result).toBeUndefined();
+  });
+
+  it("should handle Headers object format", () => {
+    const headers = new Headers({
+      "Content-Type": "application/json",
+      Authorization: "Bearer token",
+    });
+
+    const result = removeHeaderKeys(headers, ["Content-Type"]);
+
+    expect(result).toEqual({ authorization: "Bearer token" });
+  });
+
+  it("should handle case-insensitive removal", () => {
+    const headers = { "Content-Type": "application/json" };
+
+    const result = removeHeaderKeys(headers, ["content-type"]);
+
+    expect(result).toBeUndefined();
+  });
+
+  it("should not fail when removing non-existent keys", () => {
+    const headers = { Authorization: "Bearer token" };
+
+    const result = removeHeaderKeys(headers, ["Content-Type"]);
+
+    expect(result).toEqual({ authorization: "Bearer token" });
   });
 });
