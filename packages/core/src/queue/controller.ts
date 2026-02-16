@@ -124,9 +124,19 @@ export function createQueueController<
         const methodFn = pathMethods[method] as (
           o?: unknown
         ) => Promise<SpooshResponse<TData, TError>>;
+
+        const { transport, transportOptions } = pluginContext.request as {
+          transport?: string;
+          transportOptions?: unknown;
+        };
+
         return methodFn({
-          ...item.input,
+          body,
+          query,
+          params,
           signal: abortController.signal,
+          transport,
+          transportOptions,
         });
       };
 
