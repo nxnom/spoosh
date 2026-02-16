@@ -51,19 +51,14 @@ export interface UseQueueOptions {
  * @template TData - The response data type
  * @template TError - The error type
  * @template TTriggerInput - The trigger input type
- * @template TPluginResult - Plugin-contributed result properties
+ * @template TMeta - Plugin-contributed metadata on queue items
  */
-export type UseQueueResult<
-  TData,
-  TError,
-  TTriggerInput,
-  TPluginResult = object,
-> = {
+export type UseQueueResult<TData, TError, TTriggerInput, TMeta = object> = {
   /** Add item to queue and execute. Returns promise for this item. */
   trigger: (input?: TTriggerInput) => Promise<SpooshResponse<TData, TError>>;
 
   /** All items in queue with their current status */
-  queue: QueueItem<TData, TError>[];
+  queue: QueueItem<TData, TError, TMeta>[];
 
   /** Number of pending items */
   pending: number;
@@ -85,7 +80,7 @@ export type UseQueueResult<
 
   /** Abort all and clear queue */
   clear: () => void;
-} & TPluginResult;
+};
 
 /**
  * API client type for queue selector.

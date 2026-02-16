@@ -13,7 +13,11 @@ export type QueueItemStatus =
 /**
  * Represents a single item in the queue.
  */
-export interface QueueItem<TData = unknown, TError = unknown> {
+export interface QueueItem<
+  TData = unknown,
+  TError = unknown,
+  TMeta = Record<string, unknown>,
+> {
   /** Unique identifier for this queue item */
   id: string;
 
@@ -32,6 +36,9 @@ export interface QueueItem<TData = unknown, TError = unknown> {
     query?: unknown;
     params?: Record<string, string | number>;
   };
+
+  /** Plugin-contributed metadata (e.g., progress, transformedData) */
+  meta?: TMeta;
 }
 
 /**
@@ -61,12 +68,16 @@ export interface QueueTriggerInput {
  * Queue controller instance.
  * Framework-agnostic - can be used directly in Angular, Vue, etc.
  */
-export interface QueueController<TData = unknown, TError = unknown> {
+export interface QueueController<
+  TData = unknown,
+  TError = unknown,
+  TMeta = Record<string, unknown>,
+> {
   /** Add item to queue and execute. Returns promise that resolves when item completes. */
   trigger: (input: QueueTriggerInput) => Promise<SpooshResponse<TData, TError>>;
 
   /** Get current queue state */
-  getQueue: () => QueueItem<TData, TError>[];
+  getQueue: () => QueueItem<TData, TError, TMeta>[];
 
   /** Get current progress */
   getProgress: () => QueueProgress;
@@ -105,4 +116,7 @@ export interface QueueControllerConfig {
 
   /** Operation type for plugin middleware */
   operationType: "read" | "write" | "queue";
+
+  /** Hook-level plugin options (e.g., progress, retries) */
+  hookOptions?: Record<string, unknown>;
 }

@@ -26,21 +26,25 @@ interface ItemPromiseHandlers<TData, TError> {
   reject: (error: unknown) => void;
 }
 
-export function createQueueController<TData, TError>(
+export function createQueueController<
+  TData,
+  TError,
+  TMeta = Record<string, unknown>,
+>(
   config: QueueControllerConfig,
   context: QueueControllerContext
-): QueueController<TData, TError> {
-  const { path, method, operationType } = config;
+): QueueController<TData, TError, TMeta> {
+  const { path, method, operationType, hookOptions = {} } = config;
   const concurrency = config.concurrency ?? DEFAULT_CONCURRENCY;
   const { api, stateManager, eventEmitter, pluginExecutor } = context;
 
   const semaphore = new Semaphore(concurrency);
-  const queue: QueueItem<TData, TError>[] = [];
+  const queue: QueueItem<TData, TError, TMeta>[] = [];
   const abortControllers = new Map<string, AbortController>();
   const subscribers = new Set<() => void>();
   const itemPromises = new Map<string, ItemPromiseHandlers<TData, TError>>();
 
-  let cachedQueueSnapshot: QueueItem<TData, TError>[] = [];
+  let cachedQueueSnapshot: QueueItem<TData, TError, TMeta>[] = [];
 
   const notify = () => {
     cachedQueueSnapshot = [...queue];
@@ -52,7 +56,7 @@ export function createQueueController<TData, TError>(
 
   const updateItem = (
     id: string,
-    update: Partial<QueueItem<TData, TError>>
+    update: Partial<QueueItem<TData, TError, TMeta>>
   ) => {
     const item = queue.find((i) => i.id === id);
 
@@ -62,7 +66,7 @@ export function createQueueController<TData, TError>(
   };
 
   const executeItem = async (
-    item: QueueItem<TData, TError>
+    item: QueueItem<TData, TError, TMeta>
   ): Promise<SpooshResponse<TData, TError>> => {
     await semaphore.acquire();
 
@@ -89,6 +93,8 @@ export function createQueueController<TData, TError>(
         options: { ...item.input, _queueId: item.id },
       });
 
+      const { body, query, params, ...triggerOptions } = item.input ?? {};
+
       const pluginContext = pluginExecutor.createContext({
         operationType,
         path,
@@ -98,15 +104,15 @@ export function createQueueController<TData, TError>(
         requestTimestamp: Date.now(),
         request: {
           headers: {},
-          body: item.input?.body,
-          query: item.input?.query as
+          body,
+          query: query as
             | Record<string, string | number | boolean | undefined>
             | undefined,
-          params: item.input?.params,
+          params,
           signal: abortController.signal,
         },
         temp: new Map(),
-        pluginOptions: {},
+        pluginOptions: { ...hookOptions, ...triggerOptions },
         stateManager,
         eventEmitter,
       });
@@ -130,11 +136,16 @@ export function createQueueController<TData, TError>(
         coreFetch
       );
 
+      const cacheEntry = stateManager.getCache(queryKey);
+      const meta = (
+        cacheEntry?.meta ? Object.fromEntries(cacheEntry.meta) : undefined
+      ) as TMeta | undefined;
+
       if (response.error) {
-        updateItem(item.id, { status: "error", error: response.error });
+        updateItem(item.id, { status: "error", error: response.error, meta });
         itemPromises.get(item.id)?.resolve(response);
       } else {
-        updateItem(item.id, { status: "success", data: response.data });
+        updateItem(item.id, { status: "success", data: response.data, meta });
         itemPromises.get(item.id)?.resolve(response);
       }
 
@@ -164,7 +175,11 @@ export function createQueueController<TData, TError>(
   return {
     trigger(input: QueueTriggerInput) {
       const id = generateId();
-      const item: QueueItem<TData, TError> = { id, status: "pending", input };
+      const item: QueueItem<TData, TError, TMeta> = {
+        id,
+        status: "pending",
+        input,
+      };
       queue.push(item);
       notify();
 

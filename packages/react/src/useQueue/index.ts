@@ -80,7 +80,7 @@ export function createUseQueue<
       );
     }
 
-    const concurrency = queueOptions?.concurrency;
+    const { concurrency, ...hookOptions } = queueOptions ?? {};
 
     const controllerRef = useRef<QueueController<TData, TError> | null>(null);
 
@@ -90,6 +90,7 @@ export function createUseQueue<
         method: captured.method,
         concurrency,
         operationType: "queue",
+        hookOptions,
       };
 
       controllerRef.current = createQueueController<TData, TError>(config, {
