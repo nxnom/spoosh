@@ -20,13 +20,14 @@ const copyIcon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" st
 function renderCodeSection(
   label: string,
   data: unknown,
-  isError = false
+  isError = false,
+  badge?: string
 ): string {
   const jsonStr = JSON.stringify(data, null, 2);
 
   return `
     <div class="spoosh-data-section">
-      <div class="spoosh-data-label">${label}</div>
+      <div class="spoosh-data-label">${label}${badge ? ` <span class="spoosh-body-type ${badge}">${badge}</span>` : ""}</div>
       <div class="spoosh-code-block">
         <button class="spoosh-code-copy-btn" data-action="copy" data-copy-content="${escapeHtml(jsonStr)}" title="Copy">
           ${copyIcon}
@@ -35,6 +36,49 @@ function renderCodeSection(
       </div>
     </div>
   `;
+}
+
+interface SpooshBody {
+  __spooshBody: boolean;
+  kind: "form" | "json" | "urlencoded";
+  value: unknown;
+}
+
+function isSpooshBody(value: unknown): value is SpooshBody {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const obj = value as Record<string, unknown>;
+  return (
+    obj.__spooshBody === true &&
+    typeof obj.kind === "string" &&
+    ["form", "json", "urlencoded"].includes(obj.kind) &&
+    "value" in obj
+  );
+}
+
+function isFormDataWrapper(
+  value: unknown
+): value is { "[FormData]": Record<string, unknown> } {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const obj = value as Record<string, unknown>;
+  return "[FormData]" in obj && typeof obj["[FormData]"] === "object";
+}
+
+function renderBodySection(body: unknown): string {
+  if (isSpooshBody(body)) {
+    return renderCodeSection("Body", body.value, false, body.kind);
+  }
+
+  if (isFormDataWrapper(body)) {
+    return renderCodeSection("Body", body["[FormData]"], false, "form");
+  }
+
+  return renderCodeSection("Body", body, false, "json");
 }
 
 function toPluginStepEvents(
@@ -127,7 +171,7 @@ function renderImportRequestTab(trace: ExportedTrace): string {
     ${hasTags ? renderCodeSection("Tags", trace.tags) : ""}
     ${hasParams ? renderCodeSection("Params", params) : ""}
     ${hasQuery ? renderCodeSection("Query", query) : ""}
-    ${hasBody ? renderCodeSection("Body", body) : ""}
+    ${hasBody ? renderBodySection(body) : ""}
   `;
 }
 

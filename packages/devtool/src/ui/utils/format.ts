@@ -39,6 +39,36 @@ export function formatQueryParams(
     .join("&");
 }
 
+const BASE64_THRESHOLD = 100;
+const BASE64_REGEX = /^data:([^;]+)?;base64,/;
+const PURE_BASE64_REGEX = /^[A-Za-z0-9+/]{100,}={0,2}$/;
+
+function isBase64String(value: unknown): boolean {
+  if (typeof value !== "string" || value.length < BASE64_THRESHOLD) {
+    return false;
+  }
+
+  if (BASE64_REGEX.test(value)) {
+    return true;
+  }
+
+  return PURE_BASE64_REGEX.test(value);
+}
+
+function getBase64Placeholder(value: string): string {
+  const dataUrlMatch = value.match(BASE64_REGEX);
+
+  if (dataUrlMatch) {
+    const mimeType = dataUrlMatch[1] || "unknown";
+    const base64Part = value.slice(dataUrlMatch[0].length);
+    const estimatedSize = Math.round((base64Part.length * 3) / 4);
+    return `[Base64 ${mimeType}: ~${formatBytes(estimatedSize)}]`;
+  }
+
+  const estimatedSize = Math.round((value.length * 3) / 4);
+  return `[Base64 Data: ~${formatBytes(estimatedSize)}]`;
+}
+
 function jsonReplacer(_key: string, value: unknown): unknown {
   if (value instanceof File) {
     return `[File: ${value.name} (${formatBytes(value.size)}, ${value.type || "unknown type"})]`;
@@ -57,7 +87,7 @@ function jsonReplacer(_key: string, value: unknown): unknown {
         entries[k] = String(v);
       }
     });
-    return { "[FormData]": entries };
+    return entries;
   }
 
   if (value instanceof ArrayBuffer) {
@@ -96,4 +126,46 @@ export function formatJson(data: unknown): string {
   } catch {
     return escapeHtml(String(data));
   }
+}
+
+export function sanitizeForExport(data: unknown): unknown {
+  if (data === null || data === undefined) {
+    return data;
+  }
+
+  if (isBase64String(data)) {
+    return getBase64Placeholder(data as string);
+  }
+
+  if (data instanceof File) {
+    return `[File: ${data.name} (${formatBytes(data.size)}, ${data.type || "unknown type"})]`;
+  }
+
+  if (data instanceof Blob) {
+    return `[Blob: ${formatBytes(data.size)}, ${data.type || "unknown type"}]`;
+  }
+
+  if (data instanceof FormData) {
+    const entries: Record<string, unknown> = {};
+    data.forEach((v, k) => {
+      entries[k] = sanitizeForExport(v);
+    });
+    return entries;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(sanitizeForExport);
+  }
+
+  if (typeof data === "object") {
+    const sanitized: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(data)) {
+      sanitized[key] = sanitizeForExport(value);
+    }
+
+    return sanitized;
+  }
+
+  return data;
 }

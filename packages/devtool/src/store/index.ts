@@ -17,6 +17,7 @@ import type {
   ImportedSession,
 } from "../types";
 import { createRingBuffer } from "./history";
+import { sanitizeForExport } from "../ui/utils/format";
 
 export interface DevToolStoreConfig {
   stateManager?: StateManager;
@@ -286,7 +287,10 @@ export class DevToolStore implements DevToolStoreInterface {
     const traces = this.getTraces();
 
     return traces.map((trace) => {
-      const request = { ...trace.request } as Record<string, unknown>;
+      const request = sanitizeForExport({ ...trace.request }) as Record<
+        string,
+        unknown
+      >;
       const rawHeaders =
         trace.finalHeaders ??
         (request.headers as Record<string, string> | undefined);
@@ -313,7 +317,7 @@ export class DevToolStore implements DevToolStoreInterface {
         timestamp: trace.timestamp,
         duration: trace.duration,
         request,
-        response: trace.response,
+        response: sanitizeForExport(trace.response),
         meta: trace.meta,
         steps: trace.steps.map((step) => ({
           plugin: step.plugin,
@@ -322,8 +326,17 @@ export class DevToolStore implements DevToolStoreInterface {
           duration: step.duration,
           reason: step.reason,
           color: step.color,
-          diff: step.diff,
-          info: step.info,
+          diff: step.diff
+            ? {
+                before: sanitizeForExport(step.diff.before),
+                after: sanitizeForExport(step.diff.after),
+                label: step.diff.label,
+              }
+            : undefined,
+          info: step.info?.map((i) => ({
+            label: i.label,
+            value: sanitizeForExport(i.value),
+          })),
         })),
       };
     });

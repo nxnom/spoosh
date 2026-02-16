@@ -36,19 +36,115 @@ function renderDataSection(
   `;
 }
 
-function renderBody(body: unknown): string {
-  const spooshBody = body as {
-    __spooshBody?: boolean;
-    kind?: "form" | "json" | "urlencoded";
-    value?: unknown;
-  };
+interface SpooshBody {
+  __spooshBody: boolean;
+  kind: "form" | "json" | "urlencoded";
+  value: unknown;
+}
+
+function isSpooshBody(value: unknown): value is SpooshBody {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const obj = value as Record<string, unknown>;
+  return (
+    obj.__spooshBody === true &&
+    typeof obj.kind === "string" &&
+    ["form", "json", "urlencoded"].includes(obj.kind) &&
+    "value" in obj
+  );
+}
+
+function isFormData(value: unknown): value is FormData {
+  if (value instanceof FormData) return true;
 
   if (
-    spooshBody?.__spooshBody &&
-    spooshBody.kind &&
-    spooshBody.value !== undefined
+    typeof value === "object" &&
+    value !== null &&
+    value.constructor?.name === "FormData" &&
+    typeof (value as FormData).forEach === "function"
   ) {
-    return renderDataSection("Body", spooshBody.value, spooshBody.kind);
+    return true;
+  }
+
+  return false;
+}
+
+function isFileObject(value: unknown): boolean {
+  if (value instanceof File) return true;
+
+  if (typeof value !== "object" || value === null) return false;
+
+  const obj = value as Record<string, unknown>;
+  return (
+    obj.constructor?.name === "File" ||
+    (typeof obj.name === "string" &&
+      typeof obj.size === "number" &&
+      typeof obj.type === "string")
+  );
+}
+
+function sanitizeFormValue(value: unknown): unknown {
+  if (value instanceof File || isFileObject(value)) {
+    const file = value as File;
+    const name = file.name || "unknown";
+    const size = file.size;
+    const type = file.type || "unknown type";
+
+    if (size) {
+      const sizeStr =
+        size < 1024
+          ? `${size} B`
+          : size < 1024 * 1024
+            ? `${(size / 1024).toFixed(1)} KB`
+            : `${(size / (1024 * 1024)).toFixed(1)} MB`;
+      return `[File: ${name} (${sizeStr}, ${type})]`;
+    }
+
+    return `[File: ${name}]`;
+  }
+
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    Object.keys(value).length === 0
+  ) {
+    return "[File]";
+  }
+
+  return value;
+}
+
+function sanitizeFormData(
+  data: Record<string, unknown>
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(data)) {
+    result[key] = sanitizeFormValue(value);
+  }
+
+  return result;
+}
+
+function renderBody(body: unknown): string {
+  if (isSpooshBody(body)) {
+    const displayValue =
+      typeof body.value === "object" && body.value !== null
+        ? sanitizeFormData(body.value as Record<string, unknown>)
+        : body.value;
+    return renderDataSection("Body", displayValue, body.kind);
+  }
+
+  if (isFormData(body)) {
+    const formDataObj: Record<string, unknown> = {};
+
+    body.forEach((value, key) => {
+      formDataObj[key] = sanitizeFormValue(value);
+    });
+
+    return renderDataSection("Body", formDataObj, "form");
   }
 
   return renderDataSection("Body", body, "json");

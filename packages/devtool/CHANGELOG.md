@@ -1,5 +1,10 @@
 # @spoosh/devtool
 
+## 0.1.4
+
+- Fix `FormData` is not displaying as `form` in request view.
+- Sanatize `base64` images when exporting traces to save space and improve readability.
+
 ## 0.1.3
 
 - Add `container` mode for devtool panel to be rendered inside a specific DOM element
