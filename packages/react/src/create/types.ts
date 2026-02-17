@@ -197,28 +197,25 @@ type UseQueueFn<TDefaultError, TSchema, TPlugins extends PluginArray> = {
     TQueueFn extends (
       api: QueueApiClient<TSchema, TDefaultError>
     ) => Promise<SpooshResponse<unknown, unknown>>,
-    TQueueOpts extends ResolvedQueueOptions<
-      TSchema,
-      TPlugins,
-      TQueueFn,
-      TDefaultError
-    > &
-      UseQueueOptions = ResolvedQueueOptions<
-      TSchema,
-      TPlugins,
-      TQueueFn,
-      TDefaultError
-    > &
-      UseQueueOptions,
   >(
     queueFn: TQueueFn,
-    queueOptions?: TQueueOpts
+    queueOptions?: ResolvedQueueOptions<
+      TSchema,
+      TPlugins,
+      TQueueFn,
+      TDefaultError
+    > &
+      UseQueueOptions
   ): UseQueueResult<
     ExtractMethodData<TQueueFn>,
     InferError<ExtractMethodError<TQueueFn>, TDefaultError>,
     QueueTriggerInput<TQueueFn> &
       ResolvedQueueTriggerOptions<TSchema, TPlugins, TQueueFn, TDefaultError>,
-    ResolveResultTypes<MergePluginResults<TPlugins>["queue"], TQueueOpts>
+    ResolveResultTypes<
+      MergePluginResults<TPlugins>["queue"],
+      ResolvedQueueOptions<TSchema, TPlugins, TQueueFn, TDefaultError> &
+        UseQueueOptions
+    >
   >;
 };
 

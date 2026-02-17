@@ -1,11 +1,16 @@
 import { useSyncExternalStore, useRef, useId, useEffect } from "react";
 import {
   type SpooshResponse,
+  type MergePluginOptions,
+  type MergePluginResults,
   type SpooshPlugin,
   type PluginTypeConfig,
   type SelectorResult,
   type QueueController,
   type QueueControllerConfig,
+  type ResolverContext,
+  type ResolveTypes,
+  type ResolveResultTypes,
   createSelectorProxy,
   createQueueController,
 } from "@spoosh/core";
@@ -19,6 +24,9 @@ import type {
 import type {
   ExtractMethodData,
   ExtractMethodError,
+  ExtractMethodQuery,
+  ExtractMethodBody,
+  ExtractResponseParamNames,
 } from "../types/extraction";
 import type { SpooshInstanceShape } from "../create/types";
 
@@ -34,7 +42,33 @@ export function createUseQueue<
 ) {
   const { api, stateManager, pluginExecutor, eventEmitter } = options;
 
+  type PluginOptions = MergePluginOptions<TPlugins>;
+
   type InferError<T> = [T] extends [unknown] ? TDefaultError : T;
+
+  type ExtractParamsRecord<TQueueFn> =
+    ExtractResponseParamNames<TQueueFn> extends never
+      ? never
+      : Record<ExtractResponseParamNames<TQueueFn>, string | number>;
+
+  type QueueResolverContext<TQueueFn> = ResolverContext<
+    TSchema,
+    ExtractMethodData<TQueueFn>,
+    InferError<ExtractMethodError<TQueueFn>>,
+    ExtractMethodQuery<TQueueFn>,
+    ExtractMethodBody<TQueueFn>,
+    ExtractParamsRecord<TQueueFn>
+  >;
+
+  type ResolvedQueueOptions<TQueueFn> = ResolveTypes<
+    PluginOptions["queue"],
+    QueueResolverContext<TQueueFn>
+  >;
+
+  type ResolvedQueueTriggerOptions<TQueueFn> = ResolveTypes<
+    PluginOptions["queueTrigger"],
+    QueueResolverContext<TQueueFn>
+  >;
 
   function useQueue<
     TQueueFn extends (
@@ -42,11 +76,15 @@ export function createUseQueue<
     ) => Promise<SpooshResponse<unknown, unknown>>,
   >(
     queueFn: TQueueFn,
-    queueOptions?: UseQueueOptions
+    queueOptions?: ResolvedQueueOptions<TQueueFn> & UseQueueOptions
   ): UseQueueResult<
     ExtractMethodData<TQueueFn>,
     InferError<ExtractMethodError<TQueueFn>>,
-    QueueTriggerInput<TQueueFn>
+    QueueTriggerInput<TQueueFn> & ResolvedQueueTriggerOptions<TQueueFn>,
+    ResolveResultTypes<
+      MergePluginResults<TPlugins>["queue"],
+      ResolvedQueueOptions<TQueueFn> & UseQueueOptions
+    >
   >;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

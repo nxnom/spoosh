@@ -164,7 +164,7 @@ describe("useQueue", () => {
       });
 
       expect(result.current.tasks).toHaveLength(1);
-      expect(result.current.tasks[0].status).toBe("success");
+      expect(result.current.tasks[0]?.status).toBe("success");
     });
 
     it("trigger updates stats", async () => {
@@ -254,8 +254,8 @@ describe("useQueue", () => {
       });
 
       expect(result.current.stats.failed).toBe(1);
-      expect(result.current.tasks[0].status).toBe("error");
-      expect(result.current.tasks[0].error).toEqual({
+      expect(result.current.tasks[0]?.status).toBe("error");
+      expect(result.current.tasks[0]?.error).toEqual({
         message: "Upload failed",
       });
     });
@@ -298,14 +298,15 @@ describe("useQueue", () => {
         expect(result.current.tasks).toHaveLength(1);
       });
 
-      const taskId = result.current.tasks[0].id;
+      const taskId = result.current.tasks[0]?.id;
+      expect(taskId).toBeDefined();
 
       act(() => {
-        result.current.abort(taskId);
+        result.current.abort(taskId!);
       });
 
       await waitFor(() => {
-        expect(result.current.tasks[0].status).toBe("aborted");
+        expect(result.current.tasks[0]?.status).toBe("aborted");
       });
     });
 
@@ -354,17 +355,20 @@ describe("useQueue", () => {
         await result.current.trigger({ body: { file: "test" } } as any);
       });
 
-      expect(result.current.tasks[0].status).toBe("error");
+      expect(result.current.tasks[0]?.status).toBe("error");
       expect(calls).toHaveLength(1);
 
       setMockResponse({ data: { id: 1, name: "success" }, status: 200 });
 
+      const taskId = result.current.tasks[0]?.id;
+      expect(taskId).toBeDefined();
+
       await act(async () => {
-        await result.current.retry(result.current.tasks[0].id);
+        await result.current.retry(taskId);
       });
 
       await waitFor(() => {
-        expect(result.current.tasks[0].status).toBe("success");
+        expect(result.current.tasks[0]?.status).toBe("success");
       });
 
       expect(calls).toHaveLength(2);
@@ -415,14 +419,15 @@ describe("useQueue", () => {
 
       expect(result.current.tasks).toHaveLength(2);
 
-      const firstId = result.current.tasks[0].id;
+      const firstId = result.current.tasks[0]?.id;
+      expect(firstId).toBeDefined();
 
       act(() => {
-        result.current.remove(firstId);
+        result.current.remove(firstId!);
       });
 
       expect(result.current.tasks).toHaveLength(1);
-      expect(result.current.tasks[0].id).not.toBe(firstId);
+      expect(result.current.tasks[0]?.id).not.toBe(firstId);
     });
 
     it("remove without id removes all finished tasks", async () => {
@@ -451,7 +456,7 @@ describe("useQueue", () => {
       });
 
       expect(result.current.tasks).toHaveLength(1);
-      expect(result.current.tasks[0].status).toBe("running");
+      expect(result.current.tasks[0]?.status).toBe("running");
     });
   });
 
@@ -496,10 +501,12 @@ describe("useQueue", () => {
       });
 
       const [task1, task2] = result.current.tasks;
+      expect(task1).toBeDefined();
+      expect(task2).toBeDefined();
 
-      expect(task1.id).toBeDefined();
-      expect(task2.id).toBeDefined();
-      expect(task1.id).not.toBe(task2.id);
+      expect(task1!.id).toBeDefined();
+      expect(task2!.id).toBeDefined();
+      expect(task1!.id).not.toBe(task2!.id);
     });
 
     it("tasks include input data", async () => {
@@ -516,7 +523,7 @@ describe("useQueue", () => {
         } as any);
       });
 
-      expect(result.current.tasks[0].input).toEqual({
+      expect(result.current.tasks[0]?.input).toEqual({
         body: { filename: "test.txt" },
         query: { version: "2" },
       });
@@ -534,7 +541,7 @@ describe("useQueue", () => {
         await result.current.trigger({ body: { file: "test" } } as any);
       });
 
-      expect(result.current.tasks[0].data).toEqual({
+      expect(result.current.tasks[0]?.data).toEqual({
         id: 123,
         url: "/uploads/123",
       });
