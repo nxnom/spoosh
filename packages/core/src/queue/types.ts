@@ -85,7 +85,7 @@ export interface QueueController<
   TError = unknown,
   TMeta = Record<string, unknown>,
 > {
-  /** Add item to queue and execute (if autoStart is true). Returns promise that resolves when item completes. */
+  /** Add item to queue and execute. Returns promise that resolves when item completes. */
   trigger: (input: QueueTriggerInput) => Promise<SpooshResponse<TData, TError>>;
 
   /** Get current queue state */
@@ -103,20 +103,17 @@ export interface QueueController<
   /** Retry failed/aborted item by ID, or all failed items if no ID provided */
   retry: (id?: string) => Promise<void>;
 
-  /** Remove item by ID, or all completed/failed/aborted items if no ID provided */
-  remove: (id?: string) => void;
+  /** Remove specific item by ID (aborts if active) */
+  remove: (id: string) => void;
+
+  /** Remove all settled items (success, error, aborted). Keeps pending/running. */
+  removeSettled: () => void;
 
   /** Abort all and clear entire queue */
   clear: () => void;
 
   /** Update the concurrency limit */
   setConcurrency: (concurrency: number) => void;
-
-  /** Start processing queued items. Only needed when autoStart is false. */
-  start: () => void;
-
-  /** Check if queue processing has started */
-  isStarted: () => boolean;
 }
 
 /**
@@ -137,7 +134,4 @@ export interface QueueControllerConfig {
 
   /** Hook-level plugin options (e.g., progress, retries) */
   hookOptions?: Record<string, unknown>;
-
-  /** Whether to start processing immediately on trigger. Defaults to true. */
-  autoStart?: boolean;
 }

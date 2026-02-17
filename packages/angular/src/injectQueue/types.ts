@@ -45,9 +45,6 @@ export type QueueTriggerInput<T> =
 export interface InjectQueueOptions {
   /** Maximum concurrent operations. Defaults to 3. */
   concurrency?: number;
-
-  /** Whether to start processing immediately on trigger. Defaults to true. */
-  autoStart?: boolean;
 }
 
 /**
@@ -59,7 +56,7 @@ export interface InjectQueueOptions {
  * @template TMeta - Plugin-contributed metadata on queue items
  */
 export interface BaseQueueResult<TData, TError, TTriggerInput, TMeta = object> {
-  /** Add item to queue and execute (if autoStart is true). Returns promise for this item. */
+  /** Add item to queue and execute. Returns promise for this item. */
   trigger: (input?: TTriggerInput) => Promise<SpooshResponse<TData, TError>>;
 
   /** All tasks in queue with their current status */
@@ -74,20 +71,17 @@ export interface BaseQueueResult<TData, TError, TTriggerInput, TMeta = object> {
   /** Retry failed task by ID, or all failed if no ID */
   retry: (id?: string) => Promise<void>;
 
-  /** Remove task by ID, or all finished if no ID */
-  remove: (id?: string) => void;
+  /** Remove specific task by ID (aborts if active) */
+  remove: (id: string) => void;
+
+  /** Remove all settled tasks (success, error, aborted). Keeps pending/running. */
+  removeSettled: () => void;
 
   /** Abort all and clear queue */
   clear: () => void;
 
   /** Update concurrency limit */
   setConcurrency: (concurrency: number) => void;
-
-  /** Start processing queued items. Only needed when autoStart is false. */
-  start: () => void;
-
-  /** Whether queue processing has started */
-  isStarted: Signal<boolean>;
 }
 
 /**

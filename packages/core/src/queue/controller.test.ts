@@ -42,7 +42,6 @@ function createTestController<TData = { id: number; name: string }>(options?: {
   concurrency?: number;
   delay?: number;
   mockResponse?: SpooshResponse<TData, Error>;
-  autoStart?: boolean;
 }) {
   const stateManager = createStateManager();
   const eventEmitter = createEventEmitter();
@@ -63,7 +62,6 @@ function createTestController<TData = { id: number; name: string }>(options?: {
       method: "POST",
       concurrency: options?.concurrency ?? 2,
       operationType: "queue",
-      autoStart: options?.autoStart,
     },
     {
       api,
@@ -482,7 +480,49 @@ describe("createQueueController", () => {
       expect(updatedQueue[0]!.id).toBe(queue[1]!.id);
     });
 
-    it("should remove all finished items when no id", async () => {
+    it("should abort pending item before removing", async () => {
+      const { controller } = createTestController({
+        concurrency: 1,
+        delay: 100,
+      });
+
+      controller.trigger({ body: { file: "1" } });
+      const promise2 = controller.trigger({ body: { file: "2" } });
+
+      await new Promise((r) => setTimeout(r, 10));
+
+      const queue = controller.getQueue();
+      expect(queue[1]!.status).toBe("pending");
+
+      controller.remove(queue[1]!.id);
+
+      const result = await promise2;
+      expect(result.aborted).toBe(true);
+
+      const updatedQueue = controller.getQueue();
+      expect(updatedQueue).toHaveLength(1);
+    });
+
+    it("should abort running item before removing", async () => {
+      const { controller } = createTestController({ delay: 100 });
+
+      controller.trigger({ body: { file: "1" } }).catch(() => {});
+
+      await new Promise((r) => setTimeout(r, 10));
+
+      const queue = controller.getQueue();
+      expect(queue[0]!.status).toBe("running");
+
+      controller.remove(queue[0]!.id);
+
+      await new Promise((r) => setTimeout(r, 20));
+
+      expect(controller.getQueue()).toHaveLength(0);
+    });
+  });
+
+  describe("removeSettled", () => {
+    it("should remove all settled items", async () => {
       const { controller, setMockResponse } = createTestController({
         concurrency: 1,
         delay: 50,
@@ -500,12 +540,33 @@ describe("createQueueController", () => {
       const queueBefore = controller.getQueue();
       expect(queueBefore).toHaveLength(3);
 
-      controller.remove();
+      controller.removeSettled();
 
       const queueAfter = controller.getQueue();
 
       expect(queueAfter).toHaveLength(1);
       expect(queueAfter[0]!.status).toBe("running");
+    });
+
+    it("should keep pending and running items", async () => {
+      const { controller } = createTestController({
+        concurrency: 1,
+        delay: 100,
+      });
+
+      await controller.trigger({ body: { file: "1" } });
+
+      controller.trigger({ body: { file: "2" } });
+      controller.trigger({ body: { file: "3" } });
+
+      await new Promise((r) => setTimeout(r, 10));
+
+      controller.removeSettled();
+
+      const queue = controller.getQueue();
+      expect(queue).toHaveLength(2);
+      expect(queue.some((i) => i.status === "running")).toBe(true);
+      expect(queue.some((i) => i.status === "pending")).toBe(true);
     });
   });
 
@@ -599,113 +660,6 @@ describe("createQueueController", () => {
         body: { filename: "test.txt" },
         query: { version: "1" },
       });
-    });
-  });
-
-  describe("autoStart", () => {
-    it("should default to autoStart true", async () => {
-      const { controller, calls } = createTestController();
-
-      expect(controller.isStarted()).toBe(true);
-
-      await controller.trigger({ body: { file: "test" } });
-
-      expect(calls).toHaveLength(1);
-    });
-
-    it("should not execute items when autoStart is false", async () => {
-      const { controller, calls } = createTestController({ autoStart: false });
-
-      expect(controller.isStarted()).toBe(false);
-
-      controller.trigger({ body: { file: "1" } });
-      controller.trigger({ body: { file: "2" } });
-
-      await new Promise((r) => setTimeout(r, 20));
-
-      expect(calls).toHaveLength(0);
-
-      const queue = controller.getQueue();
-      expect(queue).toHaveLength(2);
-      expect(queue[0]!.status).toBe("pending");
-      expect(queue[1]!.status).toBe("pending");
-    });
-
-    it("should execute pending items when start is called", async () => {
-      const { controller, calls } = createTestController({ autoStart: false });
-
-      controller.trigger({ body: { file: "1" } });
-      controller.trigger({ body: { file: "2" } });
-
-      await new Promise((r) => setTimeout(r, 10));
-
-      expect(calls).toHaveLength(0);
-      expect(controller.isStarted()).toBe(false);
-
-      controller.start();
-
-      expect(controller.isStarted()).toBe(true);
-
-      await new Promise((r) => setTimeout(r, 50));
-
-      expect(calls).toHaveLength(2);
-
-      const queue = controller.getQueue();
-      expect(queue[0]!.status).toBe("success");
-      expect(queue[1]!.status).toBe("success");
-    });
-
-    it("should execute new items immediately after start is called", async () => {
-      const { controller, calls } = createTestController({ autoStart: false });
-
-      controller.trigger({ body: { file: "1" } });
-
-      await new Promise((r) => setTimeout(r, 10));
-      expect(calls).toHaveLength(0);
-
-      controller.start();
-
-      await new Promise((r) => setTimeout(r, 10));
-
-      controller.trigger({ body: { file: "2" } });
-
-      await new Promise((r) => setTimeout(r, 50));
-
-      expect(calls).toHaveLength(2);
-    });
-
-    it("should be idempotent - calling start multiple times has no effect", async () => {
-      const { controller, calls } = createTestController({ autoStart: false });
-
-      controller.trigger({ body: { file: "1" } });
-
-      controller.start();
-      controller.start();
-      controller.start();
-
-      await new Promise((r) => setTimeout(r, 50));
-
-      expect(calls).toHaveLength(1);
-    });
-
-    it("should respect concurrency when starting", async () => {
-      const { controller } = createTestController({
-        autoStart: false,
-        concurrency: 1,
-        delay: 50,
-      });
-
-      controller.trigger({ body: { file: "1" } });
-      controller.trigger({ body: { file: "2" } });
-      controller.trigger({ body: { file: "3" } });
-
-      controller.start();
-
-      await new Promise((r) => setTimeout(r, 20));
-
-      const stats = controller.getStats();
-      expect(stats.running).toBe(1);
-      expect(stats.pending).toBe(2);
     });
   });
 });

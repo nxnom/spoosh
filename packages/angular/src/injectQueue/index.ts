@@ -138,13 +138,12 @@ export function createInjectQueue<
     };
 
     const selectedEndpoint = captureSelector();
-    const { concurrency, autoStart, ...hookOptions } = queueOptions ?? {};
+    const { concurrency, ...hookOptions } = queueOptions ?? {};
 
     const config: QueueControllerConfig = {
       path: selectedEndpoint.path,
       method: selectedEndpoint.method,
       concurrency,
-      autoStart,
       operationType: "queue",
       hookOptions,
     };
@@ -158,12 +157,10 @@ export function createInjectQueue<
 
     const tasksSignal = signal(controller.getQueue());
     const statsSignal = signal(controller.getStats());
-    const isStartedSignal = signal(controller.isStarted());
 
     const unsubscribe = controller.subscribe(() => {
       tasksSignal.set(controller.getQueue());
       statsSignal.set(controller.getStats());
-      isStartedSignal.set(controller.isStarted());
     });
 
     destroyRef.onDestroy(() => {
@@ -185,10 +182,9 @@ export function createInjectQueue<
       abort: controller.abort,
       retry: controller.retry,
       remove: controller.remove,
+      removeSettled: controller.removeSettled,
       clear: controller.clear,
       setConcurrency: controller.setConcurrency,
-      start: controller.start,
-      isStarted: isStartedSignal.asReadonly(),
     } as BaseQueueResult<
       TData,
       TError,
