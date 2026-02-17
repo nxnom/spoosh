@@ -3,6 +3,12 @@ import { sortObjectKeys } from "../utils/sortObjectKeys";
 
 type Subscriber = () => void;
 
+type DataChangeCallback = (
+  key: string,
+  oldData: unknown,
+  newData: unknown
+) => void;
+
 export type CacheEntryWithKey<TData = unknown, TError = unknown> = {
   key: string;
   entry: CacheEntry<TData, TError>;
@@ -81,6 +87,12 @@ export type StateManager = {
   /** Get a pending promise for a query key */
   getPendingPromise: (key: string) => Promise<unknown> | undefined;
 
+  /**
+   * Register a callback to be invoked when cache data changes.
+   * @returns Unsubscribe function
+   */
+  onDataChange: (callback: DataChangeCallback) => () => void;
+
   clear: () => void;
 };
 
@@ -88,6 +100,7 @@ export function createStateManager(): StateManager {
   const cache = new Map<string, CacheEntry>();
   const subscribers = new Map<string, Set<Subscriber>>();
   const pendingPromises = new Map<string, Promise<unknown>>();
+  const dataChangeCallbacks = new Set<DataChangeCallback>();
 
   const notifySubscribers = (key: string): void => {
     const subs = subscribers.get(key);
@@ -111,6 +124,7 @@ export function createStateManager(): StateManager {
 
     setCache(key, entry) {
       const existing = cache.get(key);
+      const oldData = existing?.state.data;
 
       if (existing) {
         existing.state = { ...existing.state, ...entry.state };
@@ -128,6 +142,12 @@ export function createStateManager(): StateManager {
         }
 
         notifySubscribers(key);
+
+        const newData = existing.state.data;
+
+        if (oldData !== newData) {
+          dataChangeCallbacks.forEach((cb) => cb(key, oldData, newData));
+        }
       } else {
         const newEntry: CacheEntry = {
           state: entry.state ?? createInitialState(),
@@ -139,6 +159,12 @@ export function createStateManager(): StateManager {
         };
         cache.set(key, newEntry);
         notifySubscribers(key);
+
+        const newData = newEntry.state.data;
+
+        if (oldData !== newData) {
+          dataChangeCallbacks.forEach((cb) => cb(key, oldData, newData));
+        }
       }
     },
 
@@ -273,10 +299,19 @@ export function createStateManager(): StateManager {
       return pendingPromises.get(key);
     },
 
+    onDataChange(callback) {
+      dataChangeCallbacks.add(callback);
+
+      return () => {
+        dataChangeCallbacks.delete(callback);
+      };
+    },
+
     clear() {
       cache.clear();
       subscribers.clear();
       pendingPromises.clear();
+      dataChangeCallbacks.clear();
     },
   };
 }

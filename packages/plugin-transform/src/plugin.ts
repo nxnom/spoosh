@@ -12,6 +12,8 @@ import type {
 
 const PLUGIN_NAME = "spoosh:transform";
 
+const unsubscribers = new Map<string, () => void>();
+
 /**
  * Enables response data transformation.
  *
@@ -86,6 +88,68 @@ export function transformPlugin(): SpooshPlugin<{
       context.stateManager.setMeta(context.queryKey, {
         transformedData,
       });
+    },
+
+    lifecycle: {
+      onMount(context) {
+        const pluginOptions = context.pluginOptions as
+          | TransformOptions
+          | undefined;
+        const transformFn = (pluginOptions as TransformReadOptions)?.transform;
+
+        if (!transformFn) return;
+
+        const unsubscribe = context.stateManager.onDataChange(
+          async (key, _oldData, newData) => {
+            if (key !== context.queryKey || newData === undefined) return;
+
+            try {
+              const transformedData = await transformFn(newData);
+              context.stateManager.setMeta(key, { transformedData });
+            } catch {
+              // Silently ignore transform errors during data change
+            }
+          }
+        );
+
+        unsubscribers.set(context.queryKey, unsubscribe);
+      },
+
+      onUpdate(context, previousContext) {
+        if (previousContext.queryKey !== context.queryKey) {
+          unsubscribers.get(previousContext.queryKey)?.();
+          unsubscribers.delete(previousContext.queryKey);
+        }
+
+        const pluginOptions = context.pluginOptions as
+          | TransformOptions
+          | undefined;
+        const transformFn = (pluginOptions as TransformReadOptions)?.transform;
+
+        if (!transformFn) return;
+
+        if (!unsubscribers.has(context.queryKey)) {
+          const unsubscribe = context.stateManager.onDataChange(
+            async (key, _oldData, newData) => {
+              if (key !== context.queryKey || newData === undefined) return;
+
+              try {
+                const transformedData = await transformFn(newData);
+                context.stateManager.setMeta(key, { transformedData });
+              } catch {
+                // Silently ignore transform errors during data change
+              }
+            }
+          );
+
+          unsubscribers.set(context.queryKey, unsubscribe);
+        }
+      },
+
+      onUnmount(context) {
+        unsubscribers.get(context.queryKey)?.();
+        unsubscribers.delete(context.queryKey);
+      },
     },
   };
 }

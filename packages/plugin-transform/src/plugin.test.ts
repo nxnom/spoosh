@@ -259,4 +259,245 @@ describe("transformPlugin", () => {
       );
     });
   });
+
+  describe("lifecycle hooks", () => {
+    it("should have lifecycle hooks defined", () => {
+      const plugin = transformPlugin();
+
+      expect(plugin.lifecycle).toBeDefined();
+      expect(plugin.lifecycle?.onMount).toBeDefined();
+      expect(plugin.lifecycle?.onUpdate).toBeDefined();
+      expect(plugin.lifecycle?.onUnmount).toBeDefined();
+    });
+
+    it("should register data change listener on mount when transform is provided", () => {
+      const plugin = transformPlugin();
+      const stateManager = createStateManager();
+      const queryKey = '{"method":"GET","path":["test"]}';
+
+      const context = createMockContext({
+        stateManager,
+        queryKey,
+        pluginOptions: {
+          transform: (data: unknown) => ({ transformed: data }),
+        },
+      });
+
+      const onDataChangeSpy = vi.spyOn(stateManager, "onDataChange");
+
+      plugin.lifecycle?.onMount?.(context);
+
+      expect(onDataChangeSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("should NOT register data change listener on mount when no transform is provided", () => {
+      const plugin = transformPlugin();
+      const stateManager = createStateManager();
+      const queryKey = '{"method":"GET","path":["test"]}';
+
+      const context = createMockContext({
+        stateManager,
+        queryKey,
+      });
+
+      const onDataChangeSpy = vi.spyOn(stateManager, "onDataChange");
+
+      plugin.lifecycle?.onMount?.(context);
+
+      expect(onDataChangeSpy).not.toHaveBeenCalled();
+    });
+
+    it("should re-run transform when cache data changes", async () => {
+      const plugin = transformPlugin();
+      const stateManager = createStateManager();
+      const queryKey = '{"method":"GET","path":["test"]}';
+
+      const transformer = vi.fn((data: unknown) => {
+        const d = data as { value: number };
+        return { doubled: d.value * 2 };
+      });
+
+      const context = createMockContext({
+        stateManager,
+        queryKey,
+        pluginOptions: {
+          transform: transformer,
+        },
+      });
+
+      stateManager.setCache(queryKey, {
+        state: createState({ data: { value: 5 } }),
+      });
+      plugin.lifecycle?.onMount?.(context);
+
+      stateManager.setCache(queryKey, {
+        state: createState({ data: { value: 10 } }),
+      });
+
+      await vi.waitFor(() => {
+        expect(transformer).toHaveBeenCalledWith({ value: 10 });
+      });
+
+      const cached = stateManager.getCache(queryKey);
+      expect(cached?.meta.get("transformedData")).toEqual({ doubled: 20 });
+    });
+
+    it("should NOT re-run transform when data changes for different queryKey", async () => {
+      const plugin = transformPlugin();
+      const stateManager = createStateManager();
+      const queryKey = '{"method":"GET","path":["test"]}';
+      const otherKey = '{"method":"GET","path":["other"]}';
+
+      const transformer = vi.fn((data: unknown) => ({ transformed: data }));
+
+      const context = createMockContext({
+        stateManager,
+        queryKey,
+        pluginOptions: {
+          transform: transformer,
+        },
+      });
+
+      stateManager.setCache(queryKey, {
+        state: createState({ data: { id: 1 } }),
+      });
+      plugin.lifecycle?.onMount?.(context);
+
+      transformer.mockClear();
+
+      stateManager.setCache(otherKey, {
+        state: createState({ data: { id: 2 } }),
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(transformer).not.toHaveBeenCalled();
+    });
+
+    it("should unsubscribe from data change listener on unmount", async () => {
+      const plugin = transformPlugin();
+      const stateManager = createStateManager();
+      const queryKey = '{"method":"GET","path":["test"]}';
+
+      const transformer = vi.fn((data: unknown) => ({ transformed: data }));
+
+      const context = createMockContext({
+        stateManager,
+        queryKey,
+        pluginOptions: {
+          transform: transformer,
+        },
+      });
+
+      stateManager.setCache(queryKey, {
+        state: createState({ data: { id: 1 } }),
+      });
+      plugin.lifecycle?.onMount?.(context);
+
+      transformer.mockClear();
+
+      plugin.lifecycle?.onUnmount?.(context);
+
+      stateManager.setCache(queryKey, {
+        state: createState({ data: { id: 2 } }),
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(transformer).not.toHaveBeenCalled();
+    });
+
+    it("should handle onUpdate when queryKey changes", () => {
+      const plugin = transformPlugin();
+      const stateManager = createStateManager();
+      const oldQueryKey = '{"method":"GET","path":["old"]}';
+      const newQueryKey = '{"method":"GET","path":["new"]}';
+
+      const transformer = vi.fn((data: unknown) => ({ transformed: data }));
+
+      const oldContext = createMockContext({
+        stateManager,
+        queryKey: oldQueryKey,
+        pluginOptions: {
+          transform: transformer,
+        },
+      });
+
+      const newContext = createMockContext({
+        stateManager,
+        queryKey: newQueryKey,
+        pluginOptions: {
+          transform: transformer,
+        },
+      });
+
+      plugin.lifecycle?.onMount?.(oldContext);
+
+      const onDataChangeSpy = vi.spyOn(stateManager, "onDataChange");
+
+      plugin.lifecycle?.onUpdate?.(newContext, oldContext);
+
+      expect(onDataChangeSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("should NOT re-run transform when newData is undefined", async () => {
+      const plugin = transformPlugin();
+      const stateManager = createStateManager();
+      const queryKey = '{"method":"GET","path":["test"]}';
+
+      const transformer = vi.fn((data: unknown) => ({ transformed: data }));
+
+      const context = createMockContext({
+        stateManager,
+        queryKey,
+        pluginOptions: {
+          transform: transformer,
+        },
+      });
+
+      stateManager.setCache(queryKey, {
+        state: createState({ data: { id: 1 } }),
+      });
+      plugin.lifecycle?.onMount?.(context);
+
+      transformer.mockClear();
+
+      stateManager.setCache(queryKey, {
+        state: createState({ data: undefined }),
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(transformer).not.toHaveBeenCalled();
+    });
+
+    it("should silently handle transform errors in data change callback", async () => {
+      const plugin = transformPlugin();
+      const stateManager = createStateManager();
+      const queryKey = '{"method":"GET","path":["test"]}';
+
+      const transformer = vi.fn(() => {
+        throw new Error("Transform error");
+      });
+
+      const context = createMockContext({
+        stateManager,
+        queryKey,
+        pluginOptions: {
+          transform: transformer,
+        },
+      });
+
+      stateManager.setCache(queryKey, {
+        state: createState({ data: { id: 1 } }),
+      });
+      plugin.lifecycle?.onMount?.(context);
+
+      expect(() => {
+        stateManager.setCache(queryKey, {
+          state: createState({ data: { id: 2 } }),
+        });
+      }).not.toThrow();
+    });
+  });
 });

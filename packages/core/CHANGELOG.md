@@ -1,5 +1,9 @@
 # @spoosh/core
 
+## 0.14.1
+
+- Add `onDataChange` event to state manager to allow plugins to react to data changes in controllers.
+
 ## 0.14.0
 
 - Add `queue` controller support for queuing multiple requests to the same endpoint.

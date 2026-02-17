@@ -778,6 +778,150 @@ describe("createStateManager", () => {
     });
   });
 
+  describe("onDataChange", () => {
+    it("should register a callback and return an unsubscribe function", () => {
+      const manager = createStateManager();
+      const callback = vi.fn();
+
+      const unsubscribe = manager.onDataChange(callback);
+
+      expect(typeof unsubscribe).toBe("function");
+    });
+
+    it("should call callback when cache data changes", () => {
+      const manager = createStateManager();
+      const callback = vi.fn();
+      const key = "test-key";
+
+      manager.onDataChange(callback);
+      manager.setCache(key, { state: createState({ data: "initial" }) });
+
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(key, undefined, "initial");
+    });
+
+    it("should call callback with old and new data when data updates", () => {
+      const manager = createStateManager();
+      const callback = vi.fn();
+      const key = "test-key";
+
+      manager.setCache(key, { state: createState({ data: "initial" }) });
+      manager.onDataChange(callback);
+      manager.setCache(key, { state: createState({ data: "updated" }) });
+
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith(key, "initial", "updated");
+    });
+
+    it("should NOT call callback when data does not change", () => {
+      const manager = createStateManager();
+      const callback = vi.fn();
+      const key = "test-key";
+
+      manager.setCache(key, { state: createState({ data: "same" }) });
+      manager.onDataChange(callback);
+      manager.setCache(key, { state: createState({ data: "same" }) });
+
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it("should NOT call callback when only tags change", () => {
+      const manager = createStateManager();
+      const callback = vi.fn();
+      const key = "test-key";
+
+      manager.setCache(key, {
+        state: createState({ data: "data" }),
+        tags: ["tag1"],
+      });
+      manager.onDataChange(callback);
+      manager.setCache(key, { tags: ["tag2"] });
+
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it("should NOT call callback when setMeta is called", () => {
+      const manager = createStateManager();
+      const callback = vi.fn();
+      const key = "test-key";
+
+      manager.setCache(key, { state: createState({ data: "data" }) });
+      manager.onDataChange(callback);
+      manager.setMeta(key, { someValue: true });
+
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it("should support multiple callbacks", () => {
+      const manager = createStateManager();
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
+      const key = "test-key";
+
+      manager.onDataChange(callback1);
+      manager.onDataChange(callback2);
+      manager.setCache(key, { state: createState({ data: "data" }) });
+
+      expect(callback1).toHaveBeenCalledTimes(1);
+      expect(callback2).toHaveBeenCalledTimes(1);
+    });
+
+    it("should stop calling callback after unsubscribe", () => {
+      const manager = createStateManager();
+      const callback = vi.fn();
+      const key = "test-key";
+
+      const unsubscribe = manager.onDataChange(callback);
+      manager.setCache(key, { state: createState({ data: "first" }) });
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      unsubscribe();
+      manager.setCache(key, { state: createState({ data: "second" }) });
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it("should only unsubscribe the specific callback", () => {
+      const manager = createStateManager();
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
+      const key = "test-key";
+
+      const unsubscribe1 = manager.onDataChange(callback1);
+      manager.onDataChange(callback2);
+
+      unsubscribe1();
+      manager.setCache(key, { state: createState({ data: "data" }) });
+
+      expect(callback1).not.toHaveBeenCalled();
+      expect(callback2).toHaveBeenCalledTimes(1);
+    });
+
+    it("should clear all data change callbacks on clear()", () => {
+      const manager = createStateManager();
+      const callback = vi.fn();
+      const key = "test-key";
+
+      manager.onDataChange(callback);
+      manager.clear();
+      manager.setCache(key, { state: createState({ data: "data" }) });
+
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it("should call callback for each key when multiple keys change", () => {
+      const manager = createStateManager();
+      const callback = vi.fn();
+
+      manager.onDataChange(callback);
+      manager.setCache("key1", { state: createState({ data: "data1" }) });
+      manager.setCache("key2", { state: createState({ data: "data2" }) });
+
+      expect(callback).toHaveBeenCalledTimes(2);
+      expect(callback).toHaveBeenNthCalledWith(1, "key1", undefined, "data1");
+      expect(callback).toHaveBeenNthCalledWith(2, "key2", undefined, "data2");
+    });
+  });
+
   describe("edge cases", () => {
     it("should handle empty cache operations gracefully", () => {
       const manager = createStateManager();

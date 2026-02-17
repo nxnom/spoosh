@@ -1,5 +1,9 @@
 # @spoosh/plugin-transform
 
+## 0.7.1
+
+- Fix transform not being applied when cache update directly eg. with optimistic updates.
+
 ## 0.7.0
 
 - Support `queue` operation type
