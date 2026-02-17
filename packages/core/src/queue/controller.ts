@@ -89,15 +89,27 @@ export function createQueueController<
     const abortController = new AbortController();
     abortControllers.set(item.id, abortController);
 
+    const queryKey = stateManager.createQueryKey({
+      path,
+      method,
+      options: { ...item.input, _queueId: item.id },
+    });
+
+    const unsubscribeMeta = stateManager.subscribeCache(queryKey, () => {
+      const cacheEntry = stateManager.getCache(queryKey);
+      const meta = (
+        cacheEntry?.meta ? Object.fromEntries(cacheEntry.meta) : undefined
+      ) as TMeta | undefined;
+
+      if (meta) {
+        updateItem(item.id, { meta });
+        notify();
+      }
+    });
+
     try {
       updateItem(item.id, { status: "running" });
       notify();
-
-      const queryKey = stateManager.createQueryKey({
-        path,
-        method,
-        options: { ...item.input, _queueId: item.id },
-      });
 
       const { body, query, params, ...triggerOptions } = item.input ?? {};
 
@@ -184,6 +196,7 @@ export function createQueueController<
 
       return errorResponse;
     } finally {
+      unsubscribeMeta();
       abortControllers.delete(item.id);
       itemPromises.delete(item.id);
       notify();
