@@ -214,6 +214,13 @@ export function devtool(
         }
       );
 
+      ctx.eventEmitter.on<{ queryKeys: string[] }>(
+        "spoosh:queue-abort",
+        ({ queryKeys }) => {
+          store.discardTracesByQueryKeys(queryKeys);
+        }
+      );
+
       ctx.eventEmitter.on<DevtoolEvents["spoosh:request-complete"]>(
         "spoosh:request-complete",
         ({ context }) => {

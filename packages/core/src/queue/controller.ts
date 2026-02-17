@@ -248,12 +248,22 @@ export function createQueueController<
     },
 
     abort: (id) => {
+      const queryKeysToDiscard: string[] = [];
+
       if (id) {
         const item = queue.find((i) => i.id === id);
 
         if (item && (item.status === "pending" || item.status === "running")) {
           abortControllers.get(id)?.abort();
           updateItem(id, { status: "aborted" });
+
+          const queryKey = stateManager.createQueryKey({
+            path,
+            method,
+            options: { ...item.input, _queueId: item.id },
+          });
+          queryKeysToDiscard.push(queryKey);
+
           notify();
         }
       } else {
@@ -261,10 +271,23 @@ export function createQueueController<
           if (item.status === "pending" || item.status === "running") {
             abortControllers.get(item.id)?.abort();
             updateItem(item.id, { status: "aborted" });
+
+            const queryKey = stateManager.createQueryKey({
+              path,
+              method,
+              options: { ...item.input, _queueId: item.id },
+            });
+            queryKeysToDiscard.push(queryKey);
           }
         }
 
         notify();
+      }
+
+      if (queryKeysToDiscard.length > 0) {
+        eventEmitter.emit("spoosh:queue-abort", {
+          queryKeys: queryKeysToDiscard,
+        });
       }
     },
 
