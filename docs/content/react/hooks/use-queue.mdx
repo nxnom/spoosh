@@ -1,0 +1,240 @@
+---
+title: useQueue
+description: Manage concurrent request queues with progress tracking
+---
+
+The `useQueue` hook enables concurrent request processing with built-in queue management, progress tracking, and abort/retry capabilities. Ideal for batch uploads, bulk operations, or any scenario requiring controlled concurrent requests.
+
+## Basic Usage
+
+```typescript
+function FileUploader() {
+  const { trigger, tasks, stats, clear } = useQueue(
+    (api) => api("uploads").POST(),
+    { concurrency: 3 }
+  );
+
+  const handleUpload = async (files: File[]) => {
+    for (const file of files) {
+      trigger({ body: { file, filename: file.name } })
+        .then((result) => console.log("Uploaded:", result.data))
+        .catch((err) => console.error("Failed:", err));
+    }
+  };
+
+  return (
+    <div>
+      <input type="file" multiple onChange={(e) => handleUpload([...e.target.files])} />
+      <p>Progress: {stats.percentage}%</p>
+      <p>Running: {stats.running} / Pending: {stats.pending}</p>
+      <button onClick={clear}>Cancel All</button>
+    </div>
+  );
+}
+```
+
+## Queue Options
+
+| Option        | Type     | Default | Description                     |
+| ------------- | -------- | ------- | ------------------------------- |
+| `concurrency` | `number` | `3`     | Maximum concurrent requests     |
+| + plugin opts | -        | -       | Hook-level options from plugins |
+
+```typescript
+const queue = useQueue((api) => api("uploads").POST(), {
+  concurrency: 5,
+  retries: 3, // from retry plugin
+  progress: true, // from progress plugin
+});
+```
+
+## Returns
+
+| Property  | Type                            | Description                              |
+| --------- | ------------------------------- | ---------------------------------------- |
+| `trigger` | `(input?) => Promise<Response>` | Add item to queue, returns when complete |
+| `tasks`   | `QueueItem[]`                   | All tasks with their current status      |
+| `stats`   | `QueueStats`                    | Queue statistics                         |
+| `abort`   | `(id?) => void`                 | Abort task by ID, or all if no ID        |
+| `retry`   | `(id?) => Promise<void>`        | Retry failed task by ID, or all failed   |
+| `remove`  | `(id?) => void`                 | Remove task by ID, or all finished       |
+| `clear`   | `() => void`                    | Abort all and clear entire queue         |
+
+## QueueItem Properties
+
+Each task in the `tasks` array has:
+
+| Property | Type                                                          | Description                      |
+| -------- | ------------------------------------------------------------- | -------------------------------- |
+| `id`     | `string`                                                      | Unique task identifier           |
+| `status` | `"pending" \| "running" \| "success" \| "error" \| "aborted"` | Current status                   |
+| `data`   | `TData \| undefined`                                          | Response data on success         |
+| `error`  | `TError \| undefined`                                         | Error on failure                 |
+| `input`  | `object \| undefined`                                         | Original trigger input           |
+| `meta`   | `object \| undefined`                                         | Plugin metadata (e.g., progress) |
+
+## QueueStats Properties
+
+| Property     | Type     | Description                        |
+| ------------ | -------- | ---------------------------------- |
+| `pending`    | `number` | Items waiting to run               |
+| `running`    | `number` | Currently executing items          |
+| `settled`    | `number` | Completed items (success + failed) |
+| `success`    | `number` | Successfully completed items       |
+| `failed`     | `number` | Failed or aborted items            |
+| `total`      | `number` | Total items in queue               |
+| `percentage` | `number` | Completion percentage (0-100)      |
+
+## Trigger Options
+
+| Option           | Type                               | Description                    |
+| ---------------- | ---------------------------------- | ------------------------------ |
+| `body`           | `TBody`                            | Request body                   |
+| `query`          | `TQuery`                           | Query parameters               |
+| `params`         | `Record<string, string \| number>` | Path parameters                |
+| + plugin options | -                                  | Options from installed plugins |
+
+## Progress Tracking
+
+With the progress plugin, track individual upload progress:
+
+```typescript
+const { trigger, tasks } = useQueue((api) => api("uploads").POST(), {
+  concurrency: 2,
+  progress: true,
+});
+
+// In your UI
+{tasks.map((task) => (
+  <div key={task.id}>
+    <span>{task.input?.body?.filename}</span>
+    <progress value={task.meta?.uploadProgress ?? 0} max={100} />
+    <span>{task.status}</span>
+  </div>
+))}
+```
+
+## Abort and Retry
+
+```typescript
+const { trigger, tasks, abort, retry, clear } = useQueue((api) =>
+  api("uploads").POST()
+);
+
+// Abort specific task
+abort(taskId);
+
+// Abort all running/pending tasks
+abort();
+
+// Retry specific failed task
+await retry(taskId);
+
+// Retry all failed tasks
+await retry();
+
+// Abort all and clear queue
+clear();
+```
+
+## Removing Completed Tasks
+
+```typescript
+const { tasks, remove } = useQueue((api) => api("uploads").POST());
+
+// Remove specific task
+remove(taskId);
+
+// Remove all finished tasks (keeps running/pending)
+remove();
+```
+
+## Batch Operations Example
+
+```typescript
+function BulkDeleteUsers() {
+  const { trigger, stats, clear } = useQueue(
+    (api) => api("users/:id").DELETE(),
+    { concurrency: 5 }
+  );
+
+  const handleBulkDelete = async (userIds: string[]) => {
+    const promises = userIds.map((id) =>
+      trigger({ params: { id } })
+    );
+
+    const results = await Promise.allSettled(promises);
+    console.log(`Deleted ${stats.success} of ${stats.total} users`);
+  };
+
+  return (
+    <div>
+      <button onClick={() => handleBulkDelete(selectedIds)}>
+        Delete Selected ({selectedIds.length})
+      </button>
+      {stats.total > 0 && (
+        <div>
+          <progress value={stats.percentage} max={100} />
+          <span>{stats.percentage}% complete</span>
+          <button onClick={clear}>Cancel</button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Task List UI Example
+
+```typescript
+function UploadQueue() {
+  const { trigger, tasks, stats, abort, retry, remove, clear } = useQueue(
+    (api) => api("uploads").POST(),
+    { concurrency: 3 }
+  );
+
+  return (
+    <div>
+      <div className="stats">
+        <span>Progress: {stats.percentage}%</span>
+        <span>Running: {stats.running}</span>
+        <span>Pending: {stats.pending}</span>
+        <span>Success: {stats.success}</span>
+        <span>Failed: {stats.failed}</span>
+      </div>
+
+      <div className="actions">
+        <button onClick={() => abort()} disabled={stats.running === 0}>
+          Abort All
+        </button>
+        <button onClick={() => retry()} disabled={stats.failed === 0}>
+          Retry Failed
+        </button>
+        <button onClick={() => remove()} disabled={stats.settled === 0}>
+          Remove Finished
+        </button>
+        <button onClick={clear} disabled={stats.total === 0}>
+          Clear All
+        </button>
+      </div>
+
+      <ul className="task-list">
+        {tasks.map((task) => (
+          <li key={task.id}>
+            <span className={`status-${task.status}`}>{task.status}</span>
+            <span>{task.input?.body?.filename}</span>
+
+            {task.status === "running" && (
+              <button onClick={() => abort(task.id)}>Abort</button>
+            )}
+            {task.status === "error" && (
+              <button onClick={() => retry(task.id)}>Retry</button>
+            )}
+            <button onClick={() => remove(task.id)}>Remove</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```

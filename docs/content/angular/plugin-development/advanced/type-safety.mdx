@@ -14,7 +14,7 @@ This guide shows you how to make your plugins fully type-safe using TypeScript g
 
 ## Type Structure
 
-Every plugin can define up to 9 type interfaces:
+Every plugin can define up to 12 type interfaces:
 
 ```typescript
 // types.ts
@@ -43,6 +43,16 @@ export interface MyInfiniteReadOptions {
   timeout?: number;
 }
 
+export interface MyQueueOptions {
+  // Hook-level options for queue operations (passed to injectQueue 2nd argument)
+  retries?: number;
+}
+
+export interface MyQueueTriggerOptions {
+  // Trigger-level options for queue operations (passed to trigger())
+  priority?: number;
+}
+
 export interface MyReadResult {
   // What gets added to injectRead result
   timedOut: boolean;
@@ -53,6 +63,11 @@ export interface MyWriteResult {
   timedOut: boolean;
 }
 
+export interface MyQueueResult {
+  // What gets added to queue item meta
+  retryCount?: number;
+}
+
 export interface MyInstanceApi {
   // Methods added to create() return value
   setTimeout: (timeout: number) => void;
@@ -61,11 +76,11 @@ export interface MyInstanceApi {
 
 ### Hook-Level vs Trigger-Level Options
 
-For write operations, options are split into two categories:
+For write and queue operations, options are split into two categories:
 
-- **Hook-level options** (`writeOptions`): Passed to `injectWrite` as the second argument. These options are set once when the inject is created and enable proper TypeScript inference.
+- **Hook-level options** (`writeOptions`, `queueOptions`): Passed to the inject as the second argument. These options are set once when the inject is created and enable proper TypeScript inference.
 
-- **Trigger-level options** (`writeTriggerOptions`): Passed to `trigger()` when executing the mutation. These options can vary per-call.
+- **Trigger-level options** (`writeTriggerOptions`, `queueTriggerOptions`): Passed to `trigger()` when executing. These options can vary per-call.
 
 ```typescript
 // Hook-level options (set once, enables type inference)
@@ -78,6 +93,18 @@ createPost = injectWrite(
 await this.createPost.trigger({
   body: { title: "New Post" },
   invalidate: ["posts"], // writeTriggerOptions
+});
+
+// Queue hook-level options
+queue = injectQueue(
+  (api) => api("uploads").POST(),
+  { concurrency: 3, retries: 2 } // queueOptions
+);
+
+// Queue trigger-level options
+await this.queue.trigger({
+  body: { file },
+  priority: 1, // queueTriggerOptions
 });
 ```
 
@@ -93,8 +120,11 @@ import type {
   MyReadOptions,
   MyWriteOptions,
   MyWriteTriggerOptions,
+  MyQueueOptions,
+  MyQueueTriggerOptions,
   MyReadResult,
   MyWriteResult,
+  MyQueueResult,
   MyInstanceApi,
 } from "./types";
 
@@ -102,13 +132,16 @@ export function myPlugin(config: MyPluginConfig = {}): SpooshPlugin<{
   readOptions: MyReadOptions;
   writeOptions: MyWriteOptions;
   writeTriggerOptions: MyWriteTriggerOptions;
+  queueOptions: MyQueueOptions;
+  queueTriggerOptions: MyQueueTriggerOptions;
   readResult: MyReadResult;
   writeResult: MyWriteResult;
+  queueResult: MyQueueResult;
   instanceApi: MyInstanceApi;
 }> {
   return {
     name: "my-app:timeout",
-    operations: ["read", "write"],
+    operations: ["read", "write", "queue"],
 
     middleware: async (context, next) => {
       // Implementation
@@ -129,7 +162,10 @@ export function myPlugin(config: MyPluginConfig = {}): SpooshPlugin<{
 - `injectRead` accepts `MyReadOptions`
 - `injectWrite` hook accepts `MyWriteOptions`
 - `injectWrite` trigger accepts `MyWriteTriggerOptions`
+- `injectQueue` hook accepts `MyQueueOptions`
+- `injectQueue` trigger accepts `MyQueueTriggerOptions`
 - Hook results include `MyReadResult` / `MyWriteResult`
+- Queue item meta includes `MyQueueResult`
 - `create()` return includes `MyInstanceApi`
 
 ## Minimal Example

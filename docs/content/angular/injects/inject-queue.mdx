@@ -1,0 +1,283 @@
+---
+title: injectQueue
+description: Manage concurrent request queues with progress tracking
+---
+
+The `injectQueue` function enables concurrent request processing with built-in queue management, progress tracking, and abort/retry capabilities. Ideal for batch uploads, bulk operations, or any scenario requiring controlled concurrent requests.
+
+## Basic Usage
+
+```typescript
+@Component({
+  selector: "app-file-uploader",
+  template: `
+    <input type="file" multiple (change)="handleUpload($event)" />
+    <p>Progress: {{ queue.stats().percentage }}%</p>
+    <p>
+      Running: {{ queue.stats().running }} / Pending:
+      {{ queue.stats().pending }}
+    </p>
+    <button (click)="queue.clear()">Cancel All</button>
+  `,
+})
+export class FileUploaderComponent {
+  queue = injectQueue((api) => api("uploads").POST(), {
+    concurrency: 3,
+  });
+
+  handleUpload(event: Event) {
+    const files = (event.target as HTMLInputElement).files;
+    if (!files) return;
+
+    for (const file of Array.from(files)) {
+      this.queue
+        .trigger({ body: { file, filename: file.name } })
+        .then((result) => console.log("Uploaded:", result.data))
+        .catch((err) => console.error("Failed:", err));
+    }
+  }
+}
+```
+
+## Queue Options
+
+| Option        | Type     | Default | Description                     |
+| ------------- | -------- | ------- | ------------------------------- |
+| `concurrency` | `number` | `3`     | Maximum concurrent requests     |
+| + plugin opts | -        | -       | Hook-level options from plugins |
+
+```typescript
+queue = injectQueue((api) => api("uploads").POST(), {
+  concurrency: 5,
+  retries: 3, // from retry plugin
+  progress: true, // from progress plugin
+});
+```
+
+## Returns
+
+| Property         | Type                            | Description                              |
+| ---------------- | ------------------------------- | ---------------------------------------- |
+| `trigger`        | `(input?) => Promise<Response>` | Add item to queue, returns when complete |
+| `tasks`          | `Signal<QueueItem[]>`           | All tasks with their current status      |
+| `stats`          | `Signal<QueueStats>`            | Queue statistics                         |
+| `abort`          | `(id?) => void`                 | Abort task by ID, or all if no ID        |
+| `retry`          | `(id?) => Promise<void>`        | Retry failed task by ID, or all failed   |
+| `remove`         | `(id?) => void`                 | Remove task by ID, or all finished       |
+| `clear`          | `() => void`                    | Abort all and clear entire queue         |
+| `setConcurrency` | `(concurrency: number) => void` | Update concurrency limit dynamically     |
+
+## QueueItem Properties
+
+Each task in the `tasks()` signal has:
+
+| Property | Type                                                          | Description                      |
+| -------- | ------------------------------------------------------------- | -------------------------------- |
+| `id`     | `string`                                                      | Unique task identifier           |
+| `status` | `"pending" \| "running" \| "success" \| "error" \| "aborted"` | Current status                   |
+| `data`   | `TData \| undefined`                                          | Response data on success         |
+| `error`  | `TError \| undefined`                                         | Error on failure                 |
+| `input`  | `object \| undefined`                                         | Original trigger input           |
+| `meta`   | `object \| undefined`                                         | Plugin metadata (e.g., progress) |
+
+## QueueStats Properties
+
+| Property     | Type     | Description                        |
+| ------------ | -------- | ---------------------------------- |
+| `pending`    | `number` | Items waiting to run               |
+| `running`    | `number` | Currently executing items          |
+| `settled`    | `number` | Completed items (success + failed) |
+| `success`    | `number` | Successfully completed items       |
+| `failed`     | `number` | Failed or aborted items            |
+| `total`      | `number` | Total items in queue               |
+| `percentage` | `number` | Completion percentage (0-100)      |
+
+## Trigger Options
+
+| Option           | Type                               | Description                    |
+| ---------------- | ---------------------------------- | ------------------------------ |
+| `body`           | `TBody`                            | Request body                   |
+| `query`          | `TQuery`                           | Query parameters               |
+| `params`         | `Record<string, string \| number>` | Path parameters                |
+| + plugin options | -                                  | Options from installed plugins |
+
+## Dynamic Concurrency
+
+Adjust concurrency at runtime:
+
+```typescript
+@Component({
+  template: `
+    <input
+      type="number"
+      [ngModel]="concurrency"
+      (ngModelChange)="onConcurrencyChange($event)"
+      min="1"
+      max="10"
+    />
+  `,
+})
+export class UploaderComponent {
+  concurrency = 3;
+  queue = injectQueue((api) => api("uploads").POST(), {
+    concurrency: this.concurrency,
+  });
+
+  onConcurrencyChange(value: number) {
+    this.queue.setConcurrency(value);
+  }
+}
+```
+
+## Progress Tracking
+
+With the progress plugin, track individual upload progress:
+
+```typescript
+@Component({
+  template: `
+    @for (task of queue.tasks(); track task.id) {
+      <div>
+        <span>{{ getFilename(task) }}</span>
+        <progress [value]="task.meta?.uploadProgress ?? 0" max="100"></progress>
+        <span>{{ task.status }}</span>
+      </div>
+    }
+  `,
+})
+export class UploaderComponent {
+  queue = injectQueue((api) => api("uploads").POST(), {
+    concurrency: 2,
+    progress: true,
+  });
+
+  getFilename(task: QueueItem): string {
+    return task.input?.body?.filename || task.id;
+  }
+}
+```
+
+## Abort and Retry
+
+```typescript
+queue = injectQueue((api) => api("uploads").POST());
+
+// Abort specific task
+this.queue.abort(taskId);
+
+// Abort all running/pending tasks
+this.queue.abort();
+
+// Retry specific failed task
+await this.queue.retry(taskId);
+
+// Retry all failed tasks
+await this.queue.retry();
+
+// Abort all and clear queue
+this.queue.clear();
+```
+
+## Complete Example
+
+```typescript
+@Component({
+  selector: "app-upload-queue",
+  template: `
+    <div class="stats">
+      <span>Progress: {{ queue.stats().percentage }}%</span>
+      <span>Running: {{ queue.stats().running }}</span>
+      <span>Pending: {{ queue.stats().pending }}</span>
+      <span>Success: {{ queue.stats().success }}</span>
+      <span>Failed: {{ queue.stats().failed }}</span>
+    </div>
+
+    <div class="actions">
+      <button (click)="queue.abort()" [disabled]="queue.stats().running === 0">
+        Abort All
+      </button>
+      <button (click)="queue.retry()" [disabled]="queue.stats().failed === 0">
+        Retry Failed
+      </button>
+      <button (click)="queue.remove()" [disabled]="queue.stats().settled === 0">
+        Remove Finished
+      </button>
+      <button (click)="queue.clear()" [disabled]="queue.stats().total === 0">
+        Clear All
+      </button>
+    </div>
+
+    <ul class="task-list">
+      @for (task of queue.tasks(); track task.id) {
+        <li>
+          <span [class]="'status-' + task.status">{{ task.status }}</span>
+          <span>{{ getFilename(task) }}</span>
+
+          @if (task.status === "running") {
+            <button (click)="queue.abort(task.id)">Abort</button>
+          }
+          @if (task.status === "error") {
+            <button (click)="queue.retry(task.id)">Retry</button>
+          }
+          <button (click)="queue.remove(task.id)">Remove</button>
+        </li>
+      }
+    </ul>
+  `,
+})
+export class UploadQueueComponent {
+  queue = injectQueue((api) => api("uploads").POST(), {
+    concurrency: 3,
+  });
+
+  getFilename(task: QueueItem): string {
+    return task.input?.body?.filename || task.id;
+  }
+
+  handleFiles(files: FileList) {
+    for (const file of Array.from(files)) {
+      this.queue.trigger({
+        body: { file, filename: file.name },
+      });
+    }
+  }
+}
+```
+
+## Bulk Operations Example
+
+```typescript
+@Component({
+  template: `
+    <button (click)="handleBulkDelete()">
+      Delete Selected ({{ selectedIds.length }})
+    </button>
+
+    @if (queue.stats().total > 0) {
+      <div>
+        <progress [value]="queue.stats().percentage" max="100"></progress>
+        <span>{{ queue.stats().percentage }}% complete</span>
+        <button (click)="queue.clear()">Cancel</button>
+      </div>
+    }
+  `,
+})
+export class BulkDeleteComponent {
+  selectedIds: string[] = [];
+
+  queue = injectQueue((api) => api("users/{id}").DELETE(), {
+    concurrency: 5,
+  });
+
+  async handleBulkDelete() {
+    const promises = this.selectedIds.map((id) =>
+      this.queue.trigger({ params: { id } })
+    );
+
+    await Promise.allSettled(promises);
+
+    const stats = this.queue.stats();
+    console.log(`Deleted ${stats.success} of ${stats.total} users`);
+  }
+}
+```
