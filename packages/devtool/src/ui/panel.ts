@@ -183,20 +183,36 @@ export class DevToolPanel {
           this.viewModel.getState().autoSelectIncoming &&
           this.viewModel.getState().activeView === "requests"
         ) {
-          const traces = this.store.getFilteredTraces(
-            this.viewModel.getState().searchQuery
-          );
-          const lastTrace = traces[traces.length - 1];
+          const traceList = this.sidebar?.querySelector(".spoosh-traces");
+          const isAtTop = !traceList || traceList.scrollTop <= 50;
 
-          if (lastTrace) {
-            this.viewModel.selectTrace(lastTrace.id);
-            this.renderScheduler.schedule(() => this.render());
-            return;
+          if (isAtTop) {
+            const traces = this.store.getFilteredTraces(
+              this.viewModel.getState().searchQuery
+            );
+            const lastTrace = traces[traces.length - 1];
+
+            if (lastTrace) {
+              this.viewModel.selectTrace(lastTrace.id);
+              this.renderScheduler.schedule(() => this.render());
+              return;
+            }
           }
         }
       }
 
       if (this.viewModel.getState().isOpen) {
+        const isStepOnly = this.store.isStepUpdateOnly();
+        const isViewingPlugins =
+          this.viewModel.getState().activeTab === "plugins";
+
+        if (isStepOnly) {
+          if (isViewingPlugins) {
+            this.renderScheduler.schedule(() => this.updatePluginsTabOnly());
+          }
+          return;
+        }
+
         this.renderScheduler.schedule(() => this.partialUpdate());
       }
     });
@@ -206,6 +222,44 @@ export class DevToolPanel {
 
   private renderImmediate(): void {
     this.renderScheduler.immediate(() => this.render());
+  }
+
+  private updatePluginsTabOnly(): void {
+    if (!this.sidebar) return;
+
+    const state = this.viewModel.getState();
+    const traces = this.store.getFilteredTraces(state.searchQuery);
+    const selectedTrace = state.selectedTraceId
+      ? traces.find((t) => t.id === state.selectedTraceId)
+      : null;
+
+    if (!selectedTrace) return;
+
+    const tabContent = this.sidebar.querySelector(".spoosh-tab-content");
+
+    if (tabContent && state.activeTab === "plugins") {
+      const savedScrollTop = tabContent.scrollTop ?? 0;
+      const html = renderPluginsTab({
+        trace: selectedTrace,
+        knownPlugins: this.store.getKnownPlugins(selectedTrace.operationType),
+        showPassedPlugins: state.showPassedPlugins,
+        expandedSteps: state.expandedSteps,
+        expandedGroups: state.expandedGroups,
+        fullDiffViews: state.fullDiffViews,
+      });
+      tabContent.innerHTML = html;
+
+      if (savedScrollTop > 0) {
+        tabContent.scrollTop = savedScrollTop;
+      }
+    }
+
+    const pluginCount = this.getActivePluginCount(selectedTrace);
+    const pluginsTabBtn = this.sidebar.querySelector('[data-tab="plugins"]');
+
+    if (pluginsTabBtn) {
+      pluginsTabBtn.textContent = `Plugins ${pluginCount > 0 ? `(${pluginCount})` : ""}`;
+    }
   }
 
   private partialUpdate(): void {
@@ -247,10 +301,19 @@ export class DevToolPanel {
 
       const existingList = requestsSection.querySelector(
         ".spoosh-traces, .spoosh-empty"
-      );
+      ) as HTMLElement | null;
 
       if (existingList) {
+        const savedListScrollTop = existingList.scrollTop ?? 0;
         existingList.outerHTML = renderTraceList(traces, state.selectedTraceId);
+
+        if (savedListScrollTop > 0) {
+          const newList = requestsSection.querySelector(".spoosh-traces");
+
+          if (newList) {
+            newList.scrollTop = savedListScrollTop;
+          }
+        }
       }
     }
 
@@ -265,9 +328,11 @@ export class DevToolPanel {
 
       const existingList = eventsSection.querySelector(
         ".spoosh-events, .spoosh-empty"
-      );
+      ) as HTMLElement | null;
 
       if (existingList) {
+        const savedEventsScrollTop = existingList.scrollTop ?? 0;
+
         if (events.length === 0) {
           existingList.outerHTML = `<div class="spoosh-empty">No events yet</div>`;
         } else {
@@ -279,6 +344,14 @@ export class DevToolPanel {
                 .join("")}
             </div>
           `;
+        }
+
+        if (savedEventsScrollTop > 0) {
+          const newEventsList = eventsSection.querySelector(".spoosh-events");
+
+          if (newEventsList) {
+            newEventsList.scrollTop = savedEventsScrollTop;
+          }
         }
       }
     }

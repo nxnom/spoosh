@@ -29,6 +29,7 @@ interface RegisteredPlugin {
 }
 
 const DEFAULT_MAX_HISTORY = 50;
+const STEP_NOTIFY_DEBOUNCE = 500;
 
 export class DevToolStore implements DevToolStoreInterface {
   private traces = createRingBuffer<OperationTrace>(DEFAULT_MAX_HISTORY);
@@ -49,6 +50,9 @@ export class DevToolStore implements DevToolStoreInterface {
   private sensitiveHeaders = new Set<string>();
   private totalTraceCount = 0;
   private resolvedPaths = new Map<string, string>();
+  private stepNotifyTimeout: ReturnType<typeof setTimeout> | null = null;
+  private stepNotifyPending = false;
+  private lastUpdateWasStepOnly = false;
 
   constructor(config: DevToolStoreConfig = {}) {
     this.stateManager = config.stateManager;
@@ -179,7 +183,7 @@ export class DevToolStore implements DevToolStoreInterface {
       }
     }
 
-    const notifyFn = () => this.notify();
+    const notifyFn = () => this.notifyDebounced();
 
     const trace: OperationTrace = {
       ...context,
@@ -400,12 +404,12 @@ export class DevToolStore implements DevToolStoreInterface {
 
   recordInvalidation(event: InvalidationEvent): void {
     this.invalidations.push(event);
-    this.notify();
+    this.notifyDebounced();
   }
 
   addEvent(event: StandaloneEvent): void {
     this.events.push(event);
-    this.notify();
+    this.notifyDebounced();
   }
 
   getEvents(): StandaloneEvent[] {
@@ -465,6 +469,28 @@ export class DevToolStore implements DevToolStoreInterface {
 
   private notify(): void {
     this.subscribers.forEach((cb) => cb());
+  }
+
+  private notifyDebounced(): void {
+    if (this.stepNotifyPending) return;
+
+    this.stepNotifyPending = true;
+
+    if (this.stepNotifyTimeout) {
+      clearTimeout(this.stepNotifyTimeout);
+    }
+
+    this.stepNotifyTimeout = setTimeout(() => {
+      this.stepNotifyPending = false;
+      this.stepNotifyTimeout = null;
+      this.lastUpdateWasStepOnly = true;
+      this.notify();
+      this.lastUpdateWasStepOnly = false;
+    }, STEP_NOTIFY_DEBOUNCE);
+  }
+
+  isStepUpdateOnly(): boolean {
+    return this.lastUpdateWasStepOnly;
   }
 
   clear(): void {

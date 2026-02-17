@@ -166,6 +166,7 @@ export interface DevToolStoreInterface {
   getImportedSession(): ImportedSession | null;
   getFilteredImportedTraces(searchQuery?: string): ExportedTrace[];
   clearImportedTraces(): void;
+  isStepUpdateOnly(): boolean;
 }
 
 export type DetailTab = "data" | "request" | "meta" | "plugins";

@@ -4,7 +4,7 @@ export interface RenderScheduler {
   cancel(): void;
 }
 
-const MIN_INTERVAL = 150;
+const MIN_INTERVAL = 300;
 
 export function createRenderScheduler(): RenderScheduler {
   let scheduled = false;
