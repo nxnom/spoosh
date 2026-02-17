@@ -35,14 +35,16 @@ function FileUploader() {
 
 ## Queue Options
 
-| Option        | Type     | Default | Description                     |
-| ------------- | -------- | ------- | ------------------------------- |
-| `concurrency` | `number` | `3`     | Maximum concurrent requests     |
-| + plugin opts | -        | -       | Hook-level options from plugins |
+| Option        | Type      | Default | Description                                        |
+| ------------- | --------- | ------- | -------------------------------------------------- |
+| `concurrency` | `number`  | `3`     | Maximum concurrent requests                        |
+| `autoStart`   | `boolean` | `true`  | Whether to start processing immediately on trigger |
+| + plugin opts | -         | -       | Hook-level options from plugins                    |
 
 ```typescript
 const queue = useQueue((api) => api("uploads").POST(), {
   concurrency: 5,
+  autoStart: true, // set to false for deferred start
   retries: 3, // from retry plugin
   progress: true, // from progress plugin
 });
@@ -50,15 +52,17 @@ const queue = useQueue((api) => api("uploads").POST(), {
 
 ## Returns
 
-| Property  | Type                            | Description                              |
-| --------- | ------------------------------- | ---------------------------------------- |
-| `trigger` | `(input?) => Promise<Response>` | Add item to queue, returns when complete |
-| `tasks`   | `QueueItem[]`                   | All tasks with their current status      |
-| `stats`   | `QueueStats`                    | Queue statistics                         |
-| `abort`   | `(id?) => void`                 | Abort task by ID, or all if no ID        |
-| `retry`   | `(id?) => Promise<void>`        | Retry failed task by ID, or all failed   |
-| `remove`  | `(id?) => void`                 | Remove task by ID, or all finished       |
-| `clear`   | `() => void`                    | Abort all and clear entire queue         |
+| Property    | Type                            | Description                                            |
+| ----------- | ------------------------------- | ------------------------------------------------------ |
+| `trigger`   | `(input?) => Promise<Response>` | Add item to queue, returns when complete               |
+| `tasks`     | `QueueItem[]`                   | All tasks with their current status                    |
+| `stats`     | `QueueStats`                    | Queue statistics                                       |
+| `abort`     | `(id?) => void`                 | Abort task by ID, or all if no ID                      |
+| `retry`     | `(id?) => Promise<void>`        | Retry failed task by ID, or all failed                 |
+| `remove`    | `(id?) => void`                 | Remove task by ID, or all finished                     |
+| `clear`     | `() => void`                    | Abort all and clear entire queue                       |
+| `start`     | `() => void`                    | Start processing (only needed when `autoStart: false`) |
+| `isStarted` | `boolean`                       | Whether queue processing has started                   |
 
 ## QueueItem Properties
 
@@ -148,6 +152,51 @@ remove(taskId);
 // Remove all finished tasks (keeps running/pending)
 remove();
 ```
+
+## Deferred Start
+
+Use `autoStart: false` to queue items without immediately processing them. This is useful when you want to collect all items first, then start processing as a batch:
+
+```typescript
+function BatchUploader() {
+  const { trigger, tasks, stats, start, isStarted, clear } = useQueue(
+    (api) => api("uploads").POST(),
+    { autoStart: false, concurrency: 3 }
+  );
+
+  const addFiles = (files: File[]) => {
+    for (const file of files) {
+      trigger({ body: { file, filename: file.name } });
+    }
+  };
+
+  return (
+    <div>
+      <input
+        type="file"
+        multiple
+        onChange={(e) => addFiles([...e.target.files!])}
+        disabled={isStarted}
+      />
+
+      <p>Queued: {stats.pending} files</p>
+
+      {!isStarted ? (
+        <button onClick={start} disabled={stats.total === 0}>
+          Start Upload ({stats.total} files)
+        </button>
+      ) : (
+        <div>
+          <p>Progress: {stats.percentage}%</p>
+          <button onClick={clear}>Cancel</button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+Once `start()` is called, any new `trigger()` calls will execute immediately (the queue behaves normally).
 
 ## Batch Operations Example
 
