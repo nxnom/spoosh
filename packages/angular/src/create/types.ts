@@ -31,6 +31,13 @@ export type SpooshAngularFunctions<
       TPlugins
     >
   >;
+  injectQueue: ReturnType<
+    typeof import("../injectQueue").createInjectQueue<
+      TSchema,
+      TDefaultError,
+      TPlugins
+    >
+  >;
 } & MergePluginInstanceApi<TPlugins, TSchema>;
 
 export type { SpooshInstanceShape, ExtractMethodData, ExtractMethodError };

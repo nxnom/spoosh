@@ -33,3 +33,9 @@ export type {
   PageContext,
   InfiniteReadApiClient,
 } from "./injectInfiniteRead/types";
+export type {
+  BaseQueueResult,
+  QueueApiClient,
+  QueueTriggerInput,
+  InjectQueueOptions,
+} from "./injectQueue/types";

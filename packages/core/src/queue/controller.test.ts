@@ -89,8 +89,8 @@ describe("createQueueController", () => {
       await controller.trigger({ body: { filename: "test.txt" } });
 
       expect(calls).toHaveLength(1);
-      expect(calls[0].path).toBe("uploads");
-      expect(calls[0].method).toBe("POST");
+      expect(calls[0]!.path).toBe("uploads");
+      expect(calls[0]!.method).toBe("POST");
     });
 
     it("should return promise that resolves with response", async () => {
@@ -168,7 +168,7 @@ describe("createQueueController", () => {
       const queue = controller.getQueue();
 
       expect(queue.length).toBeGreaterThan(0);
-      expect(queue[0].status).toBe("running");
+      expect(queue[0]!.status).toBe("running");
     });
 
     it("should update status to success on completion", async () => {
@@ -178,7 +178,7 @@ describe("createQueueController", () => {
 
       const queue = controller.getQueue();
 
-      expect(queue[0].status).toBe("success");
+      expect(queue[0]!.status).toBe("success");
     });
 
     it("should update status to error on failure", async () => {
@@ -189,8 +189,8 @@ describe("createQueueController", () => {
 
       const queue = controller.getQueue();
 
-      expect(queue[0].status).toBe("error");
-      expect(queue[0].error).toBeInstanceOf(Error);
+      expect(queue[0]!.status).toBe("error");
+      expect(queue[0]!.error).toBeInstanceOf(Error);
     });
 
     it("should include data on success", async () => {
@@ -201,7 +201,7 @@ describe("createQueueController", () => {
 
       const queue = controller.getQueue();
 
-      expect(queue[0].data).toEqual({ id: 123, name: "result" });
+      expect(queue[0]!.data).toEqual({ id: 123, name: "result" });
     });
   });
 
@@ -285,7 +285,7 @@ describe("createQueueController", () => {
     });
 
     it("should calculate percentage correctly", async () => {
-      const { controller, setMockResponse } = createTestController({
+      const { controller } = createTestController({
         concurrency: 1,
         delay: 20,
       });
@@ -350,14 +350,14 @@ describe("createQueueController", () => {
       await new Promise((r) => setTimeout(r, 10));
 
       const queue = controller.getQueue();
-      const itemId = queue[0].id;
+      const itemId = queue[0]!.id;
 
       controller.abort(itemId);
 
       await new Promise((r) => setTimeout(r, 20));
 
       const updatedQueue = controller.getQueue();
-      expect(updatedQueue[0].status).toBe("aborted");
+      expect(updatedQueue[0]!.status).toBe("aborted");
     });
 
     it("should abort all running and pending items when no id", async () => {
@@ -388,12 +388,12 @@ describe("createQueueController", () => {
       await controller.trigger({ body: { file: "1" } });
 
       const queue = controller.getQueue();
-      expect(queue[0].status).toBe("success");
+      expect(queue[0]!.status).toBe("success");
 
-      controller.abort(queue[0].id);
+      controller.abort(queue[0]!.id);
 
       const updatedQueue = controller.getQueue();
-      expect(updatedQueue[0].status).toBe("success");
+      expect(updatedQueue[0]!.status).toBe("success");
     });
   });
 
@@ -407,15 +407,15 @@ describe("createQueueController", () => {
       expect(calls).toHaveLength(1);
 
       const queue = controller.getQueue();
-      expect(queue[0].status).toBe("error");
+      expect(queue[0]!.status).toBe("error");
 
       setMockResponse({ status: 200, data: { id: 1, name: "success" } });
-      await controller.retry(queue[0].id);
+      await controller.retry(queue[0]!.id);
 
       await new Promise((r) => setTimeout(r, 10));
 
       const updatedQueue = controller.getQueue();
-      expect(updatedQueue[0].status).toBe("success");
+      expect(updatedQueue[0]!.status).toBe("success");
       expect(calls).toHaveLength(2);
     });
 
@@ -449,17 +449,17 @@ describe("createQueueController", () => {
       await new Promise((r) => setTimeout(r, 10));
 
       const queue = controller.getQueue();
-      controller.abort(queue[0].id);
+      controller.abort(queue[0]!.id);
 
       await new Promise((r) => setTimeout(r, 20));
 
-      expect(controller.getQueue()[0].status).toBe("aborted");
+      expect(controller.getQueue()[0]!.status).toBe("aborted");
 
-      await controller.retry(queue[0].id);
+      await controller.retry(queue[0]!.id);
 
       await new Promise((r) => setTimeout(r, 150));
 
-      expect(controller.getQueue()[0].status).toBe("success");
+      expect(controller.getQueue()[0]!.status).toBe("success");
     });
   });
 
@@ -473,11 +473,11 @@ describe("createQueueController", () => {
       const queue = controller.getQueue();
       expect(queue).toHaveLength(2);
 
-      controller.remove(queue[0].id);
+      controller.remove(queue[0]!.id);
 
       const updatedQueue = controller.getQueue();
       expect(updatedQueue).toHaveLength(1);
-      expect(updatedQueue[0].id).toBe(queue[1].id);
+      expect(updatedQueue[0]!.id).toBe(queue[1]!.id);
     });
 
     it("should remove all finished items when no id", async () => {
@@ -503,7 +503,7 @@ describe("createQueueController", () => {
       const queueAfter = controller.getQueue();
 
       expect(queueAfter).toHaveLength(1);
-      expect(queueAfter[0].status).toBe("running");
+      expect(queueAfter[0]!.status).toBe("running");
     });
   });
 
@@ -578,9 +578,9 @@ describe("createQueueController", () => {
 
       const queue = controller.getQueue();
 
-      expect(queue[0].id).toBeDefined();
-      expect(queue[1].id).toBeDefined();
-      expect(queue[0].id).not.toBe(queue[1].id);
+      expect(queue[0]!.id).toBeDefined();
+      expect(queue[1]!.id).toBeDefined();
+      expect(queue[0]!.id).not.toBe(queue[1]!.id);
     });
 
     it("should store input on item", async () => {
@@ -593,7 +593,7 @@ describe("createQueueController", () => {
 
       const queue = controller.getQueue();
 
-      expect(queue[0].input).toEqual({
+      expect(queue[0]!.input).toEqual({
         body: { filename: "test.txt" },
         query: { version: "1" },
       });

@@ -2,6 +2,7 @@ import type { PluginArray, PluginExecutor } from "@spoosh/core";
 import { createInjectRead } from "../injectRead";
 import { createInjectWrite } from "../injectWrite";
 import { createInjectInfiniteRead } from "../injectInfiniteRead";
+import { createInjectQueue } from "../injectQueue";
 import type { SpooshAngularFunctions, SpooshInstanceShape } from "./types";
 
 export function create<
@@ -45,6 +46,15 @@ export function create<
     typeof createInjectInfiniteRead<TSchema, TDefaultError, TPlugins>
   >[0]);
 
+  const injectQueue = createInjectQueue<TSchema, TDefaultError, TPlugins>({
+    api,
+    stateManager,
+    eventEmitter,
+    pluginExecutor,
+  } as Parameters<
+    typeof createInjectQueue<TSchema, TDefaultError, TPlugins>
+  >[0]);
+
   const plugins = (pluginExecutor as PluginExecutor).getPlugins();
 
   const setupContext = {
@@ -79,6 +89,7 @@ export function create<
     injectRead,
     injectWrite,
     injectInfiniteRead,
+    injectQueue,
     ...instanceApis,
   } as SpooshAngularFunctions<TDefaultError, TSchema, TPlugins>;
 }
