@@ -73,6 +73,7 @@ export function FrameworkSwitcher({ framework }: { framework: Framework }) {
         "/use-infinite-read",
         "/inject-infinite-read"
       );
+      newPathname = newPathname.replace("/use-queue", "/inject-queue");
     } else if (framework === "angular" && newFramework === "react") {
       newPathname = newPathname.replace("/injects", "/hooks");
       newPathname = newPathname.replace("/inject-read", "/use-read");
@@ -82,6 +83,7 @@ export function FrameworkSwitcher({ framework }: { framework: Framework }) {
         "/inject-infinite-read",
         "/use-infinite-read"
       );
+      newPathname = newPathname.replace("/inject-queue", "/use-queue");
     }
 
     setIsOpen(false);
