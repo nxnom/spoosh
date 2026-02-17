@@ -17,7 +17,7 @@ export function renderHeader(ctx: HeaderRenderContext): string {
     ? ""
     : `
     <div class="spoosh-filters">
-      ${(["read", "write", "infiniteRead"] as const)
+      ${(["read", "write", "infiniteRead", "queue"] as const)
         .map((type) => {
           const active = filters.operationTypes.has(type);
           const label =

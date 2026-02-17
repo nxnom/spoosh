@@ -1,5 +1,9 @@
 # @spoosh/devtool
 
+## 0.2.0
+
+- Support `queue` requests in devtool.
+
 ## 0.1.4
 
 - Fix `FormData` is not displaying as `form` in request view.
