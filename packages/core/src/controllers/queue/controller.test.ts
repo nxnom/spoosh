@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { createQueueController } from "./controller";
-import { createStateManager } from "../state/manager";
-import { createEventEmitter } from "../events/emitter";
-import { createPluginExecutor } from "../plugins/executor";
-import type { SpooshResponse } from "../types/response.types";
+import { createStateManager } from "../../state/manager";
+import { createEventEmitter } from "../../events/emitter";
+import { createPluginExecutor } from "../../plugins/executor";
+import type { SpooshResponse } from "../../types/response.types";
 
 function createMockApi<TData = { id: number; name: string }>() {
   const calls: Array<{ path: string; method: string; options: unknown }> = [];

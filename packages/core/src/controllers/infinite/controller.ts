@@ -1,133 +1,18 @@
-import type { PluginContext } from "../plugins/types";
-import type { PluginExecutor } from "../plugins/executor";
-import type { StateManager } from "../state/manager";
-import type { EventEmitter } from "../events/emitter";
-import type { SpooshResponse } from "../types/response.types";
-import type { HttpMethod } from "../types/common.types";
-
-export type InfiniteRequestOptions = {
-  query?: Record<string, unknown>;
-  params?: Record<string, string | number>;
-  body?: unknown;
-};
-
-export type PageContext<TData, TRequest = InfiniteRequestOptions> = {
-  response: TData | undefined;
-  allResponses: TData[];
-  request: TRequest;
-};
-
-export type FetchDirection = "next" | "prev";
-
-export type InfiniteTriggerOptions = Partial<InfiniteRequestOptions> & {
-  /** Bypass cache and force refetch. Default: true */
-  force?: boolean;
-};
-
-export type InfiniteReadState<TData, TItem, TError> = {
-  data: TItem[] | undefined;
-  allResponses: TData[] | undefined;
-  allRequests: InfiniteRequestOptions[] | undefined;
-  canFetchNext: boolean;
-  canFetchPrev: boolean;
-  error: TError | undefined;
-};
-
-export type InfiniteReadController<TData, TItem, TError> = {
-  getState: () => InfiniteReadState<TData, TItem, TError>;
-  getFetchingDirection: () => FetchDirection | null;
-  subscribe: (callback: () => void) => () => void;
-
-  fetchNext: () => Promise<void>;
-  fetchPrev: () => Promise<void>;
-  trigger: (options?: InfiniteTriggerOptions) => Promise<void>;
-  abort: () => void;
-
-  mount: () => void;
-  unmount: () => void;
-  update: (previousContext: PluginContext) => void;
-  getContext: () => PluginContext;
-  setPluginOptions: (options: unknown) => void;
-};
-
-export type CreateInfiniteReadOptions<TData, TItem, TError, TRequest> = {
-  path: string;
-  method: HttpMethod;
-  tags: string[];
-  initialRequest: InfiniteRequestOptions;
-  canFetchNext?: (ctx: PageContext<TData, TRequest>) => boolean;
-  canFetchPrev?: (ctx: PageContext<TData, TRequest>) => boolean;
-  nextPageRequest?: (ctx: PageContext<TData, TRequest>) => Partial<TRequest>;
-  prevPageRequest?: (ctx: PageContext<TData, TRequest>) => Partial<TRequest>;
-  merger: (responses: TData[]) => TItem[];
-
-  stateManager: StateManager;
-  eventEmitter: EventEmitter;
-  pluginExecutor: PluginExecutor;
-  fetchFn: (
-    options: InfiniteRequestOptions,
-    signal: AbortSignal
-  ) => Promise<SpooshResponse<TData, TError>>;
-
-  /** Unique identifier for the hook instance. Persists across queryKey changes. */
-  instanceId?: string;
-};
-
-function shallowMergeRequest(
-  initial: InfiniteRequestOptions,
-  override: Partial<InfiniteRequestOptions>
-): InfiniteRequestOptions {
-  return {
-    query: override.query
-      ? { ...initial.query, ...override.query }
-      : initial.query,
-    params: override.params
-      ? { ...initial.params, ...override.params }
-      : initial.params,
-    body: override.body !== undefined ? override.body : initial.body,
-  };
-}
-
-type PageData<TData> = {
-  allResponses: TData[];
-  allRequests: InfiniteRequestOptions[];
-};
-
-function collectPageData<TData>(
-  pageKeys: string[],
-  stateManager: StateManager,
-  pageRequests: Map<string, InfiniteRequestOptions>,
-  initialRequest: InfiniteRequestOptions
-): PageData<TData> {
-  const allResponses: TData[] = [];
-  const allRequests: InfiniteRequestOptions[] = [];
-
-  for (const key of pageKeys) {
-    const cached = stateManager.getCache(key);
-
-    if (cached?.state?.data !== undefined) {
-      allResponses.push(cached.state.data as TData);
-      allRequests.push(pageRequests.get(key) ?? initialRequest);
-    }
-  }
-
-  return { allResponses, allRequests };
-}
-
-function createInitialInfiniteState<TData, TItem, TError>(): InfiniteReadState<
-  TData,
-  TItem,
-  TError
-> {
-  return {
-    data: undefined,
-    allResponses: undefined,
-    allRequests: undefined,
-    canFetchNext: false,
-    canFetchPrev: false,
-    error: undefined,
-  };
-}
+import type { PluginContext } from "../../plugins/types";
+import type { SpooshResponse } from "../../types/response.types";
+import type {
+  CreateInfiniteReadOptions,
+  FetchDirection,
+  InfiniteReadController,
+  InfiniteReadState,
+  InfiniteRequestOptions,
+  InfiniteTriggerOptions,
+} from "./types";
+import {
+  shallowMergeRequest,
+  collectPageData,
+  createInitialInfiniteState,
+} from "./utils";
 
 export function createInfiniteReadController<
   TData,
@@ -154,7 +39,6 @@ export function createInfiniteReadController<
     instanceId,
   } = options;
 
-  // Local state only - not persisted (derived model)
   let pageKeys: string[] = [];
   let pageRequests = new Map<string, InfiniteRequestOptions>();
   const subscribers = new Set<() => void>();
@@ -462,19 +346,15 @@ export function createInfiniteReadController<
     async trigger(options?: InfiniteTriggerOptions) {
       const { force = true, ...requestOverride } = options ?? {};
 
-      // Abort any ongoing fetch to prevent race conditions
       if (abortController) {
         abortController.abort();
         abortController = null;
       }
 
-      // Clear pending state for current pageKeys
       for (const key of pageKeys) {
         stateManager.setPendingPromise(key, undefined);
       }
 
-      // When force: true, mark ALL caches with the same path as stale
-      // This ensures all search variations will refetch, not just current pageKeys
       if (force) {
         const allPathCaches = stateManager.getCacheEntriesBySelfTag(path);
 
@@ -501,7 +381,6 @@ export function createInfiniteReadController<
         options: activeInitialRequest,
       });
 
-      // Reset local state for new fetch
       pageSubscriptions.forEach((unsub) => unsub());
       pageSubscriptions = [];
       pageKeys = [];
@@ -593,8 +472,6 @@ export function createInfiniteReadController<
     },
 
     mount() {
-      // No tracker loading - pageKeys starts empty (derived model)
-      // First trigger/fetchNext will check cache for first page
       cachedState = computeState();
       subscribeToPages();
 

@@ -9,6 +9,5 @@ export { executeFetch } from "./fetch";
 
 export * from "./plugins";
 export * from "./state";
-export * from "./operations";
+export * from "./controllers";
 export * from "./events";
-export * from "./queue";

@@ -1,4 +1,4 @@
-import type { SpooshResponse } from "../types/response.types";
+import type { SpooshResponse } from "../../types/response.types";
 
 /**
  * Status of an item in the queue.

@@ -1,8 +1,8 @@
 import { createOperationController } from "./controller";
-import { createStateManager, createInitialState } from "../state/manager";
-import { createEventEmitter } from "../events/emitter";
-import { createPluginExecutor } from "../plugins/executor";
-import type { SpooshResponse } from "../types/response.types";
+import { createStateManager, createInitialState } from "../../state/manager";
+import { createEventEmitter } from "../../events/emitter";
+import { createPluginExecutor } from "../../plugins/executor";
+import type { SpooshResponse } from "../../types/response.types";
 
 function createTestController<TData = unknown, TError = unknown>(options?: {
   tags?: string[];

@@ -1,9 +1,8 @@
-import type { SpooshResponse } from "../types/response.types";
-import type { StateManager } from "../state/manager";
-import type { EventEmitter } from "../events/emitter";
-import type { InstancePluginExecutor } from "../plugins/types";
-import type { HttpMethod } from "../types/common.types";
-
+import type { SpooshResponse } from "../../types/response.types";
+import type { StateManager } from "../../state/manager";
+import type { EventEmitter } from "../../events/emitter";
+import type { InstancePluginExecutor } from "../../plugins/types";
+import type { HttpMethod } from "../../types/common.types";
 import type {
   QueueController,
   QueueControllerConfig,
