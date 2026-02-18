@@ -103,13 +103,6 @@ export function createUseInfiniteRead<
       body: requestOptions?.body,
     };
 
-    const baseOptionsForKey = {
-      ...(capturedCall.options as object),
-      query: undefined,
-      params: undefined,
-      body: undefined,
-    };
-
     const resolvedPath = resolvePath(pathSegments, requestOptions?.params);
     const resolvedTags = resolveTags({ tags }, resolvedPath);
 
@@ -170,7 +163,6 @@ export function createUseInfiniteRead<
           method: capturedCall.method as "GET",
           tags: resolvedTags,
           initialRequest,
-          baseOptionsForKey,
           canFetchNext: canFetchNext
             ? (ctx) => canFetchNextRef.current?.(ctx) ?? false
             : undefined,

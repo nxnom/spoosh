@@ -225,13 +225,6 @@ export function createInjectInfiniteRead<
           }
         | undefined;
 
-      const baseOptionsForKey = {
-        ...(capturedCall.options as object),
-        query: undefined,
-        params: undefined,
-        body: undefined,
-      };
-
       const initialRequest: InfiniteRequestOptions = {
         query: requestOptions?.query,
         params: requestOptions?.params,
@@ -248,7 +241,6 @@ export function createInjectInfiniteRead<
         method: capturedCall.method as "GET",
         tags: resolvedTags,
         initialRequest,
-        baseOptionsForKey,
         canFetchNext: canFetchNext
           ? (ctx: PageContext<TData, TRequest>) =>
               callbackRefs.canFetchNext?.(ctx) ?? false

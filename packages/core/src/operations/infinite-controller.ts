@@ -55,8 +55,6 @@ export type CreateInfiniteReadOptions<TData, TItem, TError, TRequest> = {
   method: HttpMethod;
   tags: string[];
   initialRequest: InfiniteRequestOptions;
-  baseOptionsForKey: object;
-
   canFetchNext?: (ctx: PageContext<TData, TRequest>) => boolean;
   canFetchPrev?: (ctx: PageContext<TData, TRequest>) => boolean;
   nextPageRequest?: (ctx: PageContext<TData, TRequest>) => Partial<TRequest>;
@@ -74,20 +72,6 @@ export type CreateInfiniteReadOptions<TData, TItem, TError, TRequest> = {
   /** Unique identifier for the hook instance. Persists across queryKey changes. */
   instanceId?: string;
 };
-
-function createPageKey(
-  path: string,
-  method: string,
-  baseOptions: object,
-  pageRequest: InfiniteRequestOptions
-): string {
-  return JSON.stringify({
-    path,
-    method,
-    baseOptions,
-    pageRequest,
-  });
-}
 
 function shallowMergeRequest(
   initial: InfiniteRequestOptions,
@@ -158,7 +142,6 @@ export function createInfiniteReadController<
     method,
     tags,
     initialRequest,
-    baseOptionsForKey,
     canFetchNext = () => false,
     canFetchPrev,
     nextPageRequest = () => ({}) as Partial<TRequest>,
@@ -292,12 +275,11 @@ export function createInfiniteReadController<
       activeInitialRequest,
       requestOverride
     );
-    const pageKey = createPageKey(
+    const pageKey = stateManager.createQueryKey({
       path,
       method,
-      baseOptionsForKey,
-      mergedRequest
-    );
+      options: mergedRequest,
+    });
 
     const pendingPromise = stateManager.getPendingPromise(pageKey);
 
@@ -491,13 +473,13 @@ export function createInfiniteReadController<
         stateManager.setPendingPromise(key, undefined);
       }
 
-      // When force: true, delete ALL caches with the same path (selfTag)
-      // This ensures all search variations are cleared, not just current pageKeys
+      // When force: true, mark ALL caches with the same path as stale
+      // This ensures all search variations will refetch, not just current pageKeys
       if (force) {
         const allPathCaches = stateManager.getCacheEntriesBySelfTag(path);
 
         for (const { key } of allPathCaches) {
-          stateManager.deleteCache(key);
+          stateManager.setCache(key, { stale: true });
         }
       }
 
@@ -513,12 +495,11 @@ export function createInfiniteReadController<
         activeInitialRequest = initialRequest;
       }
 
-      const newFirstPageKey = createPageKey(
+      const newFirstPageKey = stateManager.createQueryKey({
         path,
         method,
-        baseOptionsForKey,
-        activeInitialRequest
-      );
+        options: activeInitialRequest,
+      });
 
       // Reset local state for new fetch
       pageSubscriptions.forEach((unsub) => unsub());
@@ -617,12 +598,11 @@ export function createInfiniteReadController<
       cachedState = computeState();
       subscribeToPages();
 
-      const firstPageKey = createPageKey(
+      const firstPageKey = stateManager.createQueryKey({
         path,
         method,
-        baseOptionsForKey,
-        initialRequest
-      );
+        options: initialRequest,
+      });
 
       const context = createContext(firstPageKey, initialRequest);
       pluginExecutor.executeLifecycle("onMount", "infiniteRead", context);
@@ -637,12 +617,11 @@ export function createInfiniteReadController<
     },
 
     unmount() {
-      const firstPageKey = createPageKey(
+      const firstPageKey = stateManager.createQueryKey({
         path,
         method,
-        baseOptionsForKey,
-        initialRequest
-      );
+        options: initialRequest,
+      });
 
       const context = createContext(firstPageKey, initialRequest);
       pluginExecutor.executeLifecycle("onUnmount", "infiniteRead", context);
@@ -654,12 +633,11 @@ export function createInfiniteReadController<
     },
 
     update(previousContext) {
-      const firstPageKey = createPageKey(
+      const firstPageKey = stateManager.createQueryKey({
         path,
         method,
-        baseOptionsForKey,
-        initialRequest
-      );
+        options: initialRequest,
+      });
 
       const context = createContext(firstPageKey, initialRequest);
       pluginExecutor.executeUpdateLifecycle(
@@ -670,12 +648,11 @@ export function createInfiniteReadController<
     },
 
     getContext() {
-      const firstPageKey = createPageKey(
+      const firstPageKey = stateManager.createQueryKey({
         path,
         method,
-        baseOptionsForKey,
-        initialRequest
-      );
+        options: initialRequest,
+      });
 
       return createContext(firstPageKey, initialRequest);
     },

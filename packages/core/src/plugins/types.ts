@@ -26,6 +26,7 @@ export type CacheEntry<TData = unknown, TError = unknown> = {
 
   /** The original path-derived tag (e.g., "posts/1/comments"). Used for exact matching in cache */
   selfTag?: string;
+
   previousData?: TData;
 
   /** Cache was invalidated while no subscriber was listening. Triggers refetch on next mount. */
