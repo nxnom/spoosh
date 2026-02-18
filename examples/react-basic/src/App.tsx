@@ -20,13 +20,13 @@ export function App() {
   const activity = useInfiniteRead(
     (api) => api("activities").GET({ query: { cursor: 0, limit: 6 } }),
     {
-      canFetchNext: ({ response }) => response?.nextCursor != null,
-      nextPageRequest: ({ response }) => ({
-        query: { cursor: response?.nextCursor ?? 0, limit: 6 },
+      canFetchNext: ({ lastPage }) => lastPage?.data?.nextCursor != null,
+      nextPageRequest: ({ lastPage }) => ({
+        query: { cursor: lastPage?.data?.nextCursor ?? 0, limit: 6 },
       }),
-      merger: (allResponses) =>
-        allResponses.flatMap((page) =>
-          Array.isArray(page?.items) ? page.items : []
+      merger: (pages) =>
+        pages.flatMap((page) =>
+          Array.isArray(page.data?.items) ? page.data.items : []
         ),
     }
   );

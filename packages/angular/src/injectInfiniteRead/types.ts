@@ -5,33 +5,11 @@ import type {
   ExtractTriggerQuery,
   ExtractTriggerBody,
   ExtractTriggerParams,
+  InfinitePage,
+  InfiniteNextContext,
+  InfinitePrevContext,
 } from "@spoosh/core";
 import type { EnabledOption } from "../types/shared";
-
-/**
- * Context passed to pagination callbacks (`canFetchNext`, `nextPageRequest`, etc.).
- *
- * For next-page callbacks: `response` and `request` refer to the **last** (most recent) page.
- * For prev-page callbacks: `response` and `request` refer to the **first** (earliest) page.
- */
-export type PageContext<TData, TRequest> = {
-  /**
-   * The relevant page's response data.
-   * - For `canFetchNext`/`nextPageRequest`: the last page's response
-   * - For `canFetchPrev`/`prevPageRequest`: the first page's response
-   */
-  response: TData | undefined;
-
-  /** All responses fetched so far, ordered from first to last page */
-  allResponses: TData[];
-
-  /**
-   * The request options used to fetch the relevant page.
-   * - For `canFetchNext`/`nextPageRequest`: the last page's request
-   * - For `canFetchPrev`/`prevPageRequest`: the first page's request
-   */
-  request: TRequest;
-};
 
 type TriggerAwaitedReturn<T> = T extends (...args: never[]) => infer R
   ? Awaited<R>
@@ -54,31 +32,46 @@ export type InfiniteTriggerOptions<TReadFn> =
           BaseTriggerOptions
     : BaseTriggerOptions;
 
+/**
+ * Options for `injectInfiniteRead`.
+ *
+ * @template TData - The response data type for each page
+ * @template TItem - The item type after merging all pages
+ * @template TError - The error type
+ * @template TRequest - The request options type
+ * @template TMeta - Plugin metadata type
+ */
 export interface BaseInfiniteReadOptions<
   TData,
   TItem,
-  TRequest,
+  TError = unknown,
+  TRequest = object,
+  TMeta = Record<string, unknown>,
 > extends TagOptions {
   enabled?: EnabledOption;
 
   /**
    * Callback to determine if there's a next page to fetch.
-   * Receives the last page's response to check for pagination indicators.
+   * Receives the last page to check for pagination indicators.
    * Default: `() => false` (no next page fetching)
    *
    * @example
    * ```ts
-   * canFetchNext: ({ response }) => response?.nextCursor != null
+   * canFetchNext: ({ lastPage }) => lastPage?.data?.nextCursor != null
    * ```
    */
-  canFetchNext?: (ctx: PageContext<TData, TRequest>) => boolean;
+  canFetchNext?: (
+    ctx: InfiniteNextContext<TData, TError, TRequest, TMeta>
+  ) => boolean;
 
   /**
    * Callback to determine if there's a previous page to fetch.
-   * Receives the first page's response to check for pagination indicators.
+   * Receives the first page to check for pagination indicators.
    * Default: `() => false` (no previous page fetching)
    */
-  canFetchPrev?: (ctx: PageContext<TData, TRequest>) => boolean;
+  canFetchPrev?: (
+    ctx: InfinitePrevContext<TData, TError, TRequest, TMeta>
+  ) => boolean;
 
   /**
    * Callback to build the request options for the next page.
@@ -89,23 +82,43 @@ export interface BaseInfiniteReadOptions<
    * ```ts
    * // Initial: { query: { cursor: 0, limit: 10 } }
    * // Only return cursor - limit is preserved automatically
-   * nextPageRequest: ({ response }) => ({
-   *   query: { cursor: response?.nextCursor }
+   * nextPageRequest: ({ lastPage }) => ({
+   *   query: { cursor: lastPage?.data?.nextCursor }
    * })
    * ```
    */
-  nextPageRequest?: (ctx: PageContext<TData, TRequest>) => Partial<TRequest>;
+  nextPageRequest?: (
+    ctx: InfiniteNextContext<TData, TError, TRequest, TMeta>
+  ) => Partial<TRequest>;
 
   /**
    * Callback to build the request options for the previous page.
    * Return only the fields that change - they will be **merged** with the initial request.
    */
-  prevPageRequest?: (ctx: PageContext<TData, TRequest>) => Partial<TRequest>;
+  prevPageRequest?: (
+    ctx: InfinitePrevContext<TData, TError, TRequest, TMeta>
+  ) => Partial<TRequest>;
 
-  /** Callback to merge all responses into a single array of items */
-  merger: (responses: TData[]) => TItem[];
+  /**
+   * Callback to merge all pages into a single array of items.
+   *
+   * @example
+   * ```ts
+   * merger: (pages) => pages.flatMap(p => p.data?.items ?? [])
+   * ```
+   */
+  merger: (pages: InfinitePage<TData, TError, TMeta>[]) => TItem[];
 }
 
+/**
+ * Result returned by `injectInfiniteRead`.
+ *
+ * @template TData - The response data type for each page
+ * @template TError - The error type
+ * @template TItem - The item type after merging all pages
+ * @template TPluginResult - Plugin-provided result fields
+ * @template TTriggerOptions - Options that can be passed to trigger()
+ */
 export interface BaseInfiniteReadResult<
   TData,
   TError,
@@ -113,19 +126,43 @@ export interface BaseInfiniteReadResult<
   TPluginResult = Record<string, unknown>,
   TTriggerOptions = object,
 > {
+  /** Merged items from all fetched pages */
   data: Signal<TItem[] | undefined>;
-  allResponses: Signal<TData[] | undefined>;
+
+  /** Array of all pages with status, data, error, and meta per page */
+  pages: Signal<InfinitePage<TData, TError, TPluginResult>[]>;
+
+  /** Error from the last failed request */
   error: Signal<TError | undefined>;
+
+  /** True during the initial load (no data yet) */
   loading: Signal<boolean>;
+
+  /** True during any fetch operation */
   fetching: Signal<boolean>;
+
+  /** True while fetching the next page */
   fetchingNext: Signal<boolean>;
+
+  /** True while fetching the previous page */
   fetchingPrev: Signal<boolean>;
+
+  /** Whether there's a next page available to fetch */
   canFetchNext: Signal<boolean>;
+
+  /** Whether there's a previous page available to fetch */
   canFetchPrev: Signal<boolean>;
-  meta: Signal<TPluginResult>;
+
+  /** Fetch the next page */
   fetchNext: () => Promise<void>;
+
+  /** Fetch the previous page */
   fetchPrev: () => Promise<void>;
+
+  /** Trigger refetch of all pages from the beginning, optionally with new request options */
   trigger: (options?: TTriggerOptions) => Promise<void>;
+
+  /** Abort the current fetch operation */
   abort: () => void;
 }
 

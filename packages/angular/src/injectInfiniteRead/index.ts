@@ -18,6 +18,9 @@ import {
   type ResolveTypes,
   type ResolverContext,
   type PluginContext,
+  type InfiniteNextContext,
+  type InfinitePrevContext,
+  type InfinitePage,
   createInfiniteReadController,
   createSelectorProxy,
   resolvePath,
@@ -27,7 +30,6 @@ import type {
   BaseInfiniteReadOptions,
   BaseInfiniteReadResult,
   InfiniteReadApiClient as ReadApiClient,
-  PageContext,
   InfiniteTriggerOptions,
 } from "./types";
 import type { SpooshInstanceShape } from "../types/shared";
@@ -75,7 +77,9 @@ export function createInjectInfiniteRead<
     readOptions: BaseInfiniteReadOptions<
       ExtractData<TReadFn>,
       TItem,
-      TRequest
+      InferError<ExtractError<TReadFn>>,
+      TRequest,
+      PluginResults["read"]
     > &
       ResolveTypes<
         PluginOptions["read"],
@@ -147,17 +151,24 @@ export function createInjectInfiniteRead<
     const instanceId = `angular-${Math.random().toString(36).slice(2)}`;
 
     const dataSignal = signal<TItem[] | undefined>(undefined);
-    const allResponsesSignal = signal<TData[] | undefined>(undefined);
+    const pagesSignal = signal<
+      InfinitePage<TData, TError, PluginResults["read"]>[]
+    >([]);
     const errorSignal = signal<TError | undefined>(undefined);
     const loadingSignal = signal(false);
     const canFetchNextSignal = signal(false);
     const canFetchPrevSignal = signal(false);
-    const metaSignal = signal<Record<string, unknown>>({});
     const fetchingNextSignal = signal(false);
     const fetchingPrevSignal = signal(false);
 
     let currentController: ReturnType<
-      typeof createInfiniteReadController<TData, TItem, TError, TRequest>
+      typeof createInfiniteReadController<
+        TData,
+        TItem,
+        TError,
+        TRequest,
+        PluginResults["read"]
+      >
     > | null = null;
     let currentQueryKey: string | null = null;
     let currentSubscription: (() => void) | null = null;
@@ -172,7 +183,9 @@ export function createInjectInfiniteRead<
 
       const state = currentController.getState();
       dataSignal.set(state.data);
-      allResponsesSignal.set(state.allResponses);
+      pagesSignal.set(
+        state.pages as InfinitePage<TData, TError, PluginResults["read"]>[]
+      );
       errorSignal.set(state.error);
       canFetchNextSignal.set(state.canFetchNext);
       canFetchPrevSignal.set(state.canFetchPrev);
@@ -235,30 +248,55 @@ export function createInjectInfiniteRead<
         TData,
         TItem,
         TError,
-        TRequest
+        TRequest,
+        PluginResults["read"]
       >({
         path: capturedCall.path,
         method: capturedCall.method as "GET",
         tags: resolvedTags,
         initialRequest,
         canFetchNext: canFetchNext
-          ? (ctx: PageContext<TData, TRequest>) =>
-              callbackRefs.canFetchNext?.(ctx) ?? false
+          ? (
+              ctx: InfiniteNextContext<
+                TData,
+                TError,
+                TRequest,
+                PluginResults["read"]
+              >
+            ) => callbackRefs.canFetchNext?.(ctx) ?? false
           : undefined,
         canFetchPrev: canFetchPrev
-          ? (ctx: PageContext<TData, TRequest>) =>
-              callbackRefs.canFetchPrev?.(ctx) ?? false
+          ? (
+              ctx: InfinitePrevContext<
+                TData,
+                TError,
+                TRequest,
+                PluginResults["read"]
+              >
+            ) => callbackRefs.canFetchPrev?.(ctx) ?? false
           : undefined,
         nextPageRequest: nextPageRequest
-          ? (ctx: PageContext<TData, TRequest>) =>
-              callbackRefs.nextPageRequest?.(ctx) ?? {}
+          ? (
+              ctx: InfiniteNextContext<
+                TData,
+                TError,
+                TRequest,
+                PluginResults["read"]
+              >
+            ) => callbackRefs.nextPageRequest?.(ctx) ?? {}
           : undefined,
         prevPageRequest: prevPageRequest
-          ? (ctx: PageContext<TData, TRequest>) =>
-              callbackRefs.prevPageRequest?.(ctx) ?? {}
+          ? (
+              ctx: InfinitePrevContext<
+                TData,
+                TError,
+                TRequest,
+                PluginResults["read"]
+              >
+            ) => callbackRefs.prevPageRequest?.(ctx) ?? {}
           : undefined,
-        merger: (responses: TData[]) =>
-          callbackRefs.merger(responses) as TItem[],
+        merger: (pages: InfinitePage<TData, TError, PluginResults["read"]>[]) =>
+          callbackRefs.merger(pages) as TItem[],
         stateManager,
         eventEmitter,
         pluginExecutor,
@@ -289,14 +327,12 @@ export function createInjectInfiniteRead<
       currentSubscription = controller.subscribe(() => {
         const state = controller.getState();
         dataSignal.set(state.data);
-        allResponsesSignal.set(state.allResponses);
+        pagesSignal.set(
+          state.pages as InfinitePage<TData, TError, PluginResults["read"]>[]
+        );
         errorSignal.set(state.error);
         canFetchNextSignal.set(state.canFetchNext);
         canFetchPrevSignal.set(state.canFetchPrev);
-
-        const entry = stateManager.getCache(queryKey);
-        const newMeta = entry?.meta ? Object.fromEntries(entry.meta) : {};
-        metaSignal.set(newMeta);
       });
 
       currentController = controller;
@@ -525,9 +561,10 @@ export function createInjectInfiniteRead<
     );
 
     const result = {
-      meta: metaSignal as unknown as Signal<PluginResults["read"]>,
       data: dataSignal as Signal<TItem[] | undefined>,
-      allResponses: allResponsesSignal as Signal<TData[] | undefined>,
+      pages: pagesSignal as Signal<
+        InfinitePage<TData, TError, PluginResults["read"]>[]
+      >,
       error: errorSignal as Signal<TError | undefined>,
       loading: loadingSignal,
       fetching: fetchingSignal,

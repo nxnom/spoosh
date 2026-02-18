@@ -30,7 +30,6 @@ export type {
 export type {
   BaseInfiniteReadOptions,
   BaseInfiniteReadResult,
-  PageContext,
   InfiniteReadApiClient,
   InfiniteTriggerOptions,
 } from "./injectInfiniteRead/types";

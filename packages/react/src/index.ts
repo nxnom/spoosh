@@ -20,8 +20,6 @@ export type {
   BaseInfiniteReadResult,
   BaseInfiniteReadOptions,
   InfiniteReadApiClient,
-  InfiniteNextContext,
-  InfinitePrevContext,
   InfiniteTriggerOptions,
 } from "./useInfiniteRead/types";
 export type {

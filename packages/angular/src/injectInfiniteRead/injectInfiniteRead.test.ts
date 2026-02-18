@@ -177,20 +177,21 @@ describe("injectInfiniteRead", () => {
   });
 
   describe("Basic Functionality", () => {
-    it("should return data, loading, and allResponses signals", async () => {
+    it("should return data, loading, and pages signals", async () => {
       const { injectInfiniteRead } = createTestHooks();
 
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       expect(result.loading).toBeDefined();
       expect(result.data).toBeDefined();
-      expect(result.allResponses).toBeDefined();
+      expect(result.pages).toBeDefined();
 
       await flushPromises();
     });
@@ -199,15 +200,17 @@ describe("injectInfiniteRead", () => {
       const { injectInfiniteRead } = createTestHooks();
 
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
-        canFetchPrev: (ctx: any) => ctx.response?.prevCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
+        canFetchPrev: (ctx: any) =>
+          ctx.firstPage?.data?.prevCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
         prevPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.prevCursor },
+          query: { cursor: ctx.firstPage?.data?.prevCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       expect(result.canFetchNext).toBeDefined();
@@ -220,11 +223,12 @@ describe("injectInfiniteRead", () => {
       const { injectInfiniteRead } = createTestHooks();
 
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       expect(typeof result.fetchNext).toBe("function");
@@ -239,11 +243,12 @@ describe("injectInfiniteRead", () => {
       const { injectInfiniteRead, calls } = createTestHooks();
 
       injectInfiniteRead((api: any) => api("/posts").GET(), {
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await flushPromises();
@@ -257,11 +262,12 @@ describe("injectInfiniteRead", () => {
       const { injectInfiniteRead, calls } = createTestHooks();
 
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await flushPromises();
@@ -283,15 +289,17 @@ describe("injectInfiniteRead", () => {
             query: { cursor: "2" },
           }),
         {
-          canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
-          canFetchPrev: (ctx: any) => ctx.response?.prevCursor !== undefined,
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          canFetchPrev: (ctx: any) =>
+            ctx.firstPage?.data?.prevCursor !== undefined,
           nextPageRequest: (ctx: any) => ({
-            query: { cursor: ctx.response?.nextCursor },
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
           }),
           prevPageRequest: (ctx: any) => ({
-            query: { cursor: ctx.response?.prevCursor },
+            query: { cursor: ctx.firstPage?.data?.prevCursor },
           }),
-          merger: (responses: any[]) => responses.flatMap((r) => r.items),
+          merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
         }
       );
 
@@ -309,11 +317,12 @@ describe("injectInfiniteRead", () => {
       const { injectInfiniteRead } = createTestHooks();
 
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await waitFor(() => result.data() !== undefined);
@@ -337,11 +346,12 @@ describe("injectInfiniteRead", () => {
       const { injectInfiniteRead } = createTestHooks();
 
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await flushPromises();
@@ -361,15 +371,17 @@ describe("injectInfiniteRead", () => {
             query: { cursor: "2" },
           }),
         {
-          canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
-          canFetchPrev: (ctx: any) => ctx.response?.prevCursor !== undefined,
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          canFetchPrev: (ctx: any) =>
+            ctx.firstPage?.data?.prevCursor !== undefined,
           nextPageRequest: (ctx: any) => ({
-            query: { cursor: ctx.response?.nextCursor },
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
           }),
           prevPageRequest: (ctx: any) => ({
-            query: { cursor: ctx.response?.prevCursor },
+            query: { cursor: ctx.firstPage?.data?.prevCursor },
           }),
-          merger: (responses: any[]) => responses.flatMap((r) => r.items),
+          merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
         }
       );
 
@@ -385,11 +397,12 @@ describe("injectInfiniteRead", () => {
       const { injectInfiniteRead } = createTestHooks();
 
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await waitFor(() => result.data() !== undefined);
@@ -408,9 +421,9 @@ describe("injectInfiniteRead", () => {
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
         canFetchNext: canFetchNextFn,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await waitFor(() => result.data() !== undefined);
@@ -423,15 +436,16 @@ describe("injectInfiniteRead", () => {
       const canFetchPrevFn = vi.fn(() => false);
 
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         canFetchPrev: canFetchPrevFn,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
         prevPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.prevCursor },
+          query: { cursor: ctx.firstPage?.data?.prevCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await waitFor(() => result.data() !== undefined);
@@ -443,11 +457,15 @@ describe("injectInfiniteRead", () => {
       const { injectInfiniteRead, calls } = createTestHooks();
 
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor, customParam: "test" },
+          query: {
+            cursor: ctx.lastPage?.data?.nextCursor,
+            customParam: "test",
+          },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await waitFor(() => result.data() !== undefined);
@@ -471,18 +489,20 @@ describe("injectInfiniteRead", () => {
             query: { cursor: "2" },
           }),
         {
-          canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
-          canFetchPrev: (ctx: any) => ctx.response?.prevCursor !== undefined,
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          canFetchPrev: (ctx: any) =>
+            ctx.firstPage?.data?.prevCursor !== undefined,
           nextPageRequest: (ctx: any) => ({
-            query: { cursor: ctx.response?.nextCursor },
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
           }),
           prevPageRequest: (ctx: any) => ({
             query: {
-              cursor: ctx.response?.prevCursor,
+              cursor: ctx.firstPage?.data?.prevCursor,
               customPrevParam: "prevTest",
             },
           }),
-          merger: (responses: any[]) => responses.flatMap((r) => r.items),
+          merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
         }
       );
 
@@ -531,7 +551,7 @@ describe("injectInfiniteRead", () => {
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
         canFetchNext: () => false,
         nextPageRequest: () => ({}),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await flushPromises();
@@ -546,11 +566,12 @@ describe("injectInfiniteRead", () => {
 
       injectInfiniteRead((api: any) => api("/posts").GET(), {
         tags: ["posts"],
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await flushPromises();
@@ -569,11 +590,12 @@ describe("injectInfiniteRead", () => {
 
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
         tags: ["posts"],
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await flushPromises();
@@ -592,11 +614,12 @@ describe("injectInfiniteRead", () => {
       const { injectInfiniteRead, eventEmitter, calls } = createTestHooks();
 
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await flushPromises();
@@ -618,11 +641,12 @@ describe("injectInfiniteRead", () => {
 
       injectInfiniteRead((api: any) => api("/posts").GET(), {
         enabled: false,
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await flushPromises();
@@ -635,11 +659,12 @@ describe("injectInfiniteRead", () => {
       const { injectInfiniteRead, calls } = createTestHooks();
 
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await waitFor(() => result.data() !== undefined);
@@ -658,11 +683,12 @@ describe("injectInfiniteRead", () => {
       const { injectInfiniteRead } = createTestHooks();
 
       const result = injectInfiniteRead((api: any) => api("/posts").GET(), {
-        canFetchNext: (ctx: any) => ctx.response?.nextCursor !== undefined,
+        canFetchNext: (ctx: any) =>
+          ctx.lastPage?.data?.nextCursor !== undefined,
         nextPageRequest: (ctx: any) => ({
-          query: { cursor: ctx.response?.nextCursor },
+          query: { cursor: ctx.lastPage?.data?.nextCursor },
         }),
-        merger: (responses: any[]) => responses.flatMap((r) => r.items),
+        merger: (pages: any[]) => pages.flatMap((p) => p.data?.items ?? []),
       });
 
       await flushPromises();

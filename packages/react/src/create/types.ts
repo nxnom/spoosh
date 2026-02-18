@@ -325,16 +325,16 @@ export type SpooshReactHooks<
    *
    * @param readFn - Function that selects the API endpoint to call
    * @param readOptions - Configuration including `canFetchNext`, `nextPageRequest`, `merger`, and optional `canFetchPrev`/`prevPageRequest`
-   * @returns Object containing `data`, `allResponses`, `fetchNext`, `fetchPrev`, `canFetchNext`, `canFetchPrev`, `loading`, `fetching`, and pagination states
+   * @returns Object containing `data`, `pages`, `fetchNext`, `fetchPrev`, `canFetchNext`, `canFetchPrev`, `loading`, `fetching`, and pagination states
    *
    * @example
    * ```tsx
    * const { data, fetchNext, canFetchNext, loading } = useInfiniteRead(
    *   (api) => api("posts").GET(),
    *   {
-   *     canFetchNext: ({ response }) => !!response?.nextCursor,
-   *     nextPageRequest: ({ response }) => ({ query: { cursor: response?.nextCursor } }),
-   *     merger: (responses) => responses.flatMap(r => r.items)
+   *     canFetchNext: ({ lastPage }) => !!lastPage?.data?.nextCursor,
+   *     nextPageRequest: ({ lastPage }) => ({ query: { cursor: lastPage?.data?.nextCursor } }),
+   *     merger: (pages) => pages.flatMap(p => p.data?.items ?? [])
    *   }
    * );
    * ```

@@ -103,11 +103,11 @@ function PostFeed() {
   const { data, loading, abort, fetchNext } = useInfiniteRead(
     (api) => api("posts").GET({ query: { limit: 20 } }),
     {
-      canFetchNext: ({ response }) => !!response?.nextCursor,
-      nextPageRequest: ({ response }) => ({
-        query: { cursor: response?.nextCursor },
+      canFetchNext: ({ lastPage }) => !!lastPage?.data?.nextCursor,
+      nextPageRequest: ({ lastPage }) => ({
+        query: { cursor: lastPage?.data?.nextCursor },
       }),
-      merger: (allResponses) => allResponses.flatMap((r) => r.items),
+      merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
     }
   );
 

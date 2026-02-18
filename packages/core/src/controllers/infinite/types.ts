@@ -11,9 +11,30 @@ export type InfiniteRequestOptions = {
   body?: unknown;
 };
 
-export type PageContext<TData, TRequest = InfiniteRequestOptions> = {
-  response: TData | undefined;
-  allResponses: TData[];
+export type InfinitePageStatus =
+  | "pending"
+  | "loading"
+  | "success"
+  | "error"
+  | "stale";
+
+export interface InfinitePage<TData, TError, TMeta> {
+  status: InfinitePageStatus;
+  data?: TData;
+  error?: TError;
+  meta?: TMeta;
+  input?: InfiniteRequestOptions;
+}
+
+export type InfiniteNextContext<TData, TError, TRequest, TMeta> = {
+  lastPage: InfinitePage<TData, TError, TMeta> | undefined;
+  pages: InfinitePage<TData, TError, TMeta>[];
+  request: TRequest;
+};
+
+export type InfinitePrevContext<TData, TError, TRequest, TMeta> = {
+  firstPage: InfinitePage<TData, TError, TMeta> | undefined;
+  pages: InfinitePage<TData, TError, TMeta>[];
   request: TRequest;
 };
 
@@ -24,17 +45,26 @@ export type InfiniteTriggerOptions = Partial<InfiniteRequestOptions> & {
   force?: boolean;
 };
 
-export type InfiniteReadState<TData, TItem, TError> = {
+export type InfiniteReadState<
+  TData,
+  TItem,
+  TError,
+  TMeta = Record<string, unknown>,
+> = {
   data: TItem[] | undefined;
-  allResponses: TData[] | undefined;
-  allRequests: InfiniteRequestOptions[] | undefined;
+  pages: InfinitePage<TData, TError, TMeta>[];
   canFetchNext: boolean;
   canFetchPrev: boolean;
   error: TError | undefined;
 };
 
-export type InfiniteReadController<TData, TItem, TError> = {
-  getState: () => InfiniteReadState<TData, TItem, TError>;
+export type InfiniteReadController<
+  TData,
+  TItem,
+  TError,
+  TMeta = Record<string, unknown>,
+> = {
+  getState: () => InfiniteReadState<TData, TItem, TError, TMeta>;
   getFetchingDirection: () => FetchDirection | null;
   subscribe: (callback: () => void) => () => void;
 
@@ -50,16 +80,30 @@ export type InfiniteReadController<TData, TItem, TError> = {
   setPluginOptions: (options: unknown) => void;
 };
 
-export type CreateInfiniteReadOptions<TData, TItem, TError, TRequest> = {
+export type CreateInfiniteReadOptions<
+  TData,
+  TItem,
+  TError,
+  TRequest,
+  TMeta = Record<string, unknown>,
+> = {
   path: string;
   method: HttpMethod;
   tags: string[];
   initialRequest: InfiniteRequestOptions;
-  canFetchNext?: (ctx: PageContext<TData, TRequest>) => boolean;
-  canFetchPrev?: (ctx: PageContext<TData, TRequest>) => boolean;
-  nextPageRequest?: (ctx: PageContext<TData, TRequest>) => Partial<TRequest>;
-  prevPageRequest?: (ctx: PageContext<TData, TRequest>) => Partial<TRequest>;
-  merger: (responses: TData[]) => TItem[];
+  canFetchNext?: (
+    ctx: InfiniteNextContext<TData, TError, TRequest, TMeta>
+  ) => boolean;
+  canFetchPrev?: (
+    ctx: InfinitePrevContext<TData, TError, TRequest, TMeta>
+  ) => boolean;
+  nextPageRequest?: (
+    ctx: InfiniteNextContext<TData, TError, TRequest, TMeta>
+  ) => Partial<TRequest>;
+  prevPageRequest?: (
+    ctx: InfinitePrevContext<TData, TError, TRequest, TMeta>
+  ) => Partial<TRequest>;
+  merger: (pages: InfinitePage<TData, TError, TMeta>[]) => TItem[];
 
   stateManager: StateManager;
   eventEmitter: EventEmitter;

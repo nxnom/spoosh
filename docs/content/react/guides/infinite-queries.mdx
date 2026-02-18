@@ -29,11 +29,11 @@ You map those fields in the options:
 const { data, canFetchNext, fetchNext, fetchingNext } = useInfiniteRead(
   (api) => api("posts").GET({ query: { page: 1, limit: 20 } }),
   {
-    canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
-    nextPageRequest: ({ response }) => ({
-      query: { page: (response?.meta.page ?? 0) + 1 },
+    canFetchNext: ({ lastPage }) => lastPage?.data?.meta.hasMore ?? false,
+    nextPageRequest: ({ lastPage }) => ({
+      query: { page: (lastPage?.data?.meta.page ?? 0) + 1 },
     }),
-    merger: (allResponses) => allResponses.flatMap((r) => r.items),
+    merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
   }
 );
 ```
@@ -42,27 +42,27 @@ Since the original request already has `{ page: 1, limit: 20 }`, returning `{ qu
 
 ### The `merger` Function
 
-As pages load, each raw response is collected into an array. The `merger` function receives all raw responses and combines them into a single flat list that `data` returns:
+As pages load, each page is collected into an array. The `merger` function receives all pages and combines them into a single flat list that `data` returns:
 
 ```typescript
-// After loading 3 pages, allResponses contains:
+// After loading 3 pages, pages contains:
 // [
-//   { items: [{id:1}, {id:2}], meta: {page:1, hasMore:true} },
-//   { items: [{id:3}, {id:4}], meta: {page:2, hasMore:true} },
-//   { items: [{id:5}],         meta: {page:3, hasMore:false} },
+//   { status: "success", data: { items: [{id:1}, {id:2}], meta: {page:1, hasMore:true} } },
+//   { status: "success", data: { items: [{id:3}, {id:4}], meta: {page:2, hasMore:true} } },
+//   { status: "success", data: { items: [{id:5}],         meta: {page:3, hasMore:false} } },
 // ]
 
-merger: (allResponses) => allResponses.flatMap((r) => r.items),
+merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
 // data → [{id:1}, {id:2}, {id:3}, {id:4}, {id:5}]
 ```
 
-If you need access to the raw responses (e.g., for page metadata), use `allResponses` from the hook return:
+If you need access to the raw pages (e.g., for page metadata or per-page status), use `pages` from the hook return:
 
 ```typescript
-const { data, allResponses } = useInfiniteRead(...);
+const { data, pages } = useInfiniteRead(...);
 
-// data        → merged flat list from merger()
-// allResponses → array of raw API responses per page
+// data  → merged flat list from merger()
+// pages → array of page objects with status, data, error, and meta
 ```
 
 ## Basic Setup
@@ -73,11 +73,11 @@ function PostFeed() {
     useInfiniteRead(
       (api) => api("posts").GET({ query: { page: 1, limit: 20 } }),
       {
-        canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
-        nextPageRequest: ({ response }) => ({
-          query: { page: (response?.meta.page ?? 0) + 1 },
+        canFetchNext: ({ lastPage }) => lastPage?.data?.meta.hasMore ?? false,
+        nextPageRequest: ({ lastPage }) => ({
+          query: { page: (lastPage?.data?.meta.page ?? 0) + 1 },
         }),
-        merger: (allResponses) => allResponses.flatMap((r) => r.items),
+        merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
       }
     );
 
@@ -111,11 +111,11 @@ function InfinitePostFeed() {
     useInfiniteRead(
       (api) => api("posts").GET({ query: { page: 1, limit: 20 } }),
       {
-        canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
-        nextPageRequest: ({ response }) => ({
-          query: { page: (response?.meta.page ?? 0) + 1 },
+        canFetchNext: ({ lastPage }) => lastPage?.data?.meta.hasMore ?? false,
+        nextPageRequest: ({ lastPage }) => ({
+          query: { page: (lastPage?.data?.meta.page ?? 0) + 1 },
         }),
-        merger: (allResponses) => allResponses.flatMap((r) => r.items),
+        merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
       }
     );
 
@@ -166,11 +166,11 @@ For APIs that return a cursor instead of page numbers:
 const { data, canFetchNext, fetchNext, fetchingNext } = useInfiniteRead(
   (api) => api("feed").GET({ query: { limit: 20 } }),
   {
-    canFetchNext: ({ response }) => !!response?.nextCursor,
-    nextPageRequest: ({ response }) => ({
-      query: { cursor: response?.nextCursor },
+    canFetchNext: ({ lastPage }) => !!lastPage?.data?.nextCursor,
+    nextPageRequest: ({ lastPage }) => ({
+      query: { cursor: lastPage?.data?.nextCursor },
     }),
-    merger: (allResponses) => allResponses.flatMap((r) => r.items),
+    merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
   }
 );
 ```
@@ -191,15 +191,15 @@ const {
 } = useInfiniteRead(
   (api) => api("messages").GET({ query: { page: 5, limit: 20 } }),
   {
-    canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
-    nextPageRequest: ({ response }) => ({
-      query: { page: (response?.meta.page ?? 0) + 1 },
+    canFetchNext: ({ lastPage }) => lastPage?.data?.meta.hasMore ?? false,
+    nextPageRequest: ({ lastPage }) => ({
+      query: { page: (lastPage?.data?.meta.page ?? 0) + 1 },
     }),
-    canFetchPrev: ({ response }) => (response?.meta.page ?? 1) > 1,
-    prevPageRequest: ({ response }) => ({
-      query: { page: (response?.meta.page ?? 2) - 1 },
+    canFetchPrev: ({ firstPage }) => (firstPage?.data?.meta.page ?? 1) > 1,
+    prevPageRequest: ({ firstPage }) => ({
+      query: { page: (firstPage?.data?.meta.page ?? 2) - 1 },
     }),
-    merger: (allResponses) => allResponses.flatMap((r) => r.messages),
+    merger: (pages) => pages.flatMap((p) => p.data?.messages ?? []),
   }
 );
 ```
@@ -252,11 +252,11 @@ function SearchablePosts() {
     (api) => api("posts").GET({ query: { page: 1, limit: 20 } }),
     {
       enabled: false, // Don't fetch on mount - use trigger instead
-      canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
-      nextPageRequest: ({ response }) => ({
-        query: { page: (response?.meta.page ?? 0) + 1 },
+      canFetchNext: ({ lastPage }) => lastPage?.data?.meta.hasMore ?? false,
+      nextPageRequest: ({ lastPage }) => ({
+        query: { page: (lastPage?.data?.meta.page ?? 0) + 1 },
       }),
-      merger: (allResponses) => allResponses.flatMap((r) => r.items),
+      merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
     }
   );
 
@@ -307,11 +307,11 @@ function FilteredPosts({ category }: { category: string }) {
     // When category changes, this triggers a new fetch automatically
     (api) => api("posts").GET({ query: { page: 1, category } }),
     {
-      canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
-      nextPageRequest: ({ response }) => ({
-        query: { page: (response?.meta.page ?? 0) + 1 },
+      canFetchNext: ({ lastPage }) => lastPage?.data?.meta.hasMore ?? false,
+      nextPageRequest: ({ lastPage }) => ({
+        query: { page: (lastPage?.data?.meta.page ?? 0) + 1 },
       }),
-      merger: (allResponses) => allResponses.flatMap((r) => r.items),
+      merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
     }
   );
 
@@ -358,11 +358,11 @@ Use the `trigger` function without options to reset to the initial request and r
 const { data, trigger } = useInfiniteRead(
   (api) => api("posts").GET({ query: { page: 1, limit: 20 } }),
   {
-    canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
-    nextPageRequest: ({ response }) => ({
-      query: { page: (response?.meta.page ?? 0) + 1 },
+    canFetchNext: ({ lastPage }) => lastPage?.data?.meta.hasMore ?? false,
+    nextPageRequest: ({ lastPage }) => ({
+      query: { page: (lastPage?.data?.meta.page ?? 0) + 1 },
     }),
-    merger: (allResponses) => allResponses.flatMap((r) => r.items),
+    merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
   }
 );
 

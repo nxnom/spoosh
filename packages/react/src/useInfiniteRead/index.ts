@@ -15,6 +15,9 @@ import {
   type PluginContext,
   type InfiniteRequestOptions,
   type SelectorResult,
+  type InfiniteNextContext,
+  type InfinitePrevContext,
+  type InfinitePage,
   createInfiniteReadController,
   createSelectorProxy,
   resolvePath,
@@ -51,7 +54,13 @@ export function createUseInfiniteRead<
     readFn: (
       api: InfiniteReadApiClient<TSchema, TDefaultError>
     ) => Promise<SpooshResponse<TData, TError>>,
-    readOptions: BaseInfiniteReadOptions<TData, TItem, TRequest> &
+    readOptions: BaseInfiniteReadOptions<
+      TData,
+      TItem,
+      TError,
+      TRequest,
+      PluginResults["read"]
+    > &
       PluginOptions["infiniteRead"]
   ): BaseInfiniteReadResult<TData, TError, TItem, PluginResults["read"]> {
     const {
@@ -136,7 +145,13 @@ export function createUseInfiniteRead<
 
     const controllerRef = useRef<{
       controller: ReturnType<
-        typeof createInfiniteReadController<TData, TItem, TError, TRequest>
+        typeof createInfiniteReadController<
+          TData,
+          TItem,
+          TError,
+          TRequest,
+          PluginResults["read"]
+        >
       >;
       queryKey: string;
     } | null>(null);
@@ -157,25 +172,56 @@ export function createUseInfiniteRead<
           TData,
           TItem,
           TError,
-          TRequest
+          TRequest,
+          PluginResults["read"]
         >({
           path: capturedCall.path,
           method: capturedCall.method as "GET",
           tags: resolvedTags,
           initialRequest,
           canFetchNext: canFetchNext
-            ? (ctx) => canFetchNextRef.current?.(ctx) ?? false
+            ? (
+                ctx: InfiniteNextContext<
+                  TData,
+                  TError,
+                  TRequest,
+                  PluginResults["read"]
+                >
+              ) => canFetchNextRef.current?.(ctx) ?? false
             : undefined,
           canFetchPrev: canFetchPrev
-            ? (ctx) => canFetchPrevRef.current?.(ctx) ?? false
+            ? (
+                ctx: InfinitePrevContext<
+                  TData,
+                  TError,
+                  TRequest,
+                  PluginResults["read"]
+                >
+              ) => canFetchPrevRef.current?.(ctx) ?? false
             : undefined,
           nextPageRequest: nextPageRequest
-            ? (ctx) => nextPageRequestRef.current?.(ctx) ?? {}
+            ? (
+                ctx: InfiniteNextContext<
+                  TData,
+                  TError,
+                  TRequest,
+                  PluginResults["read"]
+                >
+              ) => nextPageRequestRef.current?.(ctx) ?? {}
             : undefined,
           prevPageRequest: prevPageRequest
-            ? (ctx) => prevPageRequestRef.current?.(ctx) ?? {}
+            ? (
+                ctx: InfinitePrevContext<
+                  TData,
+                  TError,
+                  TRequest,
+                  PluginResults["read"]
+                >
+              ) => prevPageRequestRef.current?.(ctx) ?? {}
             : undefined,
-          merger: (responses) => mergerRef.current(responses),
+          merger: (
+            pages: InfinitePage<TData, TError, PluginResults["read"]>[]
+          ) => mergerRef.current(pages),
           stateManager,
           eventEmitter,
           pluginExecutor,
@@ -299,9 +345,6 @@ export function createUseInfiniteRead<
       controller.update(prevContext);
     }, [pluginOptsKey]);
 
-    const entry = stateManager.getCache(queryKey);
-    const pluginResultData = entry?.meta ? Object.fromEntries(entry.meta) : {};
-
     const trigger = async (
       options?: Partial<InfiniteRequestOptions> & { force?: boolean }
     ) => {
@@ -309,9 +352,8 @@ export function createUseInfiniteRead<
     };
 
     const result = {
-      meta: pluginResultData,
       data: state.data,
-      allResponses: state.allResponses,
+      pages: state.pages,
       loading,
       fetching,
       fetchingNext,

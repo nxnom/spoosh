@@ -100,18 +100,18 @@ function createErrorTestHooks() {
 
 describe("useInfiniteRead", () => {
   describe("Basic Functionality", () => {
-    it("should return data, loading, and allResponses", async () => {
+    it("should return data, loading, and pages", async () => {
       const { useInfiniteRead } = createTestHooks();
 
       const { result } = renderHook(() =>
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -123,7 +123,7 @@ describe("useInfiniteRead", () => {
       });
 
       expect(result.current.data).toBeDefined();
-      expect(result.current.allResponses).toBeDefined();
+      expect(result.current.pages).toBeDefined();
     });
 
     it("should return canFetchNext and canFetchPrev flags", async () => {
@@ -133,15 +133,16 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
-            canFetchPrev: (ctx) => ctx.response?.prevCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
+            canFetchPrev: (ctx) =>
+              ctx.firstPage?.data?.prevCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
             prevPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.prevCursor },
+              query: { cursor: ctx.firstPage?.data?.prevCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -161,11 +162,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -187,11 +188,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -211,11 +212,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -243,15 +244,16 @@ describe("useInfiniteRead", () => {
               query: { cursor: "2" },
             }),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
-            canFetchPrev: (ctx) => ctx.response?.prevCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
+            canFetchPrev: (ctx) =>
+              ctx.firstPage?.data?.prevCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
             prevPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.prevCursor },
+              query: { cursor: ctx.firstPage?.data?.prevCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -276,11 +278,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -312,11 +314,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -343,15 +345,16 @@ describe("useInfiniteRead", () => {
               query: { cursor: "2" },
             }),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
-            canFetchPrev: (ctx) => ctx.response?.prevCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
+            canFetchPrev: (ctx) =>
+              ctx.firstPage?.data?.prevCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
             prevPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.prevCursor },
+              query: { cursor: ctx.firstPage?.data?.prevCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -374,11 +377,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -405,9 +408,9 @@ describe("useInfiniteRead", () => {
           {
             canFetchNext: canFetchNextFn,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -427,15 +430,15 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             canFetchPrev: canFetchPrevFn,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
             prevPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.prevCursor },
+              query: { cursor: ctx.firstPage?.data?.prevCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -454,11 +457,14 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor, customParam: "test" },
+              query: {
+                cursor: ctx.lastPage?.data?.nextCursor,
+                customParam: "test",
+              },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -488,18 +494,19 @@ describe("useInfiniteRead", () => {
               query: { cursor: "2" },
             }),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
-            canFetchPrev: (ctx) => ctx.response?.prevCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
+            canFetchPrev: (ctx) =>
+              ctx.firstPage?.data?.prevCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
             prevPageRequest: (ctx) => ({
               query: {
-                cursor: ctx.response?.prevCursor,
+                cursor: ctx.firstPage?.data?.prevCursor,
                 customPrevParam: "prevTest",
               },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -557,7 +564,7 @@ describe("useInfiniteRead", () => {
           {
             canFetchNext: () => false,
             nextPageRequest: () => ({}),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -579,11 +586,11 @@ describe("useInfiniteRead", () => {
           (api: any) => api("/posts").GET(),
           {
             tags: ["posts"],
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -611,11 +618,11 @@ describe("useInfiniteRead", () => {
           (api: any) => api("/posts").GET(),
           {
             tags: ["posts"],
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -644,11 +651,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -680,11 +687,11 @@ describe("useInfiniteRead", () => {
           (api: any) => api("/posts").GET(),
           {
             enabled: false,
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -701,11 +708,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -732,11 +739,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -757,11 +764,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET({ query: { search: "initial" } }),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -788,11 +795,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET({ query: { search: "initial" } }),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -821,11 +828,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET({ query: { search: "original" } }),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -853,11 +860,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -895,11 +902,11 @@ describe("useInfiniteRead", () => {
         useInfiniteRead<PageResponse, { id: number }>(
           (api: any) => api("/posts").GET(),
           {
-            canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
             nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.response?.nextCursor },
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (responses) => responses.flatMap((r) => r.items),
+            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
           }
         )
       );
@@ -914,7 +921,6 @@ describe("useInfiniteRead", () => {
 
       expect(result.current.data?.length).toBe(4);
 
-      // Count cache entries before trigger (should be 2: page 1 and page 2)
       const cacheCountBefore = stateManager.getSize();
       expect(cacheCountBefore).toBe(2);
 
@@ -922,11 +928,8 @@ describe("useInfiniteRead", () => {
         await result.current.trigger({ force: false });
       });
 
-      // With force: false, page 2 cache should not be deleted
-      // (page 1 gets refetched, page 2 remains)
       const cacheCountAfter = stateManager.getSize();
 
-      // Cache count should stay the same (page 2 not deleted)
       expect(cacheCountAfter).toBe(cacheCountBefore);
     });
   });
@@ -940,11 +943,12 @@ describe("useInfiniteRead", () => {
           useInfiniteRead<PageResponse, { id: number }>(
             (api: any) => api("/posts").GET({ query: { search } }),
             {
-              canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+              canFetchNext: (ctx) =>
+                ctx.lastPage?.data?.nextCursor !== undefined,
               nextPageRequest: (ctx) => ({
-                query: { cursor: ctx.response?.nextCursor },
+                query: { cursor: ctx.lastPage?.data?.nextCursor },
               }),
-              merger: (responses) => responses.flatMap((r) => r.items),
+              merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
             }
           ),
         { initialProps: { search: "first" } }
@@ -975,11 +979,12 @@ describe("useInfiniteRead", () => {
           useInfiniteRead<PageResponse, { id: number }>(
             (api: any) => api("/posts").GET({ query: { search } }),
             {
-              canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+              canFetchNext: (ctx) =>
+                ctx.lastPage?.data?.nextCursor !== undefined,
               nextPageRequest: (ctx) => ({
-                query: { cursor: ctx.response?.nextCursor },
+                query: { cursor: ctx.lastPage?.data?.nextCursor },
               }),
-              merger: (responses) => responses.flatMap((r) => r.items),
+              merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
             }
           ),
         { initialProps: { search: "first" } }
@@ -1010,11 +1015,12 @@ describe("useInfiniteRead", () => {
           useInfiniteRead<PageResponse, { id: number }>(
             (api: any) => api("/posts").GET({ query: { search } }),
             {
-              canFetchNext: (ctx) => ctx.response?.nextCursor !== undefined,
+              canFetchNext: (ctx) =>
+                ctx.lastPage?.data?.nextCursor !== undefined,
               nextPageRequest: (ctx) => ({
-                query: { cursor: ctx.response?.nextCursor },
+                query: { cursor: ctx.lastPage?.data?.nextCursor },
               }),
-              merger: (responses) => responses.flatMap((r) => r.items),
+              merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
             }
           ),
         { initialProps: { search: "same" } }

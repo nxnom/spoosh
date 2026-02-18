@@ -106,7 +106,7 @@ Bidirectional paginated data fetching with infinite scroll support.
 function PostList() {
   const {
     data,
-    allResponses,
+    pages,
     loading,
     canFetchNext,
     canFetchPrev,
@@ -118,22 +118,22 @@ function PostList() {
     (api) => api("posts").GET({ query: { page: 1 } }),
     {
       // Required: Check if next page exists
-      canFetchNext: ({ response }) => response?.meta.hasMore ?? false,
+      canFetchNext: ({ lastPage }) => lastPage?.data?.meta.hasMore ?? false,
 
       // Required: Build request for next page
-      nextPageRequest: ({ response, request }) => ({
-        query: { ...request.query, page: (response?.meta.page ?? 0) + 1 },
+      nextPageRequest: ({ lastPage }) => ({
+        query: { page: (lastPage?.data?.meta.page ?? 0) + 1 },
       }),
 
-      // Required: Merge all responses into items
-      merger: (allResponses) => allResponses.flatMap((r) => r.items),
+      // Required: Merge all pages into items
+      merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
 
       // Optional: Check if previous page exists
-      canFetchPrev: ({ response }) => (response?.meta.page ?? 1) > 1,
+      canFetchPrev: ({ firstPage }) => (firstPage?.data?.meta.page ?? 1) > 1,
 
       // Optional: Build request for previous page
-      prevPageRequest: ({ response, request }) => ({
-        query: { ...request.query, page: (response?.meta.page ?? 2) - 1 },
+      prevPageRequest: ({ firstPage }) => ({
+        query: { page: (firstPage?.data?.meta.page ?? 2) - 1 },
       }),
     }
   );
@@ -196,7 +196,7 @@ function PostList() {
 
 | Option            | Type                         | Required | Description                                       |
 | ----------------- | ---------------------------- | -------- | ------------------------------------------------- |
-| `merger`          | `(allResponses) => TItem[]`  | Yes      | Merge all responses into items                    |
+| `merger`          | `(pages) => TItem[]`         | Yes      | Merge all pages into items                        |
 | `canFetchNext`    | `(ctx) => boolean`           | No       | Check if next page exists. Default: `() => false` |
 | `nextPageRequest` | `(ctx) => Partial<TRequest>` | No       | Build request for next page                       |
 | `canFetchPrev`    | `(ctx) => boolean`           | No       | Check if previous page exists                     |
@@ -206,10 +206,27 @@ function PostList() {
 **Context object passed to callbacks:**
 
 ```typescript
-type Context<TData, TRequest> = {
-  response: TData | undefined; // Latest response
-  allResponses: TData[]; // All fetched responses
-  request: TRequest; // Current request options
+// For canFetchNext and nextPageRequest
+type NextContext<TData, TRequest> = {
+  lastPage: InfinitePage<TData> | undefined;
+  pages: InfinitePage<TData>[];
+  request: TRequest;
+};
+
+// For canFetchPrev and prevPageRequest
+type PrevContext<TData, TRequest> = {
+  firstPage: InfinitePage<TData> | undefined;
+  pages: InfinitePage<TData>[];
+  request: TRequest;
+};
+
+// Each page in the pages array
+type InfinitePage<TData> = {
+  status: "pending" | "loading" | "success" | "error" | "stale";
+  data?: TData;
+  error?: TError;
+  meta?: TMeta;
+  input?: { query?; params?; body? };
 };
 ```
 
@@ -217,8 +234,8 @@ type Context<TData, TRequest> = {
 
 | Property       | Type                          | Description                                     |
 | -------------- | ----------------------------- | ----------------------------------------------- |
-| `data`         | `TItem[] \| undefined`        | Merged items from all responses                 |
-| `allResponses` | `TData[] \| undefined`        | Array of all raw responses                      |
+| `data`         | `TItem[] \| undefined`        | Merged items from all pages                     |
+| `pages`        | `InfinitePage<TData>[]`       | Array of all pages with status, data, and meta  |
 | `loading`      | `boolean`                     | True during initial load                        |
 | `fetching`     | `boolean`                     | True during any fetch                           |
 | `fetchingNext` | `boolean`                     | True while fetching next page                   |

@@ -8,6 +8,9 @@ import type {
   ExtractTriggerBody,
   ExtractTriggerParams,
   InfiniteRequestOptions,
+  InfinitePage,
+  InfiniteNextContext,
+  InfinitePrevContext,
 } from "@spoosh/core";
 
 type TagModeInArray = "all" | "self";
@@ -34,56 +37,20 @@ export type InfiniteTriggerOptions<TReadFn> =
     : BaseTriggerOptions;
 
 /**
- * Context passed to `canFetchNext` and `nextPageRequest` callbacks.
- */
-export type InfiniteNextContext<TData, TRequest> = {
-  /**
-   * The last (most recent) page's response data.
-   * Use this to check if more pages exist (e.g., `response?.nextCursor != null`).
-   */
-  response: TData | undefined;
-
-  /** All responses fetched so far, ordered from first to last page */
-  allResponses: TData[];
-
-  /**
-   * The request options used to fetch the last page.
-   * Useful for offset-based pagination (e.g., `request.query.page + 1`).
-   */
-  request: TRequest;
-};
-
-/**
- * Context passed to `canFetchPrev` and `prevPageRequest` callbacks.
- */
-export type InfinitePrevContext<TData, TRequest> = {
-  /**
-   * The first (earliest) page's response data.
-   * Use this to check if previous pages exist (e.g., `response?.prevCursor != null`).
-   */
-  response: TData | undefined;
-
-  /** All responses fetched so far, ordered from first to last page */
-  allResponses: TData[];
-
-  /**
-   * The request options used to fetch the first page.
-   * Useful for offset-based pagination (e.g., `request.query.page - 1`).
-   */
-  request: TRequest;
-};
-
-/**
  * Options for `useInfiniteRead` hook.
  *
  * @template TData - The response data type for each page
  * @template TItem - The item type after merging all responses
+ * @template TError - The error type
  * @template TRequest - The request options type (query, params, body)
+ * @template TMeta - Plugin metadata type
  */
 export type BaseInfiniteReadOptions<
   TData,
   TItem,
+  TError = unknown,
   TRequest = InfiniteRequestOptions,
+  TMeta = Record<string, unknown>,
 > = {
   /** Whether to fetch automatically on mount. Default: true */
   enabled?: boolean;
@@ -99,15 +66,17 @@ export type BaseInfiniteReadOptions<
 
   /**
    * Callback to determine if there's a next page to fetch.
-   * Receives the last page's response to check for pagination indicators.
+   * Receives the last page to check for pagination indicators.
    * Default: `() => false` (no next page fetching)
    *
    * @example
    * ```ts
-   * canFetchNext: ({ response }) => response?.nextCursor != null
+   * canFetchNext: ({ lastPage }) => lastPage?.data?.nextCursor != null
    * ```
    */
-  canFetchNext?: (ctx: InfiniteNextContext<TData, TRequest>) => boolean;
+  canFetchNext?: (
+    ctx: InfiniteNextContext<TData, TError, TRequest, TMeta>
+  ) => boolean;
 
   /**
    * Callback to build the request options for the next page.
@@ -118,30 +87,39 @@ export type BaseInfiniteReadOptions<
    * ```ts
    * // Initial: { query: { cursor: 0, limit: 10 } }
    * // Only return cursor - limit is preserved automatically
-   * nextPageRequest: ({ response }) => ({
-   *   query: { cursor: response?.nextCursor }
+   * nextPageRequest: ({ lastPage }) => ({
+   *   query: { cursor: lastPage?.data?.nextCursor }
    * })
    * ```
    */
   nextPageRequest?: (
-    ctx: InfiniteNextContext<TData, TRequest>
+    ctx: InfiniteNextContext<TData, TError, TRequest, TMeta>
   ) => Partial<TRequest>;
 
-  /** Callback to merge all responses into a single array of items */
-  merger: (allResponses: TData[]) => TItem[];
+  /**
+   * Callback to merge all pages into a single array of items.
+   *
+   * @example
+   * ```ts
+   * merger: (pages) => pages.flatMap(p => p.data?.items ?? [])
+   * ```
+   */
+  merger: (pages: InfinitePage<TData, TError, TMeta>[]) => TItem[];
 
   /**
    * Callback to determine if there's a previous page to fetch.
-   * Receives the first page's response to check for pagination indicators.
+   * Receives the first page to check for pagination indicators.
    */
-  canFetchPrev?: (ctx: InfinitePrevContext<TData, TRequest>) => boolean;
+  canFetchPrev?: (
+    ctx: InfinitePrevContext<TData, TError, TRequest, TMeta>
+  ) => boolean;
 
   /**
    * Callback to build the request options for the previous page.
    * Return only the fields that change - they will be **merged** with the initial request.
    */
   prevPageRequest?: (
-    ctx: InfinitePrevContext<TData, TRequest>
+    ctx: InfinitePrevContext<TData, TError, TRequest, TMeta>
   ) => Partial<TRequest>;
 };
 
@@ -161,11 +139,11 @@ export type BaseInfiniteReadResult<
   TPluginResult = Record<string, unknown>,
   TTriggerOptions = object,
 > = {
-  /** Merged items from all fetched responses */
+  /** Merged items from all fetched pages */
   data: TItem[] | undefined;
 
-  /** Array of all raw response data */
-  allResponses: TData[] | undefined;
+  /** Array of all pages with status, data, error, and meta per page */
+  pages: InfinitePage<TData, TError, TPluginResult>[];
 
   /** True during the initial load (no data yet) */
   loading: boolean;
@@ -184,9 +162,6 @@ export type BaseInfiniteReadResult<
 
   /** Whether there's a previous page available to fetch */
   canFetchPrev: boolean;
-
-  /** Plugin-provided metadata */
-  meta: TPluginResult;
 
   /** Fetch the next page */
   fetchNext: () => Promise<void>;

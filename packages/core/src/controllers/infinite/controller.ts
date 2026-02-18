@@ -7,21 +7,20 @@ import type {
   InfiniteReadState,
   InfiniteRequestOptions,
   InfiniteTriggerOptions,
+  InfinitePage,
+  InfinitePageStatus,
 } from "./types";
-import {
-  shallowMergeRequest,
-  collectPageData,
-  createInitialInfiniteState,
-} from "./utils";
+import { shallowMergeRequest, createInitialInfiniteState } from "./utils";
 
 export function createInfiniteReadController<
   TData,
   TItem,
   TError,
   TRequest extends InfiniteRequestOptions = InfiniteRequestOptions,
+  TMeta = Record<string, unknown>,
 >(
-  options: CreateInfiniteReadOptions<TData, TItem, TError, TRequest>
-): InfiniteReadController<TData, TItem, TError> {
+  options: CreateInfiniteReadOptions<TData, TItem, TError, TRequest, TMeta>
+): InfiniteReadController<TData, TItem, TError, TMeta> {
   const {
     path,
     method,
@@ -49,63 +48,71 @@ export function createInfiniteReadController<
   let latestError: TError | undefined = undefined;
   let activeInitialRequest = initialRequest;
 
-  let cachedState: InfiniteReadState<TData, TItem, TError> =
-    createInitialInfiniteState();
+  let cachedState: InfiniteReadState<TData, TItem, TError, TMeta> =
+    createInitialInfiniteState<TData, TItem, TError, TMeta>();
 
   let pageSubscriptions: (() => void)[] = [];
   let refetchUnsubscribe: (() => void) | null = null;
 
-  const computeState = (): InfiniteReadState<TData, TItem, TError> => {
+  const computeState = (): InfiniteReadState<TData, TItem, TError, TMeta> => {
     if (pageKeys.length === 0) {
       return {
-        ...createInitialInfiniteState<TData, TItem, TError>(),
+        ...createInitialInfiniteState<TData, TItem, TError, TMeta>(),
         error: latestError,
       };
     }
 
-    const { allResponses, allRequests } = collectPageData<TData>(
-      pageKeys,
-      stateManager,
-      pageRequests,
-      activeInitialRequest
+    const computedPages: InfinitePage<TData, TError, TMeta>[] = pageKeys.map(
+      (key) => {
+        const cached = stateManager.getCache(key);
+        const meta = cached?.meta
+          ? (Object.fromEntries(cached.meta) as TMeta)
+          : undefined;
+        const input = pageRequests.get(key) ?? activeInitialRequest;
+
+        let status: InfinitePageStatus = "pending";
+
+        if (pendingFetches.has(key)) {
+          status = "loading";
+        } else if (cached?.state?.error) {
+          status = "error";
+        } else if (cached?.state?.data !== undefined) {
+          status = cached?.stale ? "stale" : "success";
+        }
+
+        return {
+          status,
+          data: cached?.state?.data as TData | undefined,
+          error: cached?.state?.error as TError | undefined,
+          meta,
+          input,
+        };
+      }
     );
 
-    if (allResponses.length === 0) {
-      return {
-        data: undefined,
-        allResponses: undefined,
-        allRequests: undefined,
-        canFetchNext: false,
-        canFetchPrev: false,
-        error: latestError,
-      };
-    }
-
-    const lastResponse = allResponses.at(-1);
-    const firstResponse = allResponses.at(0);
-    const lastRequest = allRequests.at(-1) ?? activeInitialRequest;
-    const firstRequest = allRequests.at(0) ?? activeInitialRequest;
+    const lastPage = computedPages.at(-1);
+    const firstPage = computedPages.at(0);
 
     const canNext = canFetchNext({
-      response: lastResponse,
-      allResponses,
-      request: lastRequest as TRequest,
+      lastPage,
+      pages: computedPages,
+      request: (lastPage?.input ?? activeInitialRequest) as TRequest,
     });
 
     const canPrev = canFetchPrev
       ? canFetchPrev({
-          response: firstResponse,
-          allResponses,
-          request: firstRequest as TRequest,
+          firstPage,
+          pages: computedPages,
+          request: (firstPage?.input ?? activeInitialRequest) as TRequest,
         })
       : false;
 
-    const mergedData = merger(allResponses);
+    const mergedData =
+      computedPages.length > 0 ? merger(computedPages) : undefined;
 
     return {
       data: mergedData,
-      allResponses,
-      allRequests,
+      pages: computedPages,
       canFetchNext: canNext,
       canFetchPrev: canPrev,
       error: latestError,
@@ -261,7 +268,7 @@ export function createInfiniteReadController<
     }
   };
 
-  const controller: InfiniteReadController<TData, TItem, TError> = {
+  const controller: InfiniteReadController<TData, TItem, TError, TMeta> = {
     getState() {
       return cachedState;
     },
@@ -281,30 +288,25 @@ export function createInfiniteReadController<
         return;
       }
 
-      const { allResponses, allRequests } = collectPageData<TData>(
-        pageKeys,
-        stateManager,
-        pageRequests,
-        activeInitialRequest
-      );
+      const state = computeState();
+      const { pages } = state;
 
-      if (allResponses.length === 0) return;
+      if (pages.length === 0) return;
 
-      const lastResponse = allResponses.at(-1);
-      const lastRequest = allRequests.at(-1) ?? activeInitialRequest;
+      const lastPage = pages.at(-1);
 
       const canNext = canFetchNext({
-        response: lastResponse,
-        allResponses,
-        request: lastRequest as TRequest,
+        lastPage,
+        pages,
+        request: (lastPage?.input ?? activeInitialRequest) as TRequest,
       });
 
       if (!canNext) return;
 
       const nextRequest = nextPageRequest({
-        response: lastResponse,
-        allResponses,
-        request: lastRequest as TRequest,
+        lastPage,
+        pages,
+        request: (lastPage?.input ?? activeInitialRequest) as TRequest,
       });
 
       await doFetch("next", nextRequest);
@@ -314,30 +316,25 @@ export function createInfiniteReadController<
       if (!canFetchPrev || !prevPageRequest) return;
       if (pageKeys.length === 0) return;
 
-      const { allResponses, allRequests } = collectPageData<TData>(
-        pageKeys,
-        stateManager,
-        pageRequests,
-        activeInitialRequest
-      );
+      const state = computeState();
+      const { pages } = state;
 
-      if (allResponses.length === 0) return;
+      if (pages.length === 0) return;
 
-      const firstResponse = allResponses.at(0);
-      const firstRequest = allRequests.at(0) ?? activeInitialRequest;
+      const firstPage = pages.at(0);
 
       const canPrev = canFetchPrev({
-        response: firstResponse,
-        allResponses,
-        request: firstRequest as TRequest,
+        firstPage,
+        pages,
+        request: (firstPage?.input ?? activeInitialRequest) as TRequest,
       });
 
       if (!canPrev) return;
 
       const prevRequest = prevPageRequest({
-        response: firstResponse,
-        allResponses,
-        request: firstRequest as TRequest,
+        firstPage,
+        pages,
+        request: (firstPage?.input ?? activeInitialRequest) as TRequest,
       });
 
       await doFetch("prev", prevRequest);
