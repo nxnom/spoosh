@@ -268,7 +268,7 @@ export function createUseInfiniteRead<
 
       if (isQueryKeyChange) {
         setIsPending(true);
-        controller.trigger().finally(() => setIsPending(false));
+        controller.trigger({ force: false }).finally(() => setIsPending(false));
       } else if (currentState.data === undefined && !isFetching) {
         setIsPending(true);
         controller.fetchNext().finally(() => setIsPending(false));
@@ -312,7 +312,9 @@ export function createUseInfiniteRead<
     const entry = stateManager.getCache(queryKey);
     const pluginResultData = entry?.meta ? Object.fromEntries(entry.meta) : {};
 
-    const trigger = async (options?: Partial<InfiniteRequestOptions>) => {
+    const trigger = async (
+      options?: Partial<InfiniteRequestOptions> & { force?: boolean }
+    ) => {
       await controller.trigger(options);
     };
 

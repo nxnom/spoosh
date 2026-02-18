@@ -39,12 +39,20 @@ type TriggerAwaitedReturn<T> = T extends (...args: never[]) => infer R
 
 type ExtractInputFromResponse<T> = T extends { input: infer I } ? I : never;
 
+type BaseTriggerOptions = {
+  /** Bypass cache and force refetch. Default: true */
+  force?: boolean;
+};
+
 export type InfiniteTriggerOptions<TReadFn> =
   ExtractInputFromResponse<TriggerAwaitedReturn<TReadFn>> extends infer I
     ? [I] extends [never]
-      ? object
-      : ExtractTriggerQuery<I> & ExtractTriggerBody<I> & ExtractTriggerParams<I>
-    : object;
+      ? BaseTriggerOptions
+      : ExtractTriggerQuery<I> &
+          ExtractTriggerBody<I> &
+          ExtractTriggerParams<I> &
+          BaseTriggerOptions
+    : BaseTriggerOptions;
 
 export interface BaseInfiniteReadOptions<
   TData,

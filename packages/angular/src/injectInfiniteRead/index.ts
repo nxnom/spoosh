@@ -432,7 +432,7 @@ export function createInjectInfiniteRead<
             loadingSignal.set(true);
             fetchingNextSignal.set(true);
             errorSignal.set(undefined);
-            controller.trigger().finally(() => {
+            controller.trigger({ force: false }).finally(() => {
               updateSignalsFromState();
               loadingSignal.set(false);
               fetchingNextSignal.set(false);
@@ -506,7 +506,9 @@ export function createInjectInfiniteRead<
       }
     };
 
-    const trigger = async (options?: Partial<InfiniteRequestOptions>) => {
+    const trigger = async (
+      options?: Partial<InfiniteRequestOptions> & { force?: boolean }
+    ) => {
       if (!currentController) return;
 
       if (!isMounted) {

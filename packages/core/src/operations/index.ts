@@ -7,6 +7,7 @@ export type {
   InfiniteReadState,
   CreateInfiniteReadOptions,
   InfiniteRequestOptions,
+  InfiniteTriggerOptions,
   PageContext,
   FetchDirection,
 } from "./infinite-controller";

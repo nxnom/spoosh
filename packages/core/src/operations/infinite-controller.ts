@@ -19,6 +19,11 @@ export type PageContext<TData, TRequest = InfiniteRequestOptions> = {
 
 export type FetchDirection = "next" | "prev";
 
+export type InfiniteTriggerOptions = Partial<InfiniteRequestOptions> & {
+  /** Bypass cache and force refetch. Default: true */
+  force?: boolean;
+};
+
 export type InfiniteReadState<TData, TItem, TError> = {
   data: TItem[] | undefined;
   allResponses: TData[] | undefined;
@@ -35,7 +40,7 @@ export type InfiniteReadController<TData, TItem, TError> = {
 
   fetchNext: () => Promise<void>;
   fetchPrev: () => Promise<void>;
-  trigger: (requestOverride?: Partial<InfiniteRequestOptions>) => Promise<void>;
+  trigger: (options?: InfiniteTriggerOptions) => Promise<void>;
   abort: () => void;
 
   mount: () => void;
@@ -524,17 +529,8 @@ export function createInfiniteReadController<
       await doFetch("prev", prevRequest);
     },
 
-    async trigger(requestOverride?: Partial<InfiniteRequestOptions>) {
-      for (const key of pageKeys) {
-        stateManager.deleteCache(key);
-      }
-
-      pageKeys = [];
-      pageRequests.clear();
-      pageSubscriptions.forEach((unsub) => unsub());
-      pageSubscriptions = [];
-      latestError = undefined;
-      saveToTracker();
+    async trigger(options?: InfiniteTriggerOptions) {
+      const { force = true, ...requestOverride } = options ?? {};
 
       if (requestOverride && Object.keys(requestOverride).length > 0) {
         activeInitialRequest = shallowMergeRequest(
@@ -545,10 +541,121 @@ export function createInfiniteReadController<
         activeInitialRequest = initialRequest;
       }
 
+      const newFirstPageKey = createPageKey(
+        path,
+        method,
+        baseOptionsForKey,
+        activeInitialRequest
+      );
+
+      if (!force) {
+        const cached = stateManager.getCache(newFirstPageKey);
+
+        if (cached?.state?.data !== undefined && !cached.stale) {
+          // Cache hit - use existing pageKeys from tracker
+          // Don't reset or delete pages - they're still valid in cache
+          pageSubscriptions.forEach((unsub) => unsub());
+          subscribeToPages();
+
+          latestError = undefined;
+          notify();
+          return;
+        }
+      }
+
+      const oldPageKeys = [...pageKeys];
+      const oldPageRequests = new Map(pageRequests);
+
+      pageSubscriptions.forEach((unsub) => unsub());
+      pageSubscriptions = [];
+      latestError = undefined;
+
       fetchingDirection = "next";
       notify();
 
-      await doFetch("next", {});
+      abortController = new AbortController();
+      const signal = abortController.signal;
+
+      const context = createContext(newFirstPageKey, activeInitialRequest);
+
+      if (force) {
+        context.forceRefetch = true;
+      }
+
+      const coreFetch = async (): Promise<SpooshResponse<TData, TError>> => {
+        try {
+          const response = await fetchFn(activeInitialRequest, signal);
+
+          if (signal.aborted) {
+            return {
+              status: 0,
+              data: undefined,
+              aborted: true,
+            } as SpooshResponse<TData, TError>;
+          }
+
+          return response;
+        } catch (err) {
+          if (signal.aborted) {
+            return {
+              status: 0,
+              data: undefined,
+              aborted: true,
+            } as SpooshResponse<TData, TError>;
+          }
+
+          return {
+            status: 0,
+            error: err as TError,
+            data: undefined,
+          };
+        }
+      };
+
+      const middlewarePromise = pluginExecutor.executeMiddleware(
+        "infiniteRead",
+        context,
+        coreFetch
+      );
+
+      stateManager.setPendingPromise(newFirstPageKey, middlewarePromise);
+
+      const finalResponse = await middlewarePromise;
+
+      pendingFetches.delete(newFirstPageKey);
+      fetchingDirection = null;
+      stateManager.setPendingPromise(newFirstPageKey, undefined);
+
+      if (finalResponse.data !== undefined && !finalResponse.error) {
+        for (const key of oldPageKeys) {
+          stateManager.deleteCache(key);
+        }
+
+        pageKeys = [newFirstPageKey];
+        pageRequests = new Map([[newFirstPageKey, activeInitialRequest]]);
+
+        stateManager.setCache(newFirstPageKey, {
+          state: {
+            data: finalResponse.data,
+            error: undefined,
+            timestamp: Date.now(),
+          },
+          tags,
+          stale: false,
+        });
+
+        saveToTracker();
+        subscribeToPages();
+        latestError = undefined;
+      } else if (finalResponse.error) {
+        latestError = finalResponse.error;
+
+        pageKeys = oldPageKeys;
+        pageRequests = oldPageRequests;
+        subscribeToPages();
+      }
+
+      notify();
     },
 
     abort() {
