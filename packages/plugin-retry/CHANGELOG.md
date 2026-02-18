@@ -1,5 +1,9 @@
 # @spoosh/plugin-retry
 
+## 0.5.0
+
+- Update for `pages` operation type rename
+
 ## 0.4.0
 
 - Support `queue` operation type

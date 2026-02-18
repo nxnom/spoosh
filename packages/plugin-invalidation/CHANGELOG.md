@@ -1,5 +1,9 @@
 # @spoosh/plugin-invalidation
 
+## 0.9.0
+
+- Update for `pages` operation type rename
+
 ## 0.8.0
 
 - Support `queue` operation type in invalidation plugin

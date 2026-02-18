@@ -1,5 +1,9 @@
 # @spoosh/plugin-polling
 
+## 0.5.0
+
+- Update for `pages` operation type rename
+
 ## 0.4.0
 
 - Restore contextual typing using ctx-based pollingInterval

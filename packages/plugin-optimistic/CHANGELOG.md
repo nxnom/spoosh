@@ -1,5 +1,9 @@
 # @spoosh/plugin-optimistic
 
+## 0.7.0
+
+- Update for `pages` operation type rename
+
 ## 0.6.1
 
 - Improve types for optimistic trigger options

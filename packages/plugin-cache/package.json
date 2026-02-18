@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-cache",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Response caching plugin for Spoosh with configurable stale time",
   "license": "MIT",
   "repository": {
@@ -40,7 +40,7 @@
     "format": "prettier --write 'src/**/*.ts'"
   },
   "peerDependencies": {
-    "@spoosh/core": ">=0.13.1"
+    "@spoosh/core": ">=0.15.0"
   },
   "devDependencies": {
     "@spoosh/core": "workspace:*",

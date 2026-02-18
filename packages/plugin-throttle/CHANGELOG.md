@@ -1,5 +1,9 @@
 # @spoosh/plugin-throttle
 
+## 0.3.0
+
+- Update for `pages` operation type rename
+
 ## 0.2.0
 
 - Add devtool tracing support

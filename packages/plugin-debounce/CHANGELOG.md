@@ -2,6 +2,7 @@
 
 ## 0.4.0
 
+- Update for `pages` operation type rename
 - Remove `debounce` from infinite read operations. Now this only applied in read operation
 
 ## 0.3.0

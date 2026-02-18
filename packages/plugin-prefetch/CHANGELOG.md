@@ -1,5 +1,9 @@
 # @spoosh/plugin-prefetch
 
+## 0.5.0
+
+- Update for `pages` operation type rename
+
 ## 0.4.0
 
 - Add devtool tracing support

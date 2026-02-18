@@ -41,7 +41,7 @@
     "format": "prettier --write 'src/**/*.ts'"
   },
   "peerDependencies": {
-    "@spoosh/core": ">=0.14.2",
+    "@spoosh/core": ">=0.15.0",
     "@angular/core": ">=16.0.0"
   },
   "devDependencies": {

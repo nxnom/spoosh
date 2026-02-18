@@ -2,6 +2,7 @@
 
 ## 0.12.0
 
+- **Breaking**: Rename `useInfiniteRead` to `usePages`
 - Improve infinite read to allow reactive state changes and custom trigger options
 - `canFetchNext` and `nextPageRequest` is now optional.
 - `trigger` now support passing request options for more flexible usage

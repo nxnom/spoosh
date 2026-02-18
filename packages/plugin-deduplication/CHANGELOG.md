@@ -1,5 +1,9 @@
 # @spoosh/plugin-deduplication
 
+## 0.3.0
+
+- Update for `pages` operation type rename
+
 ## 0.2.1
 
 - Bump @spoosh/core to 0.13.2

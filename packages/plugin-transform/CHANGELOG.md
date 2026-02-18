@@ -1,5 +1,9 @@
 # @spoosh/plugin-transform
 
+## 0.8.0
+
+- Update for `pages` operation type rename
+
 ## 0.7.1
 
 - Fix transform not being applied when cache update directly eg. with optimistic updates.

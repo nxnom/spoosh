@@ -1,5 +1,9 @@
 # @spoosh/plugin-progress
 
+## 0.4.0
+
+- Update for `pages` operation type rename
+
 ## 0.3.0
 
 - Support `queue` operation type

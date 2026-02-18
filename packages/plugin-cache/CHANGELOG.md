@@ -1,5 +1,9 @@
 # @spoosh/plugin-cache
 
+## 0.6.0
+
+- Update for `pages` operation type rename
+
 ## 0.5.0
 
 - Move `clearCache` option to new write trigger options

@@ -1,5 +1,9 @@
 # @spoosh/plugin-initial-data
 
+## 0.4.0
+
+- Update for `pages` operation type rename
+
 ## 0.3.0
 
 - Add devtool tracing support

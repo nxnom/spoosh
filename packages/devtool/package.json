@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/devtool",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Visual debugging plugin for Spoosh - floating devtool panel with plugin execution visualization",
   "license": "MIT",
   "repository": {
@@ -41,7 +41,7 @@
     "format": "prettier --write 'src/**/*.ts'"
   },
   "peerDependencies": {
-    "@spoosh/core": ">=0.14.2"
+    "@spoosh/core": ">=0.15.0"
   },
   "devDependencies": {
     "@spoosh/core": "workspace:*",

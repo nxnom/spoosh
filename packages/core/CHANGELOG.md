@@ -1,7 +1,8 @@
 # @spoosh/core
 
-## 0.14.2
+## 0.15.0
 
+- **Breaking**: Rename `infiniteRead` operation type to `pages`
 - Add reactive state change event to infinite read controller
 - Remove infinite tracker and use state derivation directly
 
