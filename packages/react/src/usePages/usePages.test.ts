@@ -104,16 +104,15 @@ describe("usePages", () => {
       const { usePages } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       expect(result.current.loading).toBe(true);
@@ -130,21 +129,20 @@ describe("usePages", () => {
       const { usePages } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            canFetchPrev: (ctx) =>
-              ctx.firstPage?.data?.prevCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            prevPageRequest: (ctx) => ({
-              query: { cursor: ctx.firstPage?.data?.prevCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          canFetchPrev: (ctx: any) =>
+            ctx.firstPage?.data?.prevCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          prevPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.firstPage?.data?.prevCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -159,16 +157,15 @@ describe("usePages", () => {
       const { usePages } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -185,16 +182,15 @@ describe("usePages", () => {
       const { usePages, calls } = createTestHooks();
 
       renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -209,16 +205,15 @@ describe("usePages", () => {
       const { usePages, calls } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -238,22 +233,24 @@ describe("usePages", () => {
       const { usePages, calls } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
+        usePages(
           (api: any) =>
             api("/posts").GET({
               query: { cursor: "2" },
             }),
           {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            canFetchPrev: (ctx) =>
+            canFetchNext: (ctx: any) =>
+              ctx.lastPage?.data?.nextCursor !== undefined,
+            canFetchPrev: (ctx: any) =>
               ctx.firstPage?.data?.prevCursor !== undefined,
-            nextPageRequest: (ctx) => ({
+            nextPageRequest: (ctx: any) => ({
               query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            prevPageRequest: (ctx) => ({
+            prevPageRequest: (ctx: any) => ({
               query: { cursor: ctx.firstPage?.data?.prevCursor },
             }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
+            merger: (pages: any) =>
+              pages.flatMap((p: any) => p.data?.items ?? []),
           }
         )
       );
@@ -275,16 +272,15 @@ describe("usePages", () => {
       const { usePages } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -311,16 +307,15 @@ describe("usePages", () => {
       const { usePages } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -339,22 +334,24 @@ describe("usePages", () => {
       const { usePages } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
+        usePages(
           (api: any) =>
             api("/posts").GET({
               query: { cursor: "2" },
             }),
           {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            canFetchPrev: (ctx) =>
+            canFetchNext: (ctx: any) =>
+              ctx.lastPage?.data?.nextCursor !== undefined,
+            canFetchPrev: (ctx: any) =>
               ctx.firstPage?.data?.prevCursor !== undefined,
-            nextPageRequest: (ctx) => ({
+            nextPageRequest: (ctx: any) => ({
               query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            prevPageRequest: (ctx) => ({
+            prevPageRequest: (ctx: any) => ({
               query: { cursor: ctx.firstPage?.data?.prevCursor },
             }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
+            merger: (pages: any) =>
+              pages.flatMap((p: any) => p.data?.items ?? []),
           }
         )
       );
@@ -374,16 +371,15 @@ describe("usePages", () => {
       const { usePages } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       expect(result.current.loading).toBe(true);
@@ -403,16 +399,14 @@ describe("usePages", () => {
       const canFetchNextFn = vi.fn(() => false);
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: canFetchNextFn,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: canFetchNextFn,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -427,20 +421,19 @@ describe("usePages", () => {
       const canFetchPrevFn = vi.fn(() => false);
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            canFetchPrev: canFetchPrevFn,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            prevPageRequest: (ctx) => ({
-              query: { cursor: ctx.firstPage?.data?.prevCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          canFetchPrev: canFetchPrevFn,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          prevPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.firstPage?.data?.prevCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -454,19 +447,18 @@ describe("usePages", () => {
       const { usePages, calls } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: {
-                cursor: ctx.lastPage?.data?.nextCursor,
-                customParam: "test",
-              },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: {
+              cursor: ctx.lastPage?.data?.nextCursor,
+              customParam: "test",
+            },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -488,25 +480,27 @@ describe("usePages", () => {
       const { usePages, calls } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
+        usePages(
           (api: any) =>
             api("/posts").GET({
               query: { cursor: "2" },
             }),
           {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            canFetchPrev: (ctx) =>
+            canFetchNext: (ctx: any) =>
+              ctx.lastPage?.data?.nextCursor !== undefined,
+            canFetchPrev: (ctx: any) =>
               ctx.firstPage?.data?.prevCursor !== undefined,
-            nextPageRequest: (ctx) => ({
+            nextPageRequest: (ctx: any) => ({
               query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            prevPageRequest: (ctx) => ({
+            prevPageRequest: (ctx: any) => ({
               query: {
                 cursor: ctx.firstPage?.data?.prevCursor,
                 customPrevParam: "prevTest",
               },
             }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
+            merger: (pages: any) =>
+              pages.flatMap((p: any) => p.data?.items ?? []),
           }
         )
       );
@@ -556,14 +550,12 @@ describe("usePages", () => {
       const { usePages } = createErrorTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: () => false,
-            nextPageRequest: () => ({}),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: () => false,
+          nextPageRequest: () => ({}),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -579,17 +571,16 @@ describe("usePages", () => {
       const { usePages, eventEmitter, calls } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            tags: ["posts"],
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          tags: ["posts"],
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -611,17 +602,16 @@ describe("usePages", () => {
       const { usePages, eventEmitter, calls } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            tags: ["posts"],
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          tags: ["posts"],
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -645,16 +635,15 @@ describe("usePages", () => {
       const { usePages, eventEmitter, calls } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -680,17 +669,16 @@ describe("usePages", () => {
       const { usePages, calls } = createTestHooks();
 
       renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            enabled: false,
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          enabled: false,
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -702,16 +690,15 @@ describe("usePages", () => {
       const { usePages, calls } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -733,16 +720,15 @@ describe("usePages", () => {
       const { usePages } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -758,14 +744,16 @@ describe("usePages", () => {
       const { usePages, calls } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
+        usePages(
           (api: any) => api("/posts").GET({ query: { search: "initial" } }),
           {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
+            canFetchNext: (ctx: any) =>
+              ctx.lastPage?.data?.nextCursor !== undefined,
+            nextPageRequest: (ctx: any) => ({
               query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
+            merger: (pages: any) =>
+              pages.flatMap((p: any) => p.data?.items ?? []),
           }
         )
       );
@@ -789,14 +777,16 @@ describe("usePages", () => {
       const { usePages, calls } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
+        usePages(
           (api: any) => api("/posts").GET({ query: { search: "initial" } }),
           {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
+            canFetchNext: (ctx: any) =>
+              ctx.lastPage?.data?.nextCursor !== undefined,
+            nextPageRequest: (ctx: any) => ({
               query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
+            merger: (pages: any) =>
+              pages.flatMap((p: any) => p.data?.items ?? []),
           }
         )
       );
@@ -822,14 +812,16 @@ describe("usePages", () => {
       const { usePages, calls } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
+        usePages(
           (api: any) => api("/posts").GET({ query: { search: "original" } }),
           {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
+            canFetchNext: (ctx: any) =>
+              ctx.lastPage?.data?.nextCursor !== undefined,
+            nextPageRequest: (ctx: any) => ({
               query: { cursor: ctx.lastPage?.data?.nextCursor },
             }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
+            merger: (pages: any) =>
+              pages.flatMap((p: any) => p.data?.items ?? []),
           }
         )
       );
@@ -854,16 +846,15 @@ describe("usePages", () => {
       const { usePages, stateManager, calls } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -896,16 +887,15 @@ describe("usePages", () => {
       const { usePages, stateManager } = createTestHooks();
 
       const { result } = renderHook(() =>
-        usePages<PageResponse, { id: number }>(
-          (api: any) => api("/posts").GET(),
-          {
-            canFetchNext: (ctx) => ctx.lastPage?.data?.nextCursor !== undefined,
-            nextPageRequest: (ctx) => ({
-              query: { cursor: ctx.lastPage?.data?.nextCursor },
-            }),
-            merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-          }
-        )
+        usePages((api: any) => api("/posts").GET(), {
+          canFetchNext: (ctx: any) =>
+            ctx.lastPage?.data?.nextCursor !== undefined,
+          nextPageRequest: (ctx: any) => ({
+            query: { cursor: ctx.lastPage?.data?.nextCursor },
+          }),
+          merger: (pages: any) =>
+            pages.flatMap((p: any) => p.data?.items ?? []),
+        })
       );
 
       await waitFor(() => {
@@ -937,17 +927,15 @@ describe("usePages", () => {
 
       const { result, rerender } = renderHook(
         ({ search }: { search: string }) =>
-          usePages<PageResponse, { id: number }>(
-            (api: any) => api("/posts").GET({ query: { search } }),
-            {
-              canFetchNext: (ctx) =>
-                ctx.lastPage?.data?.nextCursor !== undefined,
-              nextPageRequest: (ctx) => ({
-                query: { cursor: ctx.lastPage?.data?.nextCursor },
-              }),
-              merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-            }
-          ),
+          usePages((api: any) => api("/posts").GET({ query: { search } }), {
+            canFetchNext: (ctx: any) =>
+              ctx.lastPage?.data?.nextCursor !== undefined,
+            nextPageRequest: (ctx: any) => ({
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
+            }),
+            merger: (pages: any) =>
+              pages.flatMap((p: any) => p.data?.items ?? []),
+          }),
         { initialProps: { search: "first" } }
       );
 
@@ -973,17 +961,15 @@ describe("usePages", () => {
 
       const { result, rerender } = renderHook(
         ({ search }: { search: string }) =>
-          usePages<PageResponse, { id: number }>(
-            (api: any) => api("/posts").GET({ query: { search } }),
-            {
-              canFetchNext: (ctx) =>
-                ctx.lastPage?.data?.nextCursor !== undefined,
-              nextPageRequest: (ctx) => ({
-                query: { cursor: ctx.lastPage?.data?.nextCursor },
-              }),
-              merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-            }
-          ),
+          usePages((api: any) => api("/posts").GET({ query: { search } }), {
+            canFetchNext: (ctx: any) =>
+              ctx.lastPage?.data?.nextCursor !== undefined,
+            nextPageRequest: (ctx: any) => ({
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
+            }),
+            merger: (pages: any) =>
+              pages.flatMap((p: any) => p.data?.items ?? []),
+          }),
         { initialProps: { search: "first" } }
       );
 
@@ -1009,17 +995,15 @@ describe("usePages", () => {
 
       const { result, rerender } = renderHook(
         ({ search }: { search: string }) =>
-          usePages<PageResponse, { id: number }>(
-            (api: any) => api("/posts").GET({ query: { search } }),
-            {
-              canFetchNext: (ctx) =>
-                ctx.lastPage?.data?.nextCursor !== undefined,
-              nextPageRequest: (ctx) => ({
-                query: { cursor: ctx.lastPage?.data?.nextCursor },
-              }),
-              merger: (pages) => pages.flatMap((p) => p.data?.items ?? []),
-            }
-          ),
+          usePages((api: any) => api("/posts").GET({ query: { search } }), {
+            canFetchNext: (ctx: any) =>
+              ctx.lastPage?.data?.nextCursor !== undefined,
+            nextPageRequest: (ctx: any) => ({
+              query: { cursor: ctx.lastPage?.data?.nextCursor },
+            }),
+            merger: (pages: any) =>
+              pages.flatMap((p: any) => p.data?.items ?? []),
+          }),
         { initialProps: { search: "same" } }
       );
 

@@ -82,7 +82,7 @@ export function createInjectPages<
       PluginResults["read"]
     > &
       ResolveTypes<
-        PluginOptions["read"],
+        PluginOptions["pages"],
         ResolverContext<
           TSchema,
           ExtractData<TReadFn>,

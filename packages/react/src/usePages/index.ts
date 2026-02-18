@@ -18,6 +18,8 @@ import {
   type InfiniteNextContext,
   type InfinitePrevContext,
   type InfinitePage,
+  type ResolverContext,
+  type ResolveTypes,
   createInfiniteReadController,
   createSelectorProxy,
   resolvePath,
@@ -45,24 +47,55 @@ export function createUsePages<
   type PluginOptions = MergePluginOptions<TPlugins>;
   type PluginResults = MergePluginResults<TPlugins>;
 
+  type SuccessResponse<T> = Extract<T, { data: unknown; error?: undefined }>;
+  type ErrorResponse<T> = Extract<T, { error: unknown; data?: undefined }>;
+
+  type ExtractData<T> = T extends (...args: never[]) => infer R
+    ? SuccessResponse<Awaited<R>> extends { data: infer D }
+      ? D
+      : unknown
+    : unknown;
+
+  type ExtractError<T> = T extends (...args: never[]) => infer R
+    ? ErrorResponse<Awaited<R>> extends { error: infer E }
+      ? E
+      : unknown
+    : unknown;
+
+  type InferError<T> = [T] extends [unknown] ? TDefaultError : T;
+
   return function usePages<
-    TData,
-    TItem,
-    TError = TDefaultError,
-    TRequest extends InfiniteRequestOptions = InfiniteRequestOptions,
-  >(
-    readFn: (
+    TReadFn extends (
       api: PagesApiClient<TSchema, TDefaultError>
-    ) => Promise<SpooshResponse<TData, TError>>,
+    ) => Promise<SpooshResponse<unknown, unknown>>,
+    TRequest extends InfiniteRequestOptions = InfiniteRequestOptions,
+    TItem = unknown,
+  >(
+    readFn: TReadFn,
     readOptions: BasePagesOptions<
-      TData,
+      ExtractData<TReadFn>,
       TItem,
-      TError,
+      InferError<ExtractError<TReadFn>>,
       TRequest,
       PluginResults["read"]
     > &
-      PluginOptions["pages"]
-  ): BasePagesResult<TData, TError, TItem, PluginResults["read"]> {
+      ResolveTypes<
+        PluginOptions["pages"],
+        ResolverContext<
+          TSchema,
+          ExtractData<TReadFn>,
+          InferError<ExtractError<TReadFn>>
+        >
+      >
+  ): BasePagesResult<
+    ExtractData<TReadFn>,
+    InferError<ExtractError<TReadFn>>,
+    TItem,
+    PluginResults["read"]
+  > {
+    type TData = ExtractData<TReadFn>;
+    type TError = InferError<ExtractError<TReadFn>>;
+
     const {
       enabled = true,
       tags,

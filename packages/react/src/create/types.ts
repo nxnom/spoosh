@@ -220,51 +220,32 @@ type UseQueueFn<TDefaultError, TSchema, TPlugins extends PluginArray> = {
   >;
 };
 
-type PagesResolverContext<TSchema, TData, TError, TRequest> = ResolverContext<
-  TSchema,
-  TData,
-  TError,
-  TRequest extends { query: infer Q } ? Q : never,
-  TRequest extends { body: infer B } ? B : never,
-  TRequest extends { params: infer P } ? P : never
->;
-
-type ResolvedPagesOptions<
-  TSchema,
-  TPlugins extends PluginArray,
-  TData,
-  TError,
-  TRequest,
-> = ResolveTypes<
-  MergePluginOptions<TPlugins>["pages"],
-  PagesResolverContext<TSchema, TData, TError, TRequest>
->;
-
 type UsePagesFn<TDefaultError, TSchema, TPlugins extends PluginArray> = <
   TReadFn extends (
     api: PagesApiClient<TSchema, TDefaultError>
   ) => Promise<SpooshResponse<unknown, unknown>>,
-  TData = TReadFn extends (
-    api: PagesApiClient<TSchema, TDefaultError>
-  ) => Promise<SpooshResponse<infer D, unknown>>
-    ? D
-    : unknown,
-  TItem = unknown,
-  TError = TReadFn extends (
-    api: PagesApiClient<TSchema, TDefaultError>
-  ) => Promise<SpooshResponse<unknown, infer E>>
-    ? [E] extends [unknown]
-      ? TDefaultError
-      : E
-    : TDefaultError,
   TRequest extends InfiniteRequestOptions = InfiniteRequestOptions,
+  TItem = unknown,
 >(
   readFn: TReadFn,
-  readOptions: BasePagesOptions<TData, TItem, TRequest> &
-    ResolvedPagesOptions<TSchema, TPlugins, TData, TError, TRequest>
+  readOptions: BasePagesOptions<
+    ExtractMethodData<TReadFn>,
+    TItem,
+    InferError<ExtractMethodError<TReadFn>, TDefaultError>,
+    TRequest,
+    MergePluginResults<TPlugins>["read"]
+  > &
+    ResolveTypes<
+      MergePluginOptions<TPlugins>["pages"],
+      ResolverContext<
+        TSchema,
+        ExtractMethodData<TReadFn>,
+        InferError<ExtractMethodError<TReadFn>, TDefaultError>
+      >
+    >
 ) => BasePagesResult<
-  TData,
-  TError,
+  ExtractMethodData<TReadFn>,
+  InferError<ExtractMethodError<TReadFn>, TDefaultError>,
   TItem,
   MergePluginResults<TPlugins>["read"],
   PagesTriggerOptions<TReadFn>
