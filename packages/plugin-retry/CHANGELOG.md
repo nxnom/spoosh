@@ -1,5 +1,9 @@
 # @spoosh/plugin-retry
 
+## 0.6.1
+
+- Use `createSpooshPlugin` for automatic type inference
+
 ## 0.6.0
 
 - Move retry options to `retry` property for better organization and to avoid confusion with other plugin options

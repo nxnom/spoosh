@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-progress",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Upload and download progress tracking plugin for Spoosh via XHR transport",
   "license": "MIT",
   "repository": {

@@ -1,4 +1,4 @@
-import type { SpooshPlugin, EventTracer } from "@spoosh/core";
+import { createSpooshPlugin, type EventTracer } from "@spoosh/core";
 
 import type {
   DebounceReadOptions,
@@ -58,18 +58,18 @@ function resolveDebounceMs(
  * });
  * ```
  */
-export function debouncePlugin(): SpooshPlugin<{
-  readOptions: DebounceReadOptions;
-  writeOptions: DebounceWriteOptions;
-  readResult: DebounceReadResult;
-  writeResult: DebounceWriteResult;
-}> {
+export function debouncePlugin() {
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
   const latestQueryKeys = new Map<string, string>();
   const prevRequests = new Map<string, RequestOptionsSnapshot>();
   const eventTracers = new Map<string, EventTracer>();
 
-  return {
+  return createSpooshPlugin<{
+    readOptions: DebounceReadOptions;
+    writeOptions: DebounceWriteOptions;
+    readResult: DebounceReadResult;
+    writeResult: DebounceWriteResult;
+  }>({
     name: PLUGIN_NAME,
     operations: ["read"],
 
@@ -94,10 +94,7 @@ export function debouncePlugin(): SpooshPlugin<{
       const t = context.tracer?.(PLUGIN_NAME);
       const et = context.eventTracer?.(PLUGIN_NAME);
 
-      const pluginOptions = context.pluginOptions as
-        | DebounceReadOptions
-        | undefined;
-      const debounceOption = pluginOptions?.debounce;
+      const debounceOption = context.pluginOptions?.debounce;
 
       if (debounceOption === undefined || context.forceRefetch) {
         t?.skip("No debounce configured");
@@ -207,5 +204,5 @@ export function debouncePlugin(): SpooshPlugin<{
       t?.return("Debounced, no cached data", { color: "info" });
       return { data: undefined, status: 0 };
     },
-  };
+  });
 }

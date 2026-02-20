@@ -1,5 +1,9 @@
 # @spoosh/plugin-invalidation
 
+## 0.9.1
+
+- Use `createSpooshPlugin` for automatic type inference
+
 ## 0.9.0
 
 - Update for `pages` operation type rename

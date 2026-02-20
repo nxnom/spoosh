@@ -1,4 +1,4 @@
-import type { SpooshPlugin } from "@spoosh/core";
+import { createSpooshPlugin } from "@spoosh/core";
 
 import type {
   InitialDataReadOptions,
@@ -43,27 +43,23 @@ const PLUGIN_NAME = "spoosh:initialData";
  * );
  * ```
  */
-export function initialDataPlugin(): SpooshPlugin<{
-  readOptions: InitialDataReadOptions;
-  writeOptions: InitialDataWriteOptions;
-  pagesOptions: InitialDataPagesOptions;
-  readResult: InitialDataReadResult;
-  writeResult: InitialDataWriteResult;
-}> {
+export function initialDataPlugin() {
   const initialDataAppliedFor = new Set<string>();
 
-  return {
+  return createSpooshPlugin<{
+    readOptions: InitialDataReadOptions;
+    writeOptions: InitialDataWriteOptions;
+    pagesOptions: InitialDataPagesOptions;
+    readResult: InitialDataReadResult;
+    writeResult: InitialDataWriteResult;
+  }>({
     name: PLUGIN_NAME,
     operations: ["read", "pages"],
 
     middleware: async (context, next) => {
       const t = context.tracer?.(PLUGIN_NAME);
 
-      const pluginOptions = context.pluginOptions as
-        | InitialDataReadOptions
-        | undefined;
-
-      if (pluginOptions?.initialData === undefined) {
+      if (context.pluginOptions?.initialData === undefined) {
         t?.skip("No initial data", { color: "muted" });
         return next();
       }
@@ -107,14 +103,14 @@ export function initialDataPlugin(): SpooshPlugin<{
         color: "success",
         diff: {
           before: undefined,
-          after: pluginOptions.initialData,
+          after: context.pluginOptions.initialData,
           label: "Set initial data to cache",
         },
       });
 
       context.stateManager.setCache(context.queryKey, {
         state: {
-          data: pluginOptions.initialData,
+          data: context.pluginOptions.initialData,
           error: undefined,
           timestamp: Date.now(),
         },
@@ -125,9 +121,9 @@ export function initialDataPlugin(): SpooshPlugin<{
         isInitialData: true,
       });
 
-      if (pluginOptions.refetchOnInitialData === false) {
+      if (context.pluginOptions.refetchOnInitialData === false) {
         t?.return("Skip refetch", { color: "muted" });
-        return { data: pluginOptions.initialData, status: 200 };
+        return { data: context.pluginOptions.initialData, status: 200 };
       }
 
       t?.log("Background refetch", { color: "info" });
@@ -150,5 +146,5 @@ export function initialDataPlugin(): SpooshPlugin<{
         }
       },
     },
-  };
+  });
 }

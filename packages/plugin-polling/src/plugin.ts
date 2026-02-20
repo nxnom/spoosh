@@ -1,8 +1,8 @@
-import type {
-  SpooshPlugin,
-  PluginContext,
-  SpooshResponse,
-  EventTracer,
+import {
+  createSpooshPlugin,
+  type PluginContext,
+  type SpooshResponse,
+  type EventTracer,
 } from "@spoosh/core";
 
 import type {
@@ -44,13 +44,7 @@ const PLUGIN_NAME = "spoosh:polling";
  * });
  * ```
  */
-export function pollingPlugin(): SpooshPlugin<{
-  readOptions: PollingReadOptions;
-  writeOptions: PollingWriteOptions;
-  pagesOptions: PollingPagesOptions;
-  readResult: PollingReadResult;
-  writeResult: PollingWriteResult;
-}> {
+export function pollingPlugin() {
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>();
   const eventTracers = new Map<string, EventTracer>();
 
@@ -78,10 +72,9 @@ export function pollingPlugin(): SpooshPlugin<{
     const { queryKey, eventEmitter } = context;
     const et = context.eventTracer?.(PLUGIN_NAME);
 
-    const pluginOptions = context.pluginOptions as
-      | PollingReadOptions
-      | undefined;
-    const pollingInterval = pluginOptions?.pollingInterval;
+    const pollingInterval = (
+      context.pluginOptions as PollingReadOptions | undefined
+    )?.pollingInterval;
 
     if (!pollingInterval) return;
 
@@ -125,7 +118,13 @@ export function pollingPlugin(): SpooshPlugin<{
     timeouts.set(queryKey, timeout);
   };
 
-  return {
+  return createSpooshPlugin<{
+    readOptions: PollingReadOptions;
+    writeOptions: PollingWriteOptions;
+    pagesOptions: PollingPagesOptions;
+    readResult: PollingReadResult;
+    writeResult: PollingWriteResult;
+  }>({
     name: PLUGIN_NAME,
     operations: ["read", "pages"],
 
@@ -141,10 +140,9 @@ export function pollingPlugin(): SpooshPlugin<{
 
         const { queryKey } = context;
 
-        const pluginOptions = context.pluginOptions as
-          | PollingReadOptions
-          | undefined;
-        const pollingInterval = pluginOptions?.pollingInterval;
+        const pollingInterval = (
+          context.pluginOptions as PollingReadOptions | undefined
+        )?.pollingInterval;
 
         if (!pollingInterval) {
           clearPolling(queryKey, "Polling disabled");
@@ -162,5 +160,5 @@ export function pollingPlugin(): SpooshPlugin<{
         clearPolling(context.queryKey, "Component unmounted");
       },
     },
-  };
+  });
 }

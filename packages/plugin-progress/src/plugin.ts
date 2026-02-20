@@ -1,4 +1,4 @@
-import type { SpooshPlugin } from "@spoosh/core";
+import { createSpooshPlugin } from "@spoosh/core";
 
 import type {
   ProgressReadOptions,
@@ -13,34 +13,29 @@ import type {
 
 const PLUGIN_NAME = "spoosh:progress";
 
-export function progressPlugin(): SpooshPlugin<{
-  readOptions: ProgressReadOptions;
-  writeOptions: ProgressWriteOptions;
-  pagesOptions: ProgressPagesOptions;
-  queueOptions: ProgressQueueOptions;
-  readResult: ProgressReadResult;
-  writeResult: ProgressWriteResult;
-  queueResult: ProgressQueueResult;
-}> {
-  return {
+export function progressPlugin() {
+  return createSpooshPlugin<{
+    readOptions: ProgressReadOptions;
+    writeOptions: ProgressWriteOptions;
+    pagesOptions: ProgressPagesOptions;
+    queueOptions: ProgressQueueOptions;
+    readResult: ProgressReadResult;
+    writeResult: ProgressWriteResult;
+    queueResult: ProgressQueueResult;
+  }>({
     name: PLUGIN_NAME,
     operations: ["read", "write", "pages", "queue"],
 
     middleware: async (context, next) => {
       const t = context.tracer?.(PLUGIN_NAME);
 
-      const pluginOptions = context.pluginOptions as
-        | ProgressReadOptions
-        | ProgressWriteOptions
-        | undefined;
-
-      if (!pluginOptions?.progress) {
+      if (!context.pluginOptions?.progress) {
         return next();
       }
 
       const progressOptions =
-        typeof pluginOptions.progress === "object"
-          ? pluginOptions.progress
+        typeof context.pluginOptions.progress === "object"
+          ? context.pluginOptions.progress
           : ({} as ProgressOptions);
 
       context.request = {
@@ -78,5 +73,5 @@ export function progressPlugin(): SpooshPlugin<{
 
       return next();
     },
-  };
+  });
 }

@@ -1,5 +1,9 @@
 # @spoosh/plugin-nextjs
 
+## 0.6.1
+
+- Use `createSpooshPlugin` for automatic type inference
+
 ## 0.6.0
 
 - Move `revalidatePath` and `serverRevalidate` options to `nextjs` property

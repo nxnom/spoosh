@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-deduplication",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Request deduplication plugin for Spoosh - prevents duplicate in-flight requests",
   "license": "MIT",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-gc",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Garbage collection plugin for Spoosh cache with time and size-based cleanup",
   "license": "MIT",
   "repository": {

@@ -1,5 +1,8 @@
-import type { SpooshPlugin, PluginContext } from "@spoosh/core";
-import { resolvePathString } from "@spoosh/core";
+import {
+  resolvePathString,
+  createSpooshPlugin,
+  type PluginContext,
+} from "@spoosh/core";
 
 import type {
   InvalidationPluginConfig,
@@ -41,11 +44,12 @@ function resolveInvalidateTags(
   context: PluginContext,
   defaultMode: InvalidationMode
 ): string[] {
-  const pluginOptions = context.pluginOptions as
-    | InvalidationWriteTriggerOptions
-    | undefined;
-
-  const invalidateOption = pluginOptions?.invalidate;
+  const invalidateOption = (
+    context.pluginOptions as
+      | InvalidationWriteTriggerOptions
+      | InvalidationQueueTriggerOptions
+      | undefined
+  )?.invalidate;
 
   if (!invalidateOption) {
     const overrideDefault = context.temp.get(INVALIDATION_DEFAULT_KEY) as
@@ -128,22 +132,20 @@ function resolveInvalidateTags(
  * });
  * ```
  */
-export function invalidationPlugin(
-  config: InvalidationPluginConfig = {}
-): SpooshPlugin<{
-  readOptions: InvalidationReadOptions;
-  writeOptions: InvalidationWriteOptions;
-  writeTriggerOptions: InvalidationWriteTriggerOptions;
-  queueTriggerOptions: InvalidationQueueTriggerOptions;
-  pagesOptions: InvalidationPagesOptions;
-  readResult: InvalidationReadResult;
-  writeResult: InvalidationWriteResult;
-  queueResult: InvalidationQueueResult;
-  instanceApi: InvalidationInstanceApi;
-}> {
+export function invalidationPlugin(config: InvalidationPluginConfig = {}) {
   const { defaultMode = "all" } = config;
 
-  return {
+  return createSpooshPlugin<{
+    readOptions: InvalidationReadOptions;
+    writeOptions: InvalidationWriteOptions;
+    writeTriggerOptions: InvalidationWriteTriggerOptions;
+    queueTriggerOptions: InvalidationQueueTriggerOptions;
+    pagesOptions: InvalidationPagesOptions;
+    readResult: InvalidationReadResult;
+    writeResult: InvalidationWriteResult;
+    queueResult: InvalidationQueueResult;
+    instanceApi: InvalidationInstanceApi;
+  }>({
     name: PLUGIN_NAME,
     operations: ["write", "queue"],
 
@@ -202,5 +204,5 @@ export function invalidationPlugin(
 
       return { invalidate };
     },
-  };
+  });
 }

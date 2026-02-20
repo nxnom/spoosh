@@ -1,5 +1,10 @@
-import { isNetworkError, isAbortError, clone } from "@spoosh/core";
-import type { SpooshPlugin, SpooshResponse } from "@spoosh/core";
+import {
+  isNetworkError,
+  isAbortError,
+  clone,
+  createSpooshPlugin,
+} from "@spoosh/core";
+import type { SpooshResponse } from "@spoosh/core";
 
 import type {
   RetryPluginConfig,
@@ -48,36 +53,35 @@ const defaultShouldRetry: ShouldRetryCallback = ({ status }) => {
  * });
  * ```
  */
-export function retryPlugin(config: RetryPluginConfig = {}): SpooshPlugin<{
-  readOptions: RetryReadOptions;
-  writeOptions: RetryWriteOptions;
-  pagesOptions: RetryPagesOptions;
-  queueOptions: RetryQueueOptions;
-  readResult: RetryReadResult;
-  writeResult: RetryWriteResult;
-  queueResult: RetryQueueResult;
-}> {
+export function retryPlugin(config: RetryPluginConfig = {}) {
   const {
     retries: defaultRetries = 3,
     retryDelay: defaultRetryDelay = 1000,
     shouldRetry: defaultShouldRetryFn = defaultShouldRetry,
   } = config;
 
-  return {
+  return createSpooshPlugin<{
+    readOptions: RetryReadOptions;
+    writeOptions: RetryWriteOptions;
+    pagesOptions: RetryPagesOptions;
+    queueOptions: RetryQueueOptions;
+    readResult: RetryReadResult;
+    writeResult: RetryWriteResult;
+    queueResult: RetryQueueResult;
+  }>({
     name: PLUGIN_NAME,
     operations: ["read", "write", "pages", "queue"],
     priority: 200,
 
     middleware: async (context, next) => {
       const t = context.tracer?.(PLUGIN_NAME);
-      const pluginOptions = context.pluginOptions as
-        | RetryReadOptions
-        | undefined;
 
-      const retriesConfig = pluginOptions?.retry?.retries ?? defaultRetries;
-      const retryDelayConfig = pluginOptions?.retry?.delay ?? defaultRetryDelay;
+      const retriesConfig =
+        context.pluginOptions?.retry?.retries ?? defaultRetries;
+      const retryDelayConfig =
+        context.pluginOptions?.retry?.delay ?? defaultRetryDelay;
       const shouldRetryFn =
-        pluginOptions?.retry?.shouldRetry ?? defaultShouldRetryFn;
+        context.pluginOptions?.retry?.shouldRetry ?? defaultShouldRetryFn;
 
       const maxRetries = retriesConfig === false ? 0 : retriesConfig;
 
@@ -156,5 +160,5 @@ export function retryPlugin(config: RetryPluginConfig = {}): SpooshPlugin<{
 
       return res!;
     },
-  };
+  });
 }

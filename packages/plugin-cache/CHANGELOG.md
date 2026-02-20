@@ -1,5 +1,9 @@
 # @spoosh/plugin-cache
 
+## 0.6.1
+
+- Use `createSpooshPlugin` for automatic type inference
+
 ## 0.6.0
 
 - Update for `pages` operation type rename

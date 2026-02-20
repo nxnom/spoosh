@@ -1,4 +1,4 @@
-import type { SpooshPlugin } from "@spoosh/core";
+import { createSpooshPlugin } from "@spoosh/core";
 
 import type {
   TransformReadOptions,
@@ -7,7 +7,6 @@ import type {
   TransformReadResult,
   TransformWriteResult,
   TransformQueueResult,
-  TransformOptions,
 } from "./types";
 
 const PLUGIN_NAME = "spoosh:transform";
@@ -48,27 +47,22 @@ const unsubscribers = new Map<string, () => void>();
  * console.log(meta.transformedData);
  * ```
  */
-export function transformPlugin(): SpooshPlugin<{
-  readOptions: TransformReadOptions;
-  writeOptions: TransformWriteOptions;
-  queueOptions: TransformQueueOptions;
-  readResult: TransformReadResult;
-  writeResult: TransformWriteResult;
-  queueResult: TransformQueueResult;
-}> {
-  return {
+export function transformPlugin() {
+  return createSpooshPlugin<{
+    readOptions: TransformReadOptions;
+    writeOptions: TransformWriteOptions;
+    queueOptions: TransformQueueOptions;
+    readResult: TransformReadResult;
+    writeResult: TransformWriteResult;
+    queueResult: TransformQueueResult;
+  }>({
     name: PLUGIN_NAME,
     operations: ["read", "write", "queue"],
 
     afterResponse: async (context, response) => {
       const t = context.tracer?.(PLUGIN_NAME);
 
-      const pluginOptions = context.pluginOptions as
-        | TransformOptions
-        | undefined;
-
-      const responseTransformer = (pluginOptions as TransformReadOptions)
-        ?.transform;
+      const responseTransformer = context.pluginOptions?.transform;
 
       if (!responseTransformer || response.data === undefined) {
         return;
@@ -92,10 +86,7 @@ export function transformPlugin(): SpooshPlugin<{
 
     lifecycle: {
       onMount(context) {
-        const pluginOptions = context.pluginOptions as
-          | TransformOptions
-          | undefined;
-        const transformFn = (pluginOptions as TransformReadOptions)?.transform;
+        const transformFn = context.pluginOptions?.transform;
 
         if (!transformFn) return;
 
@@ -121,10 +112,7 @@ export function transformPlugin(): SpooshPlugin<{
           unsubscribers.delete(previousContext.queryKey);
         }
 
-        const pluginOptions = context.pluginOptions as
-          | TransformOptions
-          | undefined;
-        const transformFn = (pluginOptions as TransformReadOptions)?.transform;
+        const transformFn = context.pluginOptions?.transform;
 
         if (!transformFn) return;
 
@@ -151,5 +139,5 @@ export function transformPlugin(): SpooshPlugin<{
         unsubscribers.delete(context.queryKey);
       },
     },
-  };
+  });
 }

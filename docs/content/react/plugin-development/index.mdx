@@ -35,6 +35,13 @@ const spoosh = new Spoosh("/api").use([loggerPlugin()]);
 
 That's it! Your plugin will now log all requests and responses.
 
+<Callout type="tip">
+**Type-Safe Plugins**
+
+For plugins with options, use the `createSpooshPlugin` helper for automatic type inference. See the [Type Safety](/docs/react/plugin-development/advanced/type-safety) guide for details.
+
+</Callout>
+
 ## How Plugins Work
 
 Every plugin has:

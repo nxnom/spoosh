@@ -1,5 +1,9 @@
 # @spoosh/plugin-prefetch
 
+## 0.5.1
+
+- Use `createSpooshPlugin` for automatic type inference
+
 ## 0.5.0
 
 - Update for `pages` operation type rename

@@ -108,6 +108,54 @@ await queue.trigger({
 });
 ```
 
+## Automatic Type Inference with `createSpooshPlugin`
+
+The `createSpooshPlugin` helper automatically infers plugin option types in middleware and hooks, eliminating the need for manual type casting:
+
+```typescript
+// plugin.ts
+import { createSpooshPlugin } from "@spoosh/core";
+import type {
+  MyPluginConfig,
+  MyReadOptions,
+  MyWriteOptions,
+  MyWriteTriggerOptions,
+} from "./types";
+
+export function myPlugin(config: MyPluginConfig = {}) {
+  return createSpooshPlugin<{
+    readOptions: MyReadOptions;
+    writeOptions: MyWriteOptions;
+    writeTriggerOptions: MyWriteTriggerOptions;
+  }>({
+    name: "my-app:timeout",
+    operations: ["read", "write"],
+
+    middleware: async (context, next) => {
+      // ✅ Direct access - TypeScript knows the type!
+      const timeout = context.pluginOptions?.timeout ?? config.defaultTimeout;
+
+      // No more: context.pluginOptions as MyReadOptions
+      return next();
+    },
+  });
+}
+```
+
+**Benefits:**
+
+- ✅ No manual type casting (`as MyReadOptions`) needed
+- ✅ Direct property access in middleware with full IntelliSense
+- ✅ Cleaner, more maintainable plugin code
+- ✅ All properties from all operation types are available (uses intersection types)
+
+<Callout type="info">
+**Recommended Pattern**
+
+Use `createSpooshPlugin` for all new plugins. It provides better developer experience and reduces boilerplate.
+
+</Callout>
+
 ## Basic Type Safety
 
 Use the `SpooshPlugin` generic to tell TypeScript about your types:
@@ -144,7 +192,10 @@ export function myPlugin(config: MyPluginConfig = {}): SpooshPlugin<{
     operations: ["read", "write", "queue"],
 
     middleware: async (context, next) => {
-      // Implementation
+      // Manual type casting required
+      const opts = context.pluginOptions as MyReadOptions | undefined;
+      const timeout = opts?.timeout ?? config.defaultTimeout;
+
       return next();
     },
 
@@ -156,6 +207,13 @@ export function myPlugin(config: MyPluginConfig = {}): SpooshPlugin<{
   };
 }
 ```
+
+<Callout type="tip">
+**Use `createSpooshPlugin` Instead**
+
+The approach above works but requires manual type casting. Use `createSpooshPlugin` (shown in the previous section) for automatic type inference.
+
+</Callout>
 
 **Now TypeScript knows:**
 
@@ -254,7 +312,7 @@ export type CacheWriteResult = object;
 
 ```typescript
 // plugin.ts
-import type { SpooshPlugin, InstanceApiContext } from "@spoosh/core";
+import { createSpooshPlugin } from "@spoosh/core";
 import type {
   CachePluginConfig,
   CacheReadOptions,
@@ -267,18 +325,18 @@ import type {
   ClearCacheOptions,
 } from "./types";
 
-export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
-  readOptions: CacheReadOptions;
-  writeOptions: CacheWriteOptions;
-  writeTriggerOptions: CacheWriteTriggerOptions;
-  pagesOptions: CachePagesOptions;
-  readResult: CacheReadResult;
-  writeResult: CacheWriteResult;
-  instanceApi: CacheInstanceApi;
-}> {
+export function cachePlugin(config: CachePluginConfig = {}) {
   const { staleTime: defaultStaleTime = 0 } = config;
 
-  return {
+  return createSpooshPlugin<{
+    readOptions: CacheReadOptions;
+    writeOptions: CacheWriteOptions;
+    writeTriggerOptions: CacheWriteTriggerOptions;
+    pagesOptions: CachePagesOptions;
+    readResult: CacheReadResult;
+    writeResult: CacheWriteResult;
+    instanceApi: CacheInstanceApi;
+  }>({
     name: "spoosh:cache",
     operations: ["read", "pages", "write"],
     priority: -10,
@@ -288,10 +346,9 @@ export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
         const cached = context.stateManager.getCache(context.queryKey);
 
         if (cached?.state.data && !cached.stale) {
-          const pluginOptions = context.pluginOptions as
-            | CacheReadOptions
-            | undefined;
-          const staleTime = pluginOptions?.staleTime ?? defaultStaleTime;
+          // ✅ Direct access with createSpooshPlugin - no casting needed!
+          const staleTime =
+            context.pluginOptions?.staleTime ?? defaultStaleTime;
           const isTimeStale = Date.now() - cached.state.timestamp > staleTime;
 
           if (!isTimeStale) {
@@ -305,12 +362,8 @@ export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
 
     afterResponse(context, response) {
       if (!response.error) {
-        // For write operations, trigger options are merged into pluginOptions
-        const pluginOptions = context.pluginOptions as
-          | CacheWriteTriggerOptions
-          | undefined;
-
-        if (pluginOptions?.clearCache) {
+        // ✅ Direct access for trigger options too!
+        if (context.pluginOptions?.clearCache) {
           context.stateManager.clear();
         }
       }
@@ -329,7 +382,7 @@ export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
 
       return { clearCache };
     },
-  };
+  });
 }
 ```
 

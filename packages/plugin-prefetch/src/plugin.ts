@@ -1,13 +1,11 @@
-import type {
-  SpooshPlugin,
-  OperationState,
-  SpooshResponse,
-} from "@spoosh/core";
 import {
   createSelectorProxy,
   resolvePath,
   resolveTags,
   createInitialState,
+  createSpooshPlugin,
+  type OperationState,
+  type SpooshResponse,
 } from "@spoosh/core";
 import type {
   PrefetchPluginConfig,
@@ -65,14 +63,12 @@ const PLUGIN_NAME = "spoosh:prefetch";
  * </Link>
  * ```
  */
-export function prefetchPlugin(
-  config: PrefetchPluginConfig = {}
-): SpooshPlugin<{
-  instanceApi: PrefetchInstanceApi;
-}> {
+export function prefetchPlugin(config: PrefetchPluginConfig = {}) {
   const { timeout } = config;
 
-  return {
+  return createSpooshPlugin<{
+    instanceApi: PrefetchInstanceApi;
+  }>({
     name: PLUGIN_NAME,
     operations: [],
 
@@ -227,5 +223,5 @@ export function prefetchPlugin(
 
       return { prefetch } as PrefetchInstanceApi;
     },
-  };
+  });
 }

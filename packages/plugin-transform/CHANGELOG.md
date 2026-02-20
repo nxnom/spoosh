@@ -1,5 +1,9 @@
 # @spoosh/plugin-transform
 
+## 0.8.1
+
+- Use `createSpooshPlugin` for automatic type inference
+
 ## 0.8.0
 
 - Update for `pages` operation type rename

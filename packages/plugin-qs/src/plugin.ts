@@ -1,4 +1,4 @@
-import type { SpooshPlugin } from "@spoosh/core";
+import { createSpooshPlugin } from "@spoosh/core";
 import qs from "qs";
 
 import type {
@@ -44,16 +44,16 @@ const DEFAULT_OPTIONS = {
  * // Result: filters[status]=active&filters[tags][]=a&filters[tags][]=b
  * ```
  */
-export function qsPlugin(config: QsPluginConfig = {}): SpooshPlugin<{
-  readOptions: QsReadHookOptions;
-  writeOptions: QsWriteHookOptions;
-  pagesOptions: QsPagesHookOptions;
-  queueOptions: QsQueueHookOptions;
-  readResult: QsReadResult;
-  writeResult: QsWriteResult;
-  queueResult: QsQueueResult;
-}> {
-  return {
+export function qsPlugin(config: QsPluginConfig = {}) {
+  return createSpooshPlugin<{
+    readOptions: QsReadHookOptions;
+    writeOptions: QsWriteHookOptions;
+    pagesOptions: QsPagesHookOptions;
+    queueOptions: QsQueueHookOptions;
+    readResult: QsReadResult;
+    writeResult: QsWriteResult;
+    queueResult: QsQueueResult;
+  }>({
     name: PLUGIN_NAME,
     operations: ["read", "write", "pages", "queue"],
 
@@ -66,9 +66,7 @@ export function qsPlugin(config: QsPluginConfig = {}): SpooshPlugin<{
         return next();
       }
 
-      const pluginOptions = (
-        context.pluginOptions as QsReadHookOptions | undefined
-      )?.qs;
+      const pluginOptions = context.pluginOptions?.qs;
 
       const stringified = qs.stringify(query, {
         ...DEFAULT_OPTIONS,
@@ -98,5 +96,5 @@ export function qsPlugin(config: QsPluginConfig = {}): SpooshPlugin<{
 
       return next();
     },
-  };
+  });
 }

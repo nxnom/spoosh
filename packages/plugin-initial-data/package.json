@@ -1,6 +1,6 @@
 {
   "name": "@spoosh/plugin-initial-data",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Initial data plugin for Spoosh - show data immediately before fetch completes",
   "license": "MIT",
   "repository": {

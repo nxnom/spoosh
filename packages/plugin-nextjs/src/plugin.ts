@@ -1,5 +1,4 @@
-import type { SpooshPlugin } from "@spoosh/core";
-import { resolvePathString } from "@spoosh/core";
+import { resolvePathString, createSpooshPlugin } from "@spoosh/core";
 
 import type {
   NextjsPluginConfig,
@@ -44,19 +43,19 @@ const PLUGIN_NAME = "spoosh:nextjs";
  *   ]);
  * ```
  */
-export function nextjsPlugin(config: NextjsPluginConfig = {}): SpooshPlugin<{
-  readOptions: NextjsReadOptions;
-  writeOptions: NextjsWriteOptions;
-  writeTriggerOptions: NextjsWriteTriggerOptions;
-  queueTriggerOptions: NextjsQueueTriggerOptions;
-  pagesOptions: NextjsPagesOptions;
-  readResult: NextjsReadResult;
-  writeResult: NextjsWriteResult;
-  queueResult: NextjsQueueResult;
-}> {
+export function nextjsPlugin(config: NextjsPluginConfig = {}) {
   const { serverRevalidator, skipServerRevalidation = false } = config;
 
-  return {
+  return createSpooshPlugin<{
+    readOptions: NextjsReadOptions;
+    writeOptions: NextjsWriteOptions;
+    writeTriggerOptions: NextjsWriteTriggerOptions;
+    queueTriggerOptions: NextjsQueueTriggerOptions;
+    pagesOptions: NextjsPagesOptions;
+    readResult: NextjsReadResult;
+    writeResult: NextjsWriteResult;
+    queueResult: NextjsQueueResult;
+  }>({
     name: PLUGIN_NAME,
     operations: ["write", "queue"],
 
@@ -73,19 +72,17 @@ export function nextjsPlugin(config: NextjsPluginConfig = {}): SpooshPlugin<{
         return response;
       }
 
-      const pluginOptions = context.pluginOptions as
-        | NextjsWriteTriggerOptions
-        | undefined;
-
       const shouldRevalidate =
-        pluginOptions?.nextjs?.serverRevalidate ?? !skipServerRevalidation;
+        context.pluginOptions?.nextjs?.serverRevalidate ??
+        !skipServerRevalidation;
 
       if (!shouldRevalidate) {
         t?.skip("Revalidation disabled", { color: "muted" });
         return response;
       }
 
-      const revalidatePaths = pluginOptions?.nextjs?.revalidatePaths ?? [];
+      const revalidatePaths =
+        context.pluginOptions?.nextjs?.revalidatePaths ?? [];
       const params = context.request.params as
         | Record<string, string | number>
         | undefined;
@@ -109,5 +106,5 @@ export function nextjsPlugin(config: NextjsPluginConfig = {}): SpooshPlugin<{
 
       return response;
     },
-  };
+  });
 }

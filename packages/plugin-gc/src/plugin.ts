@@ -1,4 +1,8 @@
-import type { SpooshPlugin, StateManager, EventTracer } from "@spoosh/core";
+import {
+  createSpooshPlugin,
+  type StateManager,
+  type EventTracer,
+} from "@spoosh/core";
 
 const PLUGIN_NAME = "spoosh:gc";
 
@@ -116,14 +120,12 @@ function runGarbageCollection(
  * const removedCount = runGc();
  * ```
  */
-export function gcPlugin(
-  options: GcPluginOptions = {}
-): SpooshPlugin<{ instanceApi: GcPluginExports }> {
+export function gcPlugin(options: GcPluginOptions = {}) {
   const { interval = 60000 } = options;
 
   let runGcFn: (() => number) | undefined;
 
-  return {
+  return createSpooshPlugin<{ instanceApi: GcPluginExports }>({
     name: PLUGIN_NAME,
     operations: [],
 
@@ -158,5 +160,5 @@ export function gcPlugin(
         runGc: () => runGcFn?.() ?? 0,
       };
     },
-  };
+  });
 }

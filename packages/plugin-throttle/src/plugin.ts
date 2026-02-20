@@ -1,4 +1,4 @@
-import type { SpooshPlugin } from "@spoosh/core";
+import { createSpooshPlugin } from "@spoosh/core";
 
 import type {
   ThrottleReadOptions,
@@ -37,16 +37,16 @@ const PLUGIN_NAME = "spoosh:throttle";
  * });
  * ```
  */
-export function throttlePlugin(): SpooshPlugin<{
-  readOptions: ThrottleReadOptions;
-  writeOptions: ThrottleWriteOptions;
-  pagesOptions: ThrottlePagesOptions;
-  readResult: ThrottleReadResult;
-  writeResult: ThrottleWriteResult;
-}> {
+export function throttlePlugin() {
   const lastFetchTime = new Map<string, number>();
 
-  return {
+  return createSpooshPlugin<{
+    readOptions: ThrottleReadOptions;
+    writeOptions: ThrottleWriteOptions;
+    pagesOptions: ThrottlePagesOptions;
+    readResult: ThrottleReadResult;
+    writeResult: ThrottleWriteResult;
+  }>({
     name: PLUGIN_NAME,
     operations: ["read", "pages"],
     priority: 100,
@@ -55,10 +55,7 @@ export function throttlePlugin(): SpooshPlugin<{
       const t = context.tracer?.(PLUGIN_NAME);
       const et = context.eventTracer?.(PLUGIN_NAME);
 
-      const pluginOptions = context.pluginOptions as
-        | ThrottleReadOptions
-        | undefined;
-      const throttleMs = pluginOptions?.throttle;
+      const throttleMs = context.pluginOptions?.throttle;
 
       if (!throttleMs || throttleMs <= 0) {
         t?.skip("No throttle configured");
@@ -89,5 +86,5 @@ export function throttlePlugin(): SpooshPlugin<{
 
       return next();
     },
-  };
+  });
 }

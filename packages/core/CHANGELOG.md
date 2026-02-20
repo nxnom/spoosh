@@ -1,5 +1,9 @@
 # @spoosh/core
 
+## 0.15.1
+
+- Add `createSpooshPlugin` helper for automatic plugin options type inference
+
 ## 0.15.0
 
 - **Breaking**: Rename `infiniteRead` operation type to `pages`

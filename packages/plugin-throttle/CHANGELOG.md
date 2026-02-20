@@ -1,5 +1,9 @@
 # @spoosh/plugin-throttle
 
+## 0.3.1
+
+- Use `createSpooshPlugin` for automatic type inference
+
 ## 0.3.0
 
 - Update for `pages` operation type rename

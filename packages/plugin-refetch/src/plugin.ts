@@ -1,4 +1,8 @@
-import type { EventEmitter, SpooshPlugin, EventTracer } from "@spoosh/core";
+import {
+  createSpooshPlugin,
+  type EventEmitter,
+  type EventTracer,
+} from "@spoosh/core";
 
 import type {
   RefetchPluginConfig,
@@ -44,13 +48,7 @@ type HookListenerEntry = {
  * });
  * ```
  */
-export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
-  readOptions: RefetchReadOptions;
-  writeOptions: RefetchWriteOptions;
-  pagesOptions: RefetchPagesOptions;
-  readResult: RefetchReadResult;
-  writeResult: RefetchWriteResult;
-}> {
+export function refetchPlugin(config: RefetchPluginConfig = {}) {
   const { refetchOnFocus = false, refetchOnReconnect = false } = config;
 
   const listenersByHook = new Map<string, HookListenerEntry>();
@@ -179,7 +177,13 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
     }
   };
 
-  return {
+  return createSpooshPlugin<{
+    readOptions: RefetchReadOptions;
+    writeOptions: RefetchWriteOptions;
+    pagesOptions: RefetchPagesOptions;
+    readResult: RefetchReadResult;
+    writeResult: RefetchWriteResult;
+  }>({
     name: PLUGIN_NAME,
     operations: ["read", "pages"],
 
@@ -190,14 +194,10 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
 
         if (!instanceId) return;
 
-        const pluginOptions = context.pluginOptions as
-          | RefetchReadOptions
-          | undefined;
-
         const shouldRefetchOnFocus =
-          pluginOptions?.refetch?.onFocus ?? refetchOnFocus;
+          context.pluginOptions?.refetch?.onFocus ?? refetchOnFocus;
         const shouldRefetchOnReconnect =
-          pluginOptions?.refetch?.onReconnect ?? refetchOnReconnect;
+          context.pluginOptions?.refetch?.onReconnect ?? refetchOnReconnect;
 
         if (shouldRefetchOnFocus) {
           setupFocusListener(instanceId, queryKey, eventEmitter, et);
@@ -214,14 +214,10 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
 
         if (!instanceId) return;
 
-        const pluginOptions = context.pluginOptions as
-          | RefetchReadOptions
-          | undefined;
-
         const shouldRefetchOnFocus =
-          pluginOptions?.refetch?.onFocus ?? refetchOnFocus;
+          context.pluginOptions?.refetch?.onFocus ?? refetchOnFocus;
         const shouldRefetchOnReconnect =
-          pluginOptions?.refetch?.onReconnect ?? refetchOnReconnect;
+          context.pluginOptions?.refetch?.onReconnect ?? refetchOnReconnect;
 
         const entry = listenersByHook.get(instanceId);
         const queryKeyChanged = entry && entry.queryKey !== queryKey;
@@ -252,5 +248,5 @@ export function refetchPlugin(config: RefetchPluginConfig = {}): SpooshPlugin<{
         }
       },
     },
-  };
+  });
 }

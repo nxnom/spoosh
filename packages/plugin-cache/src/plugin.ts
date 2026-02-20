@@ -1,4 +1,4 @@
-import type { SpooshPlugin } from "@spoosh/core";
+import { createSpooshPlugin } from "@spoosh/core";
 
 import type {
   CachePluginConfig,
@@ -43,18 +43,18 @@ const PLUGIN_NAME = "spoosh:cache";
  * });
  * ```
  */
-export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
-  readOptions: CacheReadOptions;
-  writeOptions: CacheWriteOptions;
-  writeTriggerOptions: CacheWriteTriggerOptions;
-  pagesOptions: CachePagesOptions;
-  readResult: CacheReadResult;
-  writeResult: CacheWriteResult;
-  instanceApi: CacheInstanceApi;
-}> {
+export function cachePlugin(config: CachePluginConfig = {}) {
   const { staleTime: defaultStaleTime = 0 } = config;
 
-  return {
+  return createSpooshPlugin<{
+    readOptions: CacheReadOptions;
+    writeOptions: CacheWriteOptions;
+    writeTriggerOptions: CacheWriteTriggerOptions;
+    pagesOptions: CachePagesOptions;
+    readResult: CacheReadResult;
+    writeResult: CacheWriteResult;
+    instanceApi: CacheInstanceApi;
+  }>({
     name: PLUGIN_NAME,
     operations: ["read", "pages", "write"],
     priority: -10,
@@ -66,10 +66,8 @@ export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
         const cached = context.stateManager.getCache(context.queryKey);
 
         if (cached?.state.data && !cached.stale) {
-          const pluginOptions = context.pluginOptions as
-            | CacheReadOptions
-            | undefined;
-          const staleTime = pluginOptions?.staleTime ?? defaultStaleTime;
+          const staleTime =
+            context.pluginOptions?.staleTime ?? defaultStaleTime;
           const age = Date.now() - cached.state.timestamp;
           const isTimeStale = age > staleTime;
 
@@ -100,11 +98,7 @@ export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
 
     afterResponse(context, response) {
       if (!response.error) {
-        const pluginOptions = context.pluginOptions as
-          | CacheWriteTriggerOptions
-          | undefined;
-
-        if (pluginOptions?.clearCache) {
+        if (context.pluginOptions?.clearCache) {
           context
             .tracer?.(PLUGIN_NAME)
             ?.log("Cleared cache", { color: "muted" });
@@ -127,5 +121,5 @@ export function cachePlugin(config: CachePluginConfig = {}): SpooshPlugin<{
 
       return { clearCache };
     },
-  };
+  });
 }

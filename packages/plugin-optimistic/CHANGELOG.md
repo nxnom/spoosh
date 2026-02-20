@@ -1,5 +1,9 @@
 # @spoosh/plugin-optimistic
 
+## 0.7.1
+
+- Use `createSpooshPlugin` for automatic type inference
+
 ## 0.7.0
 
 - Update for `pages` operation type rename

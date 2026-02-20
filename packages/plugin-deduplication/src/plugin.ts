@@ -1,4 +1,4 @@
-import type { SpooshPlugin, SpooshResponse } from "@spoosh/core";
+import { createSpooshPlugin, type SpooshResponse } from "@spoosh/core";
 
 import type {
   DeduplicationConfig,
@@ -38,21 +38,19 @@ const PLUGIN_NAME = "spoosh:deduplication";
  * });
  * ```
  */
-export function deduplicationPlugin(
-  config?: DeduplicationConfig
-): SpooshPlugin<{
-  readOptions: DeduplicationReadOptions;
-  writeOptions: DeduplicationWriteOptions;
-  pagesOptions: DeduplicationPagesOptions;
-  readResult: DeduplicationReadResult;
-  writeResult: DeduplicationWriteResult;
-}> {
+export function deduplicationPlugin(config?: DeduplicationConfig) {
   const resolvedConfig = {
     read: config?.read ?? ("in-flight" as const),
     write: config?.write ?? (false as const),
   };
 
-  return {
+  return createSpooshPlugin<{
+    readOptions: DeduplicationReadOptions;
+    writeOptions: DeduplicationWriteOptions;
+    pagesOptions: DeduplicationPagesOptions;
+    readResult: DeduplicationReadResult;
+    writeResult: DeduplicationWriteResult;
+  }>({
     name: PLUGIN_NAME,
     operations: ["read", "pages", "write"],
 
@@ -64,9 +62,7 @@ export function deduplicationPlugin(
           ? resolvedConfig.write
           : resolvedConfig.read;
 
-      const requestOverride = (
-        context.pluginOptions as { dedupe?: DedupeMode } | undefined
-      )?.dedupe;
+      const requestOverride = context.pluginOptions?.dedupe;
 
       const dedupeMode = requestOverride ?? defaultMode;
 
@@ -105,5 +101,5 @@ export function deduplicationPlugin(
         return dedupeMode === "in-flight";
       },
     }),
-  };
+  });
 }

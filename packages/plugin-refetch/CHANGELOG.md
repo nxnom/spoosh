@@ -1,5 +1,9 @@
 # @spoosh/plugin-refetch
 
+## 0.4.1
+
+- Use `createSpooshPlugin` for automatic type inference
+
 ## 0.4.0
 
 - Move `refetchOnWindowFocus` and `refetchOnReconnect` options to `refetch` for better organization

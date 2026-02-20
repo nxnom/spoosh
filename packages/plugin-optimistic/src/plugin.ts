@@ -1,8 +1,8 @@
-import type {
-  SpooshPlugin,
-  PluginContext,
-  StateManager,
-  RequestTracer,
+import {
+  createSpooshPlugin,
+  type PluginContext,
+  type StateManager,
+  type RequestTracer,
 } from "@spoosh/core";
 import "@spoosh/plugin-invalidation";
 import type {
@@ -469,15 +469,15 @@ function buildSnapshotDiff(
  */
 const PLUGIN_NAME = "spoosh:optimistic";
 
-export function optimisticPlugin(): SpooshPlugin<{
-  readOptions: OptimisticReadOptions;
-  writeOptions: OptimisticWriteOptions;
-  writeTriggerOptions: OptimisticWriteTriggerOptions;
-  pagesOptions: OptimisticPagesOptions;
-  readResult: OptimisticReadResult;
-  writeResult: OptimisticWriteResult;
-}> {
-  return {
+export function optimisticPlugin() {
+  return createSpooshPlugin<{
+    readOptions: OptimisticReadOptions;
+    writeOptions: OptimisticWriteOptions;
+    writeTriggerOptions: OptimisticWriteTriggerOptions;
+    pagesOptions: OptimisticPagesOptions;
+    readResult: OptimisticReadResult;
+    writeResult: OptimisticWriteResult;
+  }>({
     name: PLUGIN_NAME,
     operations: ["write"],
     dependencies: ["spoosh:invalidation"],
@@ -605,5 +605,5 @@ export function optimisticPlugin(): SpooshPlugin<{
 
       return response;
     },
-  };
+  });
 }
