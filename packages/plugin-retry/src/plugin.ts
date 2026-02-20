@@ -75,9 +75,10 @@ export function retryPlugin(config: RetryPluginConfig = {}): SpooshPlugin<{
         | RetryReadOptions
         | undefined;
 
-      const retriesConfig = pluginOptions?.retries ?? defaultRetries;
-      const retryDelayConfig = pluginOptions?.retryDelay ?? defaultRetryDelay;
-      const shouldRetryFn = pluginOptions?.shouldRetry ?? defaultShouldRetryFn;
+      const retriesConfig = pluginOptions?.retry?.retries ?? defaultRetries;
+      const retryDelayConfig = pluginOptions?.retry?.delay ?? defaultRetryDelay;
+      const shouldRetryFn =
+        pluginOptions?.retry?.shouldRetry ?? defaultShouldRetryFn;
 
       const maxRetries = retriesConfig === false ? 0 : retriesConfig;
 

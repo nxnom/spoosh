@@ -1,5 +1,9 @@
 # @spoosh/plugin-retry
 
+## 0.6.0
+
+- Move retry options to `retry` property for better organization and to avoid confusion with other plugin options
+
 ## 0.5.0
 
 - Update for `pages` operation type rename

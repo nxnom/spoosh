@@ -187,7 +187,7 @@ describe("retryPlugin", () => {
         shouldRetry: pluginShouldRetry,
       });
       const context = createMockContext({
-        pluginOptions: { shouldRetry: requestShouldRetry },
+        pluginOptions: { retry: { shouldRetry: requestShouldRetry } },
       });
       const errorResponse = { error: { message: "Error" }, status: 500 };
       const next = vi.fn().mockResolvedValue(errorResponse);
@@ -367,7 +367,7 @@ describe("retryPlugin", () => {
     it("should disable retries with per-request option", async () => {
       const plugin = retryPlugin({ retries: 5 });
       const context = createMockContext({
-        pluginOptions: { retries: false },
+        pluginOptions: { retry: { retries: false } },
       });
       const networkError = new TypeError("Failed to fetch");
       const next = vi
@@ -401,7 +401,7 @@ describe("retryPlugin", () => {
     it("should override retries count", async () => {
       const plugin = retryPlugin({ retries: 3, retryDelay: 1000 });
       const context = createMockContext({
-        pluginOptions: { retries: 1 },
+        pluginOptions: { retry: { retries: 1 } },
       });
       const networkError = new TypeError("Failed to fetch");
       const next = vi
@@ -421,7 +421,7 @@ describe("retryPlugin", () => {
     it("should override retryDelay", async () => {
       const plugin = retryPlugin({ retries: 3, retryDelay: 1000 });
       const context = createMockContext({
-        pluginOptions: { retryDelay: 500 },
+        pluginOptions: { retry: { delay: 500 } },
       });
       const networkError = new TypeError("Failed to fetch");
       const successResponse = { data: { id: 1 }, status: 200 };
@@ -445,7 +445,7 @@ describe("retryPlugin", () => {
     it("should override both retries and retryDelay", async () => {
       const plugin = retryPlugin({ retries: 5, retryDelay: 2000 });
       const context = createMockContext({
-        pluginOptions: { retries: 2, retryDelay: 100 },
+        pluginOptions: { retry: { retries: 2, delay: 100 } },
       });
       const networkError = new TypeError("Failed to fetch");
       const next = vi

@@ -28,6 +28,20 @@ export const DEFAULT_RETRY_STATUS_CODES = [
   408, 429, 500, 502, 503, 504,
 ] as const;
 
+export interface RetryConfig {
+  /** Number of retry attempts. Set to `false` to disable retries. */
+  retries?: number | false;
+
+  /** Delay between retries in milliseconds. */
+  delay?: number;
+
+  /**
+   * Custom callback to determine if a request should be retried.
+   * Network errors are always retried regardless of this callback.
+   */
+  shouldRetry?: ShouldRetryCallback;
+}
+
 export interface RetryPluginConfig {
   /** Number of retry attempts. Set to `false` to disable retries. Defaults to 3. */
   retries?: number | false;
@@ -44,33 +58,13 @@ export interface RetryPluginConfig {
 }
 
 export interface RetryReadOptions {
-  /** Number of retry attempts. Set to `false` to disable retries. Overrides plugin default. */
-  retries?: number | false;
-
-  /** Delay between retries in milliseconds. Overrides plugin default. */
-  retryDelay?: number;
-
-  /**
-   * Custom callback to determine if a request should be retried.
-   * Network errors are always retried regardless of this callback.
-   * Overrides plugin default.
-   */
-  shouldRetry?: ShouldRetryCallback;
+  /** Retry configuration. Overrides plugin defaults. */
+  retry?: RetryConfig;
 }
 
 export interface RetryWriteOptions {
-  /** Number of retry attempts. Set to `false` to disable retries. Overrides plugin default. */
-  retries?: number | false;
-
-  /** Delay between retries in milliseconds. Overrides plugin default. */
-  retryDelay?: number;
-
-  /**
-   * Custom callback to determine if a request should be retried.
-   * Network errors are always retried regardless of this callback.
-   * Overrides plugin default.
-   */
-  shouldRetry?: ShouldRetryCallback;
+  /** Retry configuration. Overrides plugin defaults. */
+  retry?: RetryConfig;
 }
 
 export type RetryPagesOptions = RetryReadOptions;
