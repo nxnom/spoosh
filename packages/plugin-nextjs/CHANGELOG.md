@@ -1,5 +1,9 @@
 # @spoosh/plugin-nextjs
 
+## 0.6.0
+
+- Move `revalidatePath` and `serverRevalidate` options to `nextjs` property
+
 ## 0.5.0
 
 - Update for `pages` operation type rename

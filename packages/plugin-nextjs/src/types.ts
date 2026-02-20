@@ -11,11 +11,7 @@ export interface NextjsPluginConfig {
   skipServerRevalidation?: boolean;
 }
 
-export type NextjsReadOptions = object;
-
-export type NextjsWriteOptions = object;
-
-export interface NextjsWriteTriggerOptions {
+export interface NextjsTriggerConfig {
   /** Additional paths to revalidate after mutation */
   revalidatePaths?: string[];
 
@@ -23,14 +19,20 @@ export interface NextjsWriteTriggerOptions {
   serverRevalidate?: boolean;
 }
 
+export type NextjsReadOptions = object;
+
+export type NextjsWriteOptions = object;
+
+export interface NextjsWriteTriggerOptions {
+  /** Next.js revalidation configuration */
+  nextjs?: NextjsTriggerConfig;
+}
+
 export type NextjsPagesOptions = object;
 
 export interface NextjsQueueTriggerOptions {
-  /** Additional paths to revalidate after queue item completes */
-  revalidatePaths?: string[];
-
-  /** Whether to trigger server revalidation. Overrides plugin default. */
-  serverRevalidate?: boolean;
+  /** Next.js revalidation configuration */
+  nextjs?: NextjsTriggerConfig;
 }
 
 export type NextjsReadResult = object;

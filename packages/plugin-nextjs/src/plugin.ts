@@ -78,14 +78,14 @@ export function nextjsPlugin(config: NextjsPluginConfig = {}): SpooshPlugin<{
         | undefined;
 
       const shouldRevalidate =
-        pluginOptions?.serverRevalidate ?? !skipServerRevalidation;
+        pluginOptions?.nextjs?.serverRevalidate ?? !skipServerRevalidation;
 
       if (!shouldRevalidate) {
         t?.skip("Revalidation disabled", { color: "muted" });
         return response;
       }
 
-      const revalidatePaths = pluginOptions?.revalidatePaths ?? [];
+      const revalidatePaths = pluginOptions?.nextjs?.revalidatePaths ?? [];
       const params = context.request.params as
         | Record<string, string | number>
         | undefined;
